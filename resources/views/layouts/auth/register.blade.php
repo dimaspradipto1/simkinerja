@@ -190,6 +190,7 @@
 </head>
 
 <body>
+  @include('sweetalert::alert')
 
   <main class="d-flex align-items-center justify-content-center min-vh-100 py-4 py-md-5">
     <div class="container">

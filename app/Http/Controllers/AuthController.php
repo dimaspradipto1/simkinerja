@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class AuthController extends Controller
 {
@@ -40,8 +41,19 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            return redirect()->intended(route('dashboard'))->with('success', 'Selamat datang di SIM KINERJA!');
+
+            Alert::success('Login Berhasil', 'Anda berhasil login')
+                ->toToast()
+                ->autoClose(4000)
+                ->timerProgressBar();
+
+            return redirect()->intended(route('dashboard'));
         }
+
+        Alert::error('Login Gagal', 'Username/Email atau Password salah')
+            ->toToast()
+            ->autoClose(4000)
+            ->timerProgressBar();
 
         return back()->withErrors([
             'login_error' => 'Username/Email atau Password salah.',
@@ -88,7 +100,12 @@ class AuthController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('login')->with('success', 'Registrasi berhasil! Silakan login dengan akun Anda.');
+        Alert::success('Registrasi Berhasil', 'Silakan login dengan akun Anda')
+            ->toToast()
+            ->autoClose(4000)
+            ->timerProgressBar();
+
+        return redirect()->route('login');
     }
 
     public function logout(Request $request)
@@ -98,6 +115,11 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')->with('success', 'Anda telah keluar dari sistem.');
+        Alert::success('Logout Berhasil', 'Anda telah keluar dari sistem')
+            ->toToast()
+            ->autoClose(4000)
+            ->timerProgressBar();
+
+        return redirect()->route('login');
     }
 }
