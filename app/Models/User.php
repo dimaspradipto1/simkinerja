@@ -23,7 +23,11 @@ class User extends Authenticatable
         'email',
         'password',
         'roles',
-        'is_active'
+        'is_active',
+        'nidn',
+        'unit',
+        'jabatan',
+        'status',
     ];
 
     /**
