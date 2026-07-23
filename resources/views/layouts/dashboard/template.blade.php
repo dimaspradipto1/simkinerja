@@ -34,6 +34,48 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
+    <style>
+        /* Table Symmetrical Alignment & Responsive Container */
+        .card-body {
+            overflow-x: hidden;
+        }
+
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-responsive table {
+            width: 100% !important;
+            margin-bottom: 0;
+        }
+
+        .dataTables_wrapper {
+            width: 100% !important;
+            max-width: 100% !important;
+            clear: both;
+        }
+
+        .dataTables_wrapper .row {
+            max-width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        /* Ensure table header & cell text wraps nicely and aligns 100% symmetrically */
+        .table th, .table td {
+            vertical-align: middle !important;
+            box-sizing: border-box;
+        }
+
+        /* Keep action buttons neatly aligned */
+        .table td .btn-group,
+        .table td .d-inline-flex {
+            flex-wrap: nowrap;
+        }
+    </style>
 </head>
 
 <body>

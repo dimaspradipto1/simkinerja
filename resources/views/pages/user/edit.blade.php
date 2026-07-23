@@ -40,12 +40,52 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="roles" class="form-label">Role <span class="text-danger">*</span></label>
+                            <label for="roles" class="form-label">Role Akses <span class="text-danger">*</span></label>
                             <select class="form-select @error('roles') is-invalid @enderror" id="roles" name="roles">
-                                <option value="" disabled>-- Pilih Role --</option>
-                                <option value="superadmin" {{ old('roles', $user->roles) == 'superadmin' ? 'selected' : '' }}>Superadmin</option>
-                                <option value="admin" {{ old('roles', $user->roles) == 'admin' ? 'selected' : '' }}>Admin</option>
-                                <option value="Standar" {{ old('roles', $user->roles) == 'Standar' ? 'selected' : '' }}>Standar / Dosen</option>
+                                <option value="" disabled>-- Pilih Role Akses --</option>
+                                @php
+                                    $rolesList = [
+                                        'SUPER ADMIN',
+                                        'REKTOR',
+                                        'WAKIL REKTOR I',
+                                        'WAKIL REKTOR II',
+                                        'WAKIL REKTOR III',
+                                        'KEPALA BIRO',
+                                        'KEPALA ICT',
+                                        'ADMIN ICT',
+                                        'ADMIN AKADEMIK UNIVERSITAS',
+                                        'STAFF AKADEMIK FAKULTAS',
+                                        'ADMIN KEMAHASISWAAN',
+                                        'ADMIN IJAZAH',
+                                        'ADMIN PERPUSTAKAAN',
+                                        'ADMIN KEUANGAN',
+                                        'KASIR',
+                                        'ADMIN SDM',
+                                        'ADMIN SARPRAS',
+                                        'ADMIN HUMAS',
+                                        'ADMIN KERJASAMA',
+                                        'ADMIN KEMAHASISWAAN PRESTASI',
+                                        'ADMIN KARIR ALUMNI',
+                                        'ADMIN PERENCANAAN',
+                                        'ADMIN LPPM',
+                                        'ADMIN HAKI',
+                                        'ADMIN LPMI',
+                                        'DEKAN',
+                                        'WAKIL DEKAN I',
+                                        'WAKIL DEKAN II',
+                                        'KAPRODI',
+                                        'SEKRETARIS PRODI',
+                                        'DOSEN',
+                                        'DOSEN PEMBIMBING',
+                                        'STAFF TU FAKULTAS',
+                                        'ADMIN LABORATORIUM',
+                                        'MAHASISWA',
+                                        'ALUMNI',
+                                    ];
+                                @endphp
+                                @foreach($rolesList as $roleItem)
+                                    <option value="{{ $roleItem }}" {{ old('roles', $user->roles) == $roleItem ? 'selected' : '' }}>{{ $roleItem }}</option>
+                                @endforeach
                             </select>
                             @error('roles')
                                 <div class="invalid-feedback">{{ $message }}</div>

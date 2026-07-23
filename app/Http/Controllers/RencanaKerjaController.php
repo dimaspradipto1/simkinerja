@@ -18,11 +18,23 @@ class RencanaKerjaController extends Controller
      */
     public function index(Request $request)
     {
+        $authUser = Auth::user();
+
         if ($request->ajax()) {
             $query = RencanaKerja::with('user');
 
-            if (Auth::check() && !in_array(Auth::user()->roles, ['superadmin', 'admin'])) {
-                $query->where('user_id', Auth::id());
+            if ($authUser) {
+                if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+                    // Superadmin, Admin, Pimpinan Rektorat -> Akses seluruh tugas universitas
+                } elseif ($authUser->isPimpinanUnit()) {
+                    // Pimpinan Unit -> Akses seluruh tugas di unitnya
+                    $query->whereHas('user', function ($q) use ($authUser) {
+                        $q->where('unit', $authUser->unit);
+                    });
+                } else {
+                    // Staff / Pegawai Regular -> Hanya akses tugas milik sendiri
+                    $query->where('user_id', $authUser->id);
+                }
             }
 
             if ($request->filled('jabatan')) {
@@ -176,10 +188,22 @@ class RencanaKerjaController extends Controller
                 ->make(true);
         }
 
-        $usersWithJabatan = User::whereNotNull('jabatan')
-            ->where('jabatan', '!=', '-')
-            ->orderBy('jabatan')
-            ->get(['id', 'name', 'jabatan']);
+        $usersQuery = User::whereNotNull('jabatan')
+            ->where('jabatan', '!=', '-');
+
+        if ($authUser) {
+            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+                // Superadmin, Admin, Pimpinan Rektorat -> Seluruh Jabatan
+            } elseif ($authUser->isPimpinanUnit()) {
+                // Pimpinan Unit -> Jabatan di unitnya
+                $usersQuery->where('unit', $authUser->unit);
+            } else {
+                // Staff Regular -> Jabatan milik sendiri
+                $usersQuery->where('id', $authUser->id);
+            }
+        }
+
+        $usersWithJabatan = $usersQuery->orderBy('jabatan')->get(['id', 'name', 'jabatan']);
 
         return view('pages.rencanakerja.index', compact('usersWithJabatan'));
     }
@@ -189,7 +213,14 @@ class RencanaKerjaController extends Controller
      */
     public function create()
     {
-        $users = User::all();
+        $authUser = Auth::user();
+        $usersQuery = User::query();
+
+        if ($authUser && !$authUser->isAdmin()) {
+            $usersQuery->where('unit', $authUser->unit);
+        }
+
+        $users = $usersQuery->orderBy('name')->get();
         return view('pages.rencanakerja.create', compact('users'));
     }
 
@@ -228,7 +259,14 @@ class RencanaKerjaController extends Controller
      */
     public function edit(RencanaKerja $rencanaKerja)
     {
-        $users = User::all();
+        $authUser = Auth::user();
+        $usersQuery = User::query();
+
+        if ($authUser && !$authUser->isAdmin()) {
+            $usersQuery->where('unit', $authUser->unit);
+        }
+
+        $users = $usersQuery->orderBy('name')->get();
         return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users'));
     }
 
@@ -469,16 +507,32 @@ class RencanaKerjaController extends Controller
     }
 
     /**
-     * Export Rencana Kerja to Excel (Khusus Superadmin & Admin)
+     * Export Rencana Kerja to Excel (Khusus Pimpinan & Admin)
      */
     public function exportExcel(Request $request)
     {
-        if (!auth()->check() || !in_array(auth()->user()->roles, ['superadmin', 'admin'])) {
-            Alert::error('Gagal', 'Akses ditolak. Fitur ini khusus Superadmin dan Admin.')->toToast();
+        $authUser = Auth::user();
+
+        if (!$authUser || (!$authUser->isPimpinanUnit() && !$authUser->isAdmin())) {
+            Alert::error('Gagal', 'Akses ditolak. Fitur ini khusus Pimpinan dan Admin.')->toToast();
             return redirect()->back();
         }
 
         $query = RencanaKerja::with('user');
+
+        if ($authUser) {
+            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+                // Superadmin, Admin, Pimpinan Rektorat -> Seluruh data
+            } elseif ($authUser->isPimpinanUnit()) {
+                // Pimpinan Unit -> Unit miliknya
+                $query->whereHas('user', function ($q) use ($authUser) {
+                    $q->where('unit', $authUser->unit);
+                });
+            } else {
+                // Staff regular -> Milik sendiri
+                $query->where('user_id', $authUser->id);
+            }
+        }
 
         if ($request->filled('jabatan')) {
             $query->whereHas('user', function ($q) use ($request) {

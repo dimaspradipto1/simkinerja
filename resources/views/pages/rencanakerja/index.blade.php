@@ -103,8 +103,8 @@
 </div><!-- End Page Title -->
 
 <section class="section">
-    @if(auth()->check() && in_array(auth()->user()->roles, ['superadmin', 'admin']))
-    <!-- Top Section: Kriteria Checklist Jabatan (Khusus Superadmin & Admin) -->
+    @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
+    <!-- Top Section: Kriteria Checklist Jabatan (Khusus Pimpinan & Admin) -->
     <div class="row mb-4">
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
@@ -143,15 +143,15 @@
                         Rencana Kerja &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
-                        @if(auth()->check() && in_array(auth()->user()->roles, ['superadmin', 'admin']))
+                        @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
                             <a href="{{ route('rencana-kerja.export-excel', auth()->user()->jabatan ? ['jabatan' => auth()->user()->jabatan] : []) }}" id="btn-export-excel" class="btn btn-sm btn-success text-white fw-semibold text-nowrap" style="background-color: #2d6a4f; border-color: #2d6a4f;">
-                                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Excel
+                                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Laporan
                             </a>
                         @endif
                         <button type="button" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
                             <i class="bi bi-file-earmark-excel text-success me-1"></i> Import Excel
                         </button>
-                        @if(auth()->check() && !in_array(auth()->user()->roles, ['superadmin', 'admin']))
+                        @if(auth()->check() && (!auth()->user()->isPimpinanUnit() && !auth()->user()->isAdmin()))
                             <a href="{{ route('rencana-kerja.create') }}" class="btn btn-green-add text-nowrap">
                                 <i class="bi bi-plus-lg me-1"></i> Tambah Tugas
                             </a>
@@ -232,8 +232,9 @@
             processing: true,
             serverSide: true,
             ordering: false,
+            autoWidth: false,
             ajax: {
-                url: "{{ route('rencana-kerja.index') }}",
+                url: "{{ app()->environment('production') ? str_replace('http:', 'https:', route('rencana-kerja.index')) : route('rencana-kerja.index') }}",
                 data: function(d) {
                     if ($('#filter-jabatan').length) {
                         d.jabatan = $('#filter-jabatan').val();
@@ -494,4 +495,11 @@
         });
     };
 </script>
+@if(isset($dataTable))
+    @if(app()->environment('production'))
+        {!! str_replace('http:', 'https:', $dataTable->scripts()) !!}
+    @else
+        {!! $dataTable->scripts() !!}
+    @endif
+@endif
 @endpush

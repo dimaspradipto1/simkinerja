@@ -4,7 +4,7 @@
       <ul class="sidebar-nav" id="sidebar-nav">
 
           <li class="nav-item">
-              <a class="nav-link " href="index.html">
+              <a class="nav-link " href="{{ route('dashboard') }}">
                   <i class="bi bi-grid"></i>
                   <span>Dashboard</span>
               </a>
@@ -43,19 +43,19 @@
               </a>
           </li>
           <li class="nav-item">
-              <a class="nav-link collapsed" href="users-profile.html">
+              <a class="nav-link collapsed" href="#">
                   <i class="bi bi-person"></i>
                   <span>Pengajaran</span>
               </a>
           </li>
           <li class="nav-item">
-              <a class="nav-link collapsed" href="users-profile.html">
+              <a class="nav-link collapsed" href="#">
                   <i class="bi bi-person"></i>
                   <span>Kepanitian</span>
               </a>
           </li>
           <li class="nav-item">
-              <a class="nav-link collapsed" href="users-profile.html">
+              <a class="nav-link collapsed" href="#">
                   <i class="bi bi-person"></i>
                   <span>Isendetil</span>
               </a>

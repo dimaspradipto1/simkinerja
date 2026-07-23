@@ -202,11 +202,84 @@ class UserSeeder extends Seeder
             }
             $usedEmails[] = $email;
 
+            $usedRole = 'DOSEN';
+            $j = strtoupper($item['jabatan']);
+
+            if (!empty($item['roles']) && strtoupper($item['roles']) === 'SUPERADMIN') {
+                $usedRole = 'SUPER ADMIN';
+            } elseif ($j === 'REKTOR') {
+                $usedRole = 'REKTOR';
+            } elseif ($j === 'WAKIL REKTOR I') {
+                $usedRole = 'WAKIL REKTOR I';
+            } elseif ($j === 'WAKIL REKTOR II') {
+                $usedRole = 'WAKIL REKTOR II';
+            } elseif ($j === 'WAKIL REKTOR III') {
+                $usedRole = 'WAKIL REKTOR III';
+            } elseif (str_contains($j, 'KEPALA LPTI') || str_contains($j, 'KEPALA ICT')) {
+                $usedRole = 'KEPALA ICT';
+            } elseif (str_contains($j, 'PROGRAMMER') || str_contains($j, 'IT SUPPORT') || str_contains($j, 'DIVISI PENGEMBANGAN SISTEM') || str_contains($j, 'DIVISI INFRASTRUKTUR')) {
+                $usedRole = 'ADMIN ICT';
+            } elseif (str_contains($j, 'KA. BIRO ADMINISTRASI AKADEMIK') || str_contains($j, 'KABID. AKADEMIK')) {
+                $usedRole = 'ADMIN AKADEMIK UNIVERSITAS';
+            } elseif (str_contains($j, 'STAFF AKADEMIK FAKULTAS')) {
+                $usedRole = 'STAFF AKADEMIK FAKULTAS';
+            } elseif (str_contains($j, 'LAYANAN KEMAHASISWAAN') || str_contains($j, 'KABID. KEMAHASISWAAN')) {
+                $usedRole = 'ADMIN KEMAHASISWAAN';
+            } elseif (str_contains($j, 'LAYANAN IJAZAH')) {
+                $usedRole = 'ADMIN IJAZAH';
+            } elseif (str_contains($j, 'PERPUSTAKAAN') || str_contains($j, 'PUSTAKAWAN')) {
+                $usedRole = 'ADMIN PERPUSTAKAAN';
+            } elseif (str_contains($j, 'KABID. KEUANGAN') || str_contains($j, 'STAFF KEUANGAN') || str_contains($j, 'KA. BIRO ADMINISTRASI UMUM DAN KEUANGAN')) {
+                $usedRole = 'ADMIN KEUANGAN';
+            } elseif (str_contains($j, 'KASIR')) {
+                $usedRole = 'KASIR';
+            } elseif (str_contains($j, 'SDM') || str_contains($j, 'KEPEGAWAIAN')) {
+                $usedRole = 'ADMIN SDM';
+            } elseif (str_contains($j, 'SARANA DAN PRASARANA') || str_contains($j, 'SARPRAS')) {
+                $usedRole = 'ADMIN SARPRAS';
+            } elseif (str_contains($j, 'HUMAS') || str_contains($j, 'DOKUMENTASI') || str_contains($j, 'WEBSITE')) {
+                $usedRole = 'ADMIN HUMAS';
+            } elseif (str_contains($j, 'KERJASAMA')) {
+                $usedRole = 'ADMIN KERJASAMA';
+            } elseif (str_contains($j, 'PRESTASI')) {
+                $usedRole = 'ADMIN KEMAHASISWAAN PRESTASI';
+            } elseif (str_contains($j, 'PUSAT KARIR') || str_contains($j, 'ALUMNI')) {
+                $usedRole = 'ADMIN KARIR ALUMNI';
+            } elseif (str_contains($j, 'PERENCANAAN')) {
+                $usedRole = 'ADMIN PERENCANAAN';
+            } elseif (str_contains($j, 'KA. LPPM') || str_contains($j, 'PENELITIAN') || str_contains($j, 'PENGABDIAN')) {
+                $usedRole = 'ADMIN LPPM';
+            } elseif (str_contains($j, 'HAKI')) {
+                $usedRole = 'ADMIN HAKI';
+            } elseif (str_contains($j, 'LPMI') || str_contains($j, 'SPMI') || str_contains($j, 'AKREDITASI') || str_contains($j, 'AUDIT MUTU')) {
+                $usedRole = 'ADMIN LPMI';
+            } elseif (str_contains($j, 'DEKAN FAKULTAS')) {
+                $usedRole = 'DEKAN';
+            } elseif (str_contains($j, 'WAKIL DEKAN I')) {
+                $usedRole = 'WAKIL DEKAN I';
+            } elseif (str_contains($j, 'WAKIL DEKAN II')) {
+                $usedRole = 'WAKIL DEKAN II';
+            } elseif (str_contains($j, 'KETUA PROGRAM STUDI')) {
+                $usedRole = 'KAPRODI';
+            } elseif (str_contains($j, 'SEKRETARIS PRODI')) {
+                $usedRole = 'SEKRETARIS PRODI';
+            } elseif (str_contains($j, 'DOSEN PEMBIMBING')) {
+                $usedRole = 'DOSEN PEMBIMBING';
+            } elseif (str_contains($j, 'DOSEN')) {
+                $usedRole = 'DOSEN';
+            } elseif (str_contains($j, 'TATA USAHA') || str_contains($j, 'STAFF TU')) {
+                $usedRole = 'STAFF TU FAKULTAS';
+            } elseif (str_contains($j, 'LABORATORIUM') || str_contains($j, 'LABORAN')) {
+                $usedRole = 'ADMIN LABORATORIUM';
+            } elseif (str_contains($j, 'KA. BIRO')) {
+                $usedRole = 'KEPALA BIRO';
+            }
+
             User::updateOrCreate(
                 ['email' => $email],
                 [
                     'name' => $item['name'],
-                    'roles' => $item['roles'] ?? 'Standar',
+                    'roles' => $usedRole,
                     'nidn' => '-',
                     'jabatan' => $item['jabatan'],
                     'status' => 'Aktif',
