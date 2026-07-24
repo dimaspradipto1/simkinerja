@@ -55,6 +55,9 @@ class RencanaKerjaController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
+                ->addColumn('checkbox', function ($row) {
+                    return '<input type="checkbox" class="form-check-input select-row-checkbox" value="' . $row->id . '" style="cursor: pointer; width: 18px; height: 18px;">';
+                })
                 ->filterColumn('task_details', function ($query, $keyword) {
                     $query->where(function ($q) use ($keyword) {
                         $q->where('uraian_tugas', 'like', "%{$keyword}%")
@@ -341,7 +344,7 @@ class RencanaKerjaController extends Controller
                     'belum' => $belumCount,
                     'percent' => $percent,
                 ])
-                ->rawColumns(['task_details', 'action'])
+                ->rawColumns(['checkbox', 'task_details', 'action'])
                 ->make(true);
         }
 
@@ -362,8 +365,7 @@ class RencanaKerjaController extends Controller
 
         $usersWithJabatan = $usersQuery->orderBy('jabatan')->get(['id', 'name', 'jabatan']);
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
-        $defaultPeriode = PeriodeAkademik::where('nama_periode', '2025/2026 Semester Antara')->first()
-            ?? PeriodeAkademik::first();
+        $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
         return view('pages.rencanakerja.index', compact('usersWithJabatan', 'periodeAkademiks', 'defaultPeriodeId'));
@@ -383,8 +385,7 @@ class RencanaKerjaController extends Controller
 
         $users = $usersQuery->orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
-        $defaultPeriode = PeriodeAkademik::where('nama_periode', '2025/2026 Semester Antara')->first()
-            ?? PeriodeAkademik::first();
+        $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
         return view('pages.rencanakerja.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId'));
@@ -578,6 +579,44 @@ class RencanaKerjaController extends Controller
     }
 
     /**
+     * Delete multiple Rencana Kerja records at once.
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:rencana_kerjas,id',
+        ]);
+
+        $authUser = Auth::user();
+        $query = RencanaKerja::whereIn('id', $request->ids);
+
+        if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
+            $query->where('user_id', $authUser->id);
+        } elseif ($authUser && $authUser->isPimpinanUnit()) {
+            $query->whereHas('user', function ($q) use ($authUser) {
+                $q->where('unit', $authUser->unit);
+            });
+        }
+
+        $items = $query->get();
+        $count = 0;
+
+        foreach ($items as $item) {
+            if ($item->file && Storage::disk('public')->exists($item->file)) {
+                Storage::disk('public')->delete($item->file);
+            }
+            $item->delete();
+            $count++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menghapus {$count} rencana kerja terpilih.",
+        ]);
+    }
+
+    /**
      * Download Excel Import Template
      */
     public function downloadTemplate()
@@ -611,7 +650,7 @@ class RencanaKerjaController extends Controller
 
         // Sample Rows
         $sheet->setCellValue('A2', 'Menyusun Laporan Kinerja Mingguan');
-        $sheet->setCellValue('B2', '2025/2026 Semester Antara');
+        $sheet->setCellValue('B2', '2026/2027 Semester Ganjil');
         $sheet->setCellValue('C2', 'Senin');
         $sheet->setCellValue('D2', date('Y-m-d'));
         $sheet->setCellValue('E2', '08:00');
@@ -619,7 +658,7 @@ class RencanaKerjaController extends Controller
         $sheet->setCellValue('G2', '16:00');
 
         $sheet->setCellValue('A3', 'Mengikuti Rapat Koordinasi Tim');
-        $sheet->setCellValue('B3', '2025/2026 Semester Antara');
+        $sheet->setCellValue('B3', '2026/2027 Semester Ganjil');
         $sheet->setCellValue('C3', 'Selasa');
         $sheet->setCellValue('D3', date('Y-m-d'));
         $sheet->setCellValue('E3', '09:00');
@@ -681,11 +720,8 @@ class RencanaKerjaController extends Controller
             $count = 0;
             $authUserId = auth()->id();
 
-            $defaultPeriode = PeriodeAkademik::where('nama_periode', '2025/2026 Semester Antara')->first()
-                ?? PeriodeAkademik::first();
-            $fallbackPeriodeId = $request->input('periode_akademik_id') ?? ($defaultPeriode ? $defaultPeriode->id : 1);
-
-            $allPeriodes = PeriodeAkademik::all();
+            $defaultPeriode = PeriodeAkademik::first();
+            $fallbackPeriodeId = $request->input('periode_akademik_id') ? (int) $request->input('periode_akademik_id') : ($defaultPeriode ? $defaultPeriode->id : 1);
 
             for ($i = 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
@@ -695,16 +731,8 @@ class RencanaKerjaController extends Controller
                     continue;
                 }
 
-                $rowPeriodeId = $fallbackPeriodeId;
-                if ($periodeIndex !== false && !empty($row[$periodeIndex])) {
-                    $pName = trim((string) $row[$periodeIndex]);
-                    $matchedPeriode = $allPeriodes->first(function ($p) use ($pName) {
-                        return strtolower($p->nama_periode) === strtolower($pName) || stripos($p->nama_periode, $pName) !== false;
-                    });
-                    if ($matchedPeriode) {
-                        $rowPeriodeId = $matchedPeriode->id;
-                    }
-                }
+                $rawPeriode = ($periodeIndex !== false && !empty($row[$periodeIndex])) ? trim((string) $row[$periodeIndex]) : null;
+                $rowPeriodeId = $this->resolvePeriodeAkademik($rawPeriode, $fallbackPeriodeId);
 
                 $hariVal = ($hariIndex !== false && !empty($row[$hariIndex])) ? trim((string) $row[$hariIndex]) : null;
                 $rawEstTglMulai = ($estTglMulaiIndex !== false && !empty($row[$estTglMulaiIndex])) ? $row[$estTglMulaiIndex] : null;
@@ -742,6 +770,56 @@ class RencanaKerjaController extends Controller
             Alert::error('Gagal', 'Gagal memproses file Excel: ' . $e->getMessage())->toToast();
             return redirect()->back();
         }
+    }
+
+    /**
+     * Helper to resolve or create PeriodeAkademik from Excel text.
+     */
+    protected function resolvePeriodeAkademik(?string $rawPeriodeName, int $fallbackPeriodeId): int
+    {
+        $rawPeriodeName = trim((string) $rawPeriodeName);
+
+        if (empty($rawPeriodeName)) {
+            return $fallbackPeriodeId;
+        }
+
+        // 1. Exact match (case-insensitive)
+        $exact = PeriodeAkademik::where('nama_periode', $rawPeriodeName)->first();
+        if ($exact) {
+            return $exact->id;
+        }
+
+        $normalize = function (string $str): string {
+            $s = strtolower($str);
+            $s = str_replace('ganjil', 'gasal', $s);
+            $s = str_replace('semester', '', $s);
+            return preg_replace('/\s+/', ' ', trim($s));
+        };
+
+        $normInput = $normalize($rawPeriodeName);
+        $allPeriodes = PeriodeAkademik::all();
+
+        // 2. Normalized exact match (e.g. "2026/2027 Semester Ganjil" <-> "2026/2027 Gasal")
+        foreach ($allPeriodes as $p) {
+            if ($normalize($p->nama_periode) === $normInput) {
+                return $p->id;
+            }
+        }
+
+        // 3. Substring match
+        foreach ($allPeriodes as $p) {
+            $normDb = $normalize($p->nama_periode);
+            if (!empty($normInput) && (str_contains($normDb, $normInput) || str_contains($normInput, $normDb))) {
+                return $p->id;
+            }
+        }
+
+        // 4. Create new PeriodeAkademik if not found in DB so Excel data is strictly preserved
+        $newPeriode = PeriodeAkademik::firstOrCreate([
+            'nama_periode' => $rawPeriodeName,
+        ]);
+
+        return $newPeriode->id;
     }
 
     /**

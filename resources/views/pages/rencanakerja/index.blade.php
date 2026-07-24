@@ -209,6 +209,9 @@
                         Rencana Kerja &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
+                        <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-danger text-white fw-bold text-nowrap d-none">
+                            <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="selected-count">0</span>)
+                        </button>
                         <button type="button" id="btn-voice-rencanakerja" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
                             <i class="bi bi-volume-up-fill me-1"></i> Suara
                         </button>
@@ -232,6 +235,9 @@
                         <table class="table table-hover w-100" id="rencanakerja-table">
                             <thead>
                                 <tr>
+                                    <th width="3%" class="text-center align-middle">
+                                        <input type="checkbox" id="check-all" class="form-check-input" style="cursor: pointer; width: 18px; height: 18px;" title="Pilih Semua">
+                                    </th>
                                     <th width="4%">No</th>
                                     <th>Uraian Tugas</th>
                                     <th width="25%" class="text-end">Aksi</th>
@@ -323,6 +329,18 @@
                         <a href="{{ route('rencana-kerja.download-template') }}" class="btn btn-sm text-primary p-0 fw-bold border-0 bg-transparent" style="font-size: 0.95rem;">
                             <i class="bi bi-download me-1"></i> Download Template
                         </a>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark mb-2">Periode Akademik Default <span class="text-muted fw-normal" style="font-size: 0.85rem;">(Opsional, jika di Excel kosong)</span></label>
+                        <select name="periode_akademik_id" class="form-select bg-white">
+                            <option value="">-- Otomatis Sesuai Data Excel --</option>
+                            @if(isset($periodeAkademiks))
+                                @foreach($periodeAkademiks as $p)
+                                    <option value="{{ $p->id }}">{{ $p->nama_periode }}</option>
+                                @endforeach
+                            @endif
+                        </select>
                     </div>
 
                     <div class="mb-3">
@@ -572,6 +590,7 @@
                 }
             },
             columns: [
+                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-top pt-3', width: '3%' },
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-semibold text-center align-top pt-3', width: '4%' },
                 { data: 'task_details', name: 'uraian_tugas', searchable: true, className: 'align-middle' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end align-top pt-3 text-nowrap', width: '25%' },
@@ -604,6 +623,124 @@
                 table.ajax.reload();
             });
         }
+
+        // Multi Select & Bulk Delete State Management
+        let selectedIds = new Set();
+
+        function updateBulkDeleteButton() {
+            let count = selectedIds.size;
+            $('#selected-count').text(count);
+            if (count > 0) {
+                $('#btn-bulk-delete').removeClass('d-none');
+            } else {
+                $('#btn-bulk-delete').addClass('d-none');
+            }
+        }
+
+        // Toggle check-all
+        $(document).on('change', '#check-all', function() {
+            let isChecked = $(this).is(':checked');
+            $('.select-row-checkbox').prop('checked', isChecked);
+            $('.select-row-checkbox').each(function() {
+                let val = parseInt($(this).val());
+                if (isChecked) {
+                    selectedIds.add(val);
+                } else {
+                    selectedIds.delete(val);
+                }
+            });
+            updateBulkDeleteButton();
+        });
+
+        // Individual row checkbox change
+        $(document).on('change', '.select-row-checkbox', function() {
+            let val = parseInt($(this).val());
+            if ($(this).is(':checked')) {
+                selectedIds.add(val);
+            } else {
+                selectedIds.delete(val);
+            }
+
+            let totalOnPage = $('.select-row-checkbox').length;
+            let checkedOnPage = $('.select-row-checkbox:checked').length;
+            $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+            $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+
+            updateBulkDeleteButton();
+        });
+
+        // Sync checkbox status on table redraw (pagination, search, reload)
+        table.on('draw', function() {
+            let totalOnPage = $('.select-row-checkbox').length;
+            let checkedOnPage = 0;
+
+            $('.select-row-checkbox').each(function() {
+                let val = parseInt($(this).val());
+                if (selectedIds.has(val)) {
+                    $(this).prop('checked', true);
+                    checkedOnPage++;
+                } else {
+                    $(this).prop('checked', false);
+                }
+            });
+
+            $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+            $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+
+            updateBulkDeleteButton();
+        });
+
+        // Handle Bulk Delete Click
+        $(document).on('click', '#btn-bulk-delete', function() {
+            let ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+
+            Swal.fire({
+                title: 'Hapus Rencana Kerja Terpilih?',
+                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' data rencana kerja terpilih ini secara permanen?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmColor: '#d33',
+                cancelColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Ya, Hapus ' + ids.length + ' Data',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('rencana-kerja.bulk-delete') }}",
+                        type: 'POST',
+                        data: {
+                            "_token": "{{ csrf_token() }}",
+                            "ids": ids
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: response.message,
+                                    showConfirmButton: false,
+                                    timer: 4000,
+                                    timerProgressBar: true
+                                });
+                                selectedIds.clear();
+                                updateBulkDeleteButton();
+                                $('#check-all').prop('checked', false).prop('indeterminate', false);
+                                $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menghapus data terpilih.'
+                            });
+                        }
+                    });
+                }
+            });
+        });
     });
 
     $(document).on('click', '.btn-start-timer', function(e) {
