@@ -216,9 +216,9 @@ class UserSeeder extends Seeder
             } elseif ($j === 'WAKIL REKTOR III') {
                 $usedRole = 'WAKIL REKTOR III';
             } elseif (str_contains($j, 'KEPALA LPTI') || str_contains($j, 'KEPALA ICT')) {
-                $usedRole = 'KEPALA ICT';
+                $usedRole = 'KEPALA LPTI';
             } elseif (str_contains($j, 'PROGRAMMER') || str_contains($j, 'IT SUPPORT') || str_contains($j, 'DIVISI PENGEMBANGAN SISTEM') || str_contains($j, 'DIVISI INFRASTRUKTUR')) {
-                $usedRole = 'ADMIN ICT';
+                $usedRole = 'ADMIN LPTI';
             } elseif (str_contains($j, 'KA. BIRO ADMINISTRASI AKADEMIK') || str_contains($j, 'KABID. AKADEMIK')) {
                 $usedRole = 'ADMIN AKADEMIK UNIVERSITAS';
             } elseif (str_contains($j, 'STAFF AKADEMIK FAKULTAS')) {

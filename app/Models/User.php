@@ -59,7 +59,7 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         $role = strtoupper(trim($this->roles ?? ''));
-        return in_array($role, ['SUPER ADMIN', 'ADMIN ICT', 'SUPERADMIN', 'ADMIN']);
+        return in_array($role, ['SUPER ADMIN', 'ADMIN ICT', 'ADMIN LPTI', 'SUPERADMIN', 'ADMIN']);
     }
 
     /**
@@ -95,7 +95,7 @@ class User extends Authenticatable
         $jabatan = strtoupper($this->jabatan ?? '');
 
         $pimpinanRoles = [
-            'KEPALA BIRO', 'KEPALA ICT', 'DEKAN', 'WAKIL DEKAN I', 'WAKIL DEKAN II', 
+            'KEPALA BIRO', 'KEPALA ICT', 'KEPALA LPTI', 'DEKAN', 'WAKIL DEKAN I', 'WAKIL DEKAN II', 
             'KAPRODI', 'ADMIN PERPUSTAKAAN', 'ADMIN LPPM', 'ADMIN LPMI'
         ];
 

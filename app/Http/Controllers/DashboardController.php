@@ -18,16 +18,15 @@ class DashboardController extends Controller
         if ($user) {
             if ($user->isAdmin() || $user->isPimpinanRektorat()) {
                 // Superadmin, Admin, Rektorat -> Akses seluruh data universitas
-            } elseif ($user->isPimpinanUnit()) {
-                // Pimpinan Unit -> Akses seluruh tugas di unitnya
+            } elseif ($user->unit) {
+                // Pimpinan Unit & Pegawai Unit -> Akses seluruh tugas & pegawai di unitnya
                 $tasksQuery->whereHas('user', function ($q) use ($user) {
                     $q->where('unit', $user->unit);
                 });
                 $usersQuery->where('unit', $user->unit);
             } else {
-                // Staff / Pegawai Regular -> Hanya akses tugas milik sendiri
+                // Staff tanpa unit -> Hanya akses tugas milik sendiri
                 $tasksQuery->where('user_id', $user->id);
-                $usersQuery->where('unit', $user->unit);
             }
         }
 

@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluasiController;
 use App\Http\Controllers\EvaluasiPengenalanWawasanIbnuSinaController;
+use App\Http\Controllers\PeriodeAkademikController;
 use App\Http\Controllers\RencanaKerjaController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -29,9 +30,11 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
         ->name('dashboard');
     Route::put('user/{user}/password', [UserController::class, 'updatePassword'])->name('user.update-password');
     Route::resource('user', UserController::class);
+    Route::resource('periode-akademik', PeriodeAkademikController::class);
 
     Route::get('rencana-kerja/download-template', [RencanaKerjaController::class, 'downloadTemplate'])->name('rencana-kerja.download-template');
     Route::get('rencana-kerja/export-excel', [RencanaKerjaController::class, 'exportExcel'])->name('rencana-kerja.export-excel');
+    Route::get('rencana-kerja/export-pdf', [RencanaKerjaController::class, 'exportPdf'])->name('rencana-kerja.export-pdf');
     Route::post('rencana-kerja/import-excel', [RencanaKerjaController::class, 'importExcel'])->name('rencana-kerja.import-excel');
     Route::post('rencana-kerja/{rencana_kerja}/start', [RencanaKerjaController::class, 'start'])->name('rencana-kerja.start');
     Route::post('rencana-kerja/{rencana_kerja}/stop', [RencanaKerjaController::class, 'stop'])->name('rencana-kerja.stop');

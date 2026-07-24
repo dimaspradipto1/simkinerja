@@ -121,7 +121,7 @@
                             <select class="form-select" id="filter-jabatan">
                                 <option value="">-- Semua Jabatan --</option>
                                 @foreach($usersWithJabatan as $u)
-                                    <option value="{{ $u->jabatan }}" {{ auth()->user()->jabatan == $u->jabatan ? 'selected' : '' }}>
+                                    <option value="{{ $u->jabatan }}" {{ (request('jabatan') == $u->jabatan || (!request()->has('jabatan') && auth()->user()->jabatan == $u->jabatan)) ? 'selected' : '' }}>
                                         {{ $u->jabatan }} - {{ $u->name }}
                                     </option>
                                 @endforeach
@@ -143,10 +143,13 @@
                         Rencana Kerja &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
+                        <button type="button" id="btn-voice-rencanakerja" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
+                            <i class="bi bi-volume-up-fill me-1"></i> Suara
+                        </button>
                         @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
-                            <a href="{{ route('rencana-kerja.export-excel', auth()->user()->jabatan ? ['jabatan' => auth()->user()->jabatan] : []) }}" id="btn-export-excel" class="btn btn-sm btn-success text-white fw-semibold text-nowrap" style="background-color: #2d6a4f; border-color: #2d6a4f;">
-                                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Laporan
-                            </a>
+                            <button type="button" class="btn btn-sm btn-success text-white fw-semibold text-nowrap" style="background-color: #2d6a4f; border-color: #2d6a4f;" data-bs-toggle="modal" data-bs-target="#modalExportExcel">
+                                <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export Laporan
+                            </button>
                         @endif
                         <button type="button" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
                             <i class="bi bi-file-earmark-excel text-success me-1"></i> Import Excel
@@ -177,6 +180,62 @@
         </div>
     </div>
 </section>
+
+<!-- Modal Export Excel & PDF -->
+<div class="modal fade" id="modalExportExcel" tabindex="-1" aria-labelledby="modalExportExcelLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background-color: #15432d;">
+                <h5 class="modal-title fw-bold" id="modalExportExcelLabel">
+                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i> Export Laporan Rencana Kerja
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('rencana-kerja.export-excel') }}" method="GET">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="export_periode_akademik_id" class="form-label fw-bold text-dark mb-1">
+                            Pilih Periode Akademik <span class="text-danger">*</span>
+                        </label>
+                        <select name="periode_akademik_id" id="export_periode_akademik_id" class="form-select bg-white" required>
+                            <option value="">-- Pilih Periode Akademik --</option>
+                            @foreach($periodeAkademiks as $p)
+                                <option value="{{ $p->id }}" {{ $p->id == $defaultPeriodeId ? 'selected' : '' }}>
+                                    {{ $p->nama_periode }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
+                    <div class="mb-3">
+                        <label for="export_jabatan" class="form-label fw-bold text-dark mb-1">
+                            Pilih Jabatan / Staff <span class="text-muted fw-normal">(Opsional)</span>
+                        </label>
+                        <select name="jabatan" id="export_jabatan" class="form-select bg-white">
+                            <option value="">-- Semua Staff / Jabatan --</option>
+                            @foreach($usersWithJabatan as $u)
+                                <option value="{{ $u->jabatan }}">{{ $u->name }} &mdash; {{ $u->jabatan }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+                </div>
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" formaction="{{ route('rencana-kerja.export-excel') }}" class="btn btn-success px-3 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Unduh Excel
+                        </button>
+                        <button type="submit" formaction="{{ route('rencana-kerja.export-pdf') }}" class="btn btn-danger px-3 text-white fw-bold">
+                            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Import Excel -->
 <div class="modal fade" id="modalImportExcel" tabindex="-1" aria-labelledby="modalImportExcelLabel" aria-hidden="true">
@@ -220,6 +279,148 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
+        $('#btn-voice-rencanakerja').on('click', function() {
+            let jabatanVal = $('#filter-jabatan').length ? $('#filter-jabatan').val() : '';
+            let voiceText = "Halaman Laporan Rencana Kerja untuk " + (jabatanVal ? "jabatan " + jabatanVal : "{{ auth()->user()->name }}") + ". ";
+
+            let taskItems = [];
+            if (typeof table !== 'undefined' && table.rows) {
+                let rowsData = table.rows({ search: 'applied' }).data();
+                for (let i = 0; i < rowsData.length; i++) {
+                    let rData = rowsData[i];
+                    if (rData && rData.voice_narration) {
+                        let parts = rData.voice_narration.split('|||');
+                        let uraianTitle = parts[0] || '';
+                        let detailsStr = parts[1] || '';
+                        taskItems.push("Uraian Kerja " + (i + 1) + ": " + uraianTitle + ". " + detailsStr);
+                    }
+                }
+            }
+
+            // Fallback to DOM parsing if DataTables rows are empty or initializing
+            if (taskItems.length === 0) {
+                $('#rencanakerja-table tbody tr').each(function(idx) {
+                    let row = $(this);
+                    let taskTitle = row.find('.text-dark.fw-semibold, .fw-semibold.text-dark, .lh-sm').first().text().trim();
+                    if (taskTitle) {
+                        let textContent = row.text();
+                        let no = idx + 1;
+                        let uraianStr = "Uraian Kerja " + no + ": " + taskTitle + ". ";
+
+                        // Estimasi
+                        let estStr = "Estimasi: ";
+                        let estMatch = textContent.match(/Estimasi Pelaksanaan:\s*([^\n\r\t]+)/i);
+                        if (estMatch && estMatch[1] && estMatch[1].trim() !== '-') {
+                            estStr += estMatch[1].trim() + ". ";
+                        } else {
+                            estStr += "Belum ada. ";
+                        }
+
+                        // Waktu Mulai
+                        let mulaiStr = "Waktu mulai: ";
+                        let mulaiMatch = textContent.match(/Waktu Mulai:\s*([^\n\r\t]+)/i);
+                        if (mulaiMatch && mulaiMatch[1] && mulaiMatch[1].trim() !== '-') {
+                            mulaiStr += mulaiMatch[1].trim() + ". ";
+                        } else {
+                            mulaiStr += "Belum dimulai. ";
+                        }
+
+                        // Waktu Selesai
+                        let selesaiStr = "Waktu selesai: ";
+                        let selesaiMatch = textContent.match(/Waktu Selesai:\s*([^\n\r\t]+)/i);
+                        if (selesaiMatch && selesaiMatch[1] && selesaiMatch[1].trim() !== '-') {
+                            selesaiStr += selesaiMatch[1].trim() + ". ";
+                        } else {
+                            selesaiStr += "Belum selesai. ";
+                        }
+
+                        // Durasi
+                        let durasiStr = "Durasi: ";
+                        let durasiMatch = textContent.match(/Total Durasi:\s*([^\n\r\t]+)/i);
+                        if (durasiMatch && durasiMatch[1] && durasiMatch[1].trim() !== '-') {
+                            durasiStr += durasiMatch[1].trim() + ". ";
+                        } else {
+                            durasiStr += "Belum ada. ";
+                        }
+
+                        // Analisis
+                        let statusText = "Belum Dimulai";
+                        if (textContent.includes("Selesai")) statusText = "Selesai";
+                        else if (textContent.includes("Proses")) statusText = "Proses";
+
+                        let analisisStr = "Analisis: ";
+                        if (statusText === "Selesai") {
+                            analisisStr += "Selesai tepat waktu. ";
+                        } else if (statusText === "Proses") {
+                            analisisStr += "Masih berproses. ";
+                        } else {
+                            analisisStr += "Belum dikerjakan. ";
+                        }
+
+                        // Link Eksternal Only
+                        let hasLink = row.find('.bi-link-45deg, .bi-box-arrow-up-right').length > 0 || textContent.includes('Link External') || textContent.includes('http');
+                        let linkStr = "Link eksternal: " + (hasLink ? "Ada link eksternal." : "Tidak ada link eksternal.") + " ";
+
+                        taskItems.push(uraianStr + estStr + mulaiStr + selesaiStr + durasiStr + analisisStr + linkStr);
+                    }
+                });
+            }
+
+            if (taskItems.length > 0) {
+                voiceText += "Menampilkan " + taskItems.length + " uraian kerja: " + taskItems.join(" ");
+            } else {
+                voiceText += "Belum ada rincian uraian kerja yang ditampilkan pada tabel.";
+            }
+
+            toggleSpeech(voiceText, 'btn-voice-rencanakerja', 'Suara');
+        });
+
+        function toggleSpeech(text, btnId, defaultText) {
+            if (!('speechSynthesis' in window)) {
+                alert('Peramban Anda belum mendukung fitur narasi suara.');
+                return;
+            }
+
+            const btn = $('#' + btnId);
+
+            if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+                window.speechSynthesis.cancel();
+                btn.removeClass('btn-danger').addClass('btn-warning').html('<i class="bi bi-volume-up-fill me-1"></i> ' + defaultText);
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.95;
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+            if (idVoice) utterance.voice = idVoice;
+
+            utterance.onstart = function() {
+                btn.removeClass('btn-warning').addClass('btn-danger').html('<i class="bi bi-stop-fill me-1"></i> Stop');
+            };
+
+            utterance.onend = function() {
+                btn.removeClass('btn-danger').addClass('btn-warning').html('<i class="bi bi-volume-up-fill me-1"></i> ' + defaultText);
+            };
+
+            utterance.onerror = function() {
+                btn.removeClass('btn-danger').addClass('btn-warning').html('<i class="bi bi-volume-up-fill me-1"></i> ' + defaultText);
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Prevent Bootstrap 5 Modal focus trap from blocking Select2 search field input
+        $(document).on('focusin', function(e) {
+            if ($(e.target).closest('.select2-container').length) {
+                e.stopImmediatePropagation();
+            }
+        });
+
         if ($('#filter-jabatan').length) {
             $('#filter-jabatan').select2({
                 theme: 'bootstrap-5',
@@ -227,6 +428,32 @@
                 allowClear: true
             });
         }
+
+        function initExportModalSelect2() {
+            if ($('#export_periode_akademik_id').length) {
+                $('#export_periode_akademik_id').select2({
+                    theme: 'bootstrap-5',
+                    dropdownParent: $('#modalExportExcel'),
+                    placeholder: "Cari & pilih periode akademik...",
+                    allowClear: true
+                });
+            }
+
+            if ($('#export_jabatan').length) {
+                $('#export_jabatan').select2({
+                    theme: 'bootstrap-5',
+                    dropdownParent: $('#modalExportExcel'),
+                    placeholder: "Cari & pilih nama staff / jabatan...",
+                    allowClear: true
+                });
+            }
+        }
+
+        initExportModalSelect2();
+
+        $('#modalExportExcel').on('shown.bs.modal', function () {
+            initExportModalSelect2();
+        });
 
         var table = $('#rencanakerja-table').DataTable({
             processing: true,
@@ -242,9 +469,9 @@
                 }
             },
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-semibold text-center align-middle', width: '4%' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-semibold text-center align-top pt-3', width: '4%' },
                 { data: 'task_details', name: 'uraian_tugas', searchable: true, className: 'align-middle' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end align-middle text-nowrap', width: '25%' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end align-top pt-3 text-nowrap', width: '25%' },
             ],
             language: {
                 search: "Cari Tugas:",
@@ -261,12 +488,8 @@
                 var val = $(this).val();
                 $('#judul-jabatan').text(val ? selectedText.trim() : 'Semua Jabatan');
 
-                if ($('#btn-export-excel').length) {
-                    var exportUrl = "{{ route('rencana-kerja.export-excel') }}";
-                    if (val) {
-                        exportUrl += '?jabatan=' + encodeURIComponent(val);
-                    }
-                    $('#btn-export-excel').attr('href', exportUrl);
+                if ($('#export_jabatan').length) {
+                    $('#export_jabatan').val(val).trigger('change');
                 }
 
                 table.ajax.reload();

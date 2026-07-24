@@ -42,31 +42,37 @@
                   <span>Rencana Kerja</span>
               </a>
           </li>
-          <li class="nav-item">
+          {{-- <li class="nav-item">
               <a class="nav-link collapsed" href="#">
                   <i class="bi bi-person"></i>
                   <span>Pengajaran</span>
               </a>
-          </li>
-          <li class="nav-item">
+          </li> --}}
+          {{-- <li class="nav-item">
               <a class="nav-link collapsed" href="#">
                   <i class="bi bi-person"></i>
                   <span>Kepanitian</span>
               </a>
-          </li>
-          <li class="nav-item">
+          </li> --}}
+          {{-- <li class="nav-item">
               <a class="nav-link collapsed" href="#">
                   <i class="bi bi-person"></i>
                   <span>Isendetil</span>
               </a>
-          </li>
+          </li> --}}
 
-          <li class="nav-heading">Pages</li>
+          <li class="nav-heading">Pengaturan</li>
 
           <li class="nav-item">
               <a class="{{ request()->routeIs('user.*') ? 'nav-link' : 'nav-link collapsed' }}" href="{{ route('user.index') }}">
                   <i class="bi bi-person"></i>
                   <span>Pengguna</span>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('periode-akademik.*') ? 'nav-link' : 'nav-link collapsed' }}" href="{{ route('periode-akademik.index') }}">
+                  <i class="bi bi-calendar-event"></i>
+                  <span>Periode Akademik</span>
               </a>
           </li>
 

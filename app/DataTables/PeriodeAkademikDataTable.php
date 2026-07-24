@@ -2,64 +2,46 @@
 
 namespace App\DataTables;
 
-use App\Models\User;
+use App\Models\PeriodeAkademik;
 use Illuminate\Database\Eloquent\Builder as QueryBuilder;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Builder as HtmlBuilder;
+use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
+use Yajra\DataTables\Html\Editor\Editor;
+use Yajra\DataTables\Html\Editor\Fields;
 use Yajra\DataTables\Services\DataTable;
 
-class UserDataTable extends DataTable
+class PeriodeAkademikDataTable extends DataTable
 {
     /**
      * Build the DataTable class.
      *
-     * @param QueryBuilder<User> $query Results from query() method.
+     * @param QueryBuilder<PeriodeAkademik> $query Results from query() method.
      */
     public function dataTable(QueryBuilder $query): EloquentDataTable
     {
         return (new EloquentDataTable($query))
             ->addIndexColumn()
-            ->editColumn('is_active', function ($row) {
-                return $row->is_active
-                    ? '<span class="badge bg-success">Aktif</span>'
-                    : '<span class="badge bg-danger">Nonaktif</span>';
-            })
             ->addColumn('action', function ($row) {
-                $editUrl = route('user.edit', $row->id);
+                $editUrl = route('periode-akademik.edit', $row->id);
                 $btn = '<div class="d-inline-flex gap-1 flex-nowrap align-items-center">';
                 $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-pencil-square"></i> Edit</a>';
-                $btn .= '<button type="button" onclick="openPasswordModal(' . $row->id . ', \'' . addslashes($row->name) . '\')" class="btn btn-info btn-sm text-white d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-key"></i> Password</button>';
-                $btn .= '<button type="button" onclick="deleteUser(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-trash"></i> Hapus</button>';
+                $btn .= '<button type="button" onclick="deletePeriode(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-trash"></i> Hapus</button>';
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['is_active', 'action']);
+            ->rawColumns(['action']);
     }
 
     /**
      * Get the query source of dataTable.
      *
-     * @return QueryBuilder<User>
+     * @return QueryBuilder<PeriodeAkademik>
      */
-    public function query(User $model): QueryBuilder
+    public function query(PeriodeAkademik $model): QueryBuilder
     {
-        $authUser = auth()->user();
-        $query = $model->newQuery();
-
-        if ($authUser) {
-            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-                // Superadmin, Admin, Pimpinan Rektorat -> Seluruh user
-            } elseif ($authUser->isPimpinanUnit()) {
-                // Pimpinan Unit -> User di unitnya
-                $query->where('unit', $authUser->unit);
-            } else {
-                // Staff regular -> Data diri sendiri
-                $query->where('id', $authUser->id);
-            }
-        }
-
-        return $query;
+        return $model->newQuery()->orderBy('id', 'asc');
     }
 
     /**
@@ -68,7 +50,7 @@ class UserDataTable extends DataTable
     public function html(): HtmlBuilder
     {
         return $this->builder()
-            ->setTableId('user-table')
+            ->setTableId('periodeakademik-table')
             ->columns($this->getColumns())
             ->minifiedAjax()
             ->parameters([
@@ -97,13 +79,7 @@ class UserDataTable extends DataTable
                 ->searchable(false)
                 ->width('4%')
                 ->addClass('text-center align-middle'),
-            Column::make('name')->title('Nama Pegawai')->addClass('text-nowrap align-middle'),
-            Column::make('email')->title('Email')->addClass('text-nowrap align-middle'),
-            Column::make('nidn')->title('NIDN')->addClass('text-nowrap align-middle'),
-            Column::make('unit')->title('Unit')->addClass('text-nowrap align-middle'),
-            Column::make('jabatan')->title('Jabatan')->addClass('text-nowrap align-middle'),
-            Column::make('roles')->title('Role')->addClass('text-nowrap align-middle'),
-            Column::make('is_active')->title('Status')->addClass('text-nowrap text-center align-middle'),
+            Column::make('nama_periode')->title('Nama Periode')->addClass('text-nowrap align-middle'),
             Column::computed('action')
                 ->title('Aksi')
                 ->exportable(false)
@@ -117,6 +93,6 @@ class UserDataTable extends DataTable
      */
     protected function filename(): string
     {
-        return 'User_' . date('YmdHis');
+        return 'PeriodeAkademik_' . date('YmdHis');
     }
 }

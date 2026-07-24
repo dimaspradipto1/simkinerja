@@ -14,7 +14,13 @@ return new class extends Migration
         Schema::create('rencana_kerjas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('periode_akademik_id')->constrained()->cascadeOnDelete();
             $table->text('uraian_tugas');
+            $table->string('hari')->nullable();
+            $table->time('estimasi_jam_mulai')->nullable();
+            $table->time('estimasi_jam_selesai')->nullable();
+            $table->date('estimasi_tanggal_mulai')->nullable();
+            $table->date('estimasi_tanggal_selesai')->nullable();
             $table->time('waktu_mulai')->nullable();
             $table->time('waktu_selesai')->nullable();
             $table->date('tanggal_mulai')->nullable();
