@@ -354,6 +354,20 @@
                     @endphp
                     voiceText += "{{ $uraianStr }}{{ addslashes($estStr) }}{{ addslashes($mulaiStr) }}{{ addslashes($selesaiStr) }}{{ addslashes($durasiStr) }}{{ addslashes($analisisStr) }}{{ addslashes($linkStr) }} ";
                 @endforeach
+
+                @php
+                    $rekapText = " Rekapitulasi capaian kinerja: Dari total " . $totalTugas . " rencana kerja, sebanyak " . $tugasSelesai . " tugas telah selesai, " . $tugasProses . " tugas sedang berproses, dan " . $tugasBelumMulai . " tugas belum dimulai. ";
+                    $rekapText .= "Tingkat capaian kinerja Anda mencapai " . $persentaseSelesai . " persen. ";
+
+                    if ($persentaseSelesai >= 80) {
+                        $rekapText .= "Capaian kinerja Anda sangat bagus dan sangat memuaskan! Pertahankan prestasi kinerja luar biasa ini!";
+                    } elseif ($persentaseSelesai >= 50) {
+                        $rekapText .= "Capaian kinerja Anda sudah baik, mari tingkatkan penyelesaian tugas-tugas yang masih berproses!";
+                    } else {
+                        $rekapText .= "Capaian kinerja Anda perlu peningkatan dan percepatan agar seluruh target tugas dapat rampung tepat waktu!";
+                    }
+                @endphp
+                voiceText += "{{ addslashes($rekapText) }}";
             @else
                 voiceText += "Belum ada rincian rencana kerja terdaftar.";
             @endif

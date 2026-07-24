@@ -75,6 +75,34 @@
         .table td .d-inline-flex {
             flex-wrap: nowrap;
         }
+
+        /* Mobile Edge-to-Edge Fullwidth Layout */
+        @media (max-width: 767.98px) {
+            #main.main {
+                padding: 10px 0 !important;
+            }
+            .pagetitle {
+                padding: 0 6px !important;
+                margin-bottom: 10px !important;
+            }
+            .section {
+                padding: 0 !important;
+            }
+            .card {
+                border-radius: 0 !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                box-shadow: none !important;
+                width: 100% !important;
+            }
+            .card-body {
+                padding: 10px 6px !important;
+            }
+            .card-header-green {
+                border-radius: 0 !important;
+                padding: 12px 10px !important;
+            }
+        }
     </style>
 </head>
 

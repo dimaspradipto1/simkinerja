@@ -54,26 +54,96 @@
     #rencanakerja-table thead {
         display: none; /* Clean list look matching reference screenshot */
     }
-    @media (max-width: 991.98px) {
+    @media (max-width: 767.98px) {
         .card-header-green {
             padding: 12px 14px;
         }
-        .header-title-text {
-            font-size: 0.9rem !important;
+        .card-header-green .header-title-text {
+            font-size: 0.95rem !important;
             line-height: 1.4 !important;
+            margin-bottom: 4px;
         }
-        #rencanakerja-table tbody tr td {
-            padding: 12px 8px;
+        .header-action-group {
+            width: 100% !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            margin-top: 6px;
+        }
+        .header-action-group .btn {
+            flex: 1 1 auto !important;
+            justify-content: center !important;
+            font-size: 0.8rem !important;
+            padding: 6px 10px !important;
         }
         .dataTables_wrapper .dataTables_length,
         .dataTables_wrapper .dataTables_filter {
             float: none !important;
             text-align: left !important;
             margin-bottom: 0.75rem;
+            width: 100% !important;
+        }
+        .dataTables_wrapper .dataTables_filter label {
+            display: flex !important;
+            align-items: center !important;
+            width: 100% !important;
+            gap: 8px;
+            font-weight: 600;
+            color: #475569;
         }
         .dataTables_wrapper .dataTables_filter input {
+            flex-grow: 1 !important;
             width: 100% !important;
             margin-left: 0 !important;
+            border-radius: 6px !important;
+            padding: 6px 12px !important;
+        }
+
+        /* Mobile Card Table Transformation - Stretch 100% Full Width to the Right */
+        #rencanakerja-table {
+            width: 100% !important;
+            display: block !important;
+            border-collapse: separate !important;
+            border-spacing: 0 10px !important;
+        }
+        #rencanakerja-table tbody {
+            display: block !important;
+            width: 100% !important;
+        }
+        #rencanakerja-table tbody tr {
+            display: block !important;
+            width: 100% !important;
+            background: #ffffff;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            padding: 12px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            margin-bottom: 10px !important;
+            box-sizing: border-box !important;
+        }
+        #rencanakerja-table tbody tr td {
+            display: block !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            border: none !important;
+            padding: 4px 0 !important;
+        }
+        #rencanakerja-table tbody tr td:first-child {
+            display: none !important; /* Hide floating number column on mobile for clean card layout */
+        }
+        #rencanakerja-table tbody tr td:last-child {
+            margin-top: 8px;
+            padding-top: 8px !important;
+            border-top: 1px dashed #cbd5e1 !important;
+            width: 100% !important;
+        }
+        .action-buttons-wrap {
+            justify-content: flex-start !important;
+            width: 100% !important;
+            gap: 8px !important;
+        }
+        .action-buttons-wrap .btn {
+            font-size: 0.8rem !important;
         }
         .inline-upload-left {
             border-right: none !important;
@@ -84,10 +154,6 @@
         }
         .inline-upload-right {
             padding-left: 0 !important;
-        }
-        .action-buttons-wrap {
-            justify-content: flex-start !important;
-            margin-top: 8px;
         }
     }
 </style>
@@ -368,6 +434,43 @@
 
             if (taskItems.length > 0) {
                 voiceText += "Menampilkan " + taskItems.length + " uraian kerja: " + taskItems.join(" ");
+
+                // Combined Rekapitulasi Capaian Kinerja across ALL tasks in dataset
+                let totalCount = taskItems.length;
+                let selesaiCount = 0;
+                let prosesCount = 0;
+                let belumCount = 0;
+
+                if (typeof window.latestOverallRekap !== 'undefined' && window.latestOverallRekap) {
+                    totalCount = window.latestOverallRekap.total || taskItems.length;
+                    selesaiCount = window.latestOverallRekap.selesai || 0;
+                    prosesCount = window.latestOverallRekap.proses || 0;
+                    belumCount = window.latestOverallRekap.belum || 0;
+                } else if (typeof table !== 'undefined' && table.rows) {
+                    let rowsData = table.rows().data();
+                    totalCount = rowsData.length;
+                    for (let i = 0; i < rowsData.length; i++) {
+                        let rData = rowsData[i];
+                        let txt = rData ? (rData.task_details || '') + (rData.voice_narration || '') : '';
+                        if (txt.includes('Selesai')) selesaiCount++;
+                        else if (txt.includes('Proses')) prosesCount++;
+                        else belumCount++;
+                    }
+                }
+
+                let percent = totalCount > 0 ? Math.round((selesaiCount / totalCount) * 100) : 0;
+                let rekapStr = " Rekapitulasi keseluruhan capaian kinerja: Dari gabungan " + totalCount + " rencana kerja, sebanyak " + selesaiCount + " tugas telah selesai, " + prosesCount + " tugas sedang berproses, dan " + belumCount + " tugas belum dimulai. ";
+                rekapStr += "Tingkat capaian kinerja Anda secara keseluruhan mencapai " + percent + " persen. ";
+
+                if (percent >= 80) {
+                    rekapStr += "Capaian kinerja Anda sangat bagus dan sangat memuaskan! Pertahankan prestasi kinerja luar biasa ini!";
+                } else if (percent >= 50) {
+                    rekapStr += "Capaian kinerja Anda sudah baik, mari tingkatkan penyelesaian tugas-tugas yang masih berproses!";
+                } else {
+                    rekapStr += "Capaian kinerja Anda perlu peningkatan dan percepatan agar seluruh target tugas dapat rampung tepat waktu!";
+                }
+
+                voiceText += rekapStr;
             } else {
                 voiceText += "Belum ada rincian uraian kerja yang ditampilkan pada tabel.";
             }
@@ -478,7 +581,13 @@
                 lengthMenu: "Tampilkan _MENU_ data",
                 zeroRecords: "Belum ada rencana kerja / checklist tugas untuk jabatan ini",
                 info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ tugas",
-                infoEmpty: "Tidak ada data",
+                infoEmpty: "Tidak ada data"
+            }
+        });
+
+        table.on('xhr.dt', function(e, settings, json, xhr) {
+            if (json && json.overall_rekap) {
+                window.latestOverallRekap = json.overall_rekap;
             }
         });
 

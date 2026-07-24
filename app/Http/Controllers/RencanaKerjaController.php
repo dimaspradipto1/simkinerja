@@ -47,6 +47,12 @@ class RencanaKerjaController extends Controller
 
             $query->latest();
 
+            $totalCount = (clone $query)->count();
+            $selesaiCount = (clone $query)->where('status', 'Selesai')->count();
+            $prosesCount = (clone $query)->where('status', 'Proses')->count();
+            $belumCount = (clone $query)->where('status', 'Belum Dimulai')->count();
+            $percent = $totalCount > 0 ? round(($selesaiCount / $totalCount) * 100) : 0;
+
             return DataTables::of($query)
                 ->addIndexColumn()
                 ->filterColumn('task_details', function ($query, $keyword) {
@@ -138,10 +144,10 @@ class RencanaKerjaController extends Controller
                             $seconds = $diffInSeconds % 60;
 
                             $durasiParts = [];
-                            if ($days > 0) $durasiParts[] = $days . ' hari';
-                            if ($hours > 0) $durasiParts[] = $hours . ' jam';
-                            if ($minutes > 0) $durasiParts[] = $minutes . ' menit';
-                            if ($seconds > 0 || empty($durasiParts)) $durasiParts[] = $seconds . ' detik';
+                            if ($days > 0) $durasiParts[] = $days . 'h';
+                            if ($hours > 0) $durasiParts[] = $hours . 'j';
+                            if ($minutes > 0) $durasiParts[] = $minutes . 'm';
+                            if ($seconds > 0 || empty($durasiParts)) $durasiParts[] = $seconds . 's';
 
                             $durasiStr = implode(' ', $durasiParts);
                         } catch (\Exception $e) {
@@ -149,7 +155,7 @@ class RencanaKerjaController extends Controller
                         }
                     }
 
-                    $html .= '<div class="mt-2 p-3 bg-light rounded border shadow-sm">';
+                    $html .= '<div class="mt-2 p-2 p-sm-3 bg-light rounded border shadow-sm" style="word-break: break-word;">';
                     $html .= '<div class="row g-2 align-items-center">';
                     
                     // Left Column: Estimasi & Mulai
@@ -157,12 +163,12 @@ class RencanaKerjaController extends Controller
                     
                     $html .= '<div class="mb-2">';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-clock-history me-1"></i>Estimasi Pelaksanaan:</label>';
-                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem;">' . e($estFormatted) . '</div>';
+                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($estFormatted) . '</div>';
                     $html .= '</div>';
 
                     $html .= '<div>';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-play-circle-fill text-primary me-1"></i>Waktu Mulai:</label>';
-                    $html .= '<div class="fw-semibold text-primary ps-1" style="font-size: 0.85rem;">' . e($mulaiFormatted) . '</div>';
+                    $html .= '<div class="fw-semibold text-primary ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($mulaiFormatted) . '</div>';
                     $html .= '</div>';
 
                     $html .= '</div>'; // end col left
@@ -172,12 +178,12 @@ class RencanaKerjaController extends Controller
 
                     $html .= '<div class="mb-2">';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-check-circle-fill text-success me-1"></i>Waktu Selesai:</label>';
-                    $html .= '<div class="fw-semibold text-success ps-1" style="font-size: 0.85rem;">' . e($selesaiFormatted) . '</div>';
+                    $html .= '<div class="fw-semibold text-success ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($selesaiFormatted) . '</div>';
                     $html .= '</div>';
 
                     $html .= '<div>';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-hourglass-split me-1"></i>Total Durasi:</label>';
-                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem;">' . e($durasiStr) . '</div>';
+                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($durasiStr) . '</div>';
                     $html .= '</div>';
 
                     $html .= '</div>'; // end col right
@@ -190,13 +196,13 @@ class RencanaKerjaController extends Controller
                         $html .= '<form class="form-inline-upload mt-2 p-3 bg-light rounded border shadow-sm" data-id="' . $row->id . '" enctype="multipart/form-data">';
                         $html .= '<div class="row g-2 align-items-center">';
                         
-                        $html .= '<div class="col-12 col-md-6">';
-                        $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap" style="font-size: 0.78rem;"><i class="bi bi-file-earmark-plus me-1"></i>Unggah Berkas <span class="text-muted fw-normal">(Opsional)</span>:</label>';
+                        $html .= '<div class="col-12 col-md-6 inline-upload-left">';
+                        $html .= '<label class="form-label mb-1 text-secondary small fw-semibold d-block"><i class="bi bi-paperclip me-1"></i>Unggah Berkas Kinerja:</label>';
                         $html .= '<input type="file" name="file" class="form-control form-control-sm bg-white input-file-inline">';
                         $html .= '</div>';
 
-                        $html .= '<div class="col-12 col-md-6">';
-                        $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap" style="font-size: 0.78rem;"><i class="bi bi-link-45deg me-1"></i>Link Eksternal <span class="text-muted fw-normal">(Opsional)</span>:</label>';
+                        $html .= '<div class="col-12 col-md-6 inline-upload-right">';
+                        $html .= '<label class="form-label mb-1 text-secondary small fw-semibold d-block"><i class="bi bi-link-45deg me-1"></i>Tautan Google Drive / External:</label>';
                         $html .= '<input type="url" name="url_external" class="form-control form-control-sm bg-white input-url-inline" placeholder="https://drive.google.com/..." value="' . e($row->url_external ?? '') . '">';
                         $html .= '</div>';
 
@@ -328,6 +334,13 @@ class RencanaKerjaController extends Controller
 
                     return $uraian . '|||' . $estStr . $mulaiStr . $selesaiStr . $durasiStr . $analisisStr . $linkStr;
                 })
+                ->with('overall_rekap', [
+                    'total' => $totalCount,
+                    'selesai' => $selesaiCount,
+                    'proses' => $prosesCount,
+                    'belum' => $belumCount,
+                    'percent' => $percent,
+                ])
                 ->rawColumns(['task_details', 'action'])
                 ->make(true);
         }
