@@ -46,13 +46,13 @@
     .btn-selesai-red:hover {
         background-color: #660000;
     }
-    #rencanakerja-table tbody tr td {
+    #kepanitiaan-table tbody tr td {
         vertical-align: middle;
         padding: 10px 14px;
         border-bottom: 1px solid #edf2f7;
     }
-    #rencanakerja-table thead {
-        display: none; /* Clean list look matching reference screenshot */
+    #kepanitiaan-table thead {
+        display: none;
     }
     @media (max-width: 767.98px) {
         .card-header-green {
@@ -99,18 +99,17 @@
             padding: 6px 12px !important;
         }
 
-        /* Mobile Card Table Transformation - Stretch 100% Full Width to the Right */
-        #rencanakerja-table {
+        #kepanitiaan-table {
             width: 100% !important;
             display: block !important;
             border-collapse: separate !important;
             border-spacing: 0 10px !important;
         }
-        #rencanakerja-table tbody {
+        #kepanitiaan-table tbody {
             display: block !important;
             width: 100% !important;
         }
-        #rencanakerja-table tbody tr {
+        #kepanitiaan-table tbody tr {
             display: block !important;
             width: 100% !important;
             background: #ffffff;
@@ -121,17 +120,17 @@
             margin-bottom: 10px !important;
             box-sizing: border-box !important;
         }
-        #rencanakerja-table tbody tr td {
+        #kepanitiaan-table tbody tr td {
             display: block !important;
             width: 100% !important;
             box-sizing: border-box !important;
             border: none !important;
             padding: 4px 0 !important;
         }
-        #rencanakerja-table tbody tr td:first-child {
-            display: none !important; /* Hide floating number column on mobile for clean card layout */
+        #kepanitiaan-table tbody tr td:first-child {
+            display: none !important;
         }
-        #rencanakerja-table tbody tr td:last-child {
+        #kepanitiaan-table tbody tr td:last-child {
             margin-top: 8px;
             padding-top: 8px !important;
             border-top: 1px dashed #cbd5e1 !important;
@@ -159,24 +158,24 @@
 </style>
 
 <div class="pagetitle">
-    <h1>Rencana Kerja</h1>
+    <h1>Rencana Kerja Kepanitiaan</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active">Rencana Kerja</li>
+            <li class="breadcrumb-item active">Rencana Kerja Kepanitiaan</li>
         </ol>
     </nav>
 </div><!-- End Page Title -->
 
 <section class="section">
     @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
-    <!-- Top Section: Kriteria Checklist Jabatan (Khusus Pimpinan & Admin) -->
+    <!-- Top Section: Kriteria Checklist Jabatan -->
     <div class="row mb-4">
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                    <span class="header-title-text">Kriteria Checklist Jabatan</span>
-                    <a href="{{ route('rencana-kerja.create') }}" class="btn btn-green-add text-nowrap ms-auto ms-md-0">
+                    <span class="header-title-text">Kriteria Checklist Jabatan Kepanitiaan</span>
+                    <a href="{{ route('kepanitiaan.create') }}" class="btn btn-green-add text-nowrap ms-auto ms-md-0">
                         <i class="bi bi-plus-lg me-1"></i> Tambah Tugas
                     </a>
                 </div>
@@ -206,13 +205,13 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                     <div class="header-title-text fw-semibold text-break">
-                        Rencana Kerja &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}</span>
+                        Rencana Kerja Kepanitiaan &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
                         <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-danger text-white fw-bold text-nowrap d-none">
                             <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="selected-count">0</span>)
                         </button>
-                        <button type="button" id="btn-voice-rencanakerja" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
+                        <button type="button" id="btn-voice-kepanitiaan" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
                             <i class="bi bi-volume-up-fill me-1"></i> Suara
                         </button>
                         @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
@@ -224,7 +223,7 @@
                             <i class="bi bi-file-earmark-excel text-success me-1"></i> Import Excel
                         </button>
                         @if(auth()->check() && (!auth()->user()->isPimpinanUnit() && !auth()->user()->isAdmin()))
-                            <a href="{{ route('rencana-kerja.create') }}" class="btn btn-green-add text-nowrap">
+                            <a href="{{ route('kepanitiaan.create') }}" class="btn btn-green-add text-nowrap">
                                 <i class="bi bi-plus-lg me-1"></i> Tambah Tugas
                             </a>
                         @endif
@@ -232,7 +231,7 @@
                 </div>
                 <div class="card-body p-3">
                     <div class="table-responsive">
-                        <table class="table table-hover w-100" id="rencanakerja-table">
+                        <table class="table table-hover w-100" id="kepanitiaan-table">
                             <thead>
                                 <tr>
                                     <th width="3%" class="text-center align-middle">
@@ -259,11 +258,11 @@
         <div class="modal-content border-0 shadow">
             <div class="modal-header text-white" style="background-color: #15432d;">
                 <h5 class="modal-title fw-bold" id="modalExportExcelLabel">
-                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i> Export Laporan Rencana Kerja
+                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i> Export Laporan Kepanitiaan
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('rencana-kerja.export-excel') }}" method="GET">
+            <form action="{{ route('kepanitiaan.export-excel') }}" method="GET">
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label for="export_periode_akademik_id" class="form-label fw-bold text-dark mb-1">
@@ -296,10 +295,10 @@
                 <div class="modal-footer bg-light d-flex justify-content-between">
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
                     <div class="d-flex gap-2">
-                        <button type="submit" formaction="{{ route('rencana-kerja.export-excel') }}" class="btn btn-success px-3 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
+                        <button type="submit" formaction="{{ route('kepanitiaan.export-excel') }}" class="btn btn-success px-3 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
                             <i class="bi bi-file-earmark-excel-fill me-1"></i> Unduh Excel
                         </button>
-                        <button type="submit" formaction="{{ route('rencana-kerja.export-pdf') }}" class="btn btn-danger px-3 text-white fw-bold">
+                        <button type="submit" formaction="{{ route('kepanitiaan.export-pdf') }}" class="btn btn-danger px-3 text-white fw-bold">
                             <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF
                         </button>
                     </div>
@@ -315,18 +314,18 @@
         <div class="modal-content border-0 shadow">
             <div class="modal-header text-white" style="background-color: #2d6a4f;">
                 <h5 class="modal-title fw-bold" id="modalImportExcelLabel">
-                    <i class="bi bi-file-earmark-excel me-2"></i> Import Rencana Kerja Excel
+                    <i class="bi bi-file-earmark-excel me-2"></i> Import Kepanitiaan Excel
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('rencana-kerja.import-excel') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('kepanitiaan.import-excel') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
                     <div class="p-3 mb-3 rounded" style="background-color: #e0f2fe; border: 1px solid #bae6fd;">
                         <p class="mb-1 text-dark" style="font-size: 0.9rem;">
-                            Format header: <strong>uraian_tugas</strong>
+                             Format header: <strong>uraian_tugas</strong>
                         </p>
-                        <a href="{{ route('rencana-kerja.download-template') }}" class="btn btn-sm text-primary p-0 fw-bold border-0 bg-transparent" style="font-size: 0.95rem;">
+                        <a href="{{ route('kepanitiaan.download-template') }}" class="btn btn-sm text-primary p-0 fw-bold border-0 bg-transparent" style="font-size: 0.95rem;">
                             <i class="bi bi-download me-1"></i> Download Template
                         </a>
                     </div>
@@ -365,7 +364,7 @@
         <div class="modal-content border-0 shadow">
             <div class="modal-header text-white" style="background-color: #15432d;">
                 <h5 class="modal-title fw-bold" id="modalQuickTagLabel">
-                    <i class="bi bi-person-plus-fill me-2"></i> Tag Rekan Kerja
+                    <i class="bi bi-person-plus-fill me-2"></i> Tag Rekan Kerja Kepanitiaan
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -403,9 +402,9 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        $('#btn-voice-rencanakerja').on('click', function() {
+        $('#btn-voice-kepanitiaan').on('click', function() {
             let jabatanVal = $('#filter-jabatan').length ? $('#filter-jabatan').val() : '';
-            let voiceText = "Halaman Laporan Rencana Kerja untuk " + (jabatanVal ? "jabatan " + jabatanVal : "{{ auth()->user()->name }}") + ". ";
+            let voiceText = "Halaman Laporan Rencana Kerja Kepanitiaan untuk " + (jabatanVal ? "jabatan " + jabatanVal : "{{ auth()->user()->name }}") + ". ";
 
             let taskItems = [];
             if (typeof table !== 'undefined' && table.rows) {
@@ -413,17 +412,13 @@
                 for (let i = 0; i < rowsData.length; i++) {
                     let rData = rowsData[i];
                     if (rData && rData.voice_narration) {
-                        let parts = rData.voice_narration.split('|||');
-                        let uraianTitle = parts[0] || '';
-                        let detailsStr = parts[1] || '';
-                        taskItems.push("Uraian Kerja " + (i + 1) + ": " + uraianTitle + ". " + detailsStr);
+                        taskItems.push("Uraian Kerja " + (i + 1) + ": " + rData.voice_narration);
                     }
                 }
             }
 
-            // Fallback to DOM parsing if DataTables rows are empty or initializing
             if (taskItems.length === 0) {
-                $('#rencanakerja-table tbody tr').each(function(idx) {
+                $('#kepanitiaan-table tbody tr').each(function(idx) {
                     let row = $(this);
                     let taskTitle = row.find('.text-dark.fw-semibold, .fw-semibold.text-dark, .lh-sm').first().text().trim();
                     if (taskTitle) {
@@ -467,7 +462,6 @@
                             durasiStr += "Belum ada. ";
                         }
 
-                        // Analisis
                         let statusText = "Belum Dimulai";
                         if (textContent.includes("Selesai")) statusText = "Selesai";
                         else if (textContent.includes("Proses")) statusText = "Proses";
@@ -481,7 +475,6 @@
                             analisisStr += "Belum dikerjakan. ";
                         }
 
-                        // Link Eksternal Only
                         let hasLink = row.find('.bi-link-45deg, .bi-box-arrow-up-right').length > 0 || textContent.includes('Link External') || textContent.includes('http');
                         let linkStr = "Link eksternal: " + (hasLink ? "Ada link eksternal." : "Tidak ada link eksternal.") + " ";
 
@@ -493,7 +486,6 @@
             if (taskItems.length > 0) {
                 voiceText += "Menampilkan " + taskItems.length + " uraian kerja: " + taskItems.join(" ");
 
-                // Combined Rekapitulasi Capaian Kinerja across ALL tasks in dataset
                 let totalCount = taskItems.length;
                 let selesaiCount = 0;
                 let prosesCount = 0;
@@ -504,36 +496,26 @@
                     selesaiCount = window.latestOverallRekap.selesai || 0;
                     prosesCount = window.latestOverallRekap.proses || 0;
                     belumCount = window.latestOverallRekap.belum || 0;
-                } else if (typeof table !== 'undefined' && table.rows) {
-                    let rowsData = table.rows().data();
-                    totalCount = rowsData.length;
-                    for (let i = 0; i < rowsData.length; i++) {
-                        let rData = rowsData[i];
-                        let txt = rData ? (rData.task_details || '') + (rData.voice_narration || '') : '';
-                        if (txt.includes('Selesai')) selesaiCount++;
-                        else if (txt.includes('Proses')) prosesCount++;
-                        else belumCount++;
-                    }
                 }
 
                 let percent = totalCount > 0 ? Math.round((selesaiCount / totalCount) * 100) : 0;
-                let rekapStr = " Rekapitulasi keseluruhan capaian kinerja: Dari gabungan " + totalCount + " rencana kerja, sebanyak " + selesaiCount + " tugas telah selesai, " + prosesCount + " tugas sedang berproses, dan " + belumCount + " tugas belum dimulai. ";
-                rekapStr += "Tingkat capaian kinerja Anda secara keseluruhan mencapai " + percent + " persen. ";
+                let rekapStr = " Rekapitulasi keseluruhan capaian kinerja kepanitiaan: Dari " + totalCount + " rencana kerja kepanitiaan, sebanyak " + selesaiCount + " tugas telah selesai, " + prosesCount + " tugas sedang berproses, dan " + belumCount + " tugas belum dimulai. ";
+                rekapStr += "Tingkat capaian kinerja mencapai " + percent + " persen. ";
 
                 if (percent >= 80) {
-                    rekapStr += "Capaian kinerja Anda sangat bagus dan sangat memuaskan! Pertahankan prestasi kinerja luar biasa ini!";
+                    rekapStr += "Capaian sangat bagus! Pertahankan prestasi ini!";
                 } else if (percent >= 50) {
-                    rekapStr += "Capaian kinerja Anda sudah baik, mari tingkatkan penyelesaian tugas-tugas yang masih berproses!";
+                    rekapStr += "Capaian sudah baik, mari tingkatkan penyelesaian tugas!";
                 } else {
-                    rekapStr += "Capaian kinerja Anda perlu peningkatan dan percepatan agar seluruh target tugas dapat rampung tepat waktu!";
+                    rekapStr += "Kinerja perlu peningkatan dan percepatan target!";
                 }
 
                 voiceText += rekapStr;
             } else {
-                voiceText += "Belum ada rincian uraian kerja yang ditampilkan pada tabel.";
+                voiceText += "Belum ada rincian uraian kerja kepanitiaan yang ditampilkan pada tabel.";
             }
 
-            toggleSpeech(voiceText, 'btn-voice-rencanakerja', 'Suara');
+            toggleSpeech(voiceText, 'btn-voice-kepanitiaan', 'Suara');
         });
 
         function toggleSpeech(text, btnId, defaultText) {
@@ -575,7 +557,6 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        // Prevent Bootstrap 5 Modal focus trap from blocking Select2 search field input
         $(document).on('focusin', function(e) {
             if ($(e.target).closest('.select2-container').length) {
                 e.stopImmediatePropagation();
@@ -616,13 +597,13 @@
             initExportModalSelect2();
         });
 
-        var table = $('#rencanakerja-table').DataTable({
+        var table = $('#kepanitiaan-table').DataTable({
             processing: true,
             serverSide: true,
             ordering: false,
             autoWidth: false,
             ajax: {
-                url: "{{ app()->environment('production') ? str_replace('http:', 'https:', route('rencana-kerja.index')) : route('rencana-kerja.index') }}",
+                url: "{{ app()->environment('production') ? str_replace('http:', 'https:', route('kepanitiaan.index')) : route('kepanitiaan.index') }}",
                 data: function(d) {
                     if ($('#filter-jabatan').length) {
                         d.jabatan = $('#filter-jabatan').val();
@@ -638,7 +619,7 @@
             language: {
                 search: "Cari Tugas:",
                 lengthMenu: "Tampilkan _MENU_ data",
-                zeroRecords: "Belum ada rencana kerja / checklist tugas untuk jabatan ini",
+                zeroRecords: "Belum ada rencana kerja kepanitiaan / checklist tugas untuk jabatan ini",
                 info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ tugas",
                 infoEmpty: "Tidak ada data"
             }
@@ -664,7 +645,6 @@
             });
         }
 
-        // Multi Select & Bulk Delete State Management
         let selectedIds = new Set();
 
         function updateBulkDeleteButton() {
@@ -677,7 +657,6 @@
             }
         }
 
-        // Toggle check-all
         $(document).on('change', '#check-all', function() {
             let isChecked = $(this).is(':checked');
             $('.select-row-checkbox').prop('checked', isChecked);
@@ -692,7 +671,6 @@
             updateBulkDeleteButton();
         });
 
-        // Individual row checkbox change
         $(document).on('change', '.select-row-checkbox', function() {
             let val = parseInt($(this).val());
             if ($(this).is(':checked')) {
@@ -709,7 +687,6 @@
             updateBulkDeleteButton();
         });
 
-        // Sync checkbox status on table redraw (pagination, search, reload)
         table.on('draw', function() {
             let totalOnPage = $('.select-row-checkbox').length;
             let checkedOnPage = 0;
@@ -730,7 +707,6 @@
             updateBulkDeleteButton();
         });
 
-        // Quick Tag Modal Handlers
         let currentQuickTagId = null;
 
         if ($('#quick_tagged_users').length) {
@@ -746,13 +722,10 @@
             let btn = $(this);
             currentQuickTagId = btn.data('id');
             let uraian = btn.data('uraian');
-            let tags = btn.data('tags'); // Array of user IDs
+            let tags = btn.data('tags');
 
             $('#quick-tag-uraian').text(uraian);
-            
-            // Set select values
             $('#quick_tagged_users').val(tags).trigger('change');
-
             $('#modalQuickTag').modal('show');
         });
 
@@ -767,7 +740,7 @@
             btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...');
 
             $.ajax({
-                url: "{{ url('rencana-kerja') }}/" + currentQuickTagId + "/update-tags",
+                url: "{{ url('kepanitiaan') }}/" + currentQuickTagId + "/update-tags",
                 type: 'POST',
                 data: formData,
                 success: function(response) {
@@ -801,14 +774,13 @@
             });
         });
 
-        // Handle Bulk Delete Click
         $(document).on('click', '#btn-bulk-delete', function() {
             let ids = Array.from(selectedIds);
             if (ids.length === 0) return;
 
             Swal.fire({
-                title: 'Hapus Rencana Kerja Terpilih?',
-                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' data rencana kerja terpilih ini secara permanen?',
+                title: 'Hapus Rencana Kerja Kepanitiaan Terpilih?',
+                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' data terpilih ini secara permanen?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmColor: '#d33',
@@ -818,7 +790,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ route('rencana-kerja.bulk-delete') }}",
+                        url: "{{ route('kepanitiaan.bulk-delete') }}",
                         type: 'POST',
                         data: {
                             "_token": "{{ csrf_token() }}",
@@ -838,7 +810,7 @@
                                 selectedIds.clear();
                                 updateBulkDeleteButton();
                                 $('#check-all').prop('checked', false).prop('indeterminate', false);
-                                $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                                $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
                             }
                         },
                         error: function(xhr) {
@@ -869,10 +841,9 @@
     $(document).on('click', '.btn-delete-timer', function(e) {
         e.preventDefault();
         var id = $(this).data('id');
-        if (id) window.deleteRencanaKerja(id);
+        if (id) window.deleteKepanitiaan(id);
     });
 
-    // Handle inline file and url_external upload form submit
     $(document).on('submit', '.form-inline-upload', function(e) {
         e.preventDefault();
         var form = $(this);
@@ -884,7 +855,7 @@
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>');
 
         $.ajax({
-            url: "{{ url('rencana-kerja') }}/" + id + "/upload-attachment",
+            url: "{{ url('kepanitiaan') }}/" + id + "/upload-attachment",
             type: 'POST',
             data: formData,
             contentType: false,
@@ -901,7 +872,7 @@
                         timer: 4000,
                         timerProgressBar: true
                     });
-                    $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                    $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
                 }
             },
             error: function(xhr) {
@@ -919,7 +890,6 @@
         });
     });
 
-    // Get current laptop time formatted as HH:mm:ss and date YYYY-MM-DD
     window.getLaptopDateTime = function() {
         var now = new Date();
         var year = now.getFullYear();
@@ -940,7 +910,7 @@
         
         Swal.fire({
             title: 'Konfirmasi Pelaksanaan Tugas',
-            text: 'Waktu mulai pelaksanaan tugas akan dicatat secara otomatis sesuai waktu sistem Anda (' + dt.time + ')',
+            text: 'Waktu mulai pelaksanaan tugas kepanitiaan akan dicatat sesuai waktu sistem Anda (' + dt.time + ')',
             icon: 'question',
             showCancelButton: true,
             confirmColor: '#15432d',
@@ -950,7 +920,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: "{{ url('rencana-kerja') }}/" + id + "/start",
+                    url: "{{ url('kepanitiaan') }}/" + id + "/start",
                     type: 'POST',
                     data: {
                         "_token": "{{ csrf_token() }}",
@@ -968,7 +938,7 @@
                                 timer: 4000,
                                 timerProgressBar: true
                             });
-                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                            $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
                         }
                     },
                     error: function(xhr) {
@@ -988,7 +958,7 @@
 
         Swal.fire({
             title: 'Konfirmasi Penyelesaian Tugas',
-            text: 'Waktu penyelesaian tugas akan dicatat secara otomatis sesuai waktu sistem Anda (' + dt.time + ')',
+            text: 'Waktu penyelesaian tugas kepanitiaan akan dicatat sesuai waktu sistem Anda (' + dt.time + ')',
             icon: 'question',
             showCancelButton: true,
             confirmColor: '#8b0000',
@@ -998,7 +968,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: "{{ url('rencana-kerja') }}/" + id + "/stop",
+                    url: "{{ url('kepanitiaan') }}/" + id + "/stop",
                     type: 'POST',
                     data: {
                         "_token": "{{ csrf_token() }}",
@@ -1016,7 +986,7 @@
                                 timer: 4000,
                                 timerProgressBar: true
                             });
-                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                            $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
                         }
                     },
                     error: function(xhr) {
@@ -1031,10 +1001,10 @@
         });
     };
 
-    window.deleteRencanaKerja = function(id) {
+    window.deleteKepanitiaan = function(id) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
-            text: "Data rencana kerja ini akan dihapus permanen!",
+            text: "Data rencana kerja kepanitiaan ini akan dihapus permanen!",
             icon: 'warning',
             showCancelButton: true,
             confirmColor: '#d33',
@@ -1044,7 +1014,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: "{{ url('rencana-kerja') }}/" + id,
+                    url: "{{ url('kepanitiaan') }}/" + id,
                     type: 'DELETE',
                     data: {
                         "_token": "{{ csrf_token() }}"
@@ -1060,7 +1030,7 @@
                                 timer: 4000,
                                 timerProgressBar: true
                             });
-                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                            $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
                         }
                     },
                     error: function(xhr) {
@@ -1075,11 +1045,4 @@
         });
     };
 </script>
-@if(isset($dataTable))
-    @if(app()->environment('production'))
-        {!! str_replace('http:', 'https:', $dataTable->scripts()) !!}
-    @else
-        {!! $dataTable->scripts() !!}
-    @endif
-@endif
 @endpush

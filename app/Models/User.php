@@ -117,4 +117,14 @@ class User extends Authenticatable
 
         return false;
     }
+
+    public function taggedRencanaKerjas()
+    {
+        return $this->belongsToMany(RencanaKerja::class, 'rencana_kerja_user', 'user_id', 'rencana_kerja_id')->withTimestamps();
+    }
+
+    public function taggedKepanitiaans()
+    {
+        return $this->belongsToMany(Kepanitiaan::class, 'kepanitiaan_user', 'user_id', 'kepanitiaan_id')->withTimestamps();
+    }
 }

@@ -25,19 +25,24 @@ class DashboardController extends Controller
                 });
                 $usersQuery->where('unit', $user->unit);
             } else {
-                // Staff tanpa unit -> Hanya akses tugas milik sendiri
-                $tasksQuery->where('user_id', $user->id);
+                // Staff tanpa unit -> Hanya akses tugas milik sendiri atau yang ditag ke mereka
+                $tasksQuery->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($user) {
+                          $qu->where('users.id', $user->id);
+                      });
+                });
             }
         }
 
         $totalTugas = (clone $tasksQuery)->count();
         $tugasBelumMulai = (clone $tasksQuery)->where('status', 'Belum Dimulai')->count();
-        $tugasProses = (clone $tasksQuery)->where('status', 'Proses')->count();
+        $tugasProses = (clone $tasksQuery)->whereIn('status', ['Proses', 'Berjalan'])->count();
         $tugasSelesai = (clone $tasksQuery)->where('status', 'Selesai')->count();
 
         $persentaseSelesai = $totalTugas > 0 ? round(($tugasSelesai / $totalTugas) * 100) : 0;
 
-        $recentTasks = (clone $tasksQuery)->with('user')->latest()->take(6)->get();
+        $recentTasks = (clone $tasksQuery)->with(['user', 'taggedUsers'])->latest()->take(6)->get();
         $totalPegawai = $usersQuery->count();
 
         return view('layouts.dashboard.index', compact(

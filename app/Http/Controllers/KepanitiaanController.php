@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\RencanaKerjaRequest;
+use App\Http\Requests\KepanitiaanRequest;
 use App\Models\PeriodeAkademik;
-use App\Models\RencanaKerja;
+use App\Models\Kepanitiaan;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
 use Yajra\DataTables\Facades\DataTables;
 
-class RencanaKerjaController extends Controller
+class KepanitiaanController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -23,18 +23,22 @@ class RencanaKerjaController extends Controller
         $authUser = Auth::user();
 
         if ($request->ajax()) {
-            $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
+            $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
 
             if ($authUser) {
                 if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-                    // Superadmin, Admin, Pimpinan Rektorat -> Akses seluruh tugas universitas
+                    // Admin & Rektorat -> All data
                 } elseif ($authUser->isPimpinanUnit()) {
-                    // Pimpinan Unit -> Akses seluruh tugas di unitnya
-                    $query->whereHas('user', function ($q) use ($authUser) {
-                        $q->where('unit', $authUser->unit);
+                    // Pimpinan Unit -> Unit data or tagged
+                    $query->where(function ($q) use ($authUser) {
+                        $q->whereHas('user', function ($qu) use ($authUser) {
+                            $qu->where('unit', $authUser->unit);
+                        })->orWhereHas('taggedUsers', function ($qt) use ($authUser) {
+                            $qt->where('users.id', $authUser->id);
+                        });
                     });
                 } else {
-                    // Staff / Pegawai Regular -> Hanya akses tugas milik sendiri atau yang di-tag ke mereka
+                    // Staff -> Own or tagged
                     $query->where(function ($q) use ($authUser) {
                         $q->where('user_id', $authUser->id)
                           ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
@@ -52,6 +56,10 @@ class RencanaKerjaController extends Controller
                         $qt->where('jabatan', $request->jabatan);
                     });
                 });
+            }
+
+            if ($request->filled('periode_akademik_id')) {
+                $query->where('periode_akademik_id', $request->periode_akademik_id);
             }
 
             $query->latest();
@@ -114,7 +122,7 @@ class RencanaKerjaController extends Controller
                         $html .= '<div class="d-flex flex-wrap align-items-center gap-2 mb-1">' . implode('', $chips) . '</div>';
                     }
 
-                    // 2.5 Special Card for Tagged Users (Rekan Kerja)
+                    // 2.5 Special Card for Tagged Users (Rekan Kerja) - Vertical List Layout
                     if ($row->taggedUsers->count() > 0) {
                         $html .= '<div class="mt-2 p-2 px-3 bg-white rounded border shadow-sm d-flex flex-column gap-1" style="border-left: 4px solid #0284c7 !important; word-break: break-word;">';
                         $html .= '<span class="text-secondary small fw-bold mb-1"><i class="bi bi-people-fill text-info me-1"></i>Rekan Kerja:</span>';
@@ -141,7 +149,7 @@ class RencanaKerjaController extends Controller
                         $html .= '</div>';
                     }
 
-                    // 3. Time Details Card Box (Kiri: Estimasi & Mulai | Kanan: Selesai & Durasi)
+                    // 3. Time Details Card Box
                     $estFormatted = '-';
                     if ($row->estimasi_jam_mulai || $row->estimasi_tanggal_mulai) {
                         $tglEstMulai = $row->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '';
@@ -211,9 +219,8 @@ class RencanaKerjaController extends Controller
                     $html .= '<div class="mt-2 p-2 p-sm-3 bg-light rounded border shadow-sm" style="word-break: break-word;">';
                     $html .= '<div class="row g-2 align-items-center">';
                     
-                    // Left Column: Estimasi & Mulai
+                    // Left Column
                     $html .= '<div class="col-12 col-md-6">';
-                    
                     $html .= '<div class="mb-2">';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-clock-history me-1"></i>Estimasi Pelaksanaan:</label>';
                     $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($estFormatted) . '</div>';
@@ -223,12 +230,10 @@ class RencanaKerjaController extends Controller
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-play-circle-fill text-primary me-1"></i>Waktu Mulai:</label>';
                     $html .= '<div class="fw-semibold text-primary ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($mulaiFormatted) . '</div>';
                     $html .= '</div>';
+                    $html .= '</div>';
 
-                    $html .= '</div>'; // end col left
-
-                    // Right Column: Selesai & Durasi
+                    // Right Column
                     $html .= '<div class="col-12 col-md-6">';
-
                     $html .= '<div class="mb-2">';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-check-circle-fill text-success me-1"></i>Waktu Selesai:</label>';
                     $html .= '<div class="fw-semibold text-success ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($selesaiFormatted) . '</div>';
@@ -238,13 +243,12 @@ class RencanaKerjaController extends Controller
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-hourglass-split me-1"></i>Total Durasi:</label>';
                     $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($durasiStr) . '</div>';
                     $html .= '</div>';
-
-                    $html .= '</div>'; // end col right
+                    $html .= '</div>';
 
                     $html .= '</div>'; // end row
                     $html .= '</div>'; // end card
 
-                    // Form Inline Upload Berkas & Link di bawah nama jika tugas Selesai / Waktu Selesai terisi
+                    // Form Inline Upload
                     if (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') {
                         $html .= '<form class="form-inline-upload mt-2 p-3 bg-light rounded border shadow-sm" data-id="' . $row->id . '" enctype="multipart/form-data">';
                         $html .= '<div class="row g-2 align-items-center">';
@@ -263,7 +267,7 @@ class RencanaKerjaController extends Controller
                         $html .= '<button type="submit" class="btn btn-sm text-white px-4 fw-bold btn-simpan-inline" style="background-color: #15432d; border-color: #15432d; height: 32px;"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan</button>';
                         $html .= '</div>';
 
-                        // Hasil Tersimpan (Di bawah Tombol Simpan)
+                        // Hasil Tersimpan
                         $html .= '<div class="col-12 mt-3 pt-2 border-top">';
                         $html .= '<div class="d-flex align-items-center flex-wrap gap-2">';
                         $html .= '<span class="text-dark small fw-bold me-2"><i class="bi bi-folder-check me-1"></i>Hasil Tersimpan:</span>';
@@ -283,10 +287,10 @@ class RencanaKerjaController extends Controller
                         if (!$hasResult) {
                             $html .= '<span class="text-muted small fst-italic">Belum ada berkas atau link tersimpan</span>';
                         }
-                        $html .= '</div>'; // end flex
-                        $html .= '</div>'; // end col-12
+                        $html .= '</div>';
+                        $html .= '</div>';
 
-                        $html .= '</div>'; // end row
+                        $html .= '</div>';
                         $html .= '</form>';
                     }
 
@@ -317,120 +321,70 @@ class RencanaKerjaController extends Controller
                     }
 
                     if ($canEditDelete) {
-                        $editUrl = route('rencana-kerja.edit', $row->id);
+                        $editUrl = route('kepanitiaan.edit', $row->id);
                         $btn .= '<button type="button" class="btn btn-sm btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center me-1" style="height: 32px; width: 32px; padding: 0;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i></button>';
                         $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center me-1" style="height: 32px; width: 32px; padding: 0;" title="Edit Tugas"><i class="bi bi-pencil"></i></a>';
-                        $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.deleteRencanaKerja(' . $row->id . ')" class="btn btn-sm btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center" style="height: 32px; width: 32px; padding: 0;" title="Hapus Tugas"><i class="bi bi-trash"></i></button>';
+                        $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.deleteKepanitiaan(' . $row->id . ')" class="btn btn-sm btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center" style="height: 32px; width: 32px; padding: 0;" title="Hapus Tugas"><i class="bi bi-trash"></i></button>';
                     }
                     $btn .= '</div>';
                     return $btn;
                 })
                 ->addColumn('voice_narration', function ($row) {
                     $uraian = e($row->uraian_tugas);
-
-                    // Estimasi
                     $estMulai = !empty($row->estimasi_tanggal_mulai) ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '';
                     $estJamMulai = !empty($row->estimasi_jam_mulai) ? substr($row->estimasi_jam_mulai, 0, 5) : '';
                     $estSelesai = !empty($row->estimasi_tanggal_selesai) ? date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) : '';
                     $estJamSelesai = !empty($row->estimasi_jam_selesai) ? substr($row->estimasi_jam_selesai, 0, 5) : '';
 
-                    $estStr = 'Estimasi: ';
-                    if ($estMulai && $estSelesai && $estMulai === $estSelesai) {
-                        $estStr .= $estMulai . ($estJamMulai || $estJamSelesai ? ' jam ' . $estJamMulai . ' sampai ' . $estJamSelesai . ' WIB' : '');
-                    } elseif ($estMulai || $estSelesai) {
-                        $estStr .= trim($estMulai . ' ' . $estJamMulai . ' WIB sampai ' . $estSelesai . ' ' . $estJamSelesai . ' WIB');
-                    } else {
-                        $estStr .= 'Belum ada';
+                    $narration = "Tugas: " . $uraian . ". ";
+                    if ($estMulai) {
+                        $narration .= "Estimasi mulai tanggal " . $estMulai;
+                        if ($estJamMulai) $narration .= " pukul " . $estJamMulai;
+                        $narration .= ". ";
                     }
-                    $estStr .= '. ';
-
-                    // Waktu Mulai
-                    $tglM = !empty($row->tanggal_mulai) ? date('d/m/Y', strtotime($row->tanggal_mulai)) . ' ' : '';
-                    $mulaiStr = 'Waktu mulai: ' . (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00' ? $tglM . 'jam ' . substr($row->waktu_mulai, 0, 5) . ' WIB' : 'Belum dimulai') . '. ';
-
-                    // Waktu Selesai
-                    $tglS = !empty($row->tanggal_selesai) ? date('d/m/Y', strtotime($row->tanggal_selesai)) . ' ' : '';
-                    $selesaiStr = 'Waktu selesai: ' . (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00' ? $tglS . 'jam ' . substr($row->waktu_selesai, 0, 5) . ' WIB' : 'Belum selesai') . '. ';
-
-                    // Durasi
-                    $durasiStr = 'Durasi: ';
-                    if (!empty($row->waktu_mulai) && !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') {
-                        try {
-                            $tglMulaiStr = !empty($row->tanggal_mulai) ? $row->tanggal_mulai : now()->format('Y-m-d');
-                            $tglSelesaiStr = !empty($row->tanggal_selesai) ? $row->tanggal_selesai : $tglMulaiStr;
-                            $startTs = strtotime($tglMulaiStr . ' ' . $row->waktu_mulai);
-                            $endTs = strtotime($tglSelesaiStr . ' ' . $row->waktu_selesai);
-                            $diffInSeconds = max(0, $endTs - $startTs);
-                            $hours = floor($diffInSeconds / 3600);
-                            $minutes = floor(($diffInSeconds % 3600) / 60);
-                            $seconds = $diffInSeconds % 60;
-                            $dParts = [];
-                            if ($hours > 0) $dParts[] = $hours . ' jam';
-                            if ($minutes > 0) $dParts[] = $minutes . ' menit';
-                            if ($seconds > 0 || empty($dParts)) $dParts[] = $seconds . ' detik';
-                            $durasiStr .= implode(' ', $dParts);
-                        } catch (\Exception $e) {
-                            $durasiStr .= 'Belum ada';
-                        }
-                    } else {
-                        $durasiStr .= 'Belum ada';
+                    if ($estSelesai) {
+                        $narration .= "Estimasi selesai tanggal " . $estSelesai;
+                        if ($estJamSelesai) $narration .= " pukul " . $estJamSelesai;
+                        $narration .= ". ";
                     }
-                    $durasiStr .= '. ';
-
-                    // Analisis Ketepatan Waktu
-                    $analisisStr = 'Analisis: ';
-                    if ($row->status === 'Selesai') {
-                        if (!empty($row->estimasi_tanggal_selesai) && !empty($row->tanggal_selesai)) {
-                            $estEnd = strtotime($row->estimasi_tanggal_selesai . ' ' . ($row->estimasi_jam_selesai ?? '23:59:59'));
-                            $actEnd = strtotime($row->tanggal_selesai . ' ' . ($row->waktu_selesai ?? '00:00:00'));
-                            $analisisStr .= ($actEnd <= $estEnd) ? 'Selesai tepat waktu.' : 'Selesai terlambat.';
-                        } else {
-                            $analisisStr .= 'Selesai tepat waktu.';
-                        }
-                    } elseif ($row->status === 'Proses') {
-                        $analisisStr .= 'Masih berproses.';
-                    } else {
-                        $analisisStr .= 'Belum dikerjakan.';
-                    }
-                    $analisisStr .= ' ';
-
-                    // Link Eksternal Only
-                    $linkStr = 'Link eksternal: ' . (!empty($row->url_external) ? 'Ada link eksternal.' : 'Tidak ada link eksternal.') . ' ';
-
-                    return $uraian . '|||' . $estStr . $mulaiStr . $selesaiStr . $durasiStr . $analisisStr . $linkStr;
+                    return $narration;
                 })
+                ->addColumn('attachment_status', function ($row) {
+                    $hasFile = !empty($row->file) ? 1 : 0;
+                    $hasUrl = !empty($row->url_external) ? 1 : 0;
+                    return ($hasFile || $hasUrl) ? 1 : 0;
+                })
+                ->rawColumns(['checkbox', 'task_details', 'action'])
                 ->with('overall_rekap', [
                     'total' => $totalCount,
                     'selesai' => $selesaiCount,
                     'proses' => $prosesCount,
                     'belum' => $belumCount,
-                    'percent' => $percent,
+                    'percent' => $percent
                 ])
-                ->rawColumns(['checkbox', 'task_details', 'action'])
                 ->make(true);
         }
 
-        $usersQuery = User::whereNotNull('jabatan')
-            ->where('jabatan', '!=', '-');
-
+        $usersWithJabatan = [];
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-                // Superadmin, Admin, Pimpinan Rektorat -> Seluruh Jabatan
+                $usersWithJabatan = User::whereNotNull('jabatan')
+                    ->where('jabatan', '!=', '')
+                    ->orderBy('jabatan', 'asc')
+                    ->get();
             } elseif ($authUser->isPimpinanUnit()) {
-                // Pimpinan Unit -> Jabatan di unitnya
-                $usersQuery->where('unit', $authUser->unit);
-            } else {
-                // Staff Regular -> Jabatan milik sendiri
-                $usersQuery->where('id', $authUser->id);
+                $usersWithJabatan = User::whereNotNull('jabatan')
+                    ->where('jabatan', '!=', '')
+                    ->where('unit', $authUser->unit)
+                    ->orderBy('jabatan', 'asc')
+                    ->get();
             }
         }
 
-        $usersWithJabatan = $usersQuery->orderBy('jabatan')->get(['id', 'name', 'jabatan']);
-        $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
-        $defaultPeriode = PeriodeAkademik::first();
-        $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
+        $periodeAkademiks = PeriodeAkademik::orderBy('nama_periode', 'desc')->get();
+        $defaultPeriodeId = PeriodeAkademik::latest()->first()->id ?? null;
 
-        return view('pages.rencanakerja.index', compact('usersWithJabatan', 'periodeAkademiks', 'defaultPeriodeId'));
+        return view('pages.kepanitiaan.index', compact('usersWithJabatan', 'periodeAkademiks', 'defaultPeriodeId'));
     }
 
     /**
@@ -450,19 +404,19 @@ class RencanaKerjaController extends Controller
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
-        return view('pages.rencanakerja.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId'));
+        return view('pages.kepanitiaan.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(RencanaKerjaRequest $request)
+    public function store(KepanitiaanRequest $request)
     {
         $validated = $request->validated();
         $validated['user_id'] = $validated['user_id'] ?? Auth::id();
 
         if ($request->hasFile('file')) {
-            $validated['file'] = $request->file('file')->store('rencana_kerja', 'public');
+            $validated['file'] = $request->file('file')->store('kepanitiaan', 'public');
         }
 
         if ($request->has('start_now') && $request->start_now) {
@@ -473,28 +427,28 @@ class RencanaKerjaController extends Controller
             $validated['status'] = 'Belum Dimulai';
         }
 
-        $rencanaKerja = RencanaKerja::create($validated);
+        $kepanitiaan = Kepanitiaan::create($validated);
 
         if ($request->has('tagged_users')) {
-            $rencanaKerja->taggedUsers()->sync($request->input('tagged_users'));
+            $kepanitiaan->taggedUsers()->sync($request->input('tagged_users'));
         }
 
-        Alert::success('Berhasil', 'Rencana Kerja berhasil ditambahkan')
+        Alert::success('Berhasil', 'Kepanitiaan berhasil ditambahkan')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('rencana-kerja.index');
+        return redirect()->route('kepanitiaan.index');
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(RencanaKerja $rencanaKerja)
+    public function edit(Kepanitiaan $kepanitiaan)
     {
         $authUser = Auth::user();
         if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
-            if ($rencanaKerja->user_id !== $authUser->id) {
+            if ($kepanitiaan->user_id !== $authUser->id) {
                 abort(403, 'Anda tidak memiliki hak akses untuk mengedit tugas ini.');
             }
         }
@@ -508,17 +462,17 @@ class RencanaKerjaController extends Controller
         $users = $usersQuery->orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
 
-        return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users', 'periodeAkademiks'));
+        return view('pages.kepanitiaan.edit', compact('kepanitiaan', 'users', 'periodeAkademiks'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(RencanaKerjaRequest $request, RencanaKerja $rencanaKerja)
+    public function update(KepanitiaanRequest $request, Kepanitiaan $kepanitiaan)
     {
         $authUser = Auth::user();
         if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
-            if ($rencanaKerja->user_id !== $authUser->id) {
+            if ($kepanitiaan->user_id !== $authUser->id) {
                 abort(403, 'Anda tidak memiliki hak akses untuk memperbarui tugas ini.');
             }
         }
@@ -526,33 +480,33 @@ class RencanaKerjaController extends Controller
         $validated = $request->validated();
 
         if ($request->hasFile('file')) {
-            if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
-                Storage::disk('public')->delete($rencanaKerja->file);
+            if ($kepanitiaan->file && Storage::disk('public')->exists($kepanitiaan->file)) {
+                Storage::disk('public')->delete($kepanitiaan->file);
             }
-            $validated['file'] = $request->file('file')->store('rencana_kerja', 'public');
+            $validated['file'] = $request->file('file')->store('kepanitiaan', 'public');
         }
 
-        $rencanaKerja->update($validated);
+        $kepanitiaan->update($validated);
 
-        $rencanaKerja->taggedUsers()->sync($request->input('tagged_users', []));
+        $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
 
-        Alert::success('Berhasil', 'Rencana Kerja berhasil diperbarui')
+        Alert::success('Berhasil', 'Kepanitiaan berhasil diperbarui')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('rencana-kerja.index');
+        return redirect()->route('kepanitiaan.index');
     }
 
     /**
      * Start task timer (Play button).
      */
-    public function start(Request $request, RencanaKerja $rencanaKerja)
+    public function start(Request $request, Kepanitiaan $kepanitiaan)
     {
         $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
         $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
 
-        $rencanaKerja->update([
+        $kepanitiaan->update([
             'waktu_mulai' => $clientTime,
             'tanggal_mulai' => $clientDate,
             'status' => 'Berjalan',
@@ -567,7 +521,7 @@ class RencanaKerjaController extends Controller
     /**
      * Stop task timer (Stop button).
      */
-    public function stop(Request $request, RencanaKerja $rencanaKerja)
+    public function stop(Request $request, Kepanitiaan $kepanitiaan)
     {
         $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
         $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
@@ -579,17 +533,17 @@ class RencanaKerjaController extends Controller
         ];
 
         if ($request->hasFile('file')) {
-            if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
-                Storage::disk('public')->delete($rencanaKerja->file);
+            if ($kepanitiaan->file && Storage::disk('public')->exists($kepanitiaan->file)) {
+                Storage::disk('public')->delete($kepanitiaan->file);
             }
-            $updateData['file'] = $request->file('file')->store('rencana_kerja', 'public');
+            $updateData['file'] = $request->file('file')->store('kepanitiaan', 'public');
         }
 
         if ($request->filled('url_external')) {
             $updateData['url_external'] = $request->input('url_external');
         }
 
-        $rencanaKerja->update($updateData);
+        $kepanitiaan->update($updateData);
 
         return response()->json([
             'success' => true,
@@ -598,19 +552,19 @@ class RencanaKerjaController extends Controller
     }
 
     /**
-     * Upload attachment (file & url_external) inline.
+     * Upload attachment inline.
      */
-    public function uploadAttachment(Request $request, RencanaKerja $rencanaKerja)
+    public function uploadAttachment(Request $request, Kepanitiaan $kepanitiaan)
     {
         $updateData = [];
 
         if ($request->hasFile('file')) {
             $uploadedFile = $request->file('file');
             if ($uploadedFile->isValid()) {
-                if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
-                    Storage::disk('public')->delete($rencanaKerja->file);
+                if ($kepanitiaan->file && Storage::disk('public')->exists($kepanitiaan->file)) {
+                    Storage::disk('public')->delete($kepanitiaan->file);
                 }
-                $updateData['file'] = $uploadedFile->store('rencana_kerja', 'public');
+                $updateData['file'] = $uploadedFile->store('kepanitiaan', 'public');
             } else {
                 return response()->json([
                     'success' => false,
@@ -624,7 +578,7 @@ class RencanaKerjaController extends Controller
         }
 
         if (!empty($updateData)) {
-            $rencanaKerja->update($updateData);
+            $kepanitiaan->update($updateData);
         }
 
         return response()->json([
@@ -636,11 +590,11 @@ class RencanaKerjaController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, RencanaKerja $rencanaKerja)
+    public function destroy(Request $request, Kepanitiaan $kepanitiaan)
     {
         $authUser = Auth::user();
         if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
-            if ($rencanaKerja->user_id !== $authUser->id) {
+            if ($kepanitiaan->user_id !== $authUser->id) {
                 if ($request->ajax()) {
                     return response()->json([
                         'success' => false,
@@ -651,39 +605,39 @@ class RencanaKerjaController extends Controller
             }
         }
 
-        if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
-            Storage::disk('public')->delete($rencanaKerja->file);
+        if ($kepanitiaan->file && Storage::disk('public')->exists($kepanitiaan->file)) {
+            Storage::disk('public')->delete($kepanitiaan->file);
         }
 
-        $rencanaKerja->delete();
+        $kepanitiaan->delete();
 
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Rencana Kerja berhasil dihapus'
+                'message' => 'Kepanitiaan berhasil dihapus'
             ]);
         }
 
-        Alert::success('Berhasil', 'Rencana Kerja berhasil dihapus')
+        Alert::success('Berhasil', 'Kepanitiaan berhasil dihapus')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('rencana-kerja.index');
+        return redirect()->route('kepanitiaan.index');
     }
 
     /**
-     * Delete multiple Rencana Kerja records at once.
+     * Delete multiple records at once.
      */
     public function bulkDelete(Request $request)
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:rencana_kerjas,id',
+            'ids.*' => 'integer|exists:kepanitiaans,id',
         ]);
 
         $authUser = Auth::user();
-        $query = RencanaKerja::whereIn('id', $request->ids);
+        $query = Kepanitiaan::whereIn('id', $request->ids);
 
         if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
             $query->where('user_id', $authUser->id);
@@ -706,7 +660,35 @@ class RencanaKerjaController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil menghapus {$count} rencana kerja terpilih.",
+            'message' => "Berhasil menghapus {$count} rencana kerja kepanitiaan terpilih.",
+        ]);
+    }
+
+    /**
+     * Quick update tagged users via modal.
+     */
+    public function updateTags(Request $request, Kepanitiaan $kepanitiaan)
+    {
+        $authUser = Auth::user();
+        if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
+            if ($kepanitiaan->user_id !== $authUser->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki hak akses untuk mengubah tag tugas ini.'
+                ], 403);
+            }
+        }
+
+        $request->validate([
+            'tagged_users' => ['nullable', 'array'],
+            'tagged_users.*' => ['exists:users,id'],
+        ]);
+
+        $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rekan kerja berhasil diperbarui.'
         ]);
     }
 
@@ -717,9 +699,8 @@ class RencanaKerjaController extends Controller
     {
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Template Rencana Kerja');
+        $sheet->setTitle('Template Kepanitiaan');
 
-        // Header Columns
         $headers = [
             'A1' => 'uraian_tugas',
             'B1' => 'periode_akademik',
@@ -734,7 +715,6 @@ class RencanaKerjaController extends Controller
             $sheet->setCellValue($cell, $val);
         }
 
-        // Style Header
         $headerRange = 'A1:G1';
         $sheet->getStyle($headerRange)->getFont()->setBold(true);
         $sheet->getStyle($headerRange)->getFill()
@@ -742,8 +722,7 @@ class RencanaKerjaController extends Controller
             ->getStartColor()->setARGB('15432D');
         $sheet->getStyle($headerRange)->getFont()->getColor()->setARGB('FFFFFF');
 
-        // Sample Rows
-        $sheet->setCellValue('A2', 'Menyusun Laporan Kinerja Mingguan');
+        $sheet->setCellValue('A2', 'Kepanitiaan Laporan Kinerja Mingguan');
         $sheet->setCellValue('B2', '2026/2027 Semester Ganjil');
         $sheet->setCellValue('C2', 'Senin');
         $sheet->setCellValue('D2', date('Y-m-d'));
@@ -751,20 +730,12 @@ class RencanaKerjaController extends Controller
         $sheet->setCellValue('F2', date('Y-m-d'));
         $sheet->setCellValue('G2', '16:00');
 
-        $sheet->setCellValue('A3', 'Mengikuti Rapat Koordinasi Tim');
-        $sheet->setCellValue('B3', '2026/2027 Semester Ganjil');
-        $sheet->setCellValue('C3', 'Selasa');
-        $sheet->setCellValue('D3', date('Y-m-d'));
-        $sheet->setCellValue('E3', '09:00');
-        $sheet->setCellValue('F3', date('Y-m-d'));
-        $sheet->setCellValue('G3', '11:30');
-
         foreach (range('A', 'G') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        $filename = 'template_import_rencana_kerja.xlsx';
+        $filename = 'template_import_kepanitiaan.xlsx';
 
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
@@ -774,7 +745,7 @@ class RencanaKerjaController extends Controller
     }
 
     /**
-     * Import Rencana Kerja from Excel File
+     * Import from Excel file.
      */
     public function importExcel(Request $request)
     {
@@ -794,16 +765,11 @@ class RencanaKerjaController extends Controller
                 return redirect()->back();
             }
 
-            // Detect header columns
             $header = array_map(function ($h) {
                 return strtolower(trim((string) $h));
             }, $rows[0]);
 
-            $uraianIndex = array_search('uraian_tugas', $header);
-            if ($uraianIndex === false) {
-                $uraianIndex = 0;
-            }
-
+            $uraianIndex = array_search('uraian_tugas', $header) ?: 0;
             $periodeIndex = array_search('periode_akademik', $header);
             $hariIndex = array_search('hari', $header);
             $estTglMulaiIndex = array_search('estimasi_tanggal_mulai', $header);
@@ -813,7 +779,6 @@ class RencanaKerjaController extends Controller
 
             $count = 0;
             $authUserId = auth()->id();
-
             $defaultPeriode = PeriodeAkademik::first();
             $fallbackPeriodeId = $request->input('periode_akademik_id') ? (int) $request->input('periode_akademik_id') : ($defaultPeriode ? $defaultPeriode->id : 1);
 
@@ -839,7 +804,7 @@ class RencanaKerjaController extends Controller
                 $estTglSelesaiVal = $this->parseExcelDate($rawEstTglSelesai);
                 $estJamSelesaiVal = $this->parseExcelTime($rawEstJamSelesai);
 
-                RencanaKerja::create([
+                Kepanitiaan::create([
                     'user_id' => $authUserId,
                     'periode_akademik_id' => $rowPeriodeId,
                     'uraian_tugas' => $uraianTugas,
@@ -854,7 +819,7 @@ class RencanaKerjaController extends Controller
                 $count++;
             }
 
-            Alert::success('Berhasil', "Berhasil mengimpor {$count} data Rencana Kerja.")
+            Alert::success('Berhasil', "Berhasil mengimpor {$count} data Rencana Kerja Kepanitiaan.")
                 ->toToast()
                 ->autoClose(4000)
                 ->timerProgressBar();
@@ -866,22 +831,13 @@ class RencanaKerjaController extends Controller
         }
     }
 
-    /**
-     * Helper to resolve or create PeriodeAkademik from Excel text.
-     */
     protected function resolvePeriodeAkademik(?string $rawPeriodeName, int $fallbackPeriodeId): int
     {
         $rawPeriodeName = trim((string) $rawPeriodeName);
+        if (empty($rawPeriodeName)) return $fallbackPeriodeId;
 
-        if (empty($rawPeriodeName)) {
-            return $fallbackPeriodeId;
-        }
-
-        // 1. Exact match (case-insensitive)
         $exact = PeriodeAkademik::where('nama_periode', $rawPeriodeName)->first();
-        if ($exact) {
-            return $exact->id;
-        }
+        if ($exact) return $exact->id;
 
         $normalize = function (string $str): string {
             $s = strtolower($str);
@@ -893,14 +849,10 @@ class RencanaKerjaController extends Controller
         $normInput = $normalize($rawPeriodeName);
         $allPeriodes = PeriodeAkademik::all();
 
-        // 2. Normalized exact match (e.g. "2026/2027 Semester Ganjil" <-> "2026/2027 Gasal")
         foreach ($allPeriodes as $p) {
-            if ($normalize($p->nama_periode) === $normInput) {
-                return $p->id;
-            }
+            if ($normalize($p->nama_periode) === $normInput) return $p->id;
         }
 
-        // 3. Substring match
         foreach ($allPeriodes as $p) {
             $normDb = $normalize($p->nama_periode);
             if (!empty($normInput) && (str_contains($normDb, $normInput) || str_contains($normInput, $normDb))) {
@@ -908,93 +860,45 @@ class RencanaKerjaController extends Controller
             }
         }
 
-        // 4. Create new PeriodeAkademik if not found in DB so Excel data is strictly preserved
-        $newPeriode = PeriodeAkademik::firstOrCreate([
-            'nama_periode' => $rawPeriodeName,
-        ]);
-
+        $newPeriode = PeriodeAkademik::firstOrCreate(['nama_periode' => $rawPeriodeName]);
         return $newPeriode->id;
     }
 
-    /**
-     * Helper to parse any Excel date format into YYYY-MM-DD string.
-     */
     protected function parseExcelDate($value): ?string
     {
-        if (empty($value)) {
-            return null;
-        }
-
+        if (empty($value)) return null;
         $valueStr = trim((string) $value);
-        if ($valueStr === '' || $valueStr === '-') {
-            return null;
-        }
+        if ($valueStr === '' || $valueStr === '-') return null;
 
-        // If numeric, it might be an Excel date serial number (e.g., 45497)
         if (is_numeric($valueStr) && (float) $valueStr > 20000) {
             try {
                 $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $valueStr);
                 return $dt->format('Y-m-d');
-            } catch (\Throwable $e) {
-                // fallback
-            }
+            } catch (\Throwable $e) {}
         }
 
-        // Common date formats found in MS Excel imports
-        $formats = [
-            'Y-m-d',
-            'm/d/Y',
-            'n/j/Y',
-            'd/m/Y',
-            'j/n/Y',
-            'Y/m/d',
-            'd-m-Y',
-            'j-n-Y',
-            'Y.m.d',
-            'd.m.Y',
-            'm-d-Y',
-            'n-j-Y',
-        ];
-
+        $formats = ['Y-m-d', 'm/d/Y', 'n/j/Y', 'd/m/Y', 'j/n/Y', 'Y/m/d', 'd-m-Y', 'j-n-Y', 'Y.m.d', 'd.m.Y', 'm-d-Y', 'n-j-Y'];
         foreach ($formats as $fmt) {
             try {
                 $dt = \DateTime::createFromFormat('!' . $fmt, $valueStr);
-                if ($dt && $dt->format($fmt) === $valueStr) {
-                    return $dt->format('Y-m-d');
-                }
-            } catch (\Throwable $e) {
-                // continue
-            }
+                if ($dt && $dt->format($fmt) === $valueStr) return $dt->format('Y-m-d');
+            } catch (\Throwable $e) {}
         }
 
-        // General strtotime fallback
         try {
             $ts = strtotime($valueStr);
-            if ($ts !== false && $ts > 0) {
-                return date('Y-m-d', $ts);
-            }
-        } catch (\Throwable $e) {
-            // continue
-        }
+            if ($ts !== false && $ts > 0) return date('Y-m-d', $ts);
+        } catch (\Throwable $e) {}
 
         return null;
     }
 
-    /**
-     * Helper to parse any Excel time format into HH:MM:SS string.
-     */
     protected function parseExcelTime($value): ?string
     {
-        if (empty($value)) {
-            return null;
-        }
-
+        if (empty($value)) return null;
         $valueStr = trim((string) $value);
-        if ($valueStr === '' || $valueStr === '-') {
-            return null;
-        }
+        if ($valueStr === '' || $valueStr === '-') return null;
 
-        // If numeric, it might be an Excel day fraction (e.g. 0.38055)
         if (is_numeric($valueStr) && (float) $valueStr < 1.0) {
             try {
                 $seconds = round((float) $valueStr * 86400);
@@ -1002,71 +906,46 @@ class RencanaKerjaController extends Controller
                 $minutes = floor(($seconds % 3600) / 60);
                 $secs = $seconds % 60;
                 return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
-            } catch (\Throwable $e) {
-                // fallback
-            }
+            } catch (\Throwable $e) {}
         }
 
-        // Common time formats found in MS Excel imports
-        $formats = [
-            'H:i:s',
-            'H:i',
-            'G:i:s',
-            'G:i',
-            'g:i A',
-            'g:i a',
-            'h:i A',
-            'h:i a',
-        ];
-
+        $formats = ['H:i:s', 'H:i', 'G:i:s', 'G:i', 'g:i A', 'g:i a', 'h:i A', 'h:i a'];
         foreach ($formats as $fmt) {
             try {
                 $dt = \DateTime::createFromFormat($fmt, $valueStr);
-                if ($dt) {
-                    return $dt->format('H:i:s');
-                }
-            } catch (\Throwable $e) {
-                // continue
-            }
+                if ($dt) return $dt->format('H:i:s');
+            } catch (\Throwable $e) {}
         }
 
-        // General strtotime fallback
         try {
             $ts = strtotime($valueStr);
-            if ($ts !== false) {
-                return date('H:i:s', $ts);
-            }
-        } catch (\Throwable $e) {
-            // continue
-        }
+            if ($ts !== false) return date('H:i:s', $ts);
+        } catch (\Throwable $e) {}
 
         return null;
     }
 
     /**
-     * Export Rencana Kerja to Excel (Khusus Pimpinan & Admin)
+     * Export to Excel.
      */
     public function exportExcel(Request $request)
     {
         $authUser = Auth::user();
-
         if (!$authUser || (!$authUser->isPimpinanUnit() && !$authUser->isAdmin())) {
             Alert::error('Gagal', 'Akses ditolak. Fitur ini khusus Pimpinan dan Admin.')->toToast();
             return redirect()->back();
         }
 
-        $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
+        $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
 
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-                // Superadmin, Admin, Pimpinan Rektorat -> Seluruh data
+                // Admin -> All
             } elseif ($authUser->isPimpinanUnit()) {
-                // Pimpinan Unit -> Unit miliknya
                 $query->whereHas('user', function ($q) use ($authUser) {
                     $q->where('unit', $authUser->unit);
                 });
             } else {
-                // Staff regular -> Milik sendiri atau yang di-tag ke mereka
                 $query->where(function ($q) use ($authUser) {
                     $q->where('user_id', $authUser->id)
                       ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
@@ -1096,12 +975,11 @@ class RencanaKerjaController extends Controller
 
         $items = $query->latest()->get();
 
-        // Staff Info Header Metadata
         $namaStaff = 'SEMUA STAFF';
         $jabatanStaff = 'SEMUA JABATAN';
         $unitStaff = 'SEMUA UNIT';
 
-        if ($request->filled('user_id') && ($u = \App\Models\User::find($request->user_id))) {
+        if ($request->filled('user_id') && ($u = User::find($request->user_id))) {
             $namaStaff = strtoupper($u->name);
             $jabatanStaff = strtoupper($u->jabatan ?? '-');
             $unitStaff = strtoupper($u->unit ?? '-');
@@ -1114,7 +992,7 @@ class RencanaKerjaController extends Controller
             }
         } elseif ($request->filled('jabatan')) {
             $jabatanStaff = strtoupper($request->jabatan);
-            $userWithJabatan = \App\Models\User::where('jabatan', $request->jabatan)->first();
+            $userWithJabatan = User::where('jabatan', $request->jabatan)->first();
             if ($userWithJabatan && $userWithJabatan->unit) {
                 $unitStaff = strtoupper($userWithJabatan->unit);
             }
@@ -1122,162 +1000,100 @@ class RencanaKerjaController extends Controller
             $unitStaff = strtoupper($authUser->unit);
         }
 
-        // Periode Akademik Text (Lookup by request, item relation, or latest record)
         $periodeText = 'PERIODE AKADEMIK';
-        if ($request->filled('periode_akademik_id') && ($p = \App\Models\PeriodeAkademik::find($request->periode_akademik_id))) {
+        if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
             $periodeText = strtoupper($p->nama_periode);
         } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
             $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
         } else {
-            $latestP = \App\Models\PeriodeAkademik::latest()->first();
-            if ($latestP) {
-                $periodeText = strtoupper($latestP->nama_periode);
-            }
+            $latestP = PeriodeAkademik::latest()->first();
+            if ($latestP) $periodeText = strtoupper($latestP->nama_periode);
         }
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Laporan Rencana Kerja');
+        $sheet->setTitle('Laporan Kepanitiaan');
 
-        // Row 1: Title (Merged A1:N1 across all columns to STATUS BERKAS)
-        $titleText = 'LAPORAN RENCANA KERJA DAN REALISASI KERJA (' . $periodeText . ')';
-        $sheet->mergeCells('A1:N1');
-        $sheet->setCellValue('A1', $titleText);
-        $sheet->getStyle('A1:N1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:N1')->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-            ->getStartColor()->setRGB('15432D');
-        $sheet->getStyle('A1:N1')->getAlignment()
-            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
-            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
-        $sheet->getRowDimension(1)->setRowHeight(30);
+        // Header styles
+        $sheet->mergeCells('A1:J1');
+        $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI RENCANA KERJA KEPANITIAAN');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
 
-        // Row 3, 4, 5: Metadata Staff
-        $sheet->setCellValue('A3', 'NAMA STAFF');
-        $sheet->setCellValue('B3', ':');
-        $sheet->setCellValue('C3', $namaStaff);
-        $sheet->getStyle('A3')->getFont()->setBold(true);
-        $sheet->getStyle('C3')->getFont()->setBold(true);
+        $sheet->setCellValue('A3', 'Nama Pegawai:');
+        $sheet->setCellValue('B3', $namaStaff);
+        $sheet->setCellValue('A4', 'Jabatan:');
+        $sheet->setCellValue('B4', $jabatanStaff);
+        $sheet->setCellValue('A5', 'Unit Kerja:');
+        $sheet->setCellValue('B5', $unitStaff);
+        $sheet->setCellValue('A6', 'Periode:');
+        $sheet->setCellValue('B6', $periodeText);
 
-        $sheet->setCellValue('A4', 'JABATAN');
-        $sheet->setCellValue('B4', ':');
-        $sheet->setCellValue('C4', $jabatanStaff);
-        $sheet->getStyle('A4')->getFont()->setBold(true);
-        $sheet->getStyle('C4')->getFont()->setBold(true);
+        $sheet->getStyle('A3:A6')->getFont()->setBold(true);
 
-        $sheet->setCellValue('A5', 'UNIT');
-        $sheet->setCellValue('B5', ':');
-        $sheet->setCellValue('C5', $unitStaff);
-        $sheet->getStyle('A5')->getFont()->setBold(true);
-        $sheet->getStyle('C5')->getFont()->setBold(true);
-
-        // Row 7: Table Header Columns (Exacly matching template)
-        $headers = [
-            'A7' => 'NO',
-            'B7' => 'HARI',
-            'C7' => 'URAIAN TUGAS',
-            'D7' => 'ESTIMASI TGL MULAI',
-            'E7' => 'ESTIMASI JAM MULAI',
-            'F7' => 'ESTIMASI TGL SELESAI',
-            'G7' => 'ESTIMASI JAM SELESAI',
-            'H7' => 'TANGGAL MULAI',
-            'I7' => 'WAKTU MULAI',
-            'J7' => 'TANGGAL SELESAI',
-            'K7' => 'WAKTU SELESAI',
-            'L7' => 'DURASI',
-            'M7' => 'LINK EKSTERNAL',
-            'N7' => 'STATUS BERKAS',
-        ];
-
-        foreach ($headers as $cell => $val) {
-            $sheet->setCellValue($cell, $val);
+        $cols = ['No', 'Uraian Tugas', 'Hari', 'Estimasi Mulai', 'Estimasi Selesai', 'Realisasi Mulai', 'Realisasi Selesai', 'Durasi', 'Rekan Kerja (Tag)', 'Status'];
+        $rowNum = 8;
+        foreach ($cols as $idx => $colName) {
+            $colLetter = chr(65 + $idx);
+            $sheet->setCellValue($colLetter . $rowNum, $colName);
         }
 
-        $headerRange = 'A7:N7';
-        $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(9);
+        $headerRange = 'A8:J8';
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->getColor()->setARGB('FFFFFF');
         $sheet->getStyle($headerRange)->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-            ->getStartColor()->setRGB('15432D');
-        $sheet->getStyle($headerRange)->getFont()->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle($headerRange)->getAlignment()
-            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
-            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
-        $sheet->getRowDimension(7)->setRowHeight(25);
+            ->getStartColor()->setARGB('15432D');
 
-        $rowNum = 8;
-        $no = 1;
-
+        $i = 1;
         foreach ($items as $item) {
-            $durasiStr = '-';
-            if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
-                try {
-                    $tglMulaiStr = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
-                    $tglSelesaiStr = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglMulaiStr;
-                    $startTs = strtotime($tglMulaiStr . ' ' . $item->waktu_mulai);
-                    $endTs = strtotime($tglSelesaiStr . ' ' . $item->waktu_selesai);
-                    $diffInSeconds = max(0, $endTs - $startTs);
-
-                    $days = floor($diffInSeconds / 86400);
-                    $hours = floor(($diffInSeconds % 86400) / 3600);
-                    $minutes = floor(($diffInSeconds % 3600) / 60);
-                    $seconds = $diffInSeconds % 60;
-
-                    $durasiParts = [];
-                    if ($days > 0) $durasiParts[] = $days . ' hari';
-                    if ($hours > 0) $durasiParts[] = $hours . ' jam';
-                    if ($minutes > 0) $durasiParts[] = $minutes . ' menit';
-                    if ($seconds > 0 || empty($durasiParts)) $durasiParts[] = $seconds . ' detik';
-                    $durasiStr = implode(' ', $durasiParts);
-                } catch (\Exception $e) {
-                    $durasiStr = '-';
-                }
-            }
-
-            $sheet->setCellValue('A' . $rowNum, $no++);
-            $sheet->setCellValue('B' . $rowNum, $item->hari ?? '-');
-            $taggedNames = '';
-            if ($item->taggedUsers->count() > 0) {
-                $taggedNames = ' [Tag: ' . implode(', ', $item->taggedUsers->pluck('name')->toArray()) . ']';
-            }
-            $sheet->setCellValue('C' . $rowNum, $item->uraian_tugas . $taggedNames);
-            $sheet->setCellValue('D' . $rowNum, $item->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) : '-');
-            $sheet->setCellValue('E' . $rowNum, $item->estimasi_jam_mulai ? substr($item->estimasi_jam_mulai, 0, 5) : '-');
-            $sheet->setCellValue('F' . $rowNum, $item->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) : '-');
-            $sheet->setCellValue('G' . $rowNum, $item->estimasi_jam_selesai ? substr($item->estimasi_jam_selesai, 0, 5) : '-');
-            $sheet->setCellValue('H' . $rowNum, $item->tanggal_mulai ? date('d/m/Y', strtotime($item->tanggal_mulai)) : '-');
-            $sheet->setCellValue('I' . $rowNum, $item->waktu_mulai ? substr($item->waktu_mulai, 0, 5) : '-');
-            $sheet->setCellValue('J' . $rowNum, $item->tanggal_selesai ? date('d/m/Y', strtotime($item->tanggal_selesai)) : '-');
-            $sheet->setCellValue('K' . $rowNum, $item->waktu_selesai && $item->waktu_selesai !== '00:00:00' ? substr($item->waktu_selesai, 0, 5) : '-');
-            $sheet->setCellValue('L' . $rowNum, $durasiStr);
-            $sheet->setCellValue('M' . $rowNum, $item->url_external ?? '-');
-            $sheet->setCellValue('N' . $rowNum, $item->file ? 'Ada Berkas' : 'Tidak Ada');
-
-            // Alignment
-            $sheet->getStyle('A' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('B' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('D' . $rowNum . ':L' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('N' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
             $rowNum++;
+            $estM = ($item->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) : '') . ($item->estimasi_jam_mulai ? ' ' . substr($item->estimasi_jam_mulai, 0, 5) : '');
+            $estS = ($item->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) : '') . ($item->estimasi_jam_selesai ? ' ' . substr($item->estimasi_jam_selesai, 0, 5) : '');
+            $realM = ($item->tanggal_mulai ? date('d/m/Y', strtotime($item->tanggal_mulai)) : '') . ($item->waktu_mulai ? ' ' . substr($item->waktu_mulai, 0, 5) : '');
+            $realS = ($item->tanggal_selesai ? date('d/m/Y', strtotime($item->tanggal_selesai)) : '') . ($item->waktu_selesai ? ' ' . substr($item->waktu_selesai, 0, 5) : '');
+
+            // Calculate duration
+            $dur = '-';
+            if ($item->waktu_mulai && $item->waktu_selesai && $item->waktu_selesai !== '00:00:00') {
+                $startTs = strtotime(($item->tanggal_mulai ?: date('Y-m-d')) . ' ' . $item->waktu_mulai);
+                $endTs = strtotime(($item->tanggal_selesai ?: date('Y-m-d')) . ' ' . $item->waktu_selesai);
+                $diff = max(0, $endTs - $startTs);
+                $h = floor($diff / 3600);
+                $m = floor(($diff % 3600) / 60);
+                $dur = ($h > 0 ? $h . 'j ' : '') . $m . 'm';
+            }
+
+            $sheet->setCellValue('A' . $rowNum, $i++);
+            $sheet->setCellValue('B' . $rowNum, $item->uraian_tugas);
+            $sheet->setCellValue('C' . $rowNum, $item->hari ?: '-');
+            $sheet->setCellValue('D' . $rowNum, $estM ?: '-');
+            $sheet->setCellValue('E' . $rowNum, $estS ?: '-');
+            $sheet->setCellValue('F' . $rowNum, $realM ?: '-');
+            $sheet->setCellValue('G' . $rowNum, $realS ?: '-');
+            $sheet->setCellValue('H' . $rowNum, $dur);
+            $sheet->setCellValue('I' . $rowNum, $item->taggedUsers->pluck('name')->implode(', ') ?: '-');
+            $sheet->setCellValue('J' . $rowNum, $item->status);
         }
 
-        // Apply Borders to Table Range A7:N[lastRow]
-        $lastRow = max(7, $rowNum - 1);
-        $tableRange = 'A7:N' . $lastRow;
-        $sheet->getStyle($tableRange)->getBorders()->getAllBorders()
-            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)
-            ->getColor()->setRGB('CCCCCC');
+        // Borders and auto widths
+        $styleArray = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => 'CCCCCC'],
+                ],
+            ],
+        ];
+        $sheet->getStyle('A8:J' . $rowNum)->applyFromArray($styleArray);
 
-        foreach (range('A', 'N') as $col) {
+        foreach (range('A', 'J') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $safeStaff = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $namaStaff)));
         $safePeriode = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $periodeText)));
-
-        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode Akademik') . '_laporan rencana kerja.xlsx';
-
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode Akademik') . '_laporan rencana kerja kepanitiaan.xlsx';
 
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
@@ -1287,12 +1103,12 @@ class RencanaKerjaController extends Controller
     }
 
     /**
-     * Export Rencana Kerja to PDF
+     * Export to PDF.
      */
     public function exportPdf(Request $request)
     {
         $authUser = auth()->user();
-        $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
+        $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
 
         if ($request->filled('periode_akademik_id')) {
             $query->where('periode_akademik_id', $request->periode_akademik_id);
@@ -1311,7 +1127,6 @@ class RencanaKerjaController extends Controller
                     $query->where('user_id', $request->user_id);
                 }
             } else {
-                // Staff regular -> Milik sendiri atau yang di-tag ke mereka
                 $query->where(function ($q) use ($authUser) {
                     $q->where('user_id', $authUser->id)
                       ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
@@ -1337,7 +1152,7 @@ class RencanaKerjaController extends Controller
         $jabatanStaff = 'SEMUA JABATAN';
         $unitStaff = 'SEMUA UNIT';
 
-        if ($request->filled('user_id') && ($u = \App\Models\User::find($request->user_id))) {
+        if ($request->filled('user_id') && ($u = User::find($request->user_id))) {
             $namaStaff = strtoupper($u->name);
             $jabatanStaff = strtoupper($u->jabatan ?? '-');
             $unitStaff = strtoupper($u->unit ?? '-');
@@ -1350,7 +1165,7 @@ class RencanaKerjaController extends Controller
             }
         } elseif ($request->filled('jabatan')) {
             $jabatanStaff = strtoupper($request->jabatan);
-            $userWithJabatan = \App\Models\User::where('jabatan', $request->jabatan)->first();
+            $userWithJabatan = User::where('jabatan', $request->jabatan)->first();
             if ($userWithJabatan && $userWithJabatan->unit) {
                 $unitStaff = strtoupper($userWithJabatan->unit);
             }
@@ -1359,12 +1174,12 @@ class RencanaKerjaController extends Controller
         }
 
         $periodeText = 'PERIODE AKADEMIK';
-        if ($request->filled('periode_akademik_id') && ($p = \App\Models\PeriodeAkademik::find($request->periode_akademik_id))) {
+        if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
             $periodeText = strtoupper($p->nama_periode);
         } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
             $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
         } else {
-            $latestP = \App\Models\PeriodeAkademik::latest()->first();
+            $latestP = PeriodeAkademik::latest()->first();
             if ($latestP) {
                 $periodeText = strtoupper($latestP->nama_periode);
             }
@@ -1372,39 +1187,11 @@ class RencanaKerjaController extends Controller
 
         $safeStaff = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $namaStaff)));
         $safePeriode = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $periodeText)));
-        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode Akademik') . '_laporan rencana kerja.pdf';
+        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode Akademik') . '_laporan rencana kerja kepanitiaan.pdf';
 
-        $pdf = Pdf::loadView('pages.rencanakerja.pdf', compact('items', 'namaStaff', 'jabatanStaff', 'unitStaff', 'periodeText'))
+        $pdf = Pdf::loadView('pages.kepanitiaan.pdf', compact('items', 'namaStaff', 'jabatanStaff', 'unitStaff', 'periodeText'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->download($filename);
-    }
-
-    /**
-     * Quick update tagged users from list modal.
-     */
-    public function updateTags(Request $request, RencanaKerja $rencanaKerja)
-    {
-        $authUser = Auth::user();
-        if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
-            if ($rencanaKerja->user_id !== $authUser->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki hak akses untuk mengubah tag tugas ini.'
-                ], 403);
-            }
-        }
-
-        $request->validate([
-            'tagged_users' => ['nullable', 'array'],
-            'tagged_users.*' => ['exists:users,id'],
-        ]);
-
-        $rencanaKerja->taggedUsers()->sync($request->input('tagged_users', []));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Rekan kerja berhasil diperbarui.'
-        ]);
     }
 }

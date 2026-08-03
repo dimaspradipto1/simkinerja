@@ -34,43 +34,54 @@
               </ul>
           </li><!-- End Icons Nav --> --}}
 
-          <li class="nav-heading">Kategori Kerja</li>
-
+          <li class="nav-heading">Rencana Kerja</li>
           <li class="nav-item">
-              <a class="{{ request()->routeIs('rencana-kerja.*') ? 'nav-link' : 'nav-link collapsed' }}" href="{{ route('rencana-kerja.index') }}">
+              <a class="{{ request()->routeIs('rencana-kerja.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('rencana-kerja.index') }}">
                   <i class="bi bi-journal-check"></i>
                   <span>Rencana Kerja</span>
               </a>
           </li>
-          {{-- <li class="nav-item">
-              <a class="nav-link collapsed" href="#">
-                  <i class="bi bi-person"></i>
-                  <span>Pengajaran</span>
+
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('rekapitulasi.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('rekapitulasi.index') }}">
+                  <i class="bi bi-pie-chart"></i>
+                  <span>Rekapitulasi</span>
               </a>
-          </li> --}}
-          {{-- <li class="nav-item">
-              <a class="nav-link collapsed" href="#">
-                  <i class="bi bi-person"></i>
-                  <span>Kepanitian</span>
+          </li>
+
+          <li class="nav-heading">Kepanitian</li>
+
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('kepanitiaan.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('kepanitiaan.index') }}">
+                  <i class="bi bi-journal-check"></i>
+                  <span>Rencana Kerja Kepanitiaan</span>
               </a>
-          </li> --}}
-          {{-- <li class="nav-item">
-              <a class="nav-link collapsed" href="#">
-                  <i class="bi bi-person"></i>
-                  <span>Isendetil</span>
+          </li>
+
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('rekapitulasi-kepanitiaan.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('rekapitulasi-kepanitiaan.index') }}">
+                  <i class="bi bi-pie-chart"></i>
+                  <span>Rekapitulasi Kepanitiaan</span>
               </a>
-          </li> --}}
+          </li>
+
 
           <li class="nav-heading">Pengaturan</li>
 
           <li class="nav-item">
-              <a class="{{ request()->routeIs('user.*') ? 'nav-link' : 'nav-link collapsed' }}" href="{{ route('user.index') }}">
+              <a class="{{ request()->routeIs('user.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('user.index') }}">
                   <i class="bi bi-person"></i>
                   <span>Pengguna</span>
               </a>
           </li>
           <li class="nav-item">
-              <a class="{{ request()->routeIs('periode-akademik.*') ? 'nav-link' : 'nav-link collapsed' }}" href="{{ route('periode-akademik.index') }}">
+              <a class="{{ request()->routeIs('periode-akademik.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('periode-akademik.index') }}">
                   <i class="bi bi-calendar-event"></i>
                   <span>Periode Akademik</span>
               </a>

@@ -2,11 +2,11 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Tambah Rencana Kerja</h1>
+    <h1>Tambah Rencana Kerja Kepanitiaan</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('rencana-kerja.index') }}">Rencana Kerja</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('kepanitiaan.index') }}">Rencana Kerja Kepanitiaan</a></li>
             <li class="breadcrumb-item active">Tambah</li>
         </ol>
     </nav>
@@ -17,9 +17,9 @@
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">Form Tambah Rencana Kerja</h5>
+                    <h5 class="card-title fw-bold">Form Tambah Rencana Kerja Kepanitiaan</h5>
 
-                    <form action="{{ route('rencana-kerja.store') }}" method="POST" class="row g-3">
+                    <form action="{{ route('kepanitiaan.store') }}" method="POST" class="row g-3">
                         @csrf
 
                         @if(auth()->check() && in_array(auth()->user()->roles, ['superadmin', 'admin']))
@@ -125,8 +125,8 @@
                         </div>
 
                         <div class="col-12 mt-4">
-                            <button type="submit" class="btn text-white px-4 fw-bold" style="background-color: #15432d;"><i class="bi bi-save me-1"></i> Simpan Rencana Kerja</button>
-                            <a href="{{ route('rencana-kerja.index') }}" class="btn btn-secondary px-3"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
+                            <button type="submit" class="btn text-white px-4 fw-bold" style="background-color: #15432d;"><i class="bi bi-save me-1"></i> Simpan Rencana Kerja Kepanitiaan</button>
+                            <a href="{{ route('kepanitiaan.index') }}" class="btn btn-secondary px-3"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
                         </div>
                     </form>
 

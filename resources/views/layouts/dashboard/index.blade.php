@@ -220,6 +220,16 @@
                                             <div class="fw-bold text-secondary small">{{ $task->user->name ?? '-' }}</div>
                                             <div class="text-muted small" style="font-size: 0.8rem;">{{ $task->user->jabatan ?? '-' }}</div>
                                         @endif
+                                        @if($task->taggedUsers && $task->taggedUsers->count() > 0)
+                                            <div class="mt-1">
+                                                <span class="text-muted" style="font-size: 0.75rem;"><strong>Tag:</strong></span>
+                                                @foreach($task->taggedUsers as $tu)
+                                                    <span class="badge bg-light text-dark border fw-normal me-1" style="font-size: 0.72rem;" title="{{ $tu->jabatan ?? '-' }}">
+                                                        <i class="bi bi-person-fill text-primary"></i> {{ $tu->name }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="badge bg-light text-dark border fw-normal">{{ $task->durasi ?? '-' }}</span>

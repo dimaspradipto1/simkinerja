@@ -7,6 +7,9 @@ use App\Http\Controllers\EvaluasiPengenalanWawasanIbnuSinaController;
 use App\Http\Controllers\PeriodeAkademikController;
 use App\Http\Controllers\RencanaKerjaController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RekapitulasiController;
+use App\Http\Controllers\KepanitiaanController;
+use App\Http\Controllers\RekapitulasiKepanitiaanController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(AuthController::class)->group(function () {
@@ -38,12 +41,35 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('rencana-kerja/import-excel', [RencanaKerjaController::class, 'importExcel'])->name('rencana-kerja.import-excel');
     Route::post('rencana-kerja/{rencana_kerja}/start', [RencanaKerjaController::class, 'start'])->name('rencana-kerja.start');
     Route::post('rencana-kerja/{rencana_kerja}/stop', [RencanaKerjaController::class, 'stop'])->name('rencana-kerja.stop');
-    Route::post('rencana-kerja/upload-attachment', [RencanaKerjaController::class, 'uploadAttachment'])->name('rencana-kerja.upload-attachment');
+    Route::post('rencana-kerja/{rencana_kerja}/upload-attachment', [RencanaKerjaController::class, 'uploadAttachment'])->name('rencana-kerja.upload-attachment');
     Route::post('rencana-kerja/bulk-delete', [RencanaKerjaController::class, 'bulkDelete'])->name('rencana-kerja.bulk-delete');
+    Route::post('rencana-kerja/{rencana_kerja}/update-tags', [RencanaKerjaController::class, 'updateTags'])->name('rencana-kerja.update-tags');
     Route::resource('rencana-kerja', RencanaKerjaController::class);
+
+    Route::get('rekapitulasi/data', [RekapitulasiController::class, 'getData'])->name('rekapitulasi.data');
+    Route::resource('rekapitulasi', RekapitulasiController::class)->only(['index']);
+
+    // Kepanitiaan Routes
+    Route::get('kepanitiaan/download-template', [KepanitiaanController::class, 'downloadTemplate'])->name('kepanitiaan.download-template');
+    Route::get('kepanitiaan/export-excel', [KepanitiaanController::class, 'exportExcel'])->name('kepanitiaan.export-excel');
+    Route::get('kepanitiaan/export-pdf', [KepanitiaanController::class, 'exportPdf'])->name('kepanitiaan.export-pdf');
+    Route::post('kepanitiaan/import-excel', [KepanitiaanController::class, 'importExcel'])->name('kepanitiaan.import-excel');
+    Route::post('kepanitiaan/{kepanitiaan}/start', [KepanitiaanController::class, 'start'])->name('kepanitiaan.start');
+    Route::post('kepanitiaan/{kepanitiaan}/stop', [KepanitiaanController::class, 'stop'])->name('kepanitiaan.stop');
+    Route::post('kepanitiaan/{kepanitiaan}/upload-attachment', [KepanitiaanController::class, 'uploadAttachment'])->name('kepanitiaan.upload-attachment');
+    Route::post('kepanitiaan/bulk-delete', [KepanitiaanController::class, 'bulkDelete'])->name('kepanitiaan.bulk-delete');
+    Route::post('kepanitiaan/{kepanitiaan}/update-tags', [KepanitiaanController::class, 'updateTags'])->name('kepanitiaan.update-tags');
+    Route::resource('kepanitiaan', KepanitiaanController::class);
+
+    // Rekapitulasi Kepanitiaan Routes
+    Route::get('rekapitulasi-kepanitiaan/data', [RekapitulasiKepanitiaanController::class, 'getData'])->name('rekapitulasi-kepanitiaan.data');
+    Route::resource('rekapitulasi-kepanitiaan', RekapitulasiKepanitiaanController::class)->only(['index']);
 
     Route::resource('evaluasi', EvaluasiController::class)->except(['edit', 'update']);
 
     Route::resource('evaluasi-pengenalan-wawasan-ibnu-sina', EvaluasiPengenalanWawasanIbnuSinaController::class)
-        ->names('evaluasipengenalanwawasanibnusina');
+        ->names('evaluasipengenalanwawasanibnusina')
+        ->parameters([
+            'evaluasi-pengenalan-wawasan-ibnu-sina' => 'wawasan'
+        ]);
 });

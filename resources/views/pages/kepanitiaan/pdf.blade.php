@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Rencana Kerja</title>
+    <title>Laporan Rencana Kerja Kepanitiaan</title>
     <style>
         @page {
             size: A4 landscape;
@@ -110,7 +110,7 @@
     <div style="border-top: 2.5px solid #356B3A; border-bottom: 1px solid #356B3A; height: 2px; margin-bottom: 10px;"></div>
 
     <div class="title-header">
-        LAPORAN RENCANA KERJA DAN REALISASI KERJA ({{ $periodeText }})
+        LAPORAN RENCANA KERJA KEPANITIAAN DAN REALISASI KERJA ({{ $periodeText }})
     </div>
 
     <table class="meta-table">
@@ -204,7 +204,7 @@
             @empty
                 <tr>
                     <td colspan="14" class="text-center" style="padding: 15px; color: #777777;">
-                        Tidak ada data rencana kerja untuk kriteria yang dipilih.
+                        Tidak ada data rencana kerja kepanitiaan untuk kriteria yang dipilih.
                     </td>
                 </tr>
             @endforelse

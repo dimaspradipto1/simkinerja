@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RencanaKerja extends Model
+class Kepanitiaan extends Model
 {
-    use HasFactory;
+    use \Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    protected $table = 'rencana_kerjas';
+    protected $table = 'kepanitiaans';
 
     protected $fillable = [
         'user_id',
@@ -41,6 +40,6 @@ class RencanaKerja extends Model
 
     public function taggedUsers()
     {
-        return $this->belongsToMany(User::class, 'rencana_kerja_user', 'rencana_kerja_id', 'user_id')->withTimestamps();
+        return $this->belongsToMany(User::class, 'kepanitiaan_user', 'kepanitiaan_id', 'user_id')->withTimestamps();
     }
 }
