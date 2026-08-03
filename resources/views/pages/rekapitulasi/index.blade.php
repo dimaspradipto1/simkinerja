@@ -57,7 +57,7 @@
                             <select name="jabatan" id="filter_jabatan" class="form-select select2-simple">
                                 <option value="">Semua Jabatan</option>
                                 @foreach($usersWithJabatan as $u)
-                                    <option value="{{ $u->jabatan }}">{{ $u->jabatan }} - {{ $u->name }}</option>
+                                    <option value="{{ $u->id }}" {{ ($u->id == auth()->user()->id && !auth()->user()->isPimpinanRektorat()) ? 'selected' : '' }}>{{ $u->jabatan }} - {{ $u->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -171,7 +171,9 @@
 
                         <!-- Progress Bar -->
                         <div class="progress mb-4" style="height: 18px; border-radius: 9px;">
-                            <div id="rekap-bar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            <div id="rekap-bar-selesai" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" title="Selesai">0%</div>
+                            <div id="rekap-bar-proses" class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" title="Sedang Proses">0%</div>
+                            <div id="rekap-bar-belum" class="progress-bar bg-secondary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" title="Belum Dimulai">0%</div>
                         </div>
                     </div>
 
@@ -328,9 +330,15 @@
                     let pSelesai = r.percent;
 
                     $('#big-percent').text(pSelesai + '%');
-                    $('#rekap-bar').css('width', pSelesai + '%')
+                    $('#rekap-bar-selesai').css('width', pSelesai + '%')
                         .attr('aria-valuenow', pSelesai)
-                        .text(pSelesai + '%');
+                        .text(pSelesai >= 5 ? pSelesai + '%' : '');
+                    $('#rekap-bar-proses').css('width', pProses + '%')
+                        .attr('aria-valuenow', pProses)
+                        .text(pProses >= 5 ? pProses + '%' : '');
+                    $('#rekap-bar-belum').css('width', pBelum + '%')
+                        .attr('aria-valuenow', pBelum)
+                        .text(pBelum >= 5 ? pBelum + '%' : '');
 
                     $('#percent-belum').text(pBelum + '%');
                     $('#percent-proses').text(pProses + '%');

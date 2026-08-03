@@ -77,13 +77,20 @@ class RekapitulasiController extends Controller
         }
 
         if ($request->filled('jabatan')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereHas('user', function ($qu) use ($request) {
-                    $qu->where('jabatan', $request->jabatan);
-                })->orWhereHas('taggedUsers', function ($qt) use ($request) {
-                    $qt->where('jabatan', $request->jabatan);
+            $filterValue = $request->jabatan;
+            if (is_numeric($filterValue)) {
+                // Filter by specific user as MAKER only (not as tagged participant)
+                $query->where('user_id', $filterValue);
+            } else {
+                // Fallback: filter by jabatan string
+                $query->where(function ($q) use ($request) {
+                    $q->whereHas('user', function ($qu) use ($request) {
+                        $qu->where('jabatan', $request->jabatan);
+                    })->orWhereHas('taggedUsers', function ($qt) use ($request) {
+                        $qt->where('jabatan', $request->jabatan);
+                    });
                 });
-            });
+            }
         }
 
         // Calculate Rekapitulasi counts based on the filtered query
