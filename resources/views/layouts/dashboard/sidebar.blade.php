@@ -4,73 +4,65 @@
       <ul class="sidebar-nav" id="sidebar-nav">
 
           <li class="nav-item">
-              <a class="nav-link " href="{{ route('dashboard') }}">
+              <a class="{{ request()->routeIs('dashboard') ? 'nav-link' : 'nav-link collapsed' }}" href="{{ route('dashboard') }}">
                   <i class="bi bi-grid"></i>
                   <span>Dashboard</span>
               </a>
           </li><!-- End Dashboard Nav -->
 
-
-          {{-- <li class="nav-item">
-              <a class="nav-link collapsed" data-bs-target="#icons-nav" data-bs-toggle="collapse" href="#">
-                  <i class="bi bi-gem"></i><span>Icons</span><i class="bi bi-chevron-down ms-auto"></i>
-              </a>
-              <ul id="icons-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-                  <li>
-                      <a href="icons-bootstrap.html">
-                          <i class="bi bi-circle"></i><span>Bootstrap Icons</span>
-                      </a>
-                  </li>
-                  <li>
-                      <a href="icons-remix.html">
-                          <i class="bi bi-circle"></i><span>Remix Icons</span>
-                      </a>
-                  </li>
-                  <li>
-                      <a href="icons-boxicons.html">
-                          <i class="bi bi-circle"></i><span>Boxicons</span>
-                      </a>
-                  </li>
-              </ul>
-          </li><!-- End Icons Nav --> --}}
-
-          <li class="nav-heading">Rencana Kerja</li>
+          <li class="nav-heading">Tugas & Kinerja</li>
           <li class="nav-item">
               <a class="{{ request()->routeIs('rencana-kerja.*') ? 'nav-link' : 'nav-link collapsed' }}"
                   href="{{ route('rencana-kerja.index') }}">
                   <i class="bi bi-journal-check"></i>
-                  <span>Rencana Kerja</span>
+                  <span>Rencana Kerja Utama</span>
               </a>
           </li>
+
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('kepanitiaan.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('kepanitiaan.index') }}">
+                  <i class="bi bi-people-fill"></i>
+                  <span>Rencana Kerja Kepanitiaan</span>
+              </a>
+          </li>
+
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('insidentil.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('insidentil.index') }}">
+                  <i class="bi bi-lightning-charge"></i>
+                  <span>Rencana Kerja Insidentil</span>
+              </a>
+          </li>
+
+          <li class="nav-heading">Rekapitulasi & Laporan</li>
 
           <li class="nav-item">
               <a class="{{ request()->routeIs('rekapitulasi.*') ? 'nav-link' : 'nav-link collapsed' }}"
                   href="{{ route('rekapitulasi.index') }}">
                   <i class="bi bi-pie-chart"></i>
-                  <span>Rekapitulasi</span>
-              </a>
-          </li>
-
-          <li class="nav-heading">Kepanitian</li>
-
-          <li class="nav-item">
-              <a class="{{ request()->routeIs('kepanitiaan.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                  href="{{ route('kepanitiaan.index') }}">
-                  <i class="bi bi-journal-check"></i>
-                  <span>Rencana Kerja Kepanitiaan</span>
+                  <span>Rekapitulasi Rencana Kerja</span>
               </a>
           </li>
 
           <li class="nav-item">
               <a class="{{ request()->routeIs('rekapitulasi-kepanitiaan.*') ? 'nav-link' : 'nav-link collapsed' }}"
                   href="{{ route('rekapitulasi-kepanitiaan.index') }}">
-                  <i class="bi bi-pie-chart"></i>
+                  <i class="bi bi-pie-chart-fill"></i>
                   <span>Rekapitulasi Kepanitiaan</span>
               </a>
           </li>
 
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('rekapitulasi-insidentil.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('rekapitulasi-insidentil.index') }}">
+                  <i class="bi bi-bar-chart-line"></i>
+                  <span>Rekapitulasi Insidentil</span>
+              </a>
+          </li>
 
           <li class="nav-heading">Pengaturan</li>
+
 
           <li class="nav-item">
               <a class="{{ request()->routeIs('user.*') ? 'nav-link' : 'nav-link collapsed' }}"

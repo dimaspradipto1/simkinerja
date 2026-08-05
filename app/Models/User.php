@@ -54,6 +54,34 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is Superadmin
+     */
+    public function isSuperAdmin(): bool
+    {
+        $role = strtoupper(trim($this->roles ?? ''));
+        return in_array($role, ['SUPER ADMIN', 'SUPERADMIN']) || $this->email === 'admin@gmail.com';
+    }
+
+    /**
+     * Check if user is Superadmin or Rektor (Pimpinan Rektorat Utama)
+     */
+    public function isRektorOrSuperAdmin(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $role = strtoupper(trim($this->roles ?? ''));
+        $jabatan = strtoupper($this->jabatan ?? '');
+
+        if (in_array($role, ['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])) {
+            return true;
+        }
+
+        return str_contains($jabatan, 'REKTOR') || str_contains($jabatan, 'WAKIL REKTOR');
+    }
+
+    /**
      * Check if user is Superadmin or Admin
      */
     public function isAdmin(): bool
@@ -127,4 +155,10 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Kepanitiaan::class, 'kepanitiaan_user', 'user_id', 'kepanitiaan_id')->withTimestamps();
     }
+
+    public function taggedInsidentils()
+    {
+        return $this->belongsToMany(Insidentil::class, 'insidentil_user', 'user_id', 'insidentil_id')->withTimestamps();
+    }
 }
+

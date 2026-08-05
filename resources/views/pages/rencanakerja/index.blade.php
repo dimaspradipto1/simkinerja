@@ -169,7 +169,7 @@
 </div><!-- End Page Title -->
 
 <section class="section">
-    @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
+    @if(auth()->check() && auth()->user()->isRektorOrSuperAdmin())
     <!-- Top Section: Kriteria Checklist Jabatan (Khusus Pimpinan & Admin) -->
     <div class="row mb-4">
         <div class="col-lg-12">
@@ -187,7 +187,7 @@
                             <select class="form-select" id="filter-jabatan">
                                 <option value="">-- Semua Jabatan --</option>
                                 @foreach($usersWithJabatan as $u)
-                                    <option value="{{ $u->jabatan }}" {{ (request('jabatan') == $u->jabatan || (!request()->has('jabatan') && auth()->user()->jabatan == $u->jabatan)) ? 'selected' : '' }}>
+                                    <option value="{{ $u->jabatan }}" data-user-id="{{ $u->id }}" {{ (request('jabatan') == $u->jabatan || (!request()->has('jabatan') && auth()->user()->jabatan == $u->jabatan)) ? 'selected' : '' }}>
                                         {{ $u->jabatan }} - {{ $u->name }}
                                     </option>
                                 @endforeach
@@ -281,16 +281,19 @@
 
                     @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
                     <div class="mb-3">
-                        <label for="export_jabatan" class="form-label fw-bold text-dark mb-1">
-                            Pilih Jabatan / Staff <span class="text-muted fw-normal">(Opsional)</span>
+                        <label for="export_user_id" class="form-label fw-bold text-dark mb-1">
+                            Pilih Jabatan / Staff <span class="text-muted fw-normal">(Read Only / Sesuai Checklist)</span>
                         </label>
-                        <select name="jabatan" id="export_jabatan" class="form-select bg-white">
+                        <input type="hidden" name="user_id" id="export_user_id_hidden">
+                        <select id="export_user_id" class="form-select bg-light" disabled style="pointer-events: none;">
                             <option value="">-- Semua Staff / Jabatan --</option>
                             @foreach($usersWithJabatan as $u)
-                                <option value="{{ $u->jabatan }}">{{ $u->name }} &mdash; {{ $u->jabatan }}</option>
+                                <option value="{{ $u->id }}" data-jabatan="{{ $u->jabatan }}">{{ $u->name }} &mdash; {{ $u->jabatan }}</option>
                             @endforeach
                         </select>
                     </div>
+                    @else
+                        <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
                     @endif
                 </div>
                 <div class="modal-footer bg-light d-flex justify-content-between">
@@ -600,20 +603,52 @@
                 });
             }
 
-            if ($('#export_jabatan').length) {
-                $('#export_jabatan').select2({
+            if ($('#export_user_id').length) {
+                $('#export_user_id').select2({
                     theme: 'bootstrap-5',
                     dropdownParent: $('#modalExportExcel'),
-                    placeholder: "Cari & pilih nama staff / jabatan...",
-                    allowClear: true
+                    placeholder: "Nama staff...",
+                    allowClear: false,
+                    disabled: true
                 });
+            }
+        }
+
+        function syncExportStaffWithChecklist() {
+            if (!$('#export_user_id').length) return;
+
+            let selectedOpt = $('#filter-jabatan option:selected');
+            let userId = selectedOpt.attr('data-user-id');
+            let selectedJabatan = $('#filter-jabatan').val();
+            let targetId = '';
+
+            if (userId && $('#export_user_id option[value="' + userId + '"]').length) {
+                targetId = userId;
+            } else if (selectedJabatan) {
+                let matchOpt = $('#export_user_id option').filter(function() {
+                    return $(this).text().indexOf(selectedJabatan) !== -1;
+                });
+                if (matchOpt.length) {
+                    targetId = matchOpt.first().val();
+                }
+            } else {
+                let authId = "{{ auth()->user()->id }}";
+                if ($('#export_user_id option[value="' + authId + '"]').length) {
+                    targetId = authId;
+                }
+            }
+
+            if (targetId) {
+                $('#export_user_id').val(targetId).trigger('change');
+                $('#export_user_id_hidden').val(targetId);
             }
         }
 
         initExportModalSelect2();
 
-        $('#modalExportExcel').on('shown.bs.modal', function () {
+        $('#modalExportExcel').on('show.bs.modal shown.bs.modal', function () {
             initExportModalSelect2();
+            syncExportStaffWithChecklist();
         });
 
         var table = $('#rencanakerja-table').DataTable({

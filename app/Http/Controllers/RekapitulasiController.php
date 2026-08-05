@@ -53,17 +53,7 @@ class RekapitulasiController extends Controller
 
         $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
 
-        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-            // Seluruh data
-        } elseif ($authUser->isPimpinanUnit()) {
-            $query->where(function ($q) use ($authUser) {
-                $q->whereHas('user', function ($qu) use ($authUser) {
-                    $qu->where('unit', $authUser->unit);
-                })->orWhereHas('taggedUsers', function ($qt) use ($authUser) {
-                    $qt->where('users.id', $authUser->id);
-                });
-            });
-        } else {
+        if (!$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
             $query->where(function ($q) use ($authUser) {
                 $q->where('user_id', $authUser->id)
                   ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {

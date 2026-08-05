@@ -25,27 +25,13 @@ class KepanitiaanController extends Controller
         if ($request->ajax()) {
             $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
 
-            if ($authUser) {
-                if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-                    // Admin & Rektorat -> All data
-                } elseif ($authUser->isPimpinanUnit()) {
-                    // Pimpinan Unit -> Unit data or tagged
-                    $query->where(function ($q) use ($authUser) {
-                        $q->whereHas('user', function ($qu) use ($authUser) {
-                            $qu->where('unit', $authUser->unit);
-                        })->orWhereHas('taggedUsers', function ($qt) use ($authUser) {
-                            $qt->where('users.id', $authUser->id);
-                        });
-                    });
-                } else {
-                    // Staff -> Own or tagged
-                    $query->where(function ($q) use ($authUser) {
-                        $q->where('user_id', $authUser->id)
-                          ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                              $qu->where('users.id', $authUser->id);
-                          });
-                    });
-                }
+            if ($authUser && !$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
+                $query->where(function ($q) use ($authUser) {
+                    $q->where('user_id', $authUser->id)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                          $qu->where('users.id', $authUser->id);
+                      });
+                });
             }
 
             if ($request->filled('jabatan')) {
@@ -392,14 +378,7 @@ class KepanitiaanController extends Controller
      */
     public function create()
     {
-        $authUser = Auth::user();
-        $usersQuery = User::query();
-
-        if ($authUser && !$authUser->isAdmin()) {
-            $usersQuery->where('unit', $authUser->unit);
-        }
-
-        $users = $usersQuery->orderBy('name')->get();
+        $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
@@ -453,13 +432,7 @@ class KepanitiaanController extends Controller
             }
         }
 
-        $usersQuery = User::query();
-
-        if ($authUser && !$authUser->isAdmin()) {
-            $usersQuery->where('unit', $authUser->unit);
-        }
-
-        $users = $usersQuery->orderBy('name')->get();
+        $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
 
         return view('pages.kepanitiaan.edit', compact('kepanitiaan', 'users', 'periodeAkademiks'));
@@ -960,7 +933,12 @@ class KepanitiaanController extends Controller
         }
 
         if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+            $query->where(function ($q) use ($request) {
+                $q->where('user_id', $request->user_id)
+                  ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                      $qu->where('users.id', $request->user_id);
+                  });
+            });
         }
 
         if ($request->filled('jabatan')) {
@@ -983,6 +961,10 @@ class KepanitiaanController extends Controller
             $namaStaff = strtoupper($u->name);
             $jabatanStaff = strtoupper($u->jabatan ?? '-');
             $unitStaff = strtoupper($u->unit ?? '-');
+        } elseif ($request->filled('jabatan') && ($u = User::where('jabatan', $request->jabatan)->first())) {
+            $namaStaff = strtoupper($u->name);
+            $jabatanStaff = strtoupper($u->jabatan ?? '-');
+            $unitStaff = strtoupper($u->unit ?? '-');
         } elseif ($items->count() > 0 && $items->pluck('user_id')->unique()->count() === 1) {
             $firstUser = $items->first()->user;
             if ($firstUser) {
@@ -990,14 +972,10 @@ class KepanitiaanController extends Controller
                 $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
                 $unitStaff = strtoupper($firstUser->unit ?? '-');
             }
-        } elseif ($request->filled('jabatan')) {
-            $jabatanStaff = strtoupper($request->jabatan);
-            $userWithJabatan = User::where('jabatan', $request->jabatan)->first();
-            if ($userWithJabatan && $userWithJabatan->unit) {
-                $unitStaff = strtoupper($userWithJabatan->unit);
-            }
-        } elseif ($authUser && $authUser->unit) {
-            $unitStaff = strtoupper($authUser->unit);
+        } elseif ($authUser && !$authUser->isSuperAdmin()) {
+            $namaStaff = strtoupper($authUser->name);
+            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
+            $unitStaff = strtoupper($authUser->unit ?? '-');
         }
 
         $periodeText = 'PERIODE AKADEMIK';
@@ -1117,14 +1095,24 @@ class KepanitiaanController extends Controller
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
                 if ($request->filled('user_id')) {
-                    $query->where('user_id', $request->user_id);
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
+                    });
                 }
             } elseif ($authUser->isPimpinanUnit()) {
                 $query->whereHas('user', function ($q) use ($authUser) {
                     $q->where('unit', $authUser->unit);
                 });
                 if ($request->filled('user_id')) {
-                    $query->where('user_id', $request->user_id);
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
+                    });
                 }
             } else {
                 $query->where(function ($q) use ($authUser) {
@@ -1156,6 +1144,10 @@ class KepanitiaanController extends Controller
             $namaStaff = strtoupper($u->name);
             $jabatanStaff = strtoupper($u->jabatan ?? '-');
             $unitStaff = strtoupper($u->unit ?? '-');
+        } elseif ($request->filled('jabatan') && ($u = User::where('jabatan', $request->jabatan)->first())) {
+            $namaStaff = strtoupper($u->name);
+            $jabatanStaff = strtoupper($u->jabatan ?? '-');
+            $unitStaff = strtoupper($u->unit ?? '-');
         } elseif ($items->count() > 0 && $items->pluck('user_id')->unique()->count() === 1) {
             $firstUser = $items->first()->user;
             if ($firstUser) {
@@ -1163,14 +1155,10 @@ class KepanitiaanController extends Controller
                 $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
                 $unitStaff = strtoupper($firstUser->unit ?? '-');
             }
-        } elseif ($request->filled('jabatan')) {
-            $jabatanStaff = strtoupper($request->jabatan);
-            $userWithJabatan = User::where('jabatan', $request->jabatan)->first();
-            if ($userWithJabatan && $userWithJabatan->unit) {
-                $unitStaff = strtoupper($userWithJabatan->unit);
-            }
-        } elseif ($authUser && $authUser->unit) {
-            $unitStaff = strtoupper($authUser->unit);
+        } elseif ($authUser && !$authUser->isSuperAdmin()) {
+            $namaStaff = strtoupper($authUser->name);
+            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
+            $unitStaff = strtoupper($authUser->unit ?? '-');
         }
 
         $periodeText = 'PERIODE AKADEMIK';

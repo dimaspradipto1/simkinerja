@@ -51,7 +51,7 @@
                             </select>
                         </div>
                         
-                        @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
+                        @if(auth()->check() && auth()->user()->isRektorOrSuperAdmin())
                         <div class="col-md-6 col-lg-5">
                             <label for="filter_jabatan" class="form-label fw-semibold text-secondary small">Kriteria Checklist Jabatan</label>
                             <select name="jabatan" id="filter_jabatan" class="form-select select2-simple">

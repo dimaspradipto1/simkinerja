@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kepanitiaan;
+use App\Models\Insidentil;
 use App\Models\PeriodeAkademik;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 
-class RekapitulasiKepanitiaanController extends Controller
+class RekapitulasiInsidentilController extends Controller
 {
     /**
-     * Display the Rekapitulasi page for Kepanitiaan.
+     * Display the Rekapitulasi page for Insidentil.
      */
     public function index()
     {
@@ -38,11 +38,11 @@ class RekapitulasiKepanitiaanController extends Controller
                 ->get();
         }
 
-        return view('pages.rekapitulasi-kepanitiaan.index', compact('periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan'));
+        return view('pages.rekapitulasi-insidentil.index', compact('periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan'));
     }
 
     /**
-     * Get DataTable source and overall rekap counts for Kepanitiaan.
+     * Get DataTable source and overall rekap counts for Insidentil.
      */
     public function getData(Request $request)
     {
@@ -51,7 +51,7 @@ class RekapitulasiKepanitiaanController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
+        $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers']);
 
         if (!$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
             $query->where(function ($q) use ($authUser) {
@@ -69,10 +69,8 @@ class RekapitulasiKepanitiaanController extends Controller
         if ($request->filled('jabatan')) {
             $filterValue = $request->jabatan;
             if (is_numeric($filterValue)) {
-                // Filter by specific user as MAKER only (not as tagged participant)
                 $query->where('user_id', $filterValue);
             } else {
-                // Fallback: filter by jabatan string
                 $query->where(function ($q) use ($request) {
                     $q->whereHas('user', function ($qu) use ($request) {
                         $qu->where('jabatan', $request->jabatan);

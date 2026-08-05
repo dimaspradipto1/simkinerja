@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4 landscape;
-            margin: 8mm 12mm 10mm 12mm;
+            margin: 6mm 6mm 8mm 6mm;
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
@@ -86,12 +86,12 @@
     <!-- Kop Surat Universitas Ibnu Sina -->
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
         <tr>
-            <td style="width: 85px; text-align: left; vertical-align: middle;">
+            <td style="width: 75px; text-align: left; vertical-align: middle; padding: 0;">
                 @if(file_exists(public_path('assets/img/logouis.png')))
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/img/logouis.png'))) }}" style="height: 72px; width: auto;">
+                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/img/logouis.png'))) }}" style="height: 72px; width: auto; display: block; margin: 0;">
                 @endif
             </td>
-            <td style="text-align: center; vertical-align: middle; padding-right: 85px;">
+            <td style="text-align: center; vertical-align: middle; padding-right: 75px; padding-left: 0;">
                 <div style="font-size: 11pt; font-weight: bold; color: #356B3A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
                     YAYASAN PENDIDIKAN IBNU SINA BATAM (YAPISTA)
                 </div>
@@ -128,6 +128,11 @@
             <td class="meta-label">UNIT</td>
             <td class="meta-sep">:</td>
             <td><strong>{{ $unitStaff }}</strong></td>
+        </tr>
+        <tr>
+            <td class="meta-label">PERIODE AKADEMIK</td>
+            <td class="meta-sep">:</td>
+            <td><strong>{{ $periodeText }}</strong></td>
         </tr>
     </table>
 

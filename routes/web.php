@@ -10,7 +10,11 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RekapitulasiController;
 use App\Http\Controllers\KepanitiaanController;
 use App\Http\Controllers\RekapitulasiKepanitiaanController;
+use App\Http\Controllers\InsidentilController;
+use App\Http\Controllers\RekapitulasiInsidentilController;
 use Illuminate\Support\Facades\Route;
+
+
 
 Route::controller(AuthController::class)->group(function () {
     Route::get('/', 'login')->name('login');
@@ -65,7 +69,25 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('rekapitulasi-kepanitiaan/data', [RekapitulasiKepanitiaanController::class, 'getData'])->name('rekapitulasi-kepanitiaan.data');
     Route::resource('rekapitulasi-kepanitiaan', RekapitulasiKepanitiaanController::class)->only(['index']);
 
+    // Insidentil Routes
+    Route::get('insidentil/download-template', [InsidentilController::class, 'downloadTemplate'])->name('insidentil.download-template');
+    Route::get('insidentil/export-excel', [InsidentilController::class, 'exportExcel'])->name('insidentil.export-excel');
+    Route::get('insidentil/export-pdf', [InsidentilController::class, 'exportPdf'])->name('insidentil.export-pdf');
+    Route::post('insidentil/import-excel', [InsidentilController::class, 'importExcel'])->name('insidentil.import-excel');
+    Route::post('insidentil/{insidentil}/start', [InsidentilController::class, 'start'])->name('insidentil.start');
+    Route::post('insidentil/{insidentil}/stop', [InsidentilController::class, 'stop'])->name('insidentil.stop');
+    Route::post('insidentil/{insidentil}/upload-attachment', [InsidentilController::class, 'uploadAttachment'])->name('insidentil.upload-attachment');
+    Route::post('insidentil/bulk-delete', [InsidentilController::class, 'bulkDelete'])->name('insidentil.bulk-delete');
+    Route::post('insidentil/{insidentil}/update-tags', [InsidentilController::class, 'updateTags'])->name('insidentil.update-tags');
+    Route::resource('insidentil', InsidentilController::class);
+
+    // Rekapitulasi Insidentil Routes
+    Route::get('rekapitulasi-insidentil/data', [RekapitulasiInsidentilController::class, 'getData'])->name('rekapitulasi-insidentil.data');
+    Route::resource('rekapitulasi-insidentil', RekapitulasiInsidentilController::class)->only(['index']);
+
     Route::resource('evaluasi', EvaluasiController::class)->except(['edit', 'update']);
+
+
 
     Route::resource('evaluasi-pengenalan-wawasan-ibnu-sina', EvaluasiPengenalanWawasanIbnuSinaController::class)
         ->names('evaluasipengenalanwawasanibnusina')
