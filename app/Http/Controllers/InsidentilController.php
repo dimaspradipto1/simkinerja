@@ -429,14 +429,26 @@ class InsidentilController extends Controller
 
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-            } elseif ($authUser->isPimpinanUnit()) {
-                $query->where(function ($q) use ($authUser) {
-                    $q->whereHas('user', function ($qu) use ($authUser) {
-                        $qu->where('unit', $authUser->unit);
-                    })->orWhereHas('taggedUsers', function ($qt) use ($authUser) {
-                        $qt->where('users.id', $authUser->id);
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
                     });
+                }
+            } elseif ($authUser->isPimpinanUnit()) {
+                $query->whereHas('user', function ($q) use ($authUser) {
+                    $q->where('unit', $authUser->unit);
                 });
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
+                    });
+                }
             } else {
                 $query->where(function ($q) use ($authUser) {
                     $q->where('user_id', $authUser->id)
@@ -451,15 +463,48 @@ class InsidentilController extends Controller
             $query->where('periode_akademik_id', $request->periode_akademik_id);
         }
 
-        $insidentils = $query->latest()->get();
-        $periode = PeriodeAkademik::find($request->periode_akademik_id);
+        $items = $query->latest()->get();
 
-        $pdf = Pdf::loadView('pages.insidentil.pdf', compact('insidentils', 'periode'));
-        return $pdf->download('Rencana_Kerja_Insidentil_' . date('YmdHis') . '.pdf');
+        $namaStaff = 'SEMUA STAFF';
+        $jabatanStaff = 'SEMUA JABATAN';
+        $unitStaff = 'SEMUA UNIT';
+
+        if ($request->filled('user_id') && ($u = User::find($request->user_id))) {
+            $namaStaff = strtoupper($u->name);
+            $jabatanStaff = strtoupper($u->jabatan ?? '-');
+            $unitStaff = strtoupper($u->unit ?? '-');
+        } elseif ($items->count() > 0 && $items->pluck('user_id')->unique()->count() === 1) {
+            $firstUser = $items->first()->user;
+            if ($firstUser) {
+                $namaStaff = strtoupper($firstUser->name);
+                $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
+                $unitStaff = strtoupper($firstUser->unit ?? '-');
+            }
+        } elseif ($authUser && !$authUser->isSuperAdmin()) {
+            $namaStaff = strtoupper($authUser->name);
+            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
+            $unitStaff = strtoupper($authUser->unit ?? '-');
+        }
+
+        $periodeText = 'SEMUA PERIODE';
+        if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
+            $periodeText = strtoupper($p->nama_periode);
+        } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
+            $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
+        }
+
+        $safeStaff = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $namaStaff)));
+        $safePeriode = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $periodeText)));
+        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode') . '_laporan insidentil.pdf';
+
+        $pdf = Pdf::loadView('pages.insidentil.pdf', compact('items', 'namaStaff', 'jabatanStaff', 'unitStaff', 'periodeText'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download($filename);
     }
 
     /**
-     * Export data to Excel/CSV.
+     * Export data to Excel.
      */
     public function exportExcel(Request $request)
     {
@@ -468,14 +513,26 @@ class InsidentilController extends Controller
 
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-            } elseif ($authUser->isPimpinanUnit()) {
-                $query->where(function ($q) use ($authUser) {
-                    $q->whereHas('user', function ($qu) use ($authUser) {
-                        $qu->where('unit', $authUser->unit);
-                    })->orWhereHas('taggedUsers', function ($qt) use ($authUser) {
-                        $qt->where('users.id', $authUser->id);
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
                     });
+                }
+            } elseif ($authUser->isPimpinanUnit()) {
+                $query->whereHas('user', function ($q) use ($authUser) {
+                    $q->where('unit', $authUser->unit);
                 });
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
+                    });
+                }
             } else {
                 $query->where(function ($q) use ($authUser) {
                     $q->where('user_id', $authUser->id)
@@ -490,38 +547,154 @@ class InsidentilController extends Controller
             $query->where('periode_akademik_id', $request->periode_akademik_id);
         }
 
-        $insidentils = $query->latest()->get();
+        $items = $query->latest()->get();
 
-        $filename = 'Rencana_Kerja_Insidentil_' . date('YmdHis') . '.csv';
+        $namaStaff = 'SEMUA STAFF';
+        $jabatanStaff = 'SEMUA JABATAN';
+        $unitStaff = 'SEMUA UNIT';
+
+        if ($request->filled('user_id') && ($u = User::find($request->user_id))) {
+            $namaStaff = strtoupper($u->name);
+            $jabatanStaff = strtoupper($u->jabatan ?? '-');
+            $unitStaff = strtoupper($u->unit ?? '-');
+        } elseif ($items->count() > 0 && $items->pluck('user_id')->unique()->count() === 1) {
+            $firstUser = $items->first()->user;
+            if ($firstUser) {
+                $namaStaff = strtoupper($firstUser->name);
+                $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
+                $unitStaff = strtoupper($firstUser->unit ?? '-');
+            }
+        } elseif ($authUser && !$authUser->isSuperAdmin()) {
+            $namaStaff = strtoupper($authUser->name);
+            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
+            $unitStaff = strtoupper($authUser->unit ?? '-');
+        }
+
+        $periodeText = 'SEMUA PERIODE';
+        if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
+            $periodeText = strtoupper($p->nama_periode);
+        } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
+            $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Laporan Insidentil');
+
+        // Row 1: Title
+        $titleText = 'LAPORAN RENCANA KERJA INSIDENTIL (' . $periodeText . ')';
+        $sheet->mergeCells('A1:K1');
+        $sheet->setCellValue('A1', $titleText);
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:K1')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('15432D');
+        $sheet->getStyle('A1:K1')->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
+            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(1)->setRowHeight(30);
+
+        // Rows 3-6: Metadata
+        $sheet->setCellValue('A3', 'NAMA STAFF');
+        $sheet->setCellValue('B3', ':');
+        $sheet->setCellValue('C3', $namaStaff);
+        $sheet->getStyle('A3')->getFont()->setBold(true);
+        $sheet->getStyle('C3')->getFont()->setBold(true);
+
+        $sheet->setCellValue('A4', 'JABATAN');
+        $sheet->setCellValue('B4', ':');
+        $sheet->setCellValue('C4', $jabatanStaff);
+        $sheet->getStyle('A4')->getFont()->setBold(true);
+        $sheet->getStyle('C4')->getFont()->setBold(true);
+
+        $sheet->setCellValue('A5', 'UNIT');
+        $sheet->setCellValue('B5', ':');
+        $sheet->setCellValue('C5', $unitStaff);
+        $sheet->getStyle('A5')->getFont()->setBold(true);
+        $sheet->getStyle('C5')->getFont()->setBold(true);
+
+        $sheet->setCellValue('A6', 'PERIODE AKADEMIK');
+        $sheet->setCellValue('B6', ':');
+        $sheet->setCellValue('C6', $periodeText);
+        $sheet->getStyle('A6')->getFont()->setBold(true);
+        $sheet->getStyle('C6')->getFont()->setBold(true);
+
+        // Row 8: Table Headers
         $headers = [
-            "Content-type" => "text/csv",
-            "Content-Disposition" => "attachment; filename={$filename}",
-            "Pragma" => "no-cache",
-            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-            "Expires" => "0"
+            'A8' => 'NO',
+            'B8' => 'HARI',
+            'C8' => 'URAIAN TUGAS',
+            'D8' => 'REKAN KERJA',
+            'E8' => 'EST. TGL MULAI',
+            'F8' => 'EST. JAM MULAI',
+            'G8' => 'EST. TGL SELESAI',
+            'H8' => 'EST. JAM SELESAI',
+            'I8' => 'TGL MULAI REALISASI',
+            'J8' => 'TGL SELESAI REALISASI',
+            'K8' => 'STATUS',
         ];
 
-        $callback = function () use ($insidentils) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, ['No', 'Uraian Tugas', 'Pembuat', 'Rekan Kerja', 'Hari', 'Estimasi Jam', 'Estimasi Tanggal', 'Status']);
+        foreach ($headers as $cell => $val) {
+            $sheet->setCellValue($cell, $val);
+        }
 
-            foreach ($insidentils as $index => $item) {
-                $taggedStr = $item->taggedUsers->pluck('name')->implode(', ');
-                fputcsv($file, [
-                    $index + 1,
-                    $item->uraian_tugas,
-                    $item->user ? $item->user->name : '-',
-                    $taggedStr ?: '-',
-                    $item->hari ?? '-',
-                    ($item->estimasi_jam_mulai ?? '-') . ' - ' . ($item->estimasi_jam_selesai ?? '-'),
-                    ($item->estimasi_tanggal_mulai ?? '-') . ' - ' . ($item->estimasi_tanggal_selesai ?? '-'),
-                    $item->status
-                ]);
-            }
+        $headerRange = 'A8:K8';
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(9);
+        $sheet->getStyle($headerRange)->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('15432D');
+        $sheet->getStyle($headerRange)->getFont()->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle($headerRange)->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
+            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(8)->setRowHeight(25);
 
-            fclose($file);
-        };
+        $rowNum = 9;
+        $no = 1;
 
-        return response()->stream($callback, 200, $headers);
+        foreach ($items as $item) {
+            $sheet->setCellValue('A' . $rowNum, $no++);
+            $sheet->setCellValue('B' . $rowNum, $item->hari ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item->uraian_tugas);
+            $sheet->setCellValue('D' . $rowNum, $item->taggedUsers->pluck('name')->implode(', ') ?: '-');
+            $sheet->setCellValue('E' . $rowNum, $item->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) : '-');
+            $sheet->setCellValue('F' . $rowNum, $item->estimasi_jam_mulai ? substr($item->estimasi_jam_mulai, 0, 5) : '-');
+            $sheet->setCellValue('G' . $rowNum, $item->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) : '-');
+            $sheet->setCellValue('H' . $rowNum, $item->estimasi_jam_selesai ? substr($item->estimasi_jam_selesai, 0, 5) : '-');
+            $sheet->setCellValue('I' . $rowNum, $item->tanggal_mulai ? date('d/m/Y', strtotime($item->tanggal_mulai)) . ($item->waktu_mulai ? ' ' . substr($item->waktu_mulai, 0, 5) : '') : '-');
+            $sheet->setCellValue('J' . $rowNum, $item->tanggal_selesai ? date('d/m/Y', strtotime($item->tanggal_selesai)) . ($item->waktu_selesai ? ' ' . substr($item->waktu_selesai, 0, 5) : '') : '-');
+            $sheet->setCellValue('K' . $rowNum, $item->status ?? '-');
+
+            $sheet->getStyle('A' . $rowNum . ':K' . $rowNum)->getAlignment()->setWrapText(true)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $rowNum++;
+        }
+
+        // Borders
+        if ($rowNum > 9) {
+            $sheet->getStyle('A8:K' . ($rowNum - 1))->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['argb' => 'FFCCCCCC'],
+                    ],
+                ],
+            ]);
+        }
+
+        foreach (range('A', 'K') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $safeStaff = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $namaStaff)));
+        $safePeriode = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $periodeText)));
+        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode') . '_laporan insidentil.xlsx';
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $tempFile = tempnam(sys_get_temp_dir(), 'insidentil_export_');
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 }

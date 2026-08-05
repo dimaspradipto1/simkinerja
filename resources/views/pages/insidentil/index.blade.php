@@ -87,12 +87,9 @@
                 <button type="button" class="btn btn-danger btn-sm text-white" id="btn-bulk-delete" style="display: none;">
                     <i class="bi bi-trash me-1"></i> Hapus Terpilih
                 </button>
-                <a href="#" id="btn-export-pdf" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-file-pdf me-1"></i> PDF
-                </a>
-                <a href="#" id="btn-export-excel" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-file-excel me-1"></i> Excel
-                </a>
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalExportExcel">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i> Export Laporan
+                </button>
             </div>
         </div>
 
@@ -206,6 +203,61 @@
 </div>
 @endsection
 
+<!-- Modal Export Laporan -->
+<div class="modal fade" id="modalExportExcel" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <form action="{{ route('insidentil.export-excel') }}" method="GET">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #15432d;">
+                    <h5 class="modal-title text-white fw-bold"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export Laporan Insidentil</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="export_periode_akademik_id" class="form-label fw-bold text-dark mb-1">
+                            Pilih Periode Akademik <span class="text-danger">*</span>
+                        </label>
+                        <select name="periode_akademik_id" id="export_periode_akademik_id" class="form-select bg-white" required>
+                            <option value="">-- Pilih Periode Akademik --</option>
+                            @foreach($periodeAkademiks as $p)
+                                <option value="{{ $p->id }}">{{ $p->nama_periode }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
+                    <div class="mb-3">
+                        <label for="export_user_id" class="form-label fw-bold text-dark mb-1">
+                            Pilih Jabatan / Staff <span class="text-muted fw-normal">(Read Only / Sesuai Checklist)</span>
+                        </label>
+                        <input type="hidden" name="user_id" id="export_user_id_hidden">
+                        <select id="export_user_id" class="form-select bg-light" disabled style="pointer-events: none;">
+                            <option value="">-- Semua Staff / Jabatan --</option>
+                            @foreach($usersWithJabatan as $u)
+                                <option value="{{ $u->id }}" data-jabatan="{{ $u->jabatan }}">{{ $u->name }} &mdash; {{ $u->jabatan }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @else
+                        <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                    @endif
+                </div>
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" formaction="{{ route('insidentil.export-excel') }}" class="btn btn-success px-3 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
+                            <i class="bi bi-file-earmark-excel me-1"></i> Unduh Excel
+                        </button>
+                        <button type="submit" formaction="{{ route('insidentil.export-pdf') }}" class="btn btn-danger px-3 text-white fw-bold">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Unduh PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 $(document).ready(function() {
@@ -258,17 +310,28 @@ $(document).ready(function() {
 
     $('#filter_periode, #filter_jabatan').on('change', function() {
         table.ajax.reload();
-        updateExportLinks();
+        syncExportModal();
     });
 
-    function updateExportLinks() {
+    function syncExportModal() {
+        // Sync periode
         let p = $('#filter_periode').val();
-        let pdfUrl = "{{ route('insidentil.export-pdf') }}" + (p ? "?periode_akademik_id=" + p : "");
-        let excelUrl = "{{ route('insidentil.export-excel') }}" + (p ? "?periode_akademik_id=" + p : "");
-        $('#btn-export-pdf').attr('href', pdfUrl);
-        $('#btn-export-excel').attr('href', excelUrl);
+        if (p && $('#export_periode_akademik_id option[value="' + p + '"]').length) {
+            $('#export_periode_akademik_id').val(p).trigger('change');
+        }
+
+        // Sync user
+        if (!$('#export_user_id').length) return;
+        let authId = "{{ auth()->user()->id }}";
+        if ($('#export_user_id option[value="' + authId + '"]').length) {
+            $('#export_user_id').val(authId).trigger('change');
+            $('#export_user_id_hidden').val(authId);
+        }
     }
-    updateExportLinks();
+
+    $('#modalExportExcel').on('show.bs.modal shown.bs.modal', function() {
+        syncExportModal();
+    });
 
     // Checkbox bulk select
     $('#select-all-checkbox').on('click', function() {
