@@ -12,6 +12,7 @@ use App\Http\Controllers\KepanitiaanController;
 use App\Http\Controllers\RekapitulasiKepanitiaanController;
 use App\Http\Controllers\InsidentilController;
 use App\Http\Controllers\RekapitulasiInsidentilController;
+use App\Http\Controllers\MilestoneController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('rencana-kerja/export-pdf', [RencanaKerjaController::class, 'exportPdf'])->name('rencana-kerja.export-pdf');
     Route::post('rencana-kerja/import-excel', [RencanaKerjaController::class, 'importExcel'])->name('rencana-kerja.import-excel');
     Route::post('rencana-kerja/{rencana_kerja}/start', [RencanaKerjaController::class, 'start'])->name('rencana-kerja.start');
+    Route::post('rencana-kerja/{rencana_kerja}/pause', [RencanaKerjaController::class, 'pause'])->name('rencana-kerja.pause');
     Route::post('rencana-kerja/{rencana_kerja}/stop', [RencanaKerjaController::class, 'stop'])->name('rencana-kerja.stop');
     Route::post('rencana-kerja/{rencana_kerja}/upload-attachment', [RencanaKerjaController::class, 'uploadAttachment'])->name('rencana-kerja.upload-attachment');
     Route::post('rencana-kerja/bulk-delete', [RencanaKerjaController::class, 'bulkDelete'])->name('rencana-kerja.bulk-delete');
@@ -59,6 +61,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('kepanitiaan/export-pdf', [KepanitiaanController::class, 'exportPdf'])->name('kepanitiaan.export-pdf');
     Route::post('kepanitiaan/import-excel', [KepanitiaanController::class, 'importExcel'])->name('kepanitiaan.import-excel');
     Route::post('kepanitiaan/{kepanitiaan}/start', [KepanitiaanController::class, 'start'])->name('kepanitiaan.start');
+    Route::post('kepanitiaan/{kepanitiaan}/pause', [KepanitiaanController::class, 'pause'])->name('kepanitiaan.pause');
     Route::post('kepanitiaan/{kepanitiaan}/stop', [KepanitiaanController::class, 'stop'])->name('kepanitiaan.stop');
     Route::post('kepanitiaan/{kepanitiaan}/upload-attachment', [KepanitiaanController::class, 'uploadAttachment'])->name('kepanitiaan.upload-attachment');
     Route::post('kepanitiaan/bulk-delete', [KepanitiaanController::class, 'bulkDelete'])->name('kepanitiaan.bulk-delete');
@@ -75,6 +78,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('insidentil/export-pdf', [InsidentilController::class, 'exportPdf'])->name('insidentil.export-pdf');
     Route::post('insidentil/import-excel', [InsidentilController::class, 'importExcel'])->name('insidentil.import-excel');
     Route::post('insidentil/{insidentil}/start', [InsidentilController::class, 'start'])->name('insidentil.start');
+    Route::post('insidentil/{insidentil}/pause', [InsidentilController::class, 'pause'])->name('insidentil.pause');
     Route::post('insidentil/{insidentil}/stop', [InsidentilController::class, 'stop'])->name('insidentil.stop');
     Route::post('insidentil/{insidentil}/upload-attachment', [InsidentilController::class, 'uploadAttachment'])->name('insidentil.upload-attachment');
     Route::post('insidentil/bulk-delete', [InsidentilController::class, 'bulkDelete'])->name('insidentil.bulk-delete');
@@ -84,6 +88,14 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     // Rekapitulasi Insidentil Routes
     Route::get('rekapitulasi-insidentil/data', [RekapitulasiInsidentilController::class, 'getData'])->name('rekapitulasi-insidentil.data');
     Route::resource('rekapitulasi-insidentil', RekapitulasiInsidentilController::class)->only(['index']);
+
+    // Milestone Routes
+    Route::post('milestone', [MilestoneController::class, 'store'])->name('milestone.store');
+    Route::post('milestone/{milestone}/start', [MilestoneController::class, 'start'])->name('milestone.start');
+    Route::post('milestone/{milestone}/pause', [MilestoneController::class, 'pause'])->name('milestone.pause');
+    Route::post('milestone/{milestone}/stop', [MilestoneController::class, 'stop'])->name('milestone.stop');
+    Route::delete('milestone/{milestone}', [MilestoneController::class, 'destroy'])->name('milestone.destroy');
+    Route::get('milestone/data', [MilestoneController::class, 'index'])->name('milestone.index');
 
     Route::resource('evaluasi', EvaluasiController::class)->except(['edit', 'update']);
 

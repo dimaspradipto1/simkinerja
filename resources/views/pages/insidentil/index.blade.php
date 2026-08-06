@@ -202,6 +202,7 @@
     </div>
 </div>
 @endsection
+@include('partials.milestone-scripts')
 
 <!-- Modal Export Laporan -->
 <div class="modal fade" id="modalExportExcel" tabindex="-1" aria-hidden="true">

@@ -43,5 +43,10 @@ class Insidentil extends Model
     {
         return $this->belongsToMany(User::class, 'insidentil_user', 'insidentil_id', 'user_id')->withTimestamps();
     }
+
+    public function milestones()
+    {
+        return $this->morphMany(Milestone::class, 'milestonable');
+    }
 }
 

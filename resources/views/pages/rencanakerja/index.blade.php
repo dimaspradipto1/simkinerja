@@ -223,11 +223,9 @@
                         <button type="button" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
                             <i class="bi bi-file-earmark-excel text-success me-1"></i> Import Excel
                         </button>
-                        @if(auth()->check() && (!auth()->user()->isPimpinanUnit() && !auth()->user()->isAdmin()))
-                            <a href="{{ route('rencana-kerja.create') }}" class="btn btn-green-add text-nowrap">
-                                <i class="bi bi-plus-lg me-1"></i> Tambah Tugas
-                            </a>
-                        @endif
+                        <a href="{{ route('rencana-kerja.create') }}" class="btn btn-sm btn-success text-white fw-bold text-nowrap px-3 shadow-xs" style="background-color: #15432d; border-color: #15432d;">
+                            <i class="bi bi-plus-circle-fill me-1"></i> Tambah Rencana Kerja
+                        </a>
                     </div>
                 </div>
                 <div class="card-body p-3">
@@ -401,6 +399,7 @@
         </div>
     </div>
 </div>
+@include('partials.milestone-scripts')
 @endsection
 
 @push('scripts')

@@ -42,4 +42,9 @@ class Kepanitiaan extends Model
     {
         return $this->belongsToMany(User::class, 'kepanitiaan_user', 'kepanitiaan_id', 'user_id')->withTimestamps();
     }
+
+    public function milestones()
+    {
+        return $this->morphMany(Milestone::class, 'milestonable');
+    }
 }

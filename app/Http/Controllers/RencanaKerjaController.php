@@ -23,7 +23,7 @@ class RencanaKerjaController extends Controller
         $authUser = Auth::user();
 
         if ($request->ajax()) {
-            $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
+            $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
             if ($authUser && !$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
                 $query->where(function ($q) use ($authUser) {
@@ -234,6 +234,9 @@ class RencanaKerjaController extends Controller
                     $html .= '</div>'; // end row
                     $html .= '</div>'; // end card
 
+                    // Milestone Points Widget Section
+                    $html .= \App\Helpers\MilestoneHelper::renderWidget($row->milestones, $row->id, \App\Models\RencanaKerja::class);
+
                     // Form Inline Upload Berkas & Link di bawah nama jika tugas Selesai / Waktu Selesai terisi
                     if (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') {
                         $html .= '<form class="form-inline-upload mt-2 p-3 bg-light rounded border shadow-sm" data-id="' . $row->id . '" enctype="multipart/form-data">';
@@ -288,13 +291,19 @@ class RencanaKerjaController extends Controller
 
                     $waktuMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
                     $waktuSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
+                    $status = $row->status ?? 'Belum Dimulai';
 
-                    if (!$waktuMulai) {
-                        $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 btn-start-timer" style="background-color: #15432d; border-color: #15432d; height: 32px; min-width: 90px; cursor: pointer;"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
-                    } elseif ($waktuMulai && !$waktuSelesai) {
-                        $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.stopTimer(' . $row->id . ')" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-3 me-1 btn-stop-timer" style="background-color: #8b0000; border-color: #8b0000; height: 32px; min-width: 90px; cursor: pointer;"><i class="bi bi-stop-fill me-1"></i> Selesai</button>';
+                    if (!$waktuMulai && $status !== 'Di-pause') {
+                        $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 btn-start-timer" style="background-color: #15432d; border-color: #15432d; height: 32px; min-width: 85px; cursor: pointer;"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
+                    } elseif (($waktuMulai || $status === 'Di-pause') && !$waktuSelesai) {
+                        if ($status === 'Di-pause') {
+                            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-sm btn-success text-white fw-bold text-nowrap px-2 me-1 btn-resume-timer" style="height: 32px; cursor: pointer;" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
+                        } else {
+                            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.pauseTaskTimer(' . $row->id . ', \'rencana-kerja\')" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1 btn-pause-timer" style="height: 32px; cursor: pointer;" title="Jeda Pekerjaan"><i class="bi bi-pause-fill me-1"></i> Pause</button>';
+                        }
+                        $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.stopTimer(' . $row->id . ')" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-2 me-1 btn-stop-timer" style="background-color: #8b0000; border-color: #8b0000; height: 32px; cursor: pointer;" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
                     } else {
-                        $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; height: 32px; min-width: 90px; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
+                        $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; height: 32px; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
                     }
 
                     $canEditDelete = false;
@@ -522,22 +531,124 @@ class RencanaKerjaController extends Controller
     }
 
     /**
-     * Start task timer (Play button).
+     * Helper to automatically log milestone points for task timer events.
+     */
+    private function autoLogMilestone($rencanaKerja, $action, $now)
+    {
+        if ($action === 'start') {
+            // Mark any paused milestones as completed for phase 1
+            $pausedMilestones = $rencanaKerja->milestones()->where('status', 'Di-pause')->get();
+            foreach ($pausedMilestones as $pm) {
+                $pm->status = 'Selesai';
+                if (!$pm->waktu_selesai) {
+                    $pm->waktu_selesai = $now;
+                }
+                $pm->save();
+            }
+
+            $runningMilestone = $rencanaKerja->milestones()->where('status', 'Berjalan')->first();
+            if (!$runningMilestone) {
+                $milestoneCount = $rencanaKerja->milestones()->count();
+                $title = ($milestoneCount === 0) ? 'Mulai Pelaksanaan Pekerjaan' : 'Melanjutkan Pekerjaan';
+                $rencanaKerja->milestones()->create([
+                    'nama_milestone' => $title,
+                    'status' => 'Berjalan',
+                    'waktu_mulai' => $now,
+                    'last_started_at' => $now,
+                    'durasi_detik' => 0,
+                ]);
+            }
+        } elseif ($action === 'pause') {
+            $runningMilestones = $rencanaKerja->milestones()->where('status', 'Berjalan')->get();
+            foreach ($runningMilestones as $m) {
+                if ($m->last_started_at) {
+                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
+                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
+                }
+                $m->last_started_at = null;
+                $m->status = 'Di-pause';
+                $m->save();
+            }
+        } elseif ($action === 'stop') {
+            $activeMilestones = $rencanaKerja->milestones()->whereIn('status', ['Berjalan', 'Di-pause'])->get();
+            foreach ($activeMilestones as $m) {
+                if ($m->status === 'Berjalan' && $m->last_started_at) {
+                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
+                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
+                }
+                $m->last_started_at = null;
+                $m->status = 'Selesai';
+                if (!$m->waktu_selesai) {
+                    $m->waktu_selesai = $now;
+                }
+                $m->save();
+            }
+
+            $lastMilestone = $rencanaKerja->milestones()->latest()->first();
+            if (!$lastMilestone || $lastMilestone->nama_milestone !== 'Selesai Pekerjaan') {
+                $rencanaKerja->milestones()->create([
+                    'nama_milestone' => 'Selesai Pekerjaan',
+                    'status' => 'Selesai',
+                    'waktu_mulai' => $now,
+                    'waktu_selesai' => $now,
+                    'durasi_detik' => 0,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Start/Resume task timer (Play button).
      */
     public function start(Request $request, RencanaKerja $rencanaKerja)
     {
         $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
         $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
+        $now = \Carbon\Carbon::now();
 
-        $rencanaKerja->update([
-            'waktu_mulai' => $clientTime,
-            'tanggal_mulai' => $clientDate,
+        $updateData = [
             'status' => 'Berjalan',
-        ]);
+            'last_started_at' => $now,
+        ];
+
+        if (empty($rencanaKerja->waktu_mulai) || $rencanaKerja->waktu_mulai === '00:00:00') {
+            $updateData['waktu_mulai'] = $clientTime;
+            $updateData['tanggal_mulai'] = $clientDate;
+        }
+
+        $rencanaKerja->update($updateData);
+
+        // Auto log milestone point for start/resume
+        $this->autoLogMilestone($rencanaKerja, 'start', $now);
 
         return response()->json([
             'success' => true,
-            'message' => 'Waktu mulai pelaksanaan tugas (' . substr($clientTime, 0, 5) . ') berhasil dicatat.',
+            'message' => 'Tugas berhasil dijalankan (' . substr($clientTime, 0, 5) . ').',
+        ]);
+    }
+
+    /**
+     * Pause task timer (Pause button).
+     */
+    public function pause(Request $request, RencanaKerja $rencanaKerja)
+    {
+        $now = \Carbon\Carbon::now();
+
+        if ($rencanaKerja->status === 'Berjalan' && $rencanaKerja->last_started_at) {
+            $elapsedSeconds = (int) abs($now->diffInSeconds($rencanaKerja->last_started_at));
+            $rencanaKerja->durasi_detik = (int) ($rencanaKerja->durasi_detik ?? 0) + $elapsedSeconds;
+        }
+
+        $rencanaKerja->last_started_at = null;
+        $rencanaKerja->status = 'Di-pause';
+        $rencanaKerja->save();
+
+        // Auto log milestone point for pause
+        $this->autoLogMilestone($rencanaKerja, 'pause', $now);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil di-pause.',
         ]);
     }
 
@@ -548,11 +659,18 @@ class RencanaKerjaController extends Controller
     {
         $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
         $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
+        $now = \Carbon\Carbon::now();
+
+        if ($rencanaKerja->status === 'Berjalan' && $rencanaKerja->last_started_at) {
+            $elapsedSeconds = (int) abs($now->diffInSeconds($rencanaKerja->last_started_at));
+            $rencanaKerja->durasi_detik = (int) ($rencanaKerja->durasi_detik ?? 0) + $elapsedSeconds;
+        }
 
         $updateData = [
             'waktu_selesai' => $clientTime,
             'tanggal_selesai' => $clientDate,
             'status' => 'Selesai',
+            'last_started_at' => null,
         ];
 
         if ($request->hasFile('file')) {
@@ -567,6 +685,9 @@ class RencanaKerjaController extends Controller
         }
 
         $rencanaKerja->update($updateData);
+
+        // Auto log milestone point for stop
+        $this->autoLogMilestone($rencanaKerja, 'stop', $now);
 
         return response()->json([
             'success' => true,

@@ -23,7 +23,7 @@ class InsidentilController extends Controller
         $authUser = Auth::user();
 
         if ($request->ajax()) {
-            $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers']);
+            $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
             if ($authUser && !$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
                 $query->where(function ($q) use ($authUser) {
@@ -103,6 +103,8 @@ class InsidentilController extends Controller
                         $html .= implode('', $tags) . '</div>';
                     }
                     
+                    $html .= \App\Helpers\MilestoneHelper::renderWidget($row->milestones, $row->id, \App\Models\Insidentil::class);
+                    
                     $html .= '</div></div>';
                     return $html;
                 })
@@ -153,11 +155,15 @@ class InsidentilController extends Controller
                 ->addColumn('action', function ($row) use ($authUser) {
                     $btn = '<div class="btn-group" role="group">';
                     
-                    // Start/Stop Timer button
+                    // Start/Pause/Stop Timer buttons
                     if ($row->status === 'Belum Dimulai') {
-                        $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Mulai Pekerjaan"><i class="bi bi-play-fill"></i></button>';
+                        $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Mulai Pekerjaan"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
+                    } elseif ($row->status === 'Di-pause') {
+                        $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
+                        $btn .= '<button type="button" class="btn btn-danger btn-sm btn-stop" data-id="' . $row->id . '" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
                     } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
-                        $btn .= '<button type="button" class="btn btn-danger btn-sm btn-stop" data-id="' . $row->id . '" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill"></i></button>';
+                        $btn .= '<button type="button" class="btn btn-warning btn-sm text-dark fw-bold" onclick="window.pauseTaskTimer(' . $row->id . ', \'insidentil\')" title="Jeda Pekerjaan"><i class="bi bi-pause-fill me-1"></i> Pause</button>';
+                        $btn .= '<button type="button" class="btn btn-danger btn-sm btn-stop" data-id="' . $row->id . '" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
                     }
 
                     // Edit & Delete Buttons based on permissions
@@ -322,17 +328,116 @@ class InsidentilController extends Controller
     }
 
     /**
-     * Start task timer.
+     * Helper to automatically log milestone points for task timer events.
+     */
+    private function autoLogMilestone($insidentil, $action, $now)
+    {
+        if ($action === 'start') {
+            // Mark any paused milestones as completed for phase 1
+            $pausedMilestones = $insidentil->milestones()->where('status', 'Di-pause')->get();
+            foreach ($pausedMilestones as $pm) {
+                $pm->status = 'Selesai';
+                if (!$pm->waktu_selesai) {
+                    $pm->waktu_selesai = $now;
+                }
+                $pm->save();
+            }
+
+            $runningMilestone = $insidentil->milestones()->where('status', 'Berjalan')->first();
+            if (!$runningMilestone) {
+                $milestoneCount = $insidentil->milestones()->count();
+                $title = ($milestoneCount === 0) ? 'Mulai Pelaksanaan Pekerjaan' : 'Melanjutkan Pekerjaan';
+                $insidentil->milestones()->create([
+                    'nama_milestone' => $title,
+                    'status' => 'Berjalan',
+                    'waktu_mulai' => $now,
+                    'last_started_at' => $now,
+                    'durasi_detik' => 0,
+                ]);
+            }
+        } elseif ($action === 'pause') {
+            $runningMilestones = $insidentil->milestones()->where('status', 'Berjalan')->get();
+            foreach ($runningMilestones as $m) {
+                if ($m->last_started_at) {
+                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
+                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
+                }
+                $m->last_started_at = null;
+                $m->status = 'Di-pause';
+                $m->save();
+            }
+        } elseif ($action === 'stop') {
+            $activeMilestones = $insidentil->milestones()->whereIn('status', ['Berjalan', 'Di-pause'])->get();
+            foreach ($activeMilestones as $m) {
+                if ($m->status === 'Berjalan' && $m->last_started_at) {
+                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
+                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
+                }
+                $m->last_started_at = null;
+                $m->status = 'Selesai';
+                if (!$m->waktu_selesai) {
+                    $m->waktu_selesai = $now;
+                }
+                $m->save();
+            }
+
+            $lastMilestone = $insidentil->milestones()->latest()->first();
+            if (!$lastMilestone || $lastMilestone->nama_milestone !== 'Selesai Pekerjaan') {
+                $insidentil->milestones()->create([
+                    'nama_milestone' => 'Selesai Pekerjaan',
+                    'status' => 'Selesai',
+                    'waktu_mulai' => $now,
+                    'waktu_selesai' => $now,
+                    'durasi_detik' => 0,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Start/Resume task timer.
      */
     public function start(Insidentil $insidentil)
     {
-        $insidentil->update([
+        $now = \Carbon\Carbon::now();
+        $updateData = [
             'status' => 'Proses',
-            'tanggal_mulai' => date('Y-m-d'),
-            'waktu_mulai' => date('H:i:s'),
-        ]);
+            'last_started_at' => $now,
+        ];
 
-        return response()->json(['status' => 'success', 'message' => 'Pekerjaan berhasil dimulai.']);
+        if (empty($insidentil->waktu_mulai)) {
+            $updateData['tanggal_mulai'] = date('Y-m-d');
+            $updateData['waktu_mulai'] = date('H:i:s');
+        }
+
+        $insidentil->update($updateData);
+
+        // Auto log milestone point for start/resume
+        $this->autoLogMilestone($insidentil, 'start', $now);
+
+        return response()->json(['status' => 'success', 'message' => 'Pekerjaan berhasil dijalankan.']);
+    }
+
+    /**
+     * Pause task timer.
+     */
+    public function pause(Insidentil $insidentil)
+    {
+        $now = \Carbon\Carbon::now();
+
+        if (($insidentil->status === 'Proses' || $insidentil->status === 'Berjalan') && $insidentil->last_started_at) {
+            $elapsedSeconds = (int) abs($now->diffInSeconds($insidentil->last_started_at));
+            $insidentil->durasi_detik = (int) ($insidentil->durasi_detik ?? 0) + $elapsedSeconds;
+        }
+
+        $insidentil->last_started_at = null;
+        $insidentil->status = 'Di-pause';
+        $insidentil->save();
+
+        // Auto log milestone point for pause
+        $this->autoLogMilestone($insidentil, 'pause', $now);
+
+        return response()->json(['status' => 'success', 'message' => 'Pekerjaan berhasil di-pause.']);
     }
 
     /**
@@ -340,11 +445,22 @@ class InsidentilController extends Controller
      */
     public function stop(Insidentil $insidentil)
     {
+        $now = \Carbon\Carbon::now();
+
+        if (($insidentil->status === 'Proses' || $insidentil->status === 'Berjalan') && $insidentil->last_started_at) {
+            $elapsedSeconds = (int) abs($now->diffInSeconds($insidentil->last_started_at));
+            $insidentil->durasi_detik = (int) ($insidentil->durasi_detik ?? 0) + $elapsedSeconds;
+        }
+
         $insidentil->update([
             'status' => 'Selesai',
             'tanggal_selesai' => date('Y-m-d'),
             'waktu_selesai' => date('H:i:s'),
+            'last_started_at' => null,
         ]);
+
+        // Auto log milestone point for stop
+        $this->autoLogMilestone($insidentil, 'stop', $now);
 
         return response()->json(['status' => 'success', 'message' => 'Pekerjaan telah diselesaikan.']);
     }

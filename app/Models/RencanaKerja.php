@@ -43,4 +43,9 @@ class RencanaKerja extends Model
     {
         return $this->belongsToMany(User::class, 'rencana_kerja_user', 'rencana_kerja_id', 'user_id')->withTimestamps();
     }
+
+    public function milestones()
+    {
+        return $this->morphMany(Milestone::class, 'milestonable');
+    }
 }
