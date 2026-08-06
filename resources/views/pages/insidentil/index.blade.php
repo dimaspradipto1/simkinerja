@@ -492,3 +492,5 @@ $(document).ready(function() {
 });
 </script>
 @endpush
+
+@include('partials.milestone-scripts')

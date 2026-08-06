@@ -1080,3 +1080,5 @@
     };
 </script>
 @endpush
+
+@include('partials.milestone-scripts')
