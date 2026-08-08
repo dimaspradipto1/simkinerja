@@ -128,55 +128,115 @@
             <td class="meta-sep">:</td>
             <td><strong>{{ $unitStaff }}</strong></td>
         </tr>
-        <tr>
-            <td class="meta-label">PERIODE AKADEMIK</td>
-            <td class="meta-sep">:</td>
-            <td><strong>{{ $periodeText }}</strong></td>
-        </tr>
     </table>
 
     <table class="data-table">
         <thead>
             <tr>
                 <th style="width: 3%;">NO</th>
-                <th style="width: 6%;">HARI</th>
-                <th style="width: 22%;">URAIAN TUGAS</th>
-                <th style="width: 12%;">REKAN KERJA</th>
-                <th style="width: 7%;">EST. TGL MULAI</th>
-                <th style="width: 5%;">EST. JAM MULAI</th>
-                <th style="width: 7%;">EST. TGL SELESAI</th>
-                <th style="width: 5%;">EST. JAM SELESAI</th>
-                <th style="width: 7%;">TGL MULAI</th>
-                <th style="width: 5%;">WAKTU MULAI</th>
-                <th style="width: 7%;">TGL SELESAI</th>
-                <th style="width: 5%;">WAKTU SELESAI</th>
-                <th style="width: 8%;">STATUS</th>
+                <th style="width: 5%;">HARI</th>
+                <th style="width: 17%;">URAIAN TUGAS</th>
+                <th style="width: 12.5%;">ESTIMASI PELAKSANAAN</th>
+                <th style="width: 12.5%;">REALISASI PELAKSANAAN</th>
+                <th style="width: 5.5%;">DURASI</th>
+                <th style="width: 6.5%;">STATUS & BERKAS</th>
+                <th style="width: 19%;">HASIL KERJA & BUKTI</th>
+                <th style="width: 19%;">RENCANA TINDAK LANJUT</th>
             </tr>
         </thead>
         <tbody>
             @forelse($items as $index => $item)
+                @php
+                    $durasiStr = '-';
+                    if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
+                        try {
+                            $tglMulaiStr = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : date('Y-m-d');
+                            $tglSelesaiStr = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglMulaiStr;
+                            $startTs = strtotime($tglMulaiStr . ' ' . $item->waktu_mulai);
+                            $endTs = strtotime($tglSelesaiStr . ' ' . $item->waktu_selesai);
+                            $diffInSeconds = max(0, $endTs - $startTs);
+
+                            $days = floor($diffInSeconds / 86400);
+                            $hours = floor(($diffInSeconds % 86400) / 3600);
+                            $minutes = floor(($diffInSeconds % 3600) / 60);
+                            $seconds = $diffInSeconds % 60;
+
+                            $durasiParts = [];
+                            if ($days > 0) $durasiParts[] = $days . 'h';
+                            if ($hours > 0) $durasiParts[] = $hours . 'j';
+                            if ($minutes > 0) $durasiParts[] = $minutes . 'm';
+                            if ($seconds > 0 || empty($durasiParts)) $durasiParts[] = $seconds . 's';
+                            $durasiStr = implode(' ', $durasiParts);
+                        } catch (\Exception $e) {
+                            $durasiStr = '-';
+                        }
+                    }
+                @endphp
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td class="text-center">{{ $item->hari ?? '-' }}</td>
                     <td class="text-left">
-                        {{ $item->uraian_tugas }}
+                        <strong>{{ $item->uraian_tugas }}</strong>
+                        @if($item->taggedUsers && $item->taggedUsers->count() > 0)
+                            <div style="font-size: 6.5pt; color: #555555; margin-top: 2px;">
+                                <strong>Tag:</strong> {{ implode(', ', $item->taggedUsers->pluck('name')->toArray()) }}
+                            </div>
+                        @endif
                     </td>
-                    <td class="text-left" style="font-size: 7pt;">
-                        {{ $item->taggedUsers && $item->taggedUsers->count() > 0 ? implode(', ', $item->taggedUsers->pluck('name')->toArray()) : '-' }}
+                    <td class="text-center" style="font-size: 7pt; line-height: 1.3;">
+                        @if($item->estimasi_tanggal_mulai)
+                            <div><strong>Mulai:</strong> {{ date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) }} {{ $item->estimasi_jam_mulai ? substr($item->estimasi_jam_mulai, 0, 5) : '' }}</div>
+                        @endif
+                        @if($item->estimasi_tanggal_selesai)
+                            <div><strong>Selesai:</strong> {{ date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) }} {{ $item->estimasi_jam_selesai ? substr($item->estimasi_jam_selesai, 0, 5) : '' }}</div>
+                        @endif
+                        @if(!$item->estimasi_tanggal_mulai && !$item->estimasi_tanggal_selesai)
+                            -
+                        @endif
                     </td>
-                    <td class="text-center">{{ $item->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) : '-' }}</td>
-                    <td class="text-center">{{ $item->estimasi_jam_mulai ? substr($item->estimasi_jam_mulai, 0, 5) . ' WIB' : '-' }}</td>
-                    <td class="text-center">{{ $item->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) : '-' }}</td>
-                    <td class="text-center">{{ $item->estimasi_jam_selesai ? substr($item->estimasi_jam_selesai, 0, 5) . ' WIB' : '-' }}</td>
-                    <td class="text-center">{{ $item->tanggal_mulai ? date('d/m/Y', strtotime($item->tanggal_mulai)) : '-' }}</td>
-                    <td class="text-center">{{ $item->waktu_mulai ? substr($item->waktu_mulai, 0, 5) . ' WIB' : '-' }}</td>
-                    <td class="text-center">{{ $item->tanggal_selesai ? date('d/m/Y', strtotime($item->tanggal_selesai)) : '-' }}</td>
-                    <td class="text-center">{{ $item->waktu_selesai && $item->waktu_selesai !== '00:00:00' ? substr($item->waktu_selesai, 0, 5) . ' WIB' : '-' }}</td>
-                    <td class="text-center">{{ $item->status ?? '-' }}</td>
+                    <td class="text-center" style="font-size: 7pt; line-height: 1.3;">
+                        @if($item->tanggal_mulai)
+                            <div><strong>Mulai:</strong> {{ date('d/m/Y', strtotime($item->tanggal_mulai)) }} {{ $item->waktu_mulai ? substr($item->waktu_mulai, 0, 5) : '' }}</div>
+                        @else
+                            <div><strong>Mulai:</strong> -</div>
+                        @endif
+                        @if($item->tanggal_selesai && $item->waktu_selesai !== '00:00:00')
+                            <div><strong>Selesai:</strong> {{ date('d/m/Y', strtotime($item->tanggal_selesai)) }} {{ substr($item->waktu_selesai, 0, 5) }}</div>
+                        @else
+                            <div><strong>Selesai:</strong> -</div>
+                        @endif
+                    </td>
+                    <td class="text-center"><strong>{{ $durasiStr }}</strong></td>
+                    <td class="text-center" style="font-size: 7pt;">
+                        <div><strong>{{ $item->status ?? 'Selesai' }}</strong></div>
+                    </td>
+                    <td class="text-left" style="font-size: 7pt; line-height: 1.3;">
+                        <div>{!! $item->hasil_kerja ? trim(strip_tags($item->hasil_kerja)) : '-' !!}</div>
+
+                        <div style="font-size: 6.5pt; margin-top: 3px;">
+                            <strong>Berkas:</strong> 
+                            @if($item->file)
+                                @php $fileUrl = asset('storage/' . $item->file); @endphp
+                                <a href="{{ $fileUrl }}" target="_blank" style="color: #15803d; text-decoration: underline;">{{ $fileUrl }}</a>
+                            @else
+                                <span style="color: #777777;">-</span>
+                            @endif
+                        </div>
+
+                        <div style="font-size: 6.5pt; margin-top: 2px; word-break: break-all;">
+                            <strong>Link External:</strong> 
+                            @if($item->url_external)
+                                <a href="{{ $item->url_external }}" target="_blank" style="color: #0369a1; text-decoration: underline;">{{ $item->url_external }}</a>
+                            @else
+                                <span style="color: #777777;">-</span>
+                            @endif
+                        </div>
+                    </td>
+                    <td class="text-left" style="font-size: 7pt; line-height: 1.3;">{!! $item->rencana_tindak_lanjut ? trim(strip_tags($item->rencana_tindak_lanjut)) : '-' !!}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="13" class="text-center" style="padding: 15px; color: #777777;">
+                    <td colspan="9" class="text-center" style="padding: 15px; color: #777777;">
                         Tidak ada data rencana kerja insidentil untuk kriteria yang dipilih.
                     </td>
                 </tr>

@@ -61,8 +61,16 @@
               </a>
           </li>
 
-          <li class="nav-heading">Pengaturan</li>
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('analisis-keterlambatan.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('analisis-keterlambatan.index') }}">
+                  <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                  <span>Analisis Keterlambatan</span>
+              </a>
+          </li>
 
+          @if(Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin()))
+          <li class="nav-heading">Pengaturan</li>
 
           <li class="nav-item">
               <a class="{{ request()->routeIs('user.*') ? 'nav-link' : 'nav-link collapsed' }}"
@@ -78,6 +86,7 @@
                   <span>Periode Akademik</span>
               </a>
           </li>
+          @endif
 
       </ul>
 

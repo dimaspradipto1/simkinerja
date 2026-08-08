@@ -12,6 +12,7 @@ use App\Http\Controllers\KepanitiaanController;
 use App\Http\Controllers\RekapitulasiKepanitiaanController;
 use App\Http\Controllers\InsidentilController;
 use App\Http\Controllers\RekapitulasiInsidentilController;
+use App\Http\Controllers\AnalisisKeterlambatanController;
 use App\Http\Controllers\MilestoneController;
 use Illuminate\Support\Facades\Route;
 
@@ -88,6 +89,12 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     // Rekapitulasi Insidentil Routes
     Route::get('rekapitulasi-insidentil/data', [RekapitulasiInsidentilController::class, 'getData'])->name('rekapitulasi-insidentil.data');
     Route::resource('rekapitulasi-insidentil', RekapitulasiInsidentilController::class)->only(['index']);
+
+    // Analisis Keterlambatan Routes
+    Route::get('analisis-keterlambatan/data', [AnalisisKeterlambatanController::class, 'getData'])->name('analisis-keterlambatan.data');
+    Route::get('analisis-keterlambatan/export-excel', [AnalisisKeterlambatanController::class, 'exportExcel'])->name('analisis-keterlambatan.export-excel');
+    Route::get('analisis-keterlambatan/export-pdf', [AnalisisKeterlambatanController::class, 'exportPdf'])->name('analisis-keterlambatan.export-pdf');
+    Route::resource('analisis-keterlambatan', AnalisisKeterlambatanController::class)->only(['index']);
 
     // Milestone Routes
     Route::post('milestone', [MilestoneController::class, 'store'])->name('milestone.store');

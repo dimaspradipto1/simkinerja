@@ -306,7 +306,66 @@ $(document).ready(function() {
             }
             $('#select-all-checkbox').prop('checked', false);
             updateBulkDeleteButton();
+            setTimeout(initTinyMCEEditors, 150);
         }
+    });
+
+    function initTinyMCEEditors() {
+        if (typeof tinymce === 'undefined') return;
+        tinymce.remove('.tinymce-editor');
+        tinymce.init({
+            selector: '.tinymce-editor',
+            menubar: false,
+            statusbar: false,
+            height: 120,
+            plugins: 'lists link autoresize',
+            toolbar: 'bold italic underline | bullist numlist | link | removeformat',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:13px }'
+        });
+    }
+
+    $(document).on('submit', '.form-inline-upload', function(e) {
+        e.preventDefault();
+        if (typeof tinymce !== 'undefined') {
+            tinymce.triggerSave();
+        }
+        var form = $(this);
+        var id = form.data('id');
+        var btn = form.find('.btn-simpan-inline');
+        var formData = new FormData(this);
+        formData.append('_token', "{{ csrf_token() }}");
+
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>');
+
+        $.ajax({
+            url: "/insidentil/" + id + "/upload-attachment",
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                btn.prop('disabled', false).html('<i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Tindak Lanjut');
+                if (response.success) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: response.message,
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                    table.ajax.reload(null, false);
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html('<i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Tindak Lanjut');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menyimpan data.'
+                });
+            }
+        });
     });
 
     $('#filter_periode, #filter_jabatan').on('change', function() {

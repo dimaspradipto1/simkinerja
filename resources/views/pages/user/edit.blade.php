@@ -52,7 +52,7 @@
                                         'WAKIL REKTOR III',
                                         'KEPALA BIRO',
                                         'KEPALA LPTI',
-                                        'ADMIN LPTI',
+                                        'STAFF LPTI',
                                         'ADMIN AKADEMIK UNIVERSITAS',
                                         'STAFF AKADEMIK FAKULTAS',
                                         'ADMIN KEMAHASISWAAN',

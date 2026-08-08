@@ -105,6 +105,48 @@ class InsidentilController extends Controller
                     
                     $html .= \App\Helpers\MilestoneHelper::renderWidget($row->milestones, $row->id, \App\Models\Insidentil::class);
                     
+                    // Render Form Upload Berkas, Link External, Hasil Kerja, dan Rencana Tindak Lanjut
+                    $html .= '<div class="mt-3 p-2 bg-light rounded border">';
+                    $html .= '<form class="form-inline-upload" data-id="' . $row->id . '" enctype="multipart/form-data">';
+                    $html .= '<div class="row g-2 mb-2">';
+                    $html .= '<div class="col-md-6">';
+                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-paperclip me-1"></i> Unggah Berkas Kinerja</label>';
+                    $html .= '<input type="file" name="file" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.rar">';
+                    $html .= '</div>';
+                    $html .= '<div class="col-md-6">';
+                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-link-45deg me-1"></i> Tautan Google Drive / External</label>';
+                    $html .= '<input type="url" name="url_external" class="form-control form-control-sm" value="' . e($row->url_external ?? '') . '" placeholder="https://drive.google.com/...">';
+                    $html .= '</div>';
+                    $html .= '</div>';
+
+                    // TinyMCE Hasil Kerja & Rencana Tindak Lanjut
+                    $html .= '<div class="mb-2">';
+                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-journal-text me-1 text-success"></i> Hasil Kerja</label>';
+                    $html .= '<textarea name="hasil_kerja" class="form-control form-control-sm tinymce-editor" rows="2" placeholder="Masukkan rincian hasil kerja...">' . e($row->hasil_kerja ?? '') . '</textarea>';
+                    $html .= '</div>';
+                    $html .= '<div class="mb-2">';
+                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-arrow-right-circle me-1 text-primary"></i> Rencana Tindak Lanjut</label>';
+                    $html .= '<textarea name="rencana_tindak_lanjut" class="form-control form-control-sm tinymce-editor" rows="2" placeholder="Masukkan rencana tindak lanjut...">' . e($row->rencana_tindak_lanjut ?? '') . '</textarea>';
+                    $html .= '</div>';
+
+                    $html .= '<div class="d-flex justify-content-end">';
+                    $html .= '<button type="submit" class="btn btn-sm btn-success btn-simpan-inline"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Tindak Lanjut</button>';
+                    $html .= '</div>';
+                    $html .= '</form>';
+
+                    // Display saved results preview if available
+                    if (!empty($row->hasil_kerja) || !empty($row->rencana_tindak_lanjut)) {
+                        $html .= '<div class="mt-2 p-2 bg-white rounded border border-success-subtle shadow-sm">';
+                        if (!empty($row->hasil_kerja)) {
+                            $html .= '<div class="small mb-1"><strong><i class="bi bi-check2-circle text-success me-1"></i>Hasil Kerja Tersimpan:</strong><div class="text-dark border-start border-success border-2 ps-2 mt-1">' . $row->hasil_kerja . '</div></div>';
+                        }
+                        if (!empty($row->rencana_tindak_lanjut)) {
+                            $html .= '<div class="small"><strong><i class="bi bi-arrow-right-short text-primary me-1"></i>Tindak Lanjut Tersimpan:</strong><div class="text-dark border-start border-primary border-2 ps-2 mt-1">' . $row->rencana_tindak_lanjut . '</div></div>';
+                        }
+                        $html .= '</div>';
+                    }
+
+                    $html .= '</div>';
                     $html .= '</div></div>';
                     return $html;
                 })
@@ -145,7 +187,16 @@ class InsidentilController extends Controller
                     return $html;
                 })
                 ->addColumn('status_badge', function ($row) {
-                    if ($row->status === 'Selesai') {
+                    $hasMilestones = $row->relationLoaded('milestones') ? ($row->milestones && $row->milestones->count() > 0) : ($row->milestones()->count() > 0);
+                    $allMilestonesSelesai = false;
+                    if ($hasMilestones) {
+                        $uncompleted = $row->relationLoaded('milestones')
+                            ? $row->milestones->where('status', '!=', 'Selesai')->count()
+                            : $row->milestones()->where('status', '!=', 'Selesai')->count();
+                        $allMilestonesSelesai = ($uncompleted === 0);
+                    }
+
+                    if ($row->status === 'Selesai' || $allMilestonesSelesai) {
                         return '<span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Selesai</span>';
                     } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
                         return '<span class="badge bg-primary px-2 py-1"><i class="bi bi-play-circle me-1"></i>Proses</span>';
@@ -155,8 +206,19 @@ class InsidentilController extends Controller
                 ->addColumn('action', function ($row) use ($authUser) {
                     $btn = '<div class="btn-group" role="group">';
                     
+                    $hasMilestones = $row->relationLoaded('milestones') ? ($row->milestones && $row->milestones->count() > 0) : ($row->milestones()->count() > 0);
+                    $allMilestonesSelesai = false;
+                    if ($hasMilestones) {
+                        $uncompleted = $row->relationLoaded('milestones')
+                            ? $row->milestones->where('status', '!=', 'Selesai')->count()
+                            : $row->milestones()->where('status', '!=', 'Selesai')->count();
+                        $allMilestonesSelesai = ($uncompleted === 0);
+                    }
+
                     // Start/Pause/Stop Timer buttons
-                    if ($row->status === 'Belum Dimulai') {
+                    if ($row->status === 'Selesai' || $allMilestonesSelesai) {
+                        $btn .= '<button type="button" class="btn btn-sm text-white fw-bold disabled me-1" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
+                    } elseif ($row->status === 'Belum Dimulai') {
                         $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Mulai Pekerjaan"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
                     } elseif ($row->status === 'Di-pause') {
                         $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
@@ -470,25 +532,48 @@ class InsidentilController extends Controller
      */
     public function uploadAttachment(Request $request, Insidentil $insidentil)
     {
-        $request->validate([
-            'file' => ['nullable', 'file', 'max:10240'],
-            'url_external' => ['nullable', 'string'],
-        ]);
+        $updateData = [];
 
         if ($request->hasFile('file')) {
-            if ($insidentil->file && Storage::disk('public')->exists($insidentil->file)) {
-                Storage::disk('public')->delete($insidentil->file);
+            $uploadedFile = $request->file('file');
+            if ($uploadedFile->isValid()) {
+                if ($insidentil->file && Storage::disk('public')->exists($insidentil->file)) {
+                    Storage::disk('public')->delete($insidentil->file);
+                }
+                $updateData['file'] = $uploadedFile->store('insidentils', 'public');
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengunggah berkas: ' . $uploadedFile->getErrorMessage(),
+                ], 422);
             }
-            $insidentil->file = $request->file('file')->store('insidentils', 'public');
         }
 
-        if ($request->filled('url_external')) {
-            $insidentil->url_external = $request->url_external;
+        if ($request->has('url_external')) {
+            $updateData['url_external'] = $request->input('url_external');
         }
 
-        $insidentil->save();
+        if ($request->has('hasil_kerja')) {
+            $updateData['hasil_kerja'] = $request->input('hasil_kerja');
+        }
 
-        Alert::success('Berhasil', 'Lampiran berhasil diunggah.');
+        if ($request->has('rencana_tindak_lanjut')) {
+            $updateData['rencana_tindak_lanjut'] = $request->input('rencana_tindak_lanjut');
+        }
+
+        if (!empty($updateData)) {
+            $insidentil->update($updateData);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Hasil Kerja & Tindak Lanjut berhasil disimpan.',
+                'data'    => $insidentil->fresh(),
+            ]);
+        }
+
+        Alert::success('Berhasil', 'Lampiran & Hasil Kerja berhasil diunggah.');
         return redirect()->back();
     }
 
@@ -697,20 +782,20 @@ class InsidentilController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Laporan Insidentil');
 
-        // Row 1: Title
+        // Row 1: Title (Merged A1:I1 across all columns)
         $titleText = 'LAPORAN RENCANA KERJA INSIDENTIL (' . $periodeText . ')';
-        $sheet->mergeCells('A1:K1');
+        $sheet->mergeCells('A1:I1');
         $sheet->setCellValue('A1', $titleText);
-        $sheet->getStyle('A1:K1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:K1')->getFill()
+        $sheet->getStyle('A1:I1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:I1')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setRGB('15432D');
-        $sheet->getStyle('A1:K1')->getAlignment()
+        $sheet->getStyle('A1:I1')->getAlignment()
             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
             ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
         $sheet->getRowDimension(1)->setRowHeight(30);
 
-        // Rows 3-6: Metadata
+        // Row 3, 4, 5: Metadata Staff (Periode Akademik removed to prevent duplication)
         $sheet->setCellValue('A3', 'NAMA STAFF');
         $sheet->setCellValue('B3', ':');
         $sheet->setCellValue('C3', $namaStaff);
@@ -729,32 +814,24 @@ class InsidentilController extends Controller
         $sheet->getStyle('A5')->getFont()->setBold(true);
         $sheet->getStyle('C5')->getFont()->setBold(true);
 
-        $sheet->setCellValue('A6', 'PERIODE AKADEMIK');
-        $sheet->setCellValue('B6', ':');
-        $sheet->setCellValue('C6', $periodeText);
-        $sheet->getStyle('A6')->getFont()->setBold(true);
-        $sheet->getStyle('C6')->getFont()->setBold(true);
-
-        // Row 8: Table Headers
+        // Row 7: Table Header Columns (9 Grouped Columns matching PDF layout)
         $headers = [
-            'A8' => 'NO',
-            'B8' => 'HARI',
-            'C8' => 'URAIAN TUGAS',
-            'D8' => 'REKAN KERJA',
-            'E8' => 'EST. TGL MULAI',
-            'F8' => 'EST. JAM MULAI',
-            'G8' => 'EST. TGL SELESAI',
-            'H8' => 'EST. JAM SELESAI',
-            'I8' => 'TGL MULAI REALISASI',
-            'J8' => 'TGL SELESAI REALISASI',
-            'K8' => 'STATUS',
+            'A7' => 'NO',
+            'B7' => 'HARI',
+            'C7' => 'URAIAN TUGAS',
+            'D7' => 'ESTIMASI PELAKSANAAN',
+            'E7' => 'REALISASI PELAKSANAAN',
+            'F7' => 'DURASI',
+            'G7' => 'STATUS & BERKAS',
+            'H7' => 'HASIL KERJA & BUKTI',
+            'I7' => 'RENCANA TINDAK LANJUT',
         ];
 
         foreach ($headers as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
 
-        $headerRange = 'A8:K8';
+        $headerRange = 'A7:I7';
         $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(9);
         $sheet->getStyle($headerRange)->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
@@ -763,42 +840,97 @@ class InsidentilController extends Controller
         $sheet->getStyle($headerRange)->getAlignment()
             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
             ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
-        $sheet->getRowDimension(8)->setRowHeight(25);
+        $sheet->getRowDimension(7)->setRowHeight(25);
 
-        $rowNum = 9;
+        $rowNum = 8;
         $no = 1;
 
         foreach ($items as $item) {
+            $durasiStr = '-';
+            if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
+                try {
+                    $tglMulaiStr = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+                    $tglSelesaiStr = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglMulaiStr;
+                    $startTs = strtotime($tglMulaiStr . ' ' . $item->waktu_mulai);
+                    $endTs = strtotime($tglSelesaiStr . ' ' . $item->waktu_selesai);
+                    $diffInSeconds = max(0, $endTs - $startTs);
+
+                    $days = floor($diffInSeconds / 86400);
+                    $hours = floor(($diffInSeconds % 86400) / 3600);
+                    $minutes = floor(($diffInSeconds % 3600) / 60);
+                    $seconds = $diffInSeconds % 60;
+
+                    $durasiParts = [];
+                    if ($days > 0) $durasiParts[] = $days . 'h';
+                    if ($hours > 0) $durasiParts[] = $hours . 'j';
+                    if ($minutes > 0) $durasiParts[] = $minutes . 'm';
+                    if ($seconds > 0 || empty($durasiParts)) $durasiParts[] = $seconds . 's';
+                    $durasiStr = implode(' ', $durasiParts);
+                } catch (\Exception $e) {
+                    $durasiStr = '-';
+                }
+            }
+
+            $estStr = 'Mulai: ' . ($item->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) : '-') . ($item->estimasi_jam_mulai ? ' ' . substr($item->estimasi_jam_mulai, 0, 5) : '') . "\n" .
+                     'Selesai: ' . ($item->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) : '-') . ($item->estimasi_jam_selesai ? ' ' . substr($item->estimasi_jam_selesai, 0, 5) : '');
+
+            $realStr = 'Mulai: ' . ($item->tanggal_mulai ? date('d/m/Y', strtotime($item->tanggal_mulai)) : '-') . ($item->waktu_mulai ? ' ' . substr($item->waktu_mulai, 0, 5) : '') . "\n" .
+                      'Selesai: ' . ($item->tanggal_selesai && $item->waktu_selesai !== '00:00:00' ? date('d/m/Y', strtotime($item->tanggal_selesai)) . ' ' . substr($item->waktu_selesai, 0, 5) : '-');
+
+            $fileLinkStr = $item->file ? asset('storage/' . $item->file) : '-';
+            $extLinkStr = $item->url_external ?? '-';
+            $hasilKerjaText = !empty($item->hasil_kerja) ? trim(strip_tags($item->hasil_kerja)) : '-';
+
+            $hasilBuktiStr = $hasilKerjaText . "\n" .
+                             'Berkas: ' . $fileLinkStr . "\n" .
+                             'Link External: ' . $extLinkStr;
+
+            $taggedNames = '';
+            if ($item->taggedUsers->count() > 0) {
+                $taggedNames = "\n[Tag: " . implode(', ', $item->taggedUsers->pluck('name')->toArray()) . ']';
+            }
+
             $sheet->setCellValue('A' . $rowNum, $no++);
             $sheet->setCellValue('B' . $rowNum, $item->hari ?? '-');
-            $sheet->setCellValue('C' . $rowNum, $item->uraian_tugas);
-            $sheet->setCellValue('D' . $rowNum, $item->taggedUsers->pluck('name')->implode(', ') ?: '-');
-            $sheet->setCellValue('E' . $rowNum, $item->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) : '-');
-            $sheet->setCellValue('F' . $rowNum, $item->estimasi_jam_mulai ? substr($item->estimasi_jam_mulai, 0, 5) : '-');
-            $sheet->setCellValue('G' . $rowNum, $item->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) : '-');
-            $sheet->setCellValue('H' . $rowNum, $item->estimasi_jam_selesai ? substr($item->estimasi_jam_selesai, 0, 5) : '-');
-            $sheet->setCellValue('I' . $rowNum, $item->tanggal_mulai ? date('d/m/Y', strtotime($item->tanggal_mulai)) . ($item->waktu_mulai ? ' ' . substr($item->waktu_mulai, 0, 5) : '') : '-');
-            $sheet->setCellValue('J' . $rowNum, $item->tanggal_selesai ? date('d/m/Y', strtotime($item->tanggal_selesai)) . ($item->waktu_selesai ? ' ' . substr($item->waktu_selesai, 0, 5) : '') : '-');
-            $sheet->setCellValue('K' . $rowNum, $item->status ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item->uraian_tugas . $taggedNames);
+            $sheet->setCellValue('D' . $rowNum, $estStr);
+            $sheet->setCellValue('E' . $rowNum, $realStr);
+            $sheet->setCellValue('F' . $rowNum, $durasiStr);
+            $sheet->setCellValue('G' . $rowNum, $item->status ?? 'Selesai');
+            $sheet->setCellValue('H' . $rowNum, $hasilBuktiStr);
+            $sheet->setCellValue('I' . $rowNum, !empty($item->rencana_tindak_lanjut) ? trim(strip_tags($item->rencana_tindak_lanjut)) : '-');
 
-            $sheet->getStyle('A' . $rowNum . ':K' . $rowNum)->getAlignment()->setWrapText(true)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            // Alignments & Styles
+            $sheet->getStyle('A' . $rowNum . ':B' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $sheet->getStyle('C' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $sheet->getStyle('D' . $rowNum . ':G' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $sheet->getStyle('H' . $rowNum . ':I' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+
             $rowNum++;
         }
 
-        // Borders
-        if ($rowNum > 9) {
-            $sheet->getStyle('A8:K' . ($rowNum - 1))->applyFromArray([
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                        'color' => ['argb' => 'FFCCCCCC'],
-                    ],
-                ],
-            ]);
-        }
+        // Apply Borders & Wrap Text
+        $lastRow = max(7, $rowNum - 1);
+        $tableRange = 'A7:I' . $lastRow;
+        $sheet->getStyle($tableRange)->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)
+            ->getColor()->setRGB('CCCCCC');
+        $sheet->getStyle($tableRange)->getAlignment()->setWrapText(true);
 
-        foreach (range('A', 'K') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        // Column Widths
+        $colWidths = [
+            'A' => 6,
+            'B' => 10,
+            'C' => 35,
+            'D' => 26,
+            'E' => 26,
+            'F' => 12,
+            'G' => 15,
+            'H' => 45,
+            'I' => 45,
+        ];
+        foreach ($colWidths as $col => $w) {
+            $sheet->getColumnDimension($col)->setWidth($w);
         }
 
         $safeStaff = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $namaStaff)));
