@@ -440,9 +440,23 @@ class RencanaKerjaController extends Controller
         $waktuSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
         $status = $row->status ?? 'Belum Dimulai';
 
-        if (!$waktuMulai && $status !== 'Di-pause') {
+        $hasMilestones = $row->relationLoaded('milestones') ? ($row->milestones && $row->milestones->count() > 0) : ($row->milestones()->count() > 0);
+        $allMilestonesSelesai = false;
+        if ($hasMilestones) {
+            $uncompleted = $row->relationLoaded('milestones')
+                ? $row->milestones->where('status', '!=', 'Selesai')->count()
+                : $row->milestones()->where('status', '!=', 'Selesai')->count();
+            $allMilestonesSelesai = ($uncompleted === 0);
+        }
+
+        if ($allMilestonesSelesai) {
+            $status = 'Selesai';
+            $waktuSelesai = true;
+        }
+
+        if (!$waktuMulai && $status !== 'Di-pause' && $status !== 'Selesai') {
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 btn-start-timer" style="background-color: #15432d; border-color: #15432d; height: 32px; min-width: 85px; cursor: pointer;"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
-        } elseif (($waktuMulai || $status === 'Di-pause') && !$waktuSelesai) {
+        } elseif (($waktuMulai || $status === 'Di-pause') && !$waktuSelesai && $status !== 'Selesai') {
             if ($status === 'Di-pause') {
                 $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-sm btn-success text-white fw-bold text-nowrap px-2 me-1 btn-resume-timer" style="height: 32px; cursor: pointer;" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
             } else {

@@ -95,8 +95,19 @@ class MilestoneController extends Controller
         $milestone->status = 'Berjalan';
         $milestone->save();
 
-        if ($milestone->milestonable && $milestone->milestonable->status !== 'Berjalan') {
-            $milestone->milestonable->update(['status' => 'Berjalan', 'last_started_at' => $now]);
+        if ($milestone->milestonable) {
+            $parent = $milestone->milestonable;
+            $updateData = [
+                'status' => 'Berjalan',
+                'last_started_at' => $now,
+            ];
+            if (empty($parent->tanggal_mulai)) {
+                $updateData['tanggal_mulai'] = $now->format('Y-m-d');
+            }
+            if (empty($parent->waktu_mulai) || $parent->waktu_mulai === '00:00:00') {
+                $updateData['waktu_mulai'] = $now->format('H:i:s');
+            }
+            $parent->update($updateData);
         }
 
         return response()->json([
@@ -122,6 +133,17 @@ class MilestoneController extends Controller
         $milestone->status = 'Di-pause';
         $milestone->save();
 
+        if ($milestone->milestonable) {
+            $parent = $milestone->milestonable;
+            $runningCount = $parent->milestones()->where('status', 'Berjalan')->count();
+            if ($runningCount === 0) {
+                $parent->update([
+                    'status' => 'Di-pause',
+                    'last_started_at' => null,
+                ]);
+            }
+        }
+
         return response()->json([
             'success'   => true,
             'message'   => 'Milestone paused successfully.',
@@ -145,6 +167,33 @@ class MilestoneController extends Controller
         $milestone->waktu_selesai = $now;
         $milestone->status = 'Selesai';
         $milestone->save();
+
+        if ($milestone->milestonable) {
+            $parent = $milestone->milestonable;
+            $runningCount = $parent->milestones()->where('status', 'Berjalan')->count();
+            if ($runningCount === 0) {
+                $uncompletedCount = $parent->milestones()->where('status', '!=', 'Selesai')->count();
+                if ($uncompletedCount === 0) {
+                    // All milestone points completed -> stop parent task!
+                    $updateData = [
+                        'status' => 'Selesai',
+                        'last_started_at' => null,
+                    ];
+                    if (empty($parent->tanggal_selesai)) {
+                        $updateData['tanggal_selesai'] = $now->format('Y-m-d');
+                    }
+                    if (empty($parent->waktu_selesai) || $parent->waktu_selesai === '00:00:00') {
+                        $updateData['waktu_selesai'] = $now->format('H:i:s');
+                    }
+                    $parent->update($updateData);
+                } else {
+                    $parent->update([
+                        'status' => 'Di-pause',
+                        'last_started_at' => null,
+                    ]);
+                }
+            }
+        }
 
         return response()->json([
             'success'   => true,
