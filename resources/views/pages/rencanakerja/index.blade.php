@@ -46,13 +46,17 @@
     .btn-selesai-red:hover {
         background-color: #660000;
     }
-    #rencanakerja-table tbody tr td {
-        vertical-align: middle;
-        padding: 10px 14px;
-        border-bottom: 1px solid #edf2f7;
+    .table-responsive, .dataTables_wrapper, #rencanakerja-table {
+        overflow-x: hidden !important;
+        width: 100% !important;
     }
     #rencanakerja-table thead {
-        display: none; /* Clean list look matching reference screenshot */
+        display: none;
+    }
+    #rencanakerja-table tbody tr td {
+        vertical-align: top !important;
+        padding: 10px 4px !important;
+        border-bottom: 1px solid #edf2f7;
     }
     @media (max-width: 767.98px) {
         .card-header-green {
@@ -237,8 +241,7 @@
                                         <input type="checkbox" id="check-all" class="form-check-input" style="cursor: pointer; width: 18px; height: 18px;" title="Pilih Semua">
                                     </th>
                                     <th width="4%">No</th>
-                                    <th>Uraian Tugas</th>
-                                    <th width="25%" class="text-end">Aksi</th>
+                                    <th>Uraian Tugas & Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -664,10 +667,9 @@
                 }
             },
             columns: [
-                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-top pt-3', width: '3%' },
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-semibold text-center align-top pt-3', width: '4%' },
-                { data: 'task_details', name: 'uraian_tugas', searchable: true, className: 'align-middle' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end align-top pt-3 text-nowrap', width: '25%' },
+                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-top pt-2', width: '28px' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-bold text-center align-top pt-2 small', width: '32px' },
+                { data: 'task_details', name: 'uraian_tugas', searchable: true, className: 'align-top p-0' },
             ],
             language: {
                 search: "Cari Tugas:",
@@ -743,26 +745,46 @@
             updateBulkDeleteButton();
         });
 
-        // Sync checkbox status on table redraw (pagination, search, reload)
-        table.on('draw', function() {
-            let totalOnPage = $('.select-row-checkbox').length;
-            let checkedOnPage = 0;
-
-            $('.select-row-checkbox').each(function() {
-                let val = parseInt($(this).val());
-                if (selectedIds.has(val)) {
-                    $(this).prop('checked', true);
-                    checkedOnPage++;
-                } else {
-                    $(this).prop('checked', false);
+    function initTinyMCEEditors() {
+        if (typeof tinymce !== 'undefined') {
+            tinymce.remove('.tinymce-editor');
+            tinymce.init({
+                selector: '.tinymce-editor',
+                height: 150,
+                menubar: false,
+                plugins: 'lists link table',
+                toolbar: 'undo redo | bold italic underline | bullist numlist | removeformat',
+                content_style: 'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 13px; }',
+                setup: function (editor) {
+                    editor.on('change blur', function () {
+                        editor.save();
+                    });
                 }
             });
+        }
+    }
 
-            $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
-            $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+    // Sync checkbox status on table redraw (pagination, search, reload)
+    table.on('draw', function() {
+        let totalOnPage = $('.select-row-checkbox').length;
+        let checkedOnPage = 0;
 
-            updateBulkDeleteButton();
+        $('.select-row-checkbox').each(function() {
+            let val = parseInt($(this).val());
+            if (selectedIds.has(val)) {
+                $(this).prop('checked', true);
+                checkedOnPage++;
+            } else {
+                $(this).prop('checked', false);
+            }
         });
+
+        $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+        $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+
+        updateBulkDeleteButton();
+        setTimeout(initTinyMCEEditors, 150);
+    });
 
         // Quick Tag Modal Handlers
         let currentQuickTagId = null;
@@ -909,6 +931,9 @@
     // Handle inline file and url_external upload form submit
     $(document).on('submit', '.form-inline-upload', function(e) {
         e.preventDefault();
+        if (typeof tinymce !== 'undefined') {
+            tinymce.triggerSave();
+        }
         var form = $(this);
         var id = form.data('id');
         var btn = form.find('.btn-simpan-inline');

@@ -25,6 +25,8 @@ class Kepanitiaan extends Model
         'tanggal_selesai',
         'file',
         'url_external',
+        'hasil_kerja',
+        'rencana_tindak_lanjut',
         'status',
     ];
 

@@ -19,35 +19,32 @@ class MilestoneHelper
             return $m->total_durasi_detik;
         });
 
-        $html = '<div class="milestone-widget-container mt-3 p-3 rounded-3 bg-white border shadow-sm" style="border-left: 4px solid #15432d !important;" data-task-id="' . $milestonableId . '" data-task-type="' . e($milestonableType) . '">';
+        $html = '<div class="milestone-widget-container mt-2 p-2 px-3 rounded-2 bg-white border shadow-xs w-100" style="border-left: 4px solid #15432d !important; max-width: 100%; box-sizing: border-box;" data-task-id="' . $milestonableId . '" data-task-type="' . e($milestonableType) . '">';
         
-        // Header Row: Title, Progress & Tambah Button
-        $html .= '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">';
+        // Header Row: Title, Progress & Total Waktu
+        $html .= '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-1 border-bottom">';
         $html .= '<div class="d-flex align-items-center gap-2">';
-        $html .= '<span class="fw-bold text-dark fs-6"><i class="bi bi-diagram-3-fill text-success me-2"></i>Timeline Milestone Kinerja</span>';
+        $html .= '<span class="fw-bold text-dark small"><i class="bi bi-diagram-3-fill text-success me-1"></i>Timeline Milestone Kinerja</span>';
         
         if ($totalMilestones > 0) {
             $percent = round(($selesaiMilestones / $totalMilestones) * 100);
-            $html .= '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-check2-circle me-1"></i>' . $selesaiMilestones . '/' . $totalMilestones . ' Point Selesai (' . $percent . '%)</span>';
+            $html .= '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.74rem;"><i class="bi bi-check2-circle me-1"></i>' . $selesaiMilestones . '/' . $totalMilestones . ' Point Selesai (' . $percent . '%)</span>';
         } else {
-            $html .= '<span class="badge bg-light text-muted border" style="font-size: 0.75rem;">Belum ada point</span>';
+            $html .= '<span class="badge bg-light text-muted border" style="font-size: 0.72rem;">Belum ada point</span>';
         }
         
         $html .= '</div>';
 
         // Overall Total Duration Badge
         $html .= '<div class="d-flex align-items-center gap-2">';
-        $html .= '<span class="badge bg-dark text-white px-2 py-1 overall-milestone-timer" style="font-size: 0.78rem;" data-total-detik="' . $totalDetikAll . '"><i class="bi bi-stopwatch-fill me-1 text-warning"></i>Total Waktu: <span class="overall-timer-text">' . self::formatDuration($totalDetikAll) . '</span></span>';
+        $html .= '<span class="badge bg-dark text-white px-2 py-1 overall-milestone-timer" style="font-size: 0.74rem;" data-total-detik="' . $totalDetikAll . '"><i class="bi bi-stopwatch-fill me-1 text-warning"></i>Total Waktu: <span class="overall-timer-text">' . self::formatDuration($totalDetikAll) . '</span></span>';
         $html .= '</div>';
         $html .= '</div>'; // end header row
 
-        // Horizontal Timeline Stepper (Left to Right)
+        // Horizontal Timeline Stepper (Left to Right) - Compact Responsive Layout (No ScrollX)
         if ($totalMilestones > 0) {
-            $html .= '<div class="horizontal-milestone-wrapper position-relative py-2 overflow-x-auto" style="scrollbar-width: thin;">';
-            $html .= '<div class="horizontal-timeline d-flex align-items-start gap-4 position-relative px-2 py-3" style="min-width: max-content;">';
-            
-            // Background Horizontal Track Line
-            $html .= '<div class="timeline-track-line position-absolute" style="top: 38px; left: 50px; right: 50px; height: 4px; background: #e2e8f0; border-radius: 2px; z-index: 1;"></div>';
+            $html .= '<div class="horizontal-milestone-wrapper position-relative py-1 w-100">';
+            $html .= '<div class="horizontal-timeline d-flex flex-wrap align-items-start gap-2 position-relative px-1 py-1 w-100">';
 
             $idx = 1;
             foreach ($milestones as $m) {
@@ -86,36 +83,36 @@ class MilestoneHelper
                 $baseDetik = $m->durasi_detik ?? 0;
                 $totalDetik = $m->total_durasi_detik;
 
-                $html .= '<div class="horizontal-step-item position-relative d-flex flex-column align-items-center milestone-item" style="width: 270px; z-index: 2;" ';
+                $html .= '<div class="horizontal-step-item position-relative d-flex flex-column align-items-center milestone-item" style="flex: 1 1 170px; min-width: 160px; max-width: 220px; z-index: 2;" ';
                 $html .= 'data-milestone-id="' . $m->id . '" ';
                 $html .= 'data-status="' . $m->status . '" ';
                 $html .= 'data-base-detik="' . $baseDetik . '" ';
                 $html .= 'data-last-started-ts="' . $lastStartedTs . '">';
 
                 // Node Circle Dot (Centered on top of horizontal line)
-                $html .= '<div class="step-node rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 42px; height: 42px; background-color: ' . $nodeBg . '; color: ' . $nodeColor . '; border: 3px solid #ffffff; box-shadow: 0 0 0 3px ' . $nodeRing . '; font-size: 1rem; font-weight: bold; transition: all 0.2s;">';
+                $html .= '<div class="step-node rounded-circle d-flex align-items-center justify-content-center shadow-2xs mb-2" style="width: 32px; height: 32px; background-color: ' . $nodeBg . '; color: ' . $nodeColor . '; border: 2px solid #ffffff; box-shadow: 0 0 0 2px ' . $nodeRing . '; font-size: 0.82rem; font-weight: bold; transition: all 0.2s;">';
                 if ($m->status === 'Belum Dimulai') {
-                    $html .= '<span style="font-size: 0.85rem;">' . $idx . '</span>';
+                    $html .= '<span style="font-size: 0.78rem;">' . $idx . '</span>';
                 } else {
                     $html .= '<i class="bi ' . $nodeIcon . '"></i>';
                 }
                 $html .= '</div>';
 
                 // Step Content Card Box (Placed below node dot)
-                $html .= '<div class="step-card bg-white p-3 rounded-3 border shadow-sm w-100 position-relative d-flex flex-column justify-content-between" style="min-height: 190px;">';
+                $html .= '<div class="step-card bg-white p-2 rounded-2 border shadow-2xs w-100 position-relative d-flex flex-column justify-content-between" style="min-height: 140px;">';
                 
                 // Card Header: Step Index & Status Badge
                 $html .= '<div>';
-                $html .= '<div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-1">';
-                $html .= '<span class="badge bg-dark text-white fw-bold" style="font-size: 0.72rem;">Point #' . $idx . '</span>';
-                $html .= '<span class="badge milestone-status-badge px-2 py-1 fw-bold" style="font-size: 0.72rem; ' . $badgeStyle . '">' . e($statusBadgeText) . '</span>';
+                $html .= '<div class="d-flex align-items-center justify-content-between mb-1 flex-wrap gap-1">';
+                $html .= '<span class="badge bg-dark text-white fw-bold" style="font-size: 0.68rem;">Point #' . $idx . '</span>';
+                $html .= '<span class="badge milestone-status-badge px-1 py-0 fw-bold" style="font-size: 0.68rem; ' . $badgeStyle . '">' . e($statusBadgeText) . '</span>';
                 $html .= '</div>';
 
                 // Milestone Name
-                $html .= '<h6 class="fw-bold text-dark mb-2 text-break" style="font-size: 0.92rem; line-height: 1.3;">' . e($m->nama_milestone) . '</h6>';
+                $html .= '<h6 class="fw-bold text-dark mb-1 text-break" style="font-size: 0.84rem; line-height: 1.25;">' . e($m->nama_milestone) . '</h6>';
 
                 // Timestamps Info
-                $html .= '<div class="small text-secondary mb-2" style="font-size: 0.76rem;">';
+                $html .= '<div class="small text-secondary mb-1" style="font-size: 0.72rem; line-height: 1.2;">';
                 if ($m->waktu_mulai) {
                     $html .= '<div><i class="bi bi-play-circle text-primary me-1"></i><strong>Mulai:</strong> ' . $m->waktu_mulai->format('d/m/Y H:i') . '</div>';
                 }
@@ -132,10 +129,10 @@ class MilestoneHelper
                 $html .= '</div>'; // end top content
 
                 // Card Footer: Active Timer & Control Buttons
-                $html .= '<div class="border-top pt-2 mt-2">';
-                $html .= '<div class="d-flex align-items-center justify-content-between mb-2">';
-                $html .= '<span class="text-muted small" style="font-size: 0.74rem;">Durasi Aktif:</span>';
-                $html .= '<div class="badge bg-light text-dark border px-2 py-1 fw-bold milestone-timer-badge" style="font-size: 0.78rem; font-family: monospace;">';
+                $html .= '<div class="border-top pt-1 mt-1">';
+                $html .= '<div class="d-flex align-items-center justify-content-between mb-1">';
+                $html .= '<span class="text-muted small" style="font-size: 0.7rem;">Durasi:</span>';
+                $html .= '<div class="badge bg-light text-dark border px-1 py-0 fw-bold milestone-timer-badge" style="font-size: 0.72rem; font-family: monospace;">';
                 $html .= '<i class="bi bi-stopwatch text-success me-1"></i><span class="milestone-timer-text">' . self::formatDuration($totalDetik) . '</span>';
                 $html .= '</div>';
                 $html .= '</div>'; // end timer row
@@ -144,18 +141,15 @@ class MilestoneHelper
                 $html .= '<div class="btn-group btn-group-sm w-100" role="group">';
 
                 if ($m->status === 'Belum Dimulai') {
-                    $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-1" style="font-size: 0.76rem;" onclick="window.startMilestone(' . $m->id . ')" title="Mulai Milestone"><i class="bi bi-play-fill me-1"></i>Mulai</button>';
-                    $html .= '<button type="button" class="btn btn-sm btn-outline-danger py-1" style="font-size: 0.76rem; max-width: 36px;" onclick="window.deleteMilestone(' . $m->id . ')" title="Hapus Milestone"><i class="bi bi-trash"></i></button>';
+                    $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-0 px-2 w-100" style="font-size: 0.72rem;" onclick="window.startMilestone(' . $m->id . ')" title="Mulai Milestone"><i class="bi bi-play-fill me-1"></i>Mulai</button>';
                 } elseif ($m->status === 'Berjalan') {
-                    $html .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-1" style="font-size: 0.76rem;" onclick="window.pauseMilestone(' . $m->id . ')" title="Pause Timer"><i class="bi bi-pause-fill me-1"></i>Pause</button>';
-                    $html .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold py-1" style="font-size: 0.76rem;" onclick="window.stopMilestone(' . $m->id . ')" title="Berhenti / Selesai"><i class="bi bi-stop-fill me-1"></i>Berhenti</button>';
+                    $html .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-0 px-1" style="font-size: 0.72rem;" onclick="window.pauseMilestone(' . $m->id . ')" title="Pause Timer"><i class="bi bi-pause-fill me-1"></i>Pause</button>';
+                    $html .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold py-0 px-1" style="font-size: 0.72rem;" onclick="window.stopMilestone(' . $m->id . ')" title="Berhenti / Selesai"><i class="bi bi-stop-fill me-1"></i>Berhenti</button>';
                 } elseif ($m->status === 'Di-pause') {
-                    $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-1" style="font-size: 0.76rem;" onclick="window.startMilestone(' . $m->id . ')" title="Lanjut (Resume)"><i class="bi bi-play-fill me-1"></i>Lanjut</button>';
-                    $html .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold py-1" style="font-size: 0.76rem;" onclick="window.stopMilestone(' . $m->id . ')" title="Berhenti / Selesai"><i class="bi bi-stop-fill me-1"></i>Berhenti</button>';
-                    $html .= '<button type="button" class="btn btn-sm btn-outline-danger py-1" style="font-size: 0.76rem; max-width: 36px;" onclick="window.deleteMilestone(' . $m->id . ')" title="Hapus Milestone"><i class="bi bi-trash"></i></button>';
+                    $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-0 px-1" style="font-size: 0.72rem;" onclick="window.startMilestone(' . $m->id . ')" title="Lanjut (Resume)"><i class="bi bi-play-fill me-1"></i>Lanjut</button>';
+                    $html .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold py-0 px-1" style="font-size: 0.72rem;" onclick="window.stopMilestone(' . $m->id . ')" title="Berhenti / Selesai"><i class="bi bi-stop-fill me-1"></i>Berhenti</button>';
                 } else { // Selesai
-                    $html .= '<span class="btn btn-sm btn-light text-success fw-bold disabled py-1 w-100 border text-center" style="font-size: 0.76rem; opacity: 1;"><i class="bi bi-check-all me-1"></i>Selesai</span>';
-                    $html .= '<button type="button" class="btn btn-sm btn-outline-danger py-1" style="font-size: 0.76rem; max-width: 36px;" onclick="window.deleteMilestone(' . $m->id . ')" title="Hapus Milestone"><i class="bi bi-trash"></i></button>';
+                    $html .= '<span class="btn btn-sm btn-light text-success fw-bold disabled py-0 px-1 w-100 border text-center" style="font-size: 0.72rem; opacity: 1;"><i class="bi bi-check-all me-1"></i>Selesai</span>';
                 }
 
                 $html .= '</div>'; // end btn group
@@ -170,10 +164,10 @@ class MilestoneHelper
             $html .= '</div>'; // end horizontal timeline
             $html .= '</div>'; // end wrapper
         } else {
-            $html .= '<div class="text-center py-4 bg-light rounded-3 border border-dashed my-2">';
-            $html .= '<i class="bi bi-diagram-3 text-success fs-2 d-block mb-1"></i>';
-            $html .= '<div class="fw-semibold text-dark mb-1">Belum Ada Point Milestone</div>';
-            $html .= '<div class="text-muted small">Klik <strong>+ Tambah Point</strong> di atas untuk membuat tahapan alur kerja dari kiri ke kanan.</div>';
+            $html .= '<div class="text-center py-2 bg-light rounded-2 border border-dashed my-1">';
+            $html .= '<i class="bi bi-diagram-3 text-success fs-4 d-block mb-1"></i>';
+            $html .= '<div class="fw-semibold text-dark small mb-1">Belum Ada Point Milestone</div>';
+            $html .= '<div class="text-muted" style="font-size: 0.74rem;">Klik <strong>+ Tambah Point</strong> untuk membuat alur kerja.</div>';
             $html .= '</div>';
         }
 
