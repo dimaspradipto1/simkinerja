@@ -94,6 +94,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('analisis-keterlambatan/data', [AnalisisKeterlambatanController::class, 'getData'])->name('analisis-keterlambatan.data');
     Route::get('analisis-keterlambatan/export-excel', [AnalisisKeterlambatanController::class, 'exportExcel'])->name('analisis-keterlambatan.export-excel');
     Route::get('analisis-keterlambatan/export-pdf', [AnalisisKeterlambatanController::class, 'exportPdf'])->name('analisis-keterlambatan.export-pdf');
+    Route::post('analisis-keterlambatan/{id}/saran-pimpinan', [AnalisisKeterlambatanController::class, 'updateSaranPimpinan'])->name('analisis-keterlambatan.update-saran');
     Route::resource('analisis-keterlambatan', AnalisisKeterlambatanController::class)->only(['index']);
 
     // Milestone Routes

@@ -202,7 +202,10 @@
                         @endif
                     </td>
                     <td class="text-left" style="font-size: 6.5pt; line-height: 1.3;">
-                        @if($item->kategori_kendala === 'beban_ganda' || $item->kategori_kendala === 'insidentil')
+                        @if(!empty($item->saran_pimpinan))
+                            <div style="font-weight: bold; color: #1e40af; margin-bottom: 2px;">[Saran Rektor]</div>
+                            {!! nl2br(e($item->saran_pimpinan)) !!}
+                        @elseif($item->kategori_kendala === 'beban_ganda' || $item->kategori_kendala === 'insidentil')
                             Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.
                         @elseif($item->kategori_kendala === 'kepanitiaan')
                             Evaluasi porsi keterlibatan anggota panitia agar tidak mengganggu performa target rutin bulanan.

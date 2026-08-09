@@ -28,6 +28,7 @@ class RencanaKerja extends Model
         'url_external',
         'hasil_kerja',
         'rencana_tindak_lanjut',
+        'saran_pimpinan',
         'status',
     ];
 

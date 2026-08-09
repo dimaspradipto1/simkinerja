@@ -197,6 +197,45 @@
         </div>
     </div>
 </section>
+
+<!-- Modal Edit Saran Pimpinan / Rektor -->
+<div class="modal fade" id="modalSaranPimpinan" tabindex="-1" aria-labelledby="modalSaranPimpinanLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="formSaranPimpinan">
+                @csrf
+                <input type="hidden" id="saran_task_id" name="task_id">
+                <div class="modal-header bg-primary text-white py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modalSaranPimpinanLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Input / Edit Saran Pimpinan (Rektor)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label text-muted small mb-0">Nama Staff:</label>
+                        <div class="fw-bold text-dark" id="modal_staff_name">-</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-0">Uraian Tugas:</label>
+                        <div class="small text-secondary" id="modal_task_name">-</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="saran_pimpinan_input" class="form-label fw-bold small">Catatan / Saran Rektor:</label>
+                        <textarea class="form-control" id="saran_pimpinan_input" name="saran_pimpinan" rows="4" placeholder="Tuliskan saran, instruksi, atau arahan pimpinan untuk staff ini..."></textarea>
+                        <div class="form-text small text-muted">Kosongkan jika ingin mengembalikan ke rekomendasi saran otomatis sistem.</div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-light border btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="btn-save-saran">
+                        <i class="bi bi-save me-1"></i>Simpan Saran
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -316,6 +355,65 @@ $(document).ready(function() {
     $('#btn-export-pdf').on('click', function() {
         let params = $('#filterForm').serialize();
         window.location.href = "{{ route('analisis-keterlambatan.export-pdf') }}?" + params;
+    });
+
+    // Handle Edit Saran Button Click
+    $(document).on('click', '.btn-edit-saran', function() {
+        let id = $(this).data('id');
+        let staff = $(this).data('staff');
+        let task = $(this).data('task');
+        let saran = $(this).data('saran');
+
+        $('#saran_task_id').val(id);
+        $('#modal_staff_name').text(staff);
+        $('#modal_task_name').text(task);
+        $('#saran_pimpinan_input').val(saran);
+
+        $('#modalSaranPimpinan').modal('show');
+    });
+
+    // Handle Form Submit for Saran Pimpinan
+    $('#formSaranPimpinan').on('submit', function(e) {
+        e.preventDefault();
+        let id = $('#saran_task_id').val();
+        let btn = $('#btn-save-saran');
+        let originalText = btn.html();
+
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
+
+        $.ajax({
+            url: "{{ url('analisis-keterlambatan') }}/" + id + "/saran-pimpinan",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                saran_pimpinan: $('#saran_pimpinan_input').val()
+            },
+            success: function(response) {
+                btn.prop('disabled', false).html(originalText);
+                if (response.success) {
+                    $('#modalSaranPimpinan').modal('hide');
+                    table.ajax.reload(null, false);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: response.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        alert(response.message);
+                    }
+                } else {
+                    alert(response.message || 'Gagal menyimpan saran.');
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html(originalText);
+                let msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menyimpan saran.';
+                alert(msg);
+            }
+        });
     });
 });
 </script>

@@ -250,13 +250,46 @@ class AnalisisKeterlambatanController extends Controller
 
                 return $html;
             })
-            ->addColumn('rekomendasi_evaluasi', function ($row) {
-                if ($row->kategori_kendala === 'beban_ganda' || $row->kategori_kendala === 'insidentil') {
-                    return '<div class="small text-dark p-2 bg-light rounded border border-warning-subtle"><i class="bi bi-info-circle text-warning me-1"></i><strong>Saran Pimpinan:</strong> Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.</div>';
-                } elseif ($row->kategori_kendala === 'kepanitiaan') {
-                    return '<div class="small text-dark p-2 bg-light rounded border border-info-subtle"><i class="bi bi-info-circle text-info me-1"></i><strong>Saran Pimpinan:</strong> Evaluasi porsi keterlibatan anggota panitia agar tidak mengganggu performa target rutin bulanan.</div>';
+            ->addColumn('rekomendasi_evaluasi', function ($row) use ($authUser) {
+                $canEdit = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat());
+                $saranAttr = e($row->saran_pimpinan ?? '');
+                $editBtn = '';
+                if ($canEdit) {
+                    $editBtn = ' <button type="button" class="btn btn-xs btn-outline-primary ms-1 py-0 px-1 btn-edit-saran" data-id="' . $row->id . '" data-task="' . e($row->uraian_tugas) . '" data-staff="' . e($row->user ? $row->user->name : '-') . '" data-saran="' . $saranAttr . '" title="Input / Edit Saran Rektor"><i class="bi bi-pencil-square me-1"></i>Edit Saran</button>';
                 }
-                return '<div class="small text-dark p-2 bg-light rounded border"><i class="bi bi-info-circle text-secondary me-1"></i><strong>Saran Pimpinan:</strong> Perlu pendampingan dan monitoring manajemen waktu pengerjaan tugas rutin staff.</div>';
+
+                if (!empty($row->saran_pimpinan)) {
+                    return '<div class="small text-dark p-2 bg-light rounded border border-primary-subtle">'
+                         . '<div class="d-flex justify-content-between align-items-center mb-1">'
+                         . '<span class="badge bg-primary text-white"><i class="bi bi-shield-check me-1"></i>Catatan / Saran Rektor</span>'
+                         . $editBtn
+                         . '</div>'
+                         . '<div>' . nl2br(e($row->saran_pimpinan)) . '</div>'
+                         . '</div>';
+                }
+
+                $saranSys = '';
+                $borderClass = 'border';
+                $iconClass = 'bi-info-circle text-secondary';
+                if ($row->kategori_kendala === 'beban_ganda' || $row->kategori_kendala === 'insidentil') {
+                    $saranSys = 'Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.';
+                    $borderClass = 'border border-warning-subtle';
+                    $iconClass = 'bi-info-circle text-warning';
+                } elseif ($row->kategori_kendala === 'kepanitiaan') {
+                    $saranSys = 'Evaluasi porsi keterlibatan anggota panitia agar tidak mengganggu performa target rutin bulanan.';
+                    $borderClass = 'border border-info-subtle';
+                    $iconClass = 'bi-info-circle text-info';
+                } else {
+                    $saranSys = 'Perlu pendampingan dan monitoring manajemen waktu pengerjaan tugas rutin staff.';
+                }
+
+                return '<div class="small text-dark p-2 bg-light rounded ' . $borderClass . '">'
+                     . '<div class="d-flex justify-content-between align-items-center mb-1">'
+                     . '<span><i class="bi ' . $iconClass . ' me-1"></i><strong>Saran Pimpinan (Otomatis):</strong></span>'
+                     . $editBtn
+                     . '</div>'
+                     . '<div class="mb-1">' . $saranSys . '</div>'
+                     . '</div>';
             })
             ->with('stats', $stats)
             ->rawColumns(['staff_info', 'task_details', 'diagnostik_kendala', 'rincian_bentrokan', 'rekomendasi_evaluasi'])
@@ -436,6 +469,10 @@ class AnalisisKeterlambatanController extends Controller
                 $rekomendasi = 'Evaluasi porsi keterlibatan anggota panitia.';
             }
 
+            if (!empty($task->saran_pimpinan)) {
+                $rekomendasi = '[Saran Rektor] ' . $task->saran_pimpinan;
+            }
+
             $bentrokanText = [];
             if ($hasIns) {
                 $insList = $overlappingInsidentil->pluck('uraian_tugas')->implode(', ');
@@ -612,5 +649,32 @@ class AnalisisKeterlambatanController extends Controller
         $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('Laporan_Analisis_Keterlambatan_' . date('Ymd_His') . '.pdf');
+    }
+
+    /**
+     * Update Saran Pimpinan / Rektor for delayed task.
+     */
+    public function updateSaranPimpinan(Request $request, $id)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk memberikan saran pimpinan.'
+            ], 403);
+        }
+
+        $request->validate([
+            'saran_pimpinan' => 'nullable|string|max:2000',
+        ]);
+
+        $task = RencanaKerja::findOrFail($id);
+        $task->saran_pimpinan = $request->saran_pimpinan;
+        $task->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Saran Pimpinan / Rekomendasi Rektor berhasil diperbarui.',
+        ]);
     }
 }
