@@ -133,6 +133,7 @@
 
                 <!-- Shared Row: Pegawai Spesifik & Kategori Kendala -->
                 <div class="row g-3 align-items-center border-top pt-3 mt-1">
+                {{-- Filter pegawai: tampil untuk Kepala/Pimpinan, tersembunyi untuk staf biasa --}}
                     @if(!$isStaffOnly)
                     <div class="col-md-8">
                         <label for="filter_user" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-person me-1"></i> Cari / Pilih Pegawai Spesifik</label>
@@ -152,7 +153,7 @@
                         </select>
                     </div>
                     @else
-                        <input type="hidden" id="filter_user" name="user_id" value="{{ auth()->user()->id }}">
+                    <input type="hidden" id="filter_user" name="user_id" value="{{ auth()->user()->id }}">
                     @endif
 
                     <div class="{{ $isStaffOnly ? 'col-md-12' : 'col-md-4' }}">
@@ -289,11 +290,12 @@
                     <thead class="table-light border-top">
                         <tr>
                             <th style="width: 4%;">NO</th>
-                            <th style="width: 18%;">STAFF & JABATAN</th>
-                            <th style="width: 25%;">TUGAS UTAMA (TERLAMBAT)</th>
-                            <th style="width: 15%;">DIAGNOSTIK KENDALA</th>
-                            <th style="width: 23%;">PEKERJAAN BENTROK (OVERLAP)</th>
-                            <th style="width: 15%;">REKOMENDASI EVALUASI</th>
+                            <th style="width: 16%;">STAFF & JABATAN</th>
+                            <th style="width: 22%;">TUGAS UTAMA (TERLAMBAT)</th>
+                            <th style="width: 14%;">DIAGNOSTIK KENDALA</th>
+                            <th style="width: 21%;">PEKERJAAN BENTROK (OVERLAP)</th>
+                            <th style="width: 16%;">REKOMENDASI EVALUASI</th>
+                            <th style="width: 7%; text-align:center;">AKSI</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -312,7 +314,7 @@
                 <input type="hidden" id="saran_task_id" name="task_id">
                 <div class="modal-header bg-primary text-white py-2">
                     <h5 class="modal-title fs-6 fw-bold" id="modalSaranPimpinanLabel">
-                        <i class="bi bi-pencil-square me-2"></i>Input / Edit Saran Pimpinan (Rektor)
+                        <i class="bi bi-pencil-square me-2"></i>Input / Edit Rekomendasi Evaluasi Pimpinan
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -326,8 +328,8 @@
                         <div class="small text-secondary" id="modal_task_name">-</div>
                     </div>
                     <div class="mb-3">
-                        <label for="saran_pimpinan_input" class="form-label fw-bold small">Catatan / Saran Rektor:</label>
-                        <textarea class="form-control" id="saran_pimpinan_input" name="saran_pimpinan" rows="4" placeholder="Tuliskan saran, instruksi, atau arahan pimpinan untuk staff ini..."></textarea>
+                        <label for="saran_pimpinan_input" class="form-label fw-bold small">Catatan & Rekomendasi Evaluasi Pimpinan:</label>
+                        <textarea class="form-control" id="saran_pimpinan_input" name="saran_pimpinan" rows="4" placeholder="Tuliskan catatan evaluasi, instruksi, atau rekomendasi arahan pimpinan untuk staff ini..."></textarea>
                         <div class="form-text small text-muted">Kosongkan jika ingin mengembalikan ke rekomendasi saran otomatis sistem.</div>
                     </div>
                 </div>
@@ -434,12 +436,14 @@ $(document).ready(function() {
 
     // Initialize Select2 Searchable Dropdowns
     if ($.fn.select2) {
+        @if(!$isStaffOnly)
         $('#filter_user').select2({
             theme: 'bootstrap-5',
             width: '100%',
             placeholder: '-- Cari / Pilih Nama Pegawai --',
             allowClear: true
         });
+        @endif
 
         $('#filter_tingkat_1, #filter_tingkat_2, #filter_tingkat_3, #filter_level, #filter_unit, #filter_periode, #filter_kendala').select2({
             theme: 'bootstrap-5',
@@ -470,7 +474,8 @@ $(document).ready(function() {
             { data: 'task_details', name: 'task_details' },
             { data: 'diagnostik_kendala', name: 'diagnostik_kendala' },
             { data: 'rincian_bentrokan', name: 'rincian_bentrokan' },
-            { data: 'rekomendasi_evaluasi', name: 'rekomendasi_evaluasi' }
+            { data: 'rekomendasi_evaluasi', name: 'rekomendasi_evaluasi' },
+            { data: 'aksi', name: 'aksi', orderable: false, searchable: false, className: 'text-center' }
         ],
         language: {
             search: "Cari:",
@@ -659,47 +664,8 @@ $(document).ready(function() {
         table.ajax.reload();
     });
 
-    // Cascading Filter for Leadership Level & Unit
+    // Filter for Leadership Level & Unit
     $('#filter_level, #filter_unit').on('change', function() {
-        let selectedLevel = $('#filter_level').val();
-        let selectedUnit = $('#filter_unit').val() ? $('#filter_unit').val().toUpperCase() : '';
-
-        $('#filter_user option').each(function() {
-            if ($(this).val() === '') {
-                return;
-            }
-            let userLevel = $(this).data('level') ? $(this).data('level').toString() : '';
-            let userUnit = $(this).data('unit') ? $(this).data('unit').toString().toUpperCase() : '';
-
-            let matchLevel = (selectedLevel === '' || userLevel === selectedLevel);
-            let matchUnit = (selectedUnit === '' || userUnit.indexOf(selectedUnit) !== -1);
-
-            if (matchLevel && matchUnit) {
-                $(this).show().prop('disabled', false);
-            } else {
-                $(this).hide().prop('disabled', true);
-            }
-        });
-
-        // Hide empty optgroups
-        $('#filter_user optgroup').each(function() {
-            let visibleOptions = $(this).find('option:not(:disabled)');
-            if (visibleOptions.length === 0) {
-                $(this).hide();
-            } else {
-                $(this).show();
-            }
-        });
-
-        // Reset user selection if disabled option was selected
-        if ($('#filter_user option:selected').is(':disabled')) {
-            $('#filter_user').val('');
-        }
-
-        if ($.fn.select2) {
-            $('#filter_user').trigger('change.select2');
-        }
-
         table.ajax.reload();
     });
 

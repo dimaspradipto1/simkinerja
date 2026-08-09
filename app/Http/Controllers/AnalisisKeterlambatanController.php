@@ -26,10 +26,27 @@ class AnalisisKeterlambatanController extends Controller
 
         $isStaffOnly = true;
         $usersQuery = User::whereNotNull('jabatan')->where('jabatan', '!=', '');
-        if ($authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat())) {
-            $isStaffOnly = false;
-        } else if ($authUser) {
-            $usersQuery->where('id', $authUser->id);
+
+        if ($authUser) {
+            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+                $isStaffOnly = false;
+            } elseif ($authUser->isPimpinanUnit()) {
+                $isStaffOnly = false;
+                $keywords = $this->getUnitKeywords($authUser);
+                $usersQuery->where(function ($q) use ($authUser, $keywords) {
+                    $q->where('id', $authUser->id);
+                    if (!empty($keywords)) {
+                        foreach ($keywords as $kw) {
+                            $q->orWhere('unit', 'like', '%' . $kw . '%')
+                              ->orWhere('jabatan', 'like', '%' . $kw . '%');
+                        }
+                    } elseif (!empty($authUser->unit)) {
+                        $q->orWhere('unit', 'like', '%' . $authUser->unit . '%');
+                    }
+                });
+            } else {
+                $usersQuery->where('id', $authUser->id);
+            }
         }
 
         $allUsers = $usersQuery->orderBy('name')->get(['id', 'name', 'jabatan', 'unit'])->unique('name');
@@ -57,6 +74,16 @@ class AnalisisKeterlambatanController extends Controller
             }
         }
 
+        foreach ($groupedUsers as $key => $collection) {
+            $groupedUsers[$key] = $collection->sortBy(function ($u) {
+                return sprintf('%03d_%s', $this->getPositionRank($u), $u->name);
+            })->values();
+        }
+
+        $allUsers = $allUsers->sortBy(function ($u) {
+            return sprintf('%03d_%s', $this->getPositionRank($u), $u->name);
+        })->values();
+
         $usersWithJabatan = $allUsers;
         $hierarchyTree = $this->getHierarchyTree($allUsers);
 
@@ -76,13 +103,37 @@ class AnalisisKeterlambatanController extends Controller
         // Scope by explicit user_id filter or user permissions
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
-        } elseif ($authUser && !($authUser->isAdmin() || $authUser->isPimpinanRektorat())) {
-            $query->where(function ($q) use ($authUser) {
-                $q->where('user_id', $authUser->id)
-                  ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                      $qu->where('users.id', $authUser->id);
-                  });
-            });
+        } elseif ($authUser) {
+            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+                // Universal Scope: Rektorat & Admin
+            } elseif ($authUser->isPimpinanUnit()) {
+                $keywords = $this->getUnitKeywords($authUser);
+                $query->where(function ($q) use ($authUser, $keywords) {
+                    $q->where('user_id', $authUser->id)
+                      ->orWhereHas('user', function ($qu) use ($keywords, $authUser) {
+                          $qu->where(function ($nested) use ($keywords, $authUser) {
+                              if (!empty($keywords)) {
+                                  foreach ($keywords as $kw) {
+                                      $nested->orWhere('unit', 'like', '%' . $kw . '%')
+                                             ->orWhere('jabatan', 'like', '%' . $kw . '%');
+                                  }
+                              } elseif (!empty($authUser->unit)) {
+                                  $nested->orWhere('unit', 'like', '%' . $authUser->unit . '%');
+                              }
+                          });
+                      })
+                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                          $qu->where('users.id', $authUser->id);
+                      });
+                });
+            } else {
+                $query->where(function ($q) use ($authUser) {
+                    $q->where('user_id', $authUser->id)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                          $qu->where('users.id', $authUser->id);
+                      });
+                });
+            }
         }
 
         if ($request->filled('periode_akademik_id')) {
@@ -239,6 +290,10 @@ class AnalisisKeterlambatanController extends Controller
             $lateTasks->push($task);
         }
 
+        $lateTasks = $lateTasks->sortBy(function ($task) {
+            return sprintf('%03d_%s', $this->getPositionRank($task->user), $task->user ? $task->user->name : '');
+        })->values();
+
         $totalLateCount = $lateTasks->count();
         $stats = [
             'total'         => $totalLateCount,
@@ -313,19 +368,11 @@ class AnalisisKeterlambatanController extends Controller
 
                 return $html;
             })
-            ->addColumn('rekomendasi_evaluasi', function ($row) use ($authUser) {
-                $canEdit = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat());
-                $saranAttr = e($row->saran_pimpinan ?? '');
-                $editBtn = '';
-                if ($canEdit) {
-                    $editBtn = ' <button type="button" class="btn btn-xs btn-outline-primary ms-1 py-0 px-1 btn-edit-saran" data-id="' . $row->id . '" data-task="' . e($row->uraian_tugas) . '" data-staff="' . e($row->user ? $row->user->name : '-') . '" data-saran="' . $saranAttr . '" title="Input / Edit Saran Rektor"><i class="bi bi-pencil-square me-1"></i>Edit Saran</button>';
-                }
-
+            ->addColumn('rekomendasi_evaluasi', function ($row) {
                 if (!empty($row->saran_pimpinan)) {
                     return '<div class="small text-dark p-2 bg-light rounded border border-primary-subtle">'
-                         . '<div class="d-flex justify-content-between align-items-center mb-1">'
-                         . '<span class="badge bg-primary text-white"><i class="bi bi-shield-check me-1"></i>Catatan / Saran Rektor</span>'
-                         . $editBtn
+                         . '<div class="mb-1">'
+                         . '<span class="badge bg-primary text-white"><i class="bi bi-shield-check me-1"></i>Catatan &amp; Saran Pimpinan</span>'
                          . '</div>'
                          . '<div>' . nl2br(e($row->saran_pimpinan)) . '</div>'
                          . '</div>';
@@ -340,11 +387,11 @@ class AnalisisKeterlambatanController extends Controller
                     $borderClass = 'border border-warning-subtle';
                     $iconClass = 'bi-info-circle text-warning';
                     if ($userLevel === 1) {
-                        $saranSys = 'Diperlukan delegasi tugas strategis & penataan ulang prioritas kebijakan tingkat universitas.';
+                        $saranSys = 'Diperlukan delegasi tugas strategis &amp; penataan ulang prioritas kebijakan tingkat universitas.';
                     } elseif ($userLevel === 2) {
-                        $saranSys = 'Diperlukan evaluasi beban kerja manajerial unit & redistribusi porsi penugasan lintas prodi/bidang.';
+                        $saranSys = 'Diperlukan evaluasi beban kerja manajerial unit &amp; redistribusi porsi penugasan lintas prodi/bidang.';
                     } elseif ($userLevel === 3) {
-                        $saranSys = 'Diperlukan koordinasi penataan jadwal operasional prodi/bidang & penyesuaian deadline tugas utama.';
+                        $saranSys = 'Diperlukan koordinasi penataan jadwal operasional prodi/bidang &amp; penyesuaian deadline tugas utama.';
                     } else {
                         $saranSys = 'Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.';
                     }
@@ -364,7 +411,7 @@ class AnalisisKeterlambatanController extends Controller
                     if ($userLevel === 1) {
                         $saranSys = 'Perlu peninjauan alokasi waktu supervisi strategis dan koordinasi antar pimpinan universitas.';
                     } elseif ($userLevel === 2) {
-                        $saranSys = 'Perlu evaluasi efektivitas manajemen internal unit & penguatan pengawasan manajerial unit.';
+                        $saranSys = 'Perlu evaluasi efektivitas manajemen internal unit &amp; penguatan pengawasan manajerial unit.';
                     } elseif ($userLevel === 3) {
                         $saranSys = 'Perlu penguatan manajemen waktu pengerjaan target operasional dan optimalisasi koordinasi tim prodi/bidang.';
                     } else {
@@ -373,15 +420,27 @@ class AnalisisKeterlambatanController extends Controller
                 }
 
                 return '<div class="small text-dark p-2 bg-light rounded ' . $borderClass . '">'
-                     . '<div class="d-flex justify-content-between align-items-center mb-1">'
-                     . '<span><i class="bi ' . $iconClass . ' me-1"></i><strong>Saran Pimpinan (Otomatis):</strong></span>'
-                     . $editBtn
-                     . '</div>'
+                     . '<div class="mb-1"><span><i class="bi ' . $iconClass . ' me-1"></i><strong>Saran Pimpinan (Otomatis):</strong></span></div>'
                      . '<div class="mb-1">' . $saranSys . '</div>'
                      . '</div>';
             })
+            ->addColumn('aksi', function ($row) use ($authUser) {
+                $canEdit = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
+                if (!$canEdit) return '<span class="text-muted small">-</span>';
+                $saranAttr = e($row->saran_pimpinan ?? '');
+                return '<div class="text-center">'
+                     . '<button type="button" class="btn btn-sm btn-outline-primary btn-edit-saran"'
+                     . ' data-id="' . $row->id . '"'
+                     . ' data-task="' . e($row->uraian_tugas) . '"'
+                     . ' data-staff="' . e($row->user ? $row->user->name : '-') . '"'
+                     . ' data-saran="' . $saranAttr . '"'
+                     . ' title="Input / Edit Rekomendasi Evaluasi Pimpinan">'
+                     . '<i class="bi bi-pencil-square me-1"></i>Edit'
+                     . '</button>'
+                     . '</div>';
+            })
             ->with('stats', $stats)
-            ->rawColumns(['staff_info', 'task_details', 'diagnostik_kendala', 'rincian_bentrokan', 'rekomendasi_evaluasi'])
+            ->rawColumns(['staff_info', 'task_details', 'diagnostik_kendala', 'rincian_bentrokan', 'rekomendasi_evaluasi', 'aksi'])
             ->make(true);
     }
 
@@ -396,7 +455,7 @@ class AnalisisKeterlambatanController extends Controller
         $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
 
         if ($authUser) {
-            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit()) {
                 if ($request->filled('user_id')) {
                     $query->where('user_id', $request->user_id);
                 }
@@ -434,6 +493,10 @@ class AnalisisKeterlambatanController extends Controller
                 return $task->user && str_contains(strtoupper($task->user->unit ?? ''), $unitReq);
             });
         }
+
+        $items = $items->sortBy(function ($task) {
+            return sprintf('%03d_%s', $this->getPositionRank($task->user), $task->user ? $task->user->name : '');
+        })->values();
 
         $namaStaff = 'SEMUA STAFF';
         $jabatanStaff = 'SEMUA JABATAN';
@@ -636,7 +699,7 @@ class AnalisisKeterlambatanController extends Controller
         $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
 
         if ($authUser) {
-            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit()) {
                 if ($request->filled('user_id')) {
                     $query->where('user_id', $request->user_id);
                 }
@@ -747,6 +810,10 @@ class AnalisisKeterlambatanController extends Controller
             $lateTasks->push($task);
         }
 
+        $lateTasks = $lateTasks->sortBy(function ($task) {
+            return sprintf('%03d_%s', $this->getPositionRank($task->user), $task->user ? $task->user->name : '');
+        })->values();
+
         $namaStaff = 'SEMUA STAFF';
         $jabatanStaff = 'SEMUA JABATAN';
         $unitStaff = 'SEMUA UNIT';
@@ -774,10 +841,10 @@ class AnalisisKeterlambatanController extends Controller
     public function updateSaranPimpinan(Request $request, $id)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat())) {
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki hak akses untuk memberikan saran pimpinan.'
+                'message' => 'Anda tidak memiliki hak akses untuk memberikan saran / rekomendasi evaluasi pimpinan.'
             ], 403);
         }
 
@@ -791,8 +858,72 @@ class AnalisisKeterlambatanController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Saran Pimpinan / Rekomendasi Rektor berhasil diperbarui.',
+            'message' => 'Catatan & Rekomendasi Evaluasi Pimpinan berhasil disimpan.',
         ]);
+    }
+
+    /**
+     * Get search keywords for filtering staff belonging to a unit leader.
+     */
+    protected function getUnitKeywords($user): array
+    {
+        if (!$user) {
+            return [];
+        }
+
+        $unit = strtoupper(trim($user->unit ?? ''));
+        $jabatan = strtoupper(trim($user->jabatan ?? ''));
+
+        // 1. LPTI / ICT
+        if (str_contains($unit, 'LPTI') || str_contains($jabatan, 'LPTI') || str_contains($unit, 'ICT')) {
+            return ['LPTI', 'ICT', 'PROGRAMMER', 'INFRASTRUKTUR', 'TROUBLESHOOTING', 'SISTEM INFORMASI'];
+        }
+
+        // 2. FEB (Fakultas Ekonomi dan Bisnis)
+        if (str_contains($unit, 'FEB') || str_contains($unit, 'EKONOMI') || str_contains($jabatan, 'FEB') || str_contains($jabatan, 'EKONOMI')) {
+            return ['FEB', 'EKONOMI', 'MANAJEMEN', 'AKUNTANSI', 'PASCASARJANA MM'];
+        }
+
+        // 3. FST (Fakultas Sains dan Teknologi)
+        if (str_contains($unit, 'FST') || str_contains($unit, 'SAINS') || str_contains($jabatan, 'FST') || str_contains($jabatan, 'TEKNIK')) {
+            return ['FST', 'SAINS', 'TEKNOLOGI', 'TEKNIK', 'INDUSTRI', 'INFORMATIKA', 'LOGISTIK', 'PERKAPALAN', 'LABORATORIUM'];
+        }
+
+        // 4. FIKES (Fakultas Ilmu Kesehatan)
+        if (str_contains($unit, 'FIKES') || str_contains($unit, 'KESEHATAN') || str_contains($jabatan, 'FIKES') || str_contains($jabatan, 'K3') || str_contains($jabatan, 'KESLING')) {
+            return ['FIKES', 'KESEHATAN', 'K3', 'KESLING', 'LABORAN'];
+        }
+
+        // 5. BAAK
+        if (str_contains($unit, 'BAAK') || str_contains($unit, 'AKADEMIK') || str_contains($jabatan, 'BAAK') || str_contains($jabatan, 'PUSTAKA') || str_contains($jabatan, 'PERPUSTAKAAN')) {
+            return ['BAAK', 'AKADEMIK', 'LAYANAN', 'PUSTAKA', 'PERPUSTAKAAN', 'IJAZAH'];
+        }
+
+        // 6. BAUK
+        if (str_contains($unit, 'BAUK') || str_contains($unit, 'UMUM') || str_contains($jabatan, 'BAUK') || str_contains($jabatan, 'KEUANGAN') || str_contains($jabatan, 'SARPRAS') || str_contains($jabatan, 'SDM')) {
+            return ['BAUK', 'KEUANGAN', 'SDM', 'SARPRAS', 'TATA USAHA', 'KASIR', 'KEPEGAWAIAN'];
+        }
+
+        // 7. LPPM
+        if (str_contains($unit, 'LPPM') || str_contains($jabatan, 'LPPM')) {
+            return ['LPPM', 'PENELITIAN', 'PENGABDIAN', 'HAKI'];
+        }
+
+        // 8. LPMI
+        if (str_contains($unit, 'LPMI') || str_contains($jabatan, 'LPMI')) {
+            return ['LPMI', 'MUTU', 'SPMI', 'AKREDITASI', 'AUDIT'];
+        }
+
+        // 9. BIRO KEMAHASISWAAN / HUMAS
+        if (str_contains($unit, 'KEMAHASISWAAN') || str_contains($unit, 'HUMAS') || str_contains($jabatan, 'HUMAS') || str_contains($jabatan, 'ALUMNI') || str_contains($jabatan, 'KERJASAMA')) {
+            return ['KEMAHASISWAAN', 'HUMAS', 'KERJASAMA', 'ALUMNI', 'KARIR', 'PERENCANAAN'];
+        }
+
+        if (!empty($unit)) {
+            return [$unit];
+        }
+
+        return [];
     }
 
     /**
@@ -806,23 +937,35 @@ class AnalisisKeterlambatanController extends Controller
 
         $j = strtoupper(trim($user->jabatan));
 
-        if ($j === 'REKTOR') return 1;
-        if ($j === 'WAKIL REKTOR I') return 2;
-        if ($j === 'WAKIL REKTOR II') return 3;
-        if ($j === 'WAKIL REKTOR III') return 4;
+        // Rektorat
+        if (str_contains($j, 'REKTOR') && !str_contains($j, 'WAKIL REKTOR')) return 1;
+        if (str_contains($j, 'WAKIL REKTOR I') || str_contains($j, 'WAREK I') || str_contains($j, 'WAREK 1')) return 2;
+        if (str_contains($j, 'WAKIL REKTOR II') || str_contains($j, 'WAREK II') || str_contains($j, 'WAREK 2')) return 3;
+        if (str_contains($j, 'WAKIL REKTOR III') || str_contains($j, 'WAREK III') || str_contains($j, 'WAREK 3')) return 4;
+
+        // Dekanat
         if (str_contains($j, 'DEKAN') && !str_contains($j, 'WAKIL DEKAN')) return 5;
-        if (str_contains($j, 'KA. LPPM') || str_contains($j, 'KEPALA LPPM')) return 6;
-        if (str_contains($j, 'KA. LPMI') || str_contains($j, 'KEPALA LPMI')) return 7;
-        if (str_contains($j, 'KA. BIRO') || str_contains($j, 'KEPALA BIRO')) return 8;
-        if (str_contains($j, 'KEPALA ICT') || str_contains($j, 'KEPALA LPTI')) return 9;
-        if (str_contains($j, 'KEPALA PERPUSTAKAAN') || (str_contains($j, 'KEPALA') && !str_contains($j, 'LAB'))) return 10;
-        if (str_contains($j, 'WAKIL DEKAN')) return 11;
-        if (str_contains($j, 'KETUA PROGRAM STUDI') || str_contains($j, 'KAPRODI')) return 12;
-        if (str_contains($j, 'SEKRETARIS PRODI') || str_contains($j, 'SEKPRODI')) return 13;
-        if (str_contains($j, 'KABID')) return 14;
-        if (str_contains($j, 'KA. LABORATORIUM') || str_contains($j, 'KA. UPPM') || str_contains($j, 'KA. HUMAS')) return 15;
-        if (str_contains($j, 'PROGRAMMER') || str_contains($j, 'DIVISI')) return 16;
-        if (str_contains($j, 'STAFF') || str_contains($j, 'STAF') || str_contains($j, 'KASIR')) return 20;
+        // Cek II sebelum I agar tidak ada substring collision ('WAKIL DEKAN I' ada dalam 'WAKIL DEKAN II')
+        if (str_contains($j, 'WAKIL DEKAN II') || str_contains($j, 'WAKIL DEKAN 2') || str_contains($j, 'WADEK II') || str_contains($j, 'WADEK 2')) return 7;
+        if (str_contains($j, 'WAKIL DEKAN I') || str_contains($j, 'WAKIL DEKAN 1') || str_contains($j, 'WADEK I') || str_contains($j, 'WADEK 1')) return 6;
+        if (str_contains($j, 'WAKIL DEKAN')) return 8;
+
+        // Kepala Lembaga, Biro & UPT
+        if (str_contains($j, 'KA. LPPM') || str_contains($j, 'KEPALA LPPM')) return 10;
+        if (str_contains($j, 'KA. LPMI') || str_contains($j, 'KEPALA LPMI')) return 11;
+        if (str_contains($j, 'KA. BIRO') || str_contains($j, 'KEPALA BIRO')) return 12;
+        if (str_contains($j, 'KEPALA ICT') || str_contains($j, 'KEPALA LPTI') || str_contains($j, 'KA. LPTI')) return 13;
+        if (str_contains($j, 'KEPALA PERPUSTAKAAN') || (str_contains($j, 'KEPALA') && !str_contains($j, 'LAB'))) return 14;
+
+        // Pimpinan Operasional / Kaprodi / Kabid
+        if (str_contains($j, 'KETUA PROGRAM STUDI') || str_contains($j, 'KAPRODI') || str_contains($j, 'KA. PRODI')) return 15;
+        if (str_contains($j, 'SEKRETARIS PRODI') || str_contains($j, 'SEKPRODI')) return 16;
+        if (str_contains($j, 'KABID')) return 17;
+        if (str_contains($j, 'KA. LABORATORIUM') || str_contains($j, 'KA. UPPM') || str_contains($j, 'KA. HUMAS') || str_contains($j, 'UPMI') || str_contains($j, 'GKM')) return 18;
+
+        // Staf Pelaksana & Support
+        if (str_contains($j, 'PROGRAMMER') || str_contains($j, 'DIVISI')) return 19;
+        if (str_contains($j, 'STAFF') || str_contains($j, 'STAF') || str_contains($j, 'KASIR') || str_contains($j, 'LABORAN') || str_contains($j, 'PUSTAKAWAN')) return 20;
 
         return 50;
     }
@@ -849,7 +992,7 @@ class AnalisisKeterlambatanController extends Controller
             str_contains($jabatan, 'KA. LPPM') || str_contains($jabatan, 'KEPALA LPPM') ||
             str_contains($jabatan, 'KA. LPMI') || str_contains($jabatan, 'KEPALA LPMI') ||
             str_contains($jabatan, 'KA. BIRO') || str_contains($jabatan, 'KEPALA BIRO') ||
-            str_contains($jabatan, 'KEPALA ICT') || str_contains($jabatan, 'KEPALA LPTI') ||
+            str_contains($jabatan, 'Ka LPTI') || str_contains($jabatan, 'KEPALA LPTI') ||
             str_contains($jabatan, 'KEPALA PERPUSTAKAAN')
         ) {
             return 2;

@@ -38,26 +38,10 @@
           <li class="nav-heading">Rekapitulasi & Laporan</li>
 
           <li class="nav-item">
-              <a class="{{ request()->routeIs('rekapitulasi.*') ? 'nav-link' : 'nav-link collapsed' }}"
+              <a class="{{ (request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*')) ? 'nav-link' : 'nav-link collapsed' }}"
                   href="{{ route('rekapitulasi.index') }}">
-                  <i class="bi bi-pie-chart"></i>
-                  <span>Rekapitulasi Rencana Kerja</span>
-              </a>
-          </li>
-
-          <li class="nav-item">
-              <a class="{{ request()->routeIs('rekapitulasi-kepanitiaan.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                  href="{{ route('rekapitulasi-kepanitiaan.index') }}">
                   <i class="bi bi-pie-chart-fill"></i>
-                  <span>Rekapitulasi Kepanitiaan</span>
-              </a>
-          </li>
-
-          <li class="nav-item">
-              <a class="{{ request()->routeIs('rekapitulasi-insidentil.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                  href="{{ route('rekapitulasi-insidentil.index') }}">
-                  <i class="bi bi-bar-chart-line"></i>
-                  <span>Rekapitulasi Insidentil</span>
+                  <span>Rekapitulasi</span>
               </a>
           </li>
 
