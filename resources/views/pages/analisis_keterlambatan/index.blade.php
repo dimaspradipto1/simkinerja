@@ -18,56 +18,153 @@
     <!-- Filter Card -->
     <div class="card mb-4 border-0 shadow-sm">
         <div class="card-body py-3">
-            <form id="filterForm" class="row g-3 align-items-center">
-                <div class="{{ $isStaffOnly ? 'col-md-6' : 'col-md-3' }}">
-                    <label for="filter_periode" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> Periode Akademik</label>
-                    <select id="filter_periode" name="periode_akademik_id" class="form-select form-select-sm">
-                        <option value="">-- Semua Periode --</option>
-                        @foreach($periodeAkademiks as $periode)
-                            <option value="{{ $periode->id }}" {{ $defaultPeriodeId == $periode->id ? 'selected' : '' }}>
-                                {{ $periode->nama_periode }}
-                            </option>
-                        @endforeach
-                    </select>
+            @if(!$isStaffOnly)
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+                <ul class="nav nav-pills nav-fill gap-2 flex-grow-1" id="filterTab" role="tablist" style="max-width: 600px;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active py-1 px-3 small fw-bold" id="mode-hirarki-tab" data-bs-toggle="pill" data-bs-target="#mode-hirarki" type="button" role="tab">
+                            <i class="bi bi-diagram-3-fill me-1"></i> Mode 1: Hirarki Bertingkat
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link py-1 px-3 small fw-bold text-secondary" id="mode-cepat-tab" data-bs-toggle="pill" data-bs-target="#mode-cepat" type="button" role="tab">
+                            <i class="bi bi-funnel-fill me-1"></i> Mode 2: Filter Unit & Level
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary shadow-sm rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalTreeHirarki">
+                        <i class="bi bi-diagram-3-fill me-1 text-primary"></i> 🌳 Pohon Organisasi UIS
+                    </button>
+                    <span id="active_hirarki_badge" class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 d-none align-items-center">
+                        <i class="bi bi-funnel-fill me-1"></i><span id="active_hirarki_text">Filter Hirarki Aktif</span>
+                        <button type="button" class="btn-close ms-2" id="btn-clear-hirarki" style="font-size: 0.6rem;" title="Reset Filter"></button>
+                    </span>
                 </div>
-                
-                @if(!$isStaffOnly)
-                <div class="col-md-3">
-                    <label for="filter_jabatan" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-briefcase me-1"></i> Filter Jabatan / Unit</label>
-                    <select id="filter_jabatan" name="jabatan" class="form-select form-select-sm">
-                        <option value="">-- Semua Jabatan & Unit --</option>
-                        @php
-                            $uniqueJabatans = $usersWithJabatan->pluck('jabatan')->unique();
-                        @endphp
-                        @foreach($uniqueJabatans as $j)
-                            <option value="{{ $j }}">{{ $j }}</option>
-                        @endforeach
-                    </select>
+            </div>
+            @endif
+
+            <form id="filterForm">
+                <div class="tab-content" id="filterTabContent">
+                    <!-- Tab Mode 1: Hirarki Bertingkat -->
+                    <div class="tab-pane fade show active" id="mode-hirarki" role="tabpanel">
+                        <div class="row g-3 align-items-center mb-3">
+                            <div class="col-md-3">
+                                <label for="filter_periode" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> Periode Akademik</label>
+                                <select id="filter_periode" name="periode_akademik_id" class="form-select form-select-sm">
+                                    <option value="">-- Semua Periode --</option>
+                                    @foreach($periodeAkademiks as $periode)
+                                        <option value="{{ $periode->id }}" {{ $defaultPeriodeId == $periode->id ? 'selected' : '' }}>
+                                            {{ $periode->nama_periode }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            @if(!$isStaffOnly)
+                            <div class="col-md-3">
+                                <label for="filter_tingkat_1" class="form-label small fw-bold text-primary mb-1">
+                                    <i class="bi bi-diagram-3-fill me-1"></i> Tingkat 1 (Struktur Utama)
+                                </label>
+                                <select id="filter_tingkat_1" name="tingkat_1" class="form-select form-select-sm border-primary-subtle bg-primary-subtle text-primary fw-semibold">
+                                    <option value="">-- Semua Struktur Utama --</option>
+                                    <option value="Rektor">1. Rektor (UIS)</option>
+                                    <option value="Wakil Rektor I">2. Wakil Rektor I</option>
+                                    <option value="Wakil Rektor II">3. Wakil Rektor II</option>
+                                    <option value="Wakil Rektor III">4. Wakil Rektor III</option>
+                                    <option value="LPPM">5. LPPM</option>
+                                    <option value="LPMI">6. LPMI</option>
+                                    <option value="Fakultas Ekonomi dan Bisnis">7. Fakultas Ekonomi dan Bisnis</option>
+                                    <option value="Fakultas Sains dan Teknologi">8. Fakultas Sains dan Teknologi</option>
+                                    <option value="Fakultas Ilmu Kesehatan">9. Fakultas Ilmu Kesehatan</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="filter_tingkat_2" class="form-label small fw-bold text-info mb-1">
+                                    <i class="bi bi-diagram-2-fill me-1"></i> Tingkat 2 (Biro / Sub-Unit)
+                                </label>
+                                <select id="filter_tingkat_2" name="tingkat_2" class="form-select form-select-sm border-info-subtle bg-info-subtle text-info-emphasis fw-semibold" disabled>
+                                    <option value="">-- Pilih Tingkat 1 Dulu --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="filter_tingkat_3" class="form-label small fw-bold text-success mb-1">
+                                    <i class="bi bi-person-badge-fill me-1"></i> Tingkat 3 (Jabatan / Staf)
+                                </label>
+                                <select id="filter_tingkat_3" name="tingkat_3" class="form-select form-select-sm border-success-subtle bg-success-subtle text-success-emphasis fw-semibold" disabled>
+                                    <option value="">-- Pilih Tingkat 2 Dulu --</option>
+                                </select>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Tab Mode 2: Filter Unit & Level -->
+                    <div class="tab-pane fade" id="mode-cepat" role="tabpanel">
+                        <div class="row g-3 align-items-center mb-3">
+                            @if(!$isStaffOnly)
+                            <div class="col-md-6">
+                                <label for="filter_level" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-layers me-1"></i> Level Kepemimpinan</label>
+                                <select id="filter_level" name="leadership_level" class="form-select form-select-sm">
+                                    <option value="">-- Semua Level --</option>
+                                    <option value="1">Level 1: Rektorat</option>
+                                    <option value="2">Level 2: Dekanat & Ka. Unit</option>
+                                    <option value="3">Level 3: Kaprodi & Kabid</option>
+                                    <option value="4">Level 4: Staf Pelaksana</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="filter_unit" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-building me-1"></i> Unit / Fakultas</label>
+                                <select id="filter_unit" name="unit" class="form-select form-select-sm">
+                                    <option value="">-- Semua Unit & Fakultas --</option>
+                                    @foreach($units as $unit)
+                                        <option value="{{ $unit }}">{{ $unit }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
 
-                <div class="col-md-3">
-                    <label for="filter_user" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-person me-1"></i> Filter Staff</label>
-                    <select id="filter_user" name="user_id" class="form-select form-select-sm">
-                        <option value="">-- Semua Staff --</option>
-                        @foreach($usersWithJabatan as $u)
-                            <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->jabatan }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                @else
-                    <input type="hidden" id="filter_jabatan" name="jabatan" value="">
-                    <input type="hidden" id="filter_user" name="user_id" value="{{ auth()->user()->id }}">
-                @endif
+                <!-- Shared Row: Pegawai Spesifik & Kategori Kendala -->
+                <div class="row g-3 align-items-center border-top pt-3 mt-1">
+                    @if(!$isStaffOnly)
+                    <div class="col-md-8">
+                        <label for="filter_user" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-person me-1"></i> Cari / Pilih Pegawai Spesifik</label>
+                        <select id="filter_user" name="user_id" class="form-select form-select-sm">
+                            <option value="">-- Semua Pegawai --</option>
+                            @foreach($groupedUsers as $levelTitle => $users)
+                                @if($users->count() > 0)
+                                    <optgroup label="{{ $levelTitle }}">
+                                        @foreach($users as $u)
+                                            <option value="{{ $u->id }}" data-level="{{ $u->level }}" data-unit="{{ $u->unit }}" data-jabatan="{{ $u->jabatan }}">
+                                                {{ $u->name }} ({{ $u->jabatan }})
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                    @else
+                        <input type="hidden" id="filter_user" name="user_id" value="{{ auth()->user()->id }}">
+                    @endif
 
-                <div class="{{ $isStaffOnly ? 'col-md-6' : 'col-md-3' }}">
-                    <label for="filter_kendala" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-funnel me-1"></i> Kategori Kendala</label>
-                    <select id="filter_kendala" name="kategori_kendala" class="form-select form-select-sm">
-                        <option value="semua">-- Semua Kategori Kendala --</option>
-                        <option value="insidentil">🔴 Terganggu Tugas Insidentil</option>
-                        <option value="kepanitiaan">🟠 Beban Tugas Kepanitiaan</option>
-                        <option value="beban_ganda">🟡 Beban Ganda (Panitia & Insidentil)</option>
-                        <option value="murni">⚪ Keterlambatan Murni Staff</option>
-                    </select>
+                    <div class="{{ $isStaffOnly ? 'col-md-12' : 'col-md-4' }}">
+                        <label for="filter_kendala" class="form-label small fw-bold text-muted mb-1"><i class="bi bi-funnel me-1"></i> Kategori Kendala</label>
+                        <select id="filter_kendala" name="kategori_kendala" class="form-select form-select-sm">
+                            <option value="semua">-- Semua Kendala --</option>
+                            <option value="insidentil">🔴 Insidentil</option>
+                            <option value="kepanitiaan">🟠 Kepanitiaan</option>
+                            <option value="beban_ganda">🟡 Beban Ganda</option>
+                            <option value="murni">⚪ Murni Staff</option>
+                        </select>
+                    </div>
                 </div>
             </form>
         </div>
@@ -150,6 +247,14 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
                     <h5 class="card-title m-0 fw-bold text-dark fs-6"><i class="bi bi-pie-chart-fill me-2 text-danger"></i>Distribusi Penyebab Keterlambatan</h5>
+                    <div class="btn-group btn-group-sm" role="group" id="chartTypeToggle">
+                        <button type="button" class="btn btn-outline-danger btn-chart-type active py-1 px-2 small" data-type="doughnut" title="Grafik Donut">
+                            <i class="bi bi-pie-chart-fill me-1"></i> Donut
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-chart-type py-1 px-2 small" data-type="radar" title="Grafik Spider / Radar">
+                            <i class="bi bi-diagram-2-fill me-1"></i> Spider (Radar)
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-3 d-flex align-items-center justify-content-center" style="min-height: 260px;">
                     <canvas id="chartPenyebab" style="max-height: 240px;"></canvas>
@@ -236,14 +341,112 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Tree Hirarki Organisasi UIS -->
+<div class="modal fade" id="modalTreeHirarki" tabindex="-1" aria-labelledby="modalTreeHirarkiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold fs-6" id="modalTreeHirarkiLabel">
+                    <i class="bi bi-diagram-3-fill me-2"></i>Pohon Hirarki Jabatan & Organisasi Universitas Ibnu Sina
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-light">
+                <div class="alert alert-info py-2 px-3 small border-0 shadow-sm mb-3">
+                    <i class="bi bi-cursor-fill me-1"></i> Klik <strong>"Filter Sub-Unit Ini"</strong> atau <strong>"Pilih Staf"</strong> untuk menyaring data keterlambatan secara interaktif.
+                </div>
+
+                @if(isset($hierarchyTree) && count($hierarchyTree) > 0)
+                <div class="accordion shadow-sm rounded border-0" id="accordionHirarkiUIS">
+                    @foreach($hierarchyTree as $divisiName => $divData)
+                        @php $divId = 'div_' . Str::slug($divisiName); @endphp
+                        <div class="accordion-item border-0 border-bottom">
+                            <h2 class="accordion-header" id="heading_{{ $divId }}">
+                                <button class="accordion-button collapsed py-2 px-3 fw-bold small text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ $divId }}" aria-expanded="false" aria-controls="collapse_{{ $divId }}">
+                                    <i class="{{ $divData['icon'] }} me-2 fs-5"></i> {{ $divisiName }}
+                                </button>
+                            </h2>
+                            <div id="collapse_{{ $divId }}" class="accordion-collapse collapse" aria-labelledby="heading_{{ $divId }}" data-bs-parent="#accordionHirarkiUIS">
+                                <div class="accordion-body p-2 bg-white">
+                                    @foreach($divData['sub'] as $subUnitName => $usersList)
+                                        <div class="mb-2 p-2 rounded bg-light border">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="fw-bold text-primary small"><i class="bi bi-folder-fill text-warning me-1"></i>{{ $subUnitName }}</span>
+                                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 btn-select-node" data-type="unit" data-value="{{ $subUnitName }}">
+                                                    <i class="bi bi-funnel me-1"></i>Filter Sub-Unit Ini
+                                                </button>
+                                            </div>
+                                            @if(count($usersList) > 0)
+                                                <ul class="list-unstyled ps-3 mb-0 small">
+                                                    @foreach($usersList as $usr)
+                                                        <li class="py-1 border-bottom border-light d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <i class="bi bi-person-circle text-secondary me-1"></i>
+                                                                <strong class="text-dark">{{ $usr['name'] }}</strong>
+                                                                <span class="text-muted ms-1" style="font-size: 0.78rem;">({{ $usr['jabatan'] }})</span>
+                                                            </div>
+                                                            <button type="button" class="btn btn-xs btn-primary py-0 px-2 btn-select-node" data-type="user" data-value="{{ $usr['id'] }}" data-name="{{ $usr['name'] }} ({{ $usr['jabatan'] }})">
+                                                                Pilih Staf
+                                                            </button>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            @else
+                                                <div class="small text-muted fst-italic ps-2" style="font-size: 0.75rem;">Tidak ada staf terdaftar pada unit ini.</div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
 $(document).ready(function() {
     let chartPenyebabInst = null;
     let chartBarKendalaInst = null;
+    let currentChartType = 'doughnut';
+
+    // Chart Type Switcher (Donut vs Spider/Radar)
+    $('.btn-chart-type').on('click', function() {
+        $('.btn-chart-type').removeClass('active btn-danger').addClass('btn-outline-danger');
+        $(this).addClass('active btn-danger').removeClass('btn-outline-danger');
+        currentChartType = $(this).data('type');
+        let json = table.ajax.json();
+        if (json && json.stats) {
+            updateCharts(json.stats);
+        }
+    });
+
+    // Initialize Select2 Searchable Dropdowns
+    if ($.fn.select2) {
+        $('#filter_user').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: '-- Cari / Pilih Nama Pegawai --',
+            allowClear: true
+        });
+
+        $('#filter_tingkat_1, #filter_tingkat_2, #filter_tingkat_3, #filter_level, #filter_unit, #filter_periode, #filter_kendala').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            allowClear: true
+        });
+    }
 
     let table = $('#analisis-table').DataTable({
         processing: true,
@@ -252,7 +455,11 @@ $(document).ready(function() {
             url: "{{ route('analisis-keterlambatan.data') }}",
             data: function(d) {
                 d.periode_akademik_id = $('#filter_periode').val();
-                d.jabatan = $('#filter_jabatan').val();
+                d.tingkat_1 = $('#filter_tingkat_1').val();
+                d.tingkat_2 = $('#filter_tingkat_2').val();
+                d.tingkat_3 = $('#filter_tingkat_3').val();
+                d.leadership_level = $('#filter_level').val();
+                d.unit = $('#filter_unit').val();
                 d.user_id = $('#filter_user').val();
                 d.kategori_kendala = $('#filter_kendala').val();
             }
@@ -291,32 +498,318 @@ $(document).ready(function() {
         }
     });
 
-    $('#filter_periode, #filter_jabatan, #filter_user, #filter_kendala').on('change', function() {
+    // Cascading Dropdown Structure Mapping based on UIS Mind Maps
+    const tingkatStructure = {
+        "Rektor": {
+            "Rektorat Utama": ["Rektor", "Wakil Rektor I", "Wakil Rektor II", "Wakil Rektor III"]
+        },
+        "Wakil Rektor I": {
+            "Biro Administrasi Akademik Kemahasiswaan (BAAK)": ["Ka. Biro Administrasi Akademik Kemahasiswaan (BAAK)"],
+            "Kabid Akademik": [
+                "Staff Akademik Fakultas Ekonomi dan Bisnis",
+                "Staff Akademik Fakultas Sains dan Teknologi",
+                "Staff Akademik Fakultas Ilmu Kesehatan"
+            ],
+            "Kabid Administrasi dan Layanan Kemahasiswaan": [
+                "Staff Support Layanan Nilai dan Perkuliahan",
+                "Staff Layanan Ijazah"
+            ],
+            "Kepala Pustaka": ["Pustakawan"]
+        },
+        "Wakil Rektor II": {
+            "Biro Administrasi Umum dan Keuangan": ["Ka. Biro Administrasi Umum dan Keuangan"],
+            "Kabid Keuangan": [
+                "Kasir Rektorat",
+                "Staff Keuangan Fakultas Ekonomi dan Bisnis",
+                "Staff Keuangan Fakultas Sains dan Teknologi",
+                "Staff Keuangan Fakultas Ilmu Kesehatan"
+            ],
+            "Kabid SDM dan Umum": [
+                "Operator SDM",
+                "Staff Kepegawaian"
+            ],
+            "Kabid Sarana dan Prasarana": [
+                "Admin Umum Sarpras",
+                "Staff Sarpras"
+            ],
+            "Tata Usaha": ["Tata Usaha BAUK"],
+            "Kepala LPTI": [
+                "Staff Divisi Pengembangan Informasi dan Aplikasi",
+                "Staf Divisi Infrastruktur dan Jaringan",
+                "Staff Programmer",
+                "Staff Layanan Troubleshooting"
+            ]
+        },
+        "Wakil Rektor III": {
+            "Biro Kemahasiswaan, Alumni, Kerjasama, Perencanaan dan Pengembangan": [
+                "Ka Biro Kemahasiswaan, Alumni, Kerjasama, Perencanaan dan Pengembangan"
+            ],
+            "Kabid Humas dan Publikasi": [
+                "Staff Dokumentasi",
+                "Staff Humas",
+                "Staff Website"
+            ],
+            "Kabid Kerjasama": [
+                "Staff Kerjasama Internasional",
+                "Staff Kerjasama Nasional"
+            ],
+            "Kabid Kemahasiswaan": [
+                "Staff KIP",
+                "Staff Prestasi Olah Raga",
+                "Staff Prestasi Seni"
+            ],
+            "Kabid Pusat Karir, Alumni dan Kewirausahaan": [
+                "Staff Pusat Karir, Alumni dan Kewirausahaan"
+            ],
+            "Kabid Perencanaan dan Pengembangan": [
+                "Staff Perencanaan dan Pengembangan"
+            ]
+        },
+        "LPPM": {
+            "LPPM UIS": ["Ka LPPM", "Kabid Penelitian", "Kabid HAKI dan Publikasi"],
+            "Kabid Pengabdian Kepada Masyarakat": [
+                "Staff Administrasi Penelitian dan Pengabdian Kepada Masyarakat"
+            ]
+        },
+        "LPMI": {
+            "LPMI UIS": [
+                "Ka LPMI",
+                "Kabid Pengembangan SPMI dan SDM SPMI",
+                "Kabid Sosialisasi SPMI dan Kerjasama SPMI",
+                "Kabid Akreditasi dan Dokumentasi",
+                "Kabid Evaluasi dan Audit Mutu"
+            ]
+        },
+        "Fakultas Ekonomi dan Bisnis": {
+            "Dekanat FEB": ["Dekan FEB", "Wakil Dekan I FEB", "Wakil Dekan II FEB"],
+            "Prodi S1 Manajemen": ["Ketua Program Studi S1 Manajemen", "Sekretaris Prodi S1 Manajemen"],
+            "Prodi S1 Akuntansi": ["Ketua Program Studi S1 Akuntansi", "Sekretaris Prodi S1 Akuntansi"],
+            "Prodi Pascasarjana S2 Magister Manajemen": ["Ketua Program Studi Pascasarjana Magister Manajemen", "Sekretaris Prodi Pascasarjana Magister Manajemen"],
+            "Support Unit FEB": ["UPMI FEB", "UPPM FEB", "Tata Usaha Sarjana FEB", "Tata Usaha Pascasarjana FEB", "Humas dan Publikasi Web FEB"]
+        },
+        "Fakultas Sains dan Teknologi": {
+            "Dekanat FST": ["Dekan FST", "Wakil Dekan I FST", "Wakil Dekan II FST"],
+            "Prodi Teknik Industri": ["Ketua Program Studi Teknik Industri", "Sekretaris Program Studi Teknik Industri"],
+            "Prodi Teknik Informatika & Sistem Informasi": ["Ketua Program Studi Teknik Informatika dan Sistem Informasi", "Sekretaris Program Studi Teknik Informatika dan Sistem Informasi"],
+            "Prodi Teknik Logistik & Perkapalan": ["Ketua Program Studi Teknik Logistik dan Perkapalan", "Sekretaris Program Studi Teknik Logistik dan Perkapalan"],
+            "Laboratorium FST": ["Ka. Laboratorium FST", "Staff Labor Teknik Industri", "Staff Labor Teknik Komputer", "Staff Labor Teknik Proses Produksi"],
+            "Support Unit FST": ["Tata Usaha FST", "UPMI FST", "Ka. UPPM FST", "Staff UPPM FST", "Ka. Humas FST", "Staff Humas FST"]
+        },
+        "Fakultas Ilmu Kesehatan": {
+            "Dekanat FIKES": ["Dekan FIKES", "Wakil Dekan I FIKES", "Wakil Dekan II FIKES"],
+            "Prodi K3": ["Ketua Program Studi K3", "Sekretaris Prodi K3"],
+            "Prodi Kesling": ["Ketua Program Studi Kesling", "Sekretaris Prodi Kesling"],
+            "Support Unit FIKES": ["UPMI FIKES", "GKM FIKES", "UPPM FIKES", "Laboran FIKES", "Tata Usaha FIKES", "Humas dan Publikasi Web FIKES"]
+        }
+    };
+
+    // On Tingkat 1 Change
+    $('#filter_tingkat_1').on('change', function() {
+        let t1 = $(this).val();
+        let t2Select = $('#filter_tingkat_2');
+        let t3Select = $('#filter_tingkat_3');
+
+        t2Select.empty().append('<option value="">-- Semua Tingkat 2 --</option>');
+        t3Select.empty().append('<option value="">-- Pilih Tingkat 2 Dulu --</option>').prop('disabled', true);
+
+        if (t1 && tingkatStructure[t1]) {
+            t2Select.prop('disabled', false);
+            $.each(tingkatStructure[t1], function(subName, arr) {
+                t2Select.append('<option value="' + subName + '">' + subName + '</option>');
+            });
+        } else {
+            t2Select.prop('disabled', true);
+        }
+
+        if ($.fn.select2) {
+            t2Select.trigger('change.select2');
+            t3Select.trigger('change.select2');
+        }
+
+        table.ajax.reload();
+    });
+
+    // On Tingkat 2 Change
+    $('#filter_tingkat_2').on('change', function() {
+        let t1 = $('#filter_tingkat_1').val();
+        let t2 = $(this).val();
+        let t3Select = $('#filter_tingkat_3');
+
+        t3Select.empty().append('<option value="">-- Semua Tingkat 3 --</option>');
+
+        if (t1 && t2 && tingkatStructure[t1] && tingkatStructure[t1][t2]) {
+            t3Select.prop('disabled', false);
+            let items = tingkatStructure[t1][t2];
+            $.each(items, function(idx, jabName) {
+                t3Select.append('<option value="' + jabName + '">' + jabName + '</option>');
+            });
+        } else {
+            t3Select.prop('disabled', true);
+        }
+
+        if ($.fn.select2) {
+            t3Select.trigger('change.select2');
+        }
+
+        table.ajax.reload();
+    });
+
+    // On Tingkat 3 Change
+    $('#filter_tingkat_3').on('change', function() {
+        table.ajax.reload();
+    });
+
+    // Cascading Filter for Leadership Level & Unit
+    $('#filter_level, #filter_unit').on('change', function() {
+        let selectedLevel = $('#filter_level').val();
+        let selectedUnit = $('#filter_unit').val() ? $('#filter_unit').val().toUpperCase() : '';
+
+        $('#filter_user option').each(function() {
+            if ($(this).val() === '') {
+                return;
+            }
+            let userLevel = $(this).data('level') ? $(this).data('level').toString() : '';
+            let userUnit = $(this).data('unit') ? $(this).data('unit').toString().toUpperCase() : '';
+
+            let matchLevel = (selectedLevel === '' || userLevel === selectedLevel);
+            let matchUnit = (selectedUnit === '' || userUnit.indexOf(selectedUnit) !== -1);
+
+            if (matchLevel && matchUnit) {
+                $(this).show().prop('disabled', false);
+            } else {
+                $(this).hide().prop('disabled', true);
+            }
+        });
+
+        // Hide empty optgroups
+        $('#filter_user optgroup').each(function() {
+            let visibleOptions = $(this).find('option:not(:disabled)');
+            if (visibleOptions.length === 0) {
+                $(this).hide();
+            } else {
+                $(this).show();
+            }
+        });
+
+        // Reset user selection if disabled option was selected
+        if ($('#filter_user option:selected').is(':disabled')) {
+            $('#filter_user').val('');
+        }
+
+        if ($.fn.select2) {
+            $('#filter_user').trigger('change.select2');
+        }
+
+        table.ajax.reload();
+    });
+
+    // Handle Tree Node Selection inside Modal
+    $(document).on('click', '.btn-select-node', function() {
+        let type = $(this).data('type');
+        let val = $(this).data('value');
+        let name = $(this).data('name');
+
+        if (type === 'unit') {
+            $('#filter_level').val('').trigger('change.select2');
+            $('#filter_unit').val(val).trigger('change');
+            if ($.fn.select2) $('#filter_unit').trigger('change.select2');
+            $('#filter_user').val('');
+            if ($.fn.select2) $('#filter_user').trigger('change.select2');
+            $('#active_hirarki_text').text('Sub-Unit: ' + val);
+            $('#active_hirarki_badge').removeClass('d-none').addClass('d-inline-flex');
+        } else if (type === 'user') {
+            $('#filter_level').val('');
+            $('#filter_unit').val('');
+            if ($.fn.select2) {
+                $('#filter_level').trigger('change.select2');
+                $('#filter_unit').trigger('change.select2');
+            }
+            $('#filter_user').val(val).trigger('change');
+            if ($.fn.select2) $('#filter_user').trigger('change.select2');
+            $('#active_hirarki_text').text('Pegawai: ' + name);
+            $('#active_hirarki_badge').removeClass('d-none').addClass('d-inline-flex');
+        }
+
+        $('#modalTreeHirarki').modal('hide');
+    });
+
+    $('#btn-clear-hirarki').on('click', function(e) {
+        e.preventDefault();
+        $('#filter_level').val('');
+        $('#filter_unit').val('');
+        $('#filter_user').val('');
+        $('#filter_tingkat_1').val('');
+        $('#filter_tingkat_2').val('');
+        $('#filter_tingkat_3').val('');
+        if ($.fn.select2) {
+            $('#filter_level, #filter_unit, #filter_user, #filter_tingkat_1, #filter_tingkat_2, #filter_tingkat_3').trigger('change.select2');
+        }
+        $('#active_hirarki_badge').addClass('d-none').removeClass('d-inline-flex');
+        
+        // Reset options visibility
+        $('#filter_user option, #filter_user optgroup').show().prop('disabled', false);
+        if ($.fn.select2) $('#filter_user').trigger('change.select2');
+        table.ajax.reload();
+    });
+
+    $('#filter_periode, #filter_user, #filter_kendala').on('change', function() {
         table.ajax.reload();
     });
 
     function updateCharts(st) {
-        // Render Donut Chart
-        let ctxDonut = document.getElementById('chartPenyebab').getContext('2d');
+        let ctxPenyebab = document.getElementById('chartPenyebab').getContext('2d');
         if (chartPenyebabInst) chartPenyebabInst.destroy();
 
-        chartPenyebabInst = new Chart(ctxDonut, {
-            type: 'doughnut',
+        let labels = ['Insidentil', 'Kepanitiaan', 'Beban Ganda', 'Murni Staff'];
+        let dataValues = [st.insidentil, st.kepanitiaan, st.beban_ganda, st.murni];
+        let bgColors = ['#dc3545', '#ffc107', '#fd7e14', '#6c757d'];
+
+        let datasetConfig = {
+            label: 'Jumlah Keterlambatan',
+            data: dataValues,
+            backgroundColor: currentChartType === 'radar' ? 'rgba(220, 53, 69, 0.25)' : bgColors,
+            borderColor: currentChartType === 'radar' ? '#dc3545' : '#ffffff',
+            borderWidth: 2,
+            pointBackgroundColor: bgColors,
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: bgColors
+        };
+
+        chartPenyebabInst = new Chart(ctxPenyebab, {
+            type: currentChartType,
             data: {
-                labels: ['Terganggu Insidentil', 'Beban Kepanitiaan', 'Beban Ganda', 'Murni Staff'],
-                datasets: [{
-                    data: [st.insidentil, st.kepanitiaan, st.beban_ganda, st.murni],
-                    backgroundColor: ['#dc3545', '#ffc107', '#fd7e14', '#6c757d'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
+                labels: labels,
+                datasets: [datasetConfig]
             },
+            plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
-                }
+                    legend: {
+                        position: 'bottom',
+                        display: currentChartType !== 'radar',
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    },
+                    datalabels: {
+                        color: currentChartType === 'radar' ? '#111' : '#ffffff',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: function(value, ctx) {
+                            if (value === 0) return '';
+                            let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            let percentage = (sum > 0 ? (value * 100 / sum) : 0).toFixed(0) + "%";
+                            return currentChartType === 'radar' ? value + ' Tugas' : value + ' (' + percentage + ')';
+                        }
+                    }
+                },
+                scales: currentChartType === 'radar' ? {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        ticks: { stepSize: 1, precision: 0 }
+                    }
+                } : {}
             }
         });
 
@@ -331,14 +824,26 @@ $(document).ready(function() {
                 datasets: [{
                     label: 'Jumlah Tugas Terlambat',
                     data: [st.insidentil, st.kepanitiaan, st.beban_ganda, st.murni],
-                    backgroundColor: ['#dc3545', '#ffc107', '#fd7e14', '#6c757d'],
+                    backgroundColor: bgColors,
                     borderRadius: 4
                 }]
             },
+            plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#333',
+                        font: { weight: 'bold', size: 11 },
+                        formatter: function(val) {
+                            return val > 0 ? val + ' Tugas' : '';
+                        }
+                    }
+                },
                 scales: {
                     y: { beginAtZero: true, ticks: { stepSize: 1 } }
                 }

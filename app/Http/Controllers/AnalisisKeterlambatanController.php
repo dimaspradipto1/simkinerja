@@ -32,9 +32,35 @@ class AnalisisKeterlambatanController extends Controller
             $usersQuery->where('id', $authUser->id);
         }
 
-        $usersWithJabatan = $usersQuery->orderBy('jabatan')->get(['id', 'name', 'jabatan', 'unit']);
+        $allUsers = $usersQuery->orderBy('name')->get(['id', 'name', 'jabatan', 'unit'])->unique('name');
 
-        return view('pages.analisis_keterlambatan.index', compact('periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan', 'isStaffOnly'));
+        $groupedUsers = [
+            '👑 LEVEL 1: REKTORAT' => collect(),
+            '🏛️ LEVEL 2: PIMPINAN UNIT & DEKANAT' => collect(),
+            '📋 LEVEL 3: PIMPINAN OPERASIONAL (KAPRODI / KABID)' => collect(),
+            '👤 LEVEL 4: STAF PELAKSANA & SUPPORT' => collect(),
+        ];
+
+        $units = $allUsers->pluck('unit')->unique()->filter()->values();
+
+        foreach ($allUsers as $u) {
+            $level = $this->getLeadershipLevel($u);
+            $u->level = $level;
+            if ($level === 1) {
+                $groupedUsers['👑 LEVEL 1: REKTORAT']->push($u);
+            } elseif ($level === 2) {
+                $groupedUsers['🏛️ LEVEL 2: PIMPINAN UNIT & DEKANAT']->push($u);
+            } elseif ($level === 3) {
+                $groupedUsers['📋 LEVEL 3: PIMPINAN OPERASIONAL (KAPRODI / KABID)']->push($u);
+            } else {
+                $groupedUsers['👤 LEVEL 4: STAF PELAKSANA & SUPPORT']->push($u);
+            }
+        }
+
+        $usersWithJabatan = $allUsers;
+        $hierarchyTree = $this->getHierarchyTree($allUsers);
+
+        return view('pages.analisis_keterlambatan.index', compact('periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan', 'groupedUsers', 'units', 'hierarchyTree', 'isStaffOnly'));
     }
 
     /**
@@ -47,25 +73,16 @@ class AnalisisKeterlambatanController extends Controller
 
         $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
-        // Scope by user permissions
-        if ($authUser) {
-            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-                if ($request->filled('user_id')) {
-                    $query->where('user_id', $request->user_id);
-                }
-                if ($request->filled('jabatan')) {
-                    $query->whereHas('user', function ($q) use ($request) {
-                        $q->where('jabatan', $request->jabatan);
-                    });
-                }
-            } else {
-                $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
-                      });
-                });
-            }
+        // Scope by explicit user_id filter or user permissions
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        } elseif ($authUser && !($authUser->isAdmin() || $authUser->isPimpinanRektorat())) {
+            $query->where(function ($q) use ($authUser) {
+                $q->where('user_id', $authUser->id)
+                  ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                      $qu->where('users.id', $authUser->id);
+                  });
+            });
         }
 
         if ($request->filled('periode_akademik_id')) {
@@ -80,6 +97,48 @@ class AnalisisKeterlambatanController extends Controller
 
         // Fetch all candidates to analyze delay condition
         $allTasks = $query->latest()->get();
+
+        // Filter by Leadership Level if requested
+        if ($request->filled('leadership_level')) {
+            $levelReq = (int) $request->leadership_level;
+            $allTasks = $allTasks->filter(function ($task) use ($levelReq) {
+                return $this->getLeadershipLevel($task->user) === $levelReq;
+            });
+        }
+
+        // Filter by Unit if requested
+        if ($request->filled('unit')) {
+            $unitReq = strtoupper($request->unit);
+            $allTasks = $allTasks->filter(function ($task) use ($unitReq) {
+                return $task->user && str_contains(strtoupper($task->user->unit ?? ''), $unitReq);
+            });
+        }
+
+        // Filter by Tingkat 1
+        if ($request->filled('tingkat_1')) {
+            $t1 = strtoupper($request->tingkat_1);
+            $allTasks = $allTasks->filter(function ($task) use ($t1) {
+                $struct = $this->getHierarchyStructure($task->user);
+                return str_contains(strtoupper($struct['divisi_key']), $t1) || str_contains(strtoupper($struct['divisi']), $t1);
+            });
+        }
+
+        // Filter by Tingkat 2
+        if ($request->filled('tingkat_2')) {
+            $t2 = strtoupper($request->tingkat_2);
+            $allTasks = $allTasks->filter(function ($task) use ($t2) {
+                $struct = $this->getHierarchyStructure($task->user);
+                return str_contains(strtoupper($struct['sub_unit']), $t2) || str_contains(strtoupper($task->user->jabatan ?? ''), $t2);
+            });
+        }
+
+        // Filter by Tingkat 3
+        if ($request->filled('tingkat_3')) {
+            $t3 = strtoupper($request->tingkat_3);
+            $allTasks = $allTasks->filter(function ($task) use ($t3) {
+                return $task->user && str_contains(strtoupper($task->user->jabatan ?? ''), $t3);
+            });
+        }
 
         $lateTasks = collect();
         $countInsidentil = 0;
@@ -196,9 +255,13 @@ class AnalisisKeterlambatanController extends Controller
         return DataTables::of($lateTasks)
             ->addIndexColumn()
             ->addColumn('staff_info', function ($row) {
-                $html = '<div class="fw-bold text-dark">' . e($row->user ? $row->user->name : '-') . '</div>';
-                $html .= '<div class="small text-muted">' . e($row->user ? ($row->user->jabatan ?? '-') : '-') . '</div>';
-                $html .= '<span class="badge bg-light text-dark border mt-1" style="font-size: 0.7rem;">Unit: ' . e($row->user ? ($row->user->unit ?? '-') : '-') . '</span>';
+                $struct = $this->getHierarchyStructure($row->user);
+                $html = '<div class="mb-1"><span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem;"><i class="bi bi-diagram-3 me-1"></i>' . e($struct['divisi']) . '</span></div>';
+                if (!empty($struct['sub_unit'])) {
+                    $html .= '<div class="mb-1"><span class="badge bg-light text-dark border" style="font-size: 0.65rem;"><i class="bi bi-diagram-2 me-1 text-muted"></i>' . e($struct['sub_unit']) . '</span></div>';
+                }
+                $html .= '<div class="fw-bold text-dark fs-6">' . e($row->user ? $row->user->name : '-') . '</div>';
+                $html .= '<div class="small text-muted fw-semibold">' . e($row->user ? ($row->user->jabatan ?? '-') : '-') . '</div>';
                 return $html;
             })
             ->addColumn('task_details', function ($row) {
@@ -268,19 +331,45 @@ class AnalisisKeterlambatanController extends Controller
                          . '</div>';
                 }
 
+                $userLevel = $this->getLeadershipLevel($row->user);
                 $saranSys = '';
                 $borderClass = 'border';
                 $iconClass = 'bi-info-circle text-secondary';
+
                 if ($row->kategori_kendala === 'beban_ganda' || $row->kategori_kendala === 'insidentil') {
-                    $saranSys = 'Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.';
                     $borderClass = 'border border-warning-subtle';
                     $iconClass = 'bi-info-circle text-warning';
+                    if ($userLevel === 1) {
+                        $saranSys = 'Diperlukan delegasi tugas strategis & penataan ulang prioritas kebijakan tingkat universitas.';
+                    } elseif ($userLevel === 2) {
+                        $saranSys = 'Diperlukan evaluasi beban kerja manajerial unit & redistribusi porsi penugasan lintas prodi/bidang.';
+                    } elseif ($userLevel === 3) {
+                        $saranSys = 'Diperlukan koordinasi penataan jadwal operasional prodi/bidang & penyesuaian deadline tugas utama.';
+                    } else {
+                        $saranSys = 'Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.';
+                    }
                 } elseif ($row->kategori_kendala === 'kepanitiaan') {
-                    $saranSys = 'Evaluasi porsi keterlibatan anggota panitia agar tidak mengganggu performa target rutin bulanan.';
                     $borderClass = 'border border-info-subtle';
                     $iconClass = 'bi-info-circle text-info';
+                    if ($userLevel === 1) {
+                        $saranSys = 'Evaluasi porsi keterlibatan eksekutif dalam kepanitiaan strategis agar target universitas terjaga.';
+                    } elseif ($userLevel === 2) {
+                        $saranSys = 'Evaluasi alokasi kepanitiaan tingkat unit/fakultas agar tidak mengganggu manajerial unit.';
+                    } elseif ($userLevel === 3) {
+                        $saranSys = 'Evaluasi porsi keterlibatan tugas panitia agar tidak mengganggu target kinerja operasional prodi/bidang.';
+                    } else {
+                        $saranSys = 'Evaluasi porsi keterlibatan anggota panitia agar tidak mengganggu performa target rutin bulanan.';
+                    }
                 } else {
-                    $saranSys = 'Perlu pendampingan dan monitoring manajemen waktu pengerjaan tugas rutin staff.';
+                    if ($userLevel === 1) {
+                        $saranSys = 'Perlu peninjauan alokasi waktu supervisi strategis dan koordinasi antar pimpinan universitas.';
+                    } elseif ($userLevel === 2) {
+                        $saranSys = 'Perlu evaluasi efektivitas manajemen internal unit & penguatan pengawasan manajerial unit.';
+                    } elseif ($userLevel === 3) {
+                        $saranSys = 'Perlu penguatan manajemen waktu pengerjaan target operasional dan optimalisasi koordinasi tim prodi/bidang.';
+                    } else {
+                        $saranSys = 'Perlu pendampingan dan monitoring manajemen waktu pengerjaan tugas rutin staf.';
+                    }
                 }
 
                 return '<div class="small text-dark p-2 bg-light rounded ' . $borderClass . '">'
@@ -331,6 +420,20 @@ class AnalisisKeterlambatanController extends Controller
         }
 
         $items = $query->latest()->get();
+
+        if ($request->filled('leadership_level')) {
+            $levelReq = (int) $request->leadership_level;
+            $items = $items->filter(function ($task) use ($levelReq) {
+                return $this->getLeadershipLevel($task->user) === $levelReq;
+            });
+        }
+
+        if ($request->filled('unit')) {
+            $unitReq = strtoupper($request->unit);
+            $items = $items->filter(function ($task) use ($unitReq) {
+                return $task->user && str_contains(strtoupper($task->user->unit ?? ''), $unitReq);
+            });
+        }
 
         $namaStaff = 'SEMUA STAFF';
         $jabatanStaff = 'SEMUA JABATAN';
@@ -557,6 +660,20 @@ class AnalisisKeterlambatanController extends Controller
         }
 
         $allTasks = $query->latest()->get();
+
+        if ($request->filled('leadership_level')) {
+            $levelReq = (int) $request->leadership_level;
+            $allTasks = $allTasks->filter(function ($task) use ($levelReq) {
+                return $this->getLeadershipLevel($task->user) === $levelReq;
+            });
+        }
+
+        if ($request->filled('unit')) {
+            $unitReq = strtoupper($request->unit);
+            $allTasks = $allTasks->filter(function ($task) use ($unitReq) {
+                return $task->user && str_contains(strtoupper($task->user->unit ?? ''), $unitReq);
+            });
+        }
         $lateTasks = collect();
 
         foreach ($allTasks as $task) {
@@ -676,5 +793,312 @@ class AnalisisKeterlambatanController extends Controller
             'success' => true,
             'message' => 'Saran Pimpinan / Rekomendasi Rektor berhasil diperbarui.',
         ]);
+    }
+
+    /**
+     * Get hierarchy priority rank for sorting (1 = highest rank, 100 = lowest).
+     */
+    protected function getPositionRank($user): int
+    {
+        if (!$user || empty($user->jabatan)) {
+            return 99;
+        }
+
+        $j = strtoupper(trim($user->jabatan));
+
+        if ($j === 'REKTOR') return 1;
+        if ($j === 'WAKIL REKTOR I') return 2;
+        if ($j === 'WAKIL REKTOR II') return 3;
+        if ($j === 'WAKIL REKTOR III') return 4;
+        if (str_contains($j, 'DEKAN') && !str_contains($j, 'WAKIL DEKAN')) return 5;
+        if (str_contains($j, 'KA. LPPM') || str_contains($j, 'KEPALA LPPM')) return 6;
+        if (str_contains($j, 'KA. LPMI') || str_contains($j, 'KEPALA LPMI')) return 7;
+        if (str_contains($j, 'KA. BIRO') || str_contains($j, 'KEPALA BIRO')) return 8;
+        if (str_contains($j, 'KEPALA ICT') || str_contains($j, 'KEPALA LPTI')) return 9;
+        if (str_contains($j, 'KEPALA PERPUSTAKAAN') || (str_contains($j, 'KEPALA') && !str_contains($j, 'LAB'))) return 10;
+        if (str_contains($j, 'WAKIL DEKAN')) return 11;
+        if (str_contains($j, 'KETUA PROGRAM STUDI') || str_contains($j, 'KAPRODI')) return 12;
+        if (str_contains($j, 'SEKRETARIS PRODI') || str_contains($j, 'SEKPRODI')) return 13;
+        if (str_contains($j, 'KABID')) return 14;
+        if (str_contains($j, 'KA. LABORATORIUM') || str_contains($j, 'KA. UPPM') || str_contains($j, 'KA. HUMAS')) return 15;
+        if (str_contains($j, 'PROGRAMMER') || str_contains($j, 'DIVISI')) return 16;
+        if (str_contains($j, 'STAFF') || str_contains($j, 'STAF') || str_contains($j, 'KASIR')) return 20;
+
+        return 50;
+    }
+
+    /**
+     * Map user position to leadership level (1: Eksekutif/Rektorat, 2: Dekanat/Biro, 3: Kaprodi/Kabid, 4: Staf).
+     */
+    protected function getLeadershipLevel($user): int
+    {
+        if (!$user || empty($user->jabatan)) {
+            return 4;
+        }
+
+        $jabatan = strtoupper(trim($user->jabatan));
+
+        // Level 1: Pimpinan Universitas / Rektorat Utama (Rektor, Warek I, Warek II, Warek III)
+        if (in_array($jabatan, ['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III']) || $jabatan === 'REKTOR' || str_starts_with($jabatan, 'WAKIL REKTOR')) {
+            return 1;
+        }
+
+        // Level 2: Pimpinan Unit / Dekanat / Kepala Biro / Kepala Lembaga / UPT
+        if (
+            (str_contains($jabatan, 'DEKAN') && !str_contains($jabatan, 'WAKIL DEKAN')) ||
+            str_contains($jabatan, 'KA. LPPM') || str_contains($jabatan, 'KEPALA LPPM') ||
+            str_contains($jabatan, 'KA. LPMI') || str_contains($jabatan, 'KEPALA LPMI') ||
+            str_contains($jabatan, 'KA. BIRO') || str_contains($jabatan, 'KEPALA BIRO') ||
+            str_contains($jabatan, 'KEPALA ICT') || str_contains($jabatan, 'KEPALA LPTI') ||
+            str_contains($jabatan, 'KEPALA PERPUSTAKAAN')
+        ) {
+            return 2;
+        }
+
+        // Level 3: Pimpinan Operasional & Akademik (Wadek, Kaprodi, Sekprodi, Kabid, Ka. Lab, Ka. UPPM, Ka. Humas, UPMI, GKM)
+        if (
+            str_contains($jabatan, 'WAKIL DEKAN') ||
+            str_contains($jabatan, 'KETUA PROGRAM STUDI') || str_contains($jabatan, 'KAPRODI') ||
+            str_contains($jabatan, 'SEKRETARIS PRODI') || str_contains($jabatan, 'SEKPRODI') ||
+            str_contains($jabatan, 'KABID') ||
+            str_contains($jabatan, 'KA. LABORATORIUM') || str_contains($jabatan, 'KA. UPPM') ||
+            str_contains($jabatan, 'KA. HUMAS') || str_contains($jabatan, 'UPMI') ||
+            str_contains($jabatan, 'GKM')
+        ) {
+            return 3;
+        }
+
+        // Level 4: Staf Pelaksana / Support
+        return 4;
+    }
+
+    /**
+     * Map user position to full organizational hierarchy path & keys.
+     */
+    protected function getHierarchyStructure($user): array
+    {
+        if (!$user || empty($user->jabatan)) {
+            return [
+                'divisi_key' => '2. Rektorat UIS',
+                'divisi' => 'Rektorat UIS',
+                'sub_unit' => 'Umum',
+                'full_path' => 'Universitas Ibnu Sina ➔ Staf Pelaksana'
+            ];
+        }
+
+        $j = strtoupper($user->jabatan);
+        $u = strtoupper($user->unit ?? '');
+
+        // 1. Rektor
+        if (in_array($j, ['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])) {
+            return [
+                'divisi_key' => '1. Rektor (UIS)',
+                'divisi' => 'Rektor (UIS)',
+                'sub_unit' => 'Rektorat Utama',
+                'full_path' => 'Rektor (UIS) ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 2. Rektorat - Warek I
+        if (str_contains($u, 'BAAK') || str_contains($j, 'AKADEMIK') || str_contains($j, 'PERPUSTAKAAN') || str_contains($j, 'PUSTAKAWAN') || str_contains($j, 'IJAZAH') || str_contains($j, 'NILAI')) {
+            $sub = 'Biro Administrasi Akademik Kemahasiswaan (BAAK)';
+            if (str_contains($j, 'PERPUSTAKAAN') || str_contains($j, 'PUSTAKAWAN')) {
+                $sub = 'Perpustakaan';
+            }
+            return [
+                'divisi_key' => '2. Rektorat UIS',
+                'divisi' => 'Rektorat UIS (Warek I)',
+                'sub_unit' => 'A. Wakil Rektor I (BAAK & Perpustakaan)',
+                'full_path' => 'Rektorat UIS ➔ Warek I ➔ ' . $sub . ' ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 3. Rektorat - Warek II
+        if (str_contains($u, 'BAUK') || str_contains($u, 'SDM') || str_contains($u, 'SARPRAS') || str_contains($j, 'KEUANGAN') || str_contains($j, 'KASIR') || str_contains($j, 'KEPEGAWAIAN') || str_contains($j, 'SARPRAS')) {
+            return [
+                'divisi_key' => '2. Rektorat UIS',
+                'divisi' => 'Rektorat UIS (Warek II)',
+                'sub_unit' => 'B. Wakil Rektor II (BAUK, SDM, Keuangan & Sarpras)',
+                'full_path' => 'Rektorat UIS ➔ Warek II ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 4. UPT ICT / LPTI
+        if (str_contains($u, 'LPTI') || str_contains($u, 'ICT') || str_contains($j, 'ICT') || str_contains($j, 'LPTI') || str_contains($j, 'PROGRAMMER') || str_contains($j, 'IT SUPPORT')) {
+            return [
+                'divisi_key' => '2. Rektorat UIS',
+                'divisi' => 'Rektorat UIS (UPT ICT)',
+                'sub_unit' => 'C. UPT Teknik Informasi dan Komunikasi (ICT/LPTI)',
+                'full_path' => 'UPT ICT ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 5. Rektorat - Warek III
+        if (str_contains($u, 'BIRO KEMAHASISWAAN') || str_contains($u, 'HUMAS') || str_contains($u, 'KERJASAMA') || str_contains($u, 'PUSAT KARIR') || str_contains($u, 'PERENCANAAN') || str_contains($j, 'HUMAS') || str_contains($j, 'KERJASAMA') || str_contains($j, 'PUSAT KARIR') || str_contains($j, 'PERENCANAAN') || str_contains($j, 'PRESTASI')) {
+            return [
+                'divisi_key' => '2. Rektorat UIS',
+                'divisi' => 'Rektorat UIS (Warek III)',
+                'sub_unit' => 'D. Wakil Rektor III (Kemahasiswaan, Humas, Kerjasama & Perencanaan)',
+                'full_path' => 'Rektorat UIS ➔ Warek III ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 6. LPPM
+        if (str_contains($u, 'LPPM') || str_contains($j, 'LPPM') || str_contains($j, 'PENELITIAN') || str_contains($j, 'PENGABDIAN') || str_contains($j, 'HAKI')) {
+            return [
+                'divisi_key' => '3. LPPM (Penelitian & Pengabdian)',
+                'divisi' => 'LPPM UIS',
+                'sub_unit' => 'LPPM UIS',
+                'full_path' => 'LPPM ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 7. LPMI
+        if (str_contains($u, 'LPMI') || str_contains($j, 'LPMI') || str_contains($j, 'SPMI') || str_contains($j, 'AKREDITASI') || str_contains($j, 'AUDIT MUTU')) {
+            return [
+                'divisi_key' => '4. LPMI (Penjamin Mutu Internal)',
+                'divisi' => 'LPMI UIS',
+                'sub_unit' => 'LPMI UIS',
+                'full_path' => 'LPMI ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 8. FEB
+        if (str_contains($u, 'FEB') || str_contains($u, 'EKONOMI') || str_contains($u, 'MANAJEMEN') || str_contains($u, 'AKUNTANSI') || str_contains($j, 'FEB') || str_contains($j, 'MANAJEMEN') || str_contains($j, 'AKUNTANSI')) {
+            $sub = 'Dekanat FEB';
+            if (str_contains($j, 'MANAJEMEN') && str_contains($j, 'S2')) $sub = 'Prodi Pascasarjana S2 Magister Manajemen';
+            elseif (str_contains($j, 'MANAJEMEN')) $sub = 'Prodi S1 Manajemen';
+            elseif (str_contains($j, 'AKUNTANSI')) $sub = 'Prodi S1 Akuntansi';
+
+            return [
+                'divisi_key' => '5. Fakultas Ekonomi dan Bisnis (FEB)',
+                'divisi' => 'Fakultas Ekonomi dan Bisnis',
+                'sub_unit' => $sub,
+                'full_path' => 'FEB ➔ ' . $sub . ' ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 9. FST / FT
+        if (str_contains($u, 'FST') || str_contains($u, 'TEKNIK') || str_contains($j, 'FST') || str_contains($j, 'INDUSTRI') || str_contains($j, 'INFORMATIKA') || str_contains($j, 'LOGISTIK') || str_contains($j, 'LABORATORIUM')) {
+            $sub = 'Dekanat FST';
+            if (str_contains($j, 'INDUSTRI')) $sub = 'Prodi Teknik Industri';
+            elseif (str_contains($j, 'INFORMATIKA') || str_contains($j, 'SISTEM INFORMASI')) $sub = 'Prodi Teknik Informatika & Sistem Informasi';
+            elseif (str_contains($j, 'LOGISTIK') || str_contains($j, 'PERKAPALAN')) $sub = 'Prodi Teknik Logistik & Perkapalan';
+            elseif (str_contains($j, 'LABOR') || str_contains($j, 'LABORATORIUM')) $sub = 'Laboratorium FST';
+
+            return [
+                'divisi_key' => '6. Fakultas Sains dan Teknologi (FST)',
+                'divisi' => 'Fakultas Sains dan Teknologi',
+                'sub_unit' => $sub,
+                'full_path' => 'FST ➔ ' . $sub . ' ➔ ' . $user->jabatan
+            ];
+        }
+
+        // 10. FIKES
+        if (str_contains($u, 'FIKES') || str_contains($u, 'KESEHATAN') || str_contains($j, 'FIKES') || str_contains($j, 'K3') || str_contains($j, 'KESLING') || str_contains($j, 'LABORAN')) {
+            $sub = 'Dekanat FIKES';
+            if (str_contains($j, 'K3')) $sub = 'Prodi K3';
+            elseif (str_contains($j, 'KESLING')) $sub = 'Prodi Kesling';
+
+            return [
+                'divisi_key' => '7. Fakultas Ilmu Kesehatan (FIKES)',
+                'divisi' => 'Fakultas Ilmu Kesehatan',
+                'sub_unit' => $sub,
+                'full_path' => 'FIKES ➔ ' . $sub . ' ➔ ' . $user->jabatan
+            ];
+        }
+
+        return [
+            'divisi_key' => '2. Rektorat UIS',
+            'divisi' => 'Universitas Ibnu Sina',
+            'sub_unit' => $user->unit ?? 'Unit Kerja',
+            'full_path' => 'UIS ➔ ' . ($user->unit ?? 'Unit') . ' ➔ ' . $user->jabatan
+        ];
+    }
+
+    /**
+     * Build nested organizational hierarchy tree for interactive modal navigator.
+     */
+    protected function getHierarchyTree($allUsers): array
+    {
+        $tree = [
+            '1. Rektor (UIS)' => [
+                'icon' => 'bi-award-fill text-warning',
+                'sub' => [
+                    'Rektorat Utama' => []
+                ]
+            ],
+            '2. Rektorat UIS' => [
+                'icon' => 'bi-building-fill text-primary',
+                'sub' => [
+                    'A. Wakil Rektor I (BAAK & Perpustakaan)' => [],
+                    'B. Wakil Rektor II (BAUK, SDM, Keuangan & Sarpras)' => [],
+                    'C. UPT Teknik Informasi dan Komunikasi (ICT/LPTI)' => [],
+                    'D. Wakil Rektor III (Kemahasiswaan, Humas, Kerjasama & Perencanaan)' => [],
+                ]
+            ],
+            '3. LPPM (Penelitian & Pengabdian)' => [
+                'icon' => 'bi-journal-bookmark-fill text-success',
+                'sub' => [
+                    'LPPM UIS' => []
+                ]
+            ],
+            '4. LPMI (Penjamin Mutu Internal)' => [
+                'icon' => 'bi-shield-check text-info',
+                'sub' => [
+                    'LPMI UIS' => []
+                ]
+            ],
+            '5. Fakultas Ekonomi dan Bisnis (FEB)' => [
+                'icon' => 'bi-mortarboard-fill text-danger',
+                'sub' => [
+                    'Dekanat FEB' => [],
+                    'Prodi S1 Manajemen' => [],
+                    'Prodi S1 Akuntansi' => [],
+                    'Prodi Pascasarjana S2 Magister Manajemen' => [],
+                ]
+            ],
+            '6. Fakultas Sains dan Teknologi (FST)' => [
+                'icon' => 'bi-gear-wide-connected text-dark',
+                'sub' => [
+                    'Dekanat FST' => [],
+                    'Prodi Teknik Industri' => [],
+                    'Prodi Teknik Informatika & Sistem Informasi' => [],
+                    'Prodi Teknik Logistik & Perkapalan' => [],
+                    'Laboratorium FST' => [],
+                ]
+            ],
+            '7. Fakultas Ilmu Kesehatan (FIKES)' => [
+                'icon' => 'bi-heart-pulse-fill text-success',
+                'sub' => [
+                    'Dekanat FIKES' => [],
+                    'Prodi K3' => [],
+                    'Prodi Kesling' => [],
+                ]
+            ],
+        ];
+
+        foreach ($allUsers as $u) {
+            $struct = $this->getHierarchyStructure($u);
+            $mainKey = $struct['divisi_key'] ?? '2. Rektorat UIS';
+            $subKey = $struct['sub_unit'] ?? 'Rektorat Utama';
+
+            if (!isset($tree[$mainKey])) {
+                $mainKey = '2. Rektorat UIS';
+            }
+            if (!isset($tree[$mainKey]['sub'][$subKey])) {
+                $tree[$mainKey]['sub'][$subKey] = [];
+            }
+
+            $tree[$mainKey]['sub'][$subKey][] = [
+                'id' => $u->id,
+                'name' => $u->name,
+                'jabatan' => $u->jabatan,
+                'unit' => $u->unit,
+                'level' => $u->level ?? $this->getLeadershipLevel($u)
+            ];
+        }
+
+        return $tree;
     }
 }

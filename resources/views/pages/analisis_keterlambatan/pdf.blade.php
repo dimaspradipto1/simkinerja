@@ -205,12 +205,50 @@
                         @if(!empty($item->saran_pimpinan))
                             <div style="font-weight: bold; color: #1e40af; margin-bottom: 2px;">[Saran Rektor]</div>
                             {!! nl2br(e($item->saran_pimpinan)) !!}
-                        @elseif($item->kategori_kendala === 'beban_ganda' || $item->kategori_kendala === 'insidentil')
-                            Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.
-                        @elseif($item->kategori_kendala === 'kepanitiaan')
-                            Evaluasi porsi keterlibatan anggota panitia agar tidak mengganggu performa target rutin bulanan.
                         @else
-                            Perlu pendampingan dan monitoring manajemen waktu pengerjaan tugas rutin staff.
+                            @php
+                                $j = strtoupper($item->user ? ($item->user->jabatan ?? '') : '');
+                                $uLvl = 4;
+                                if (str_contains($j, 'REKTOR')) {
+                                    $uLvl = 1;
+                                } elseif ((str_contains($j, 'DEKAN') && !str_contains($j, 'WAKIL DEKAN')) || str_contains($j, 'KA. LPPM') || str_contains($j, 'KEPALA LPPM') || str_contains($j, 'KA. LPMI') || str_contains($j, 'KEPALA LPMI') || str_contains($j, 'KA. BIRO') || str_contains($j, 'KEPALA BIRO') || str_contains($j, 'KEPALA ICT') || str_contains($j, 'KEPALA LPTI') || str_contains($j, 'KEPALA PERPUSTAKAAN')) {
+                                    $uLvl = 2;
+                                } elseif (str_contains($j, 'WAKIL DEKAN') || str_contains($j, 'KETUA PROGRAM STUDI') || str_contains($j, 'KAPRODI') || str_contains($j, 'SEKRETARIS PRODI') || str_contains($j, 'SEKPRODI') || str_contains($j, 'KABID') || str_contains($j, 'KA. LABORATORIUM') || str_contains($j, 'KA. UPPM') || str_contains($j, 'KA. HUMAS') || str_contains($j, 'UPMI') || str_contains($j, 'GKM')) {
+                                    $uLvl = 3;
+                                }
+                            @endphp
+
+                            @if($item->kategori_kendala === 'beban_ganda' || $item->kategori_kendala === 'insidentil')
+                                @if($uLvl === 1)
+                                    Diperlukan delegasi tugas strategis & penataan ulang prioritas kebijakan tingkat universitas.
+                                @elseif($uLvl === 2)
+                                    Diperlukan evaluasi beban kerja manajerial unit & redistribusi porsi penugasan lintas prodi/bidang.
+                                @elseif($uLvl === 3)
+                                    Diperlukan koordinasi penataan jadwal operasional prodi/bidang & penyesuaian deadline tugas utama.
+                                @else
+                                    Diperlukan redistribusi porsi tugas mendesak atau penyesuaian ulang estimasi deadline tugas utama.
+                                @endif
+                            @elseif($item->kategori_kendala === 'kepanitiaan')
+                                @if($uLvl === 1)
+                                    Evaluasi porsi keterlibatan eksekutif dalam kepanitiaan strategis agar target universitas terjaga.
+                                @elseif($uLvl === 2)
+                                    Evaluasi alokasi kepanitiaan tingkat unit/fakultas agar tidak mengganggu manajerial unit.
+                                @elseif($uLvl === 3)
+                                    Evaluasi porsi keterlibatan tugas panitia agar tidak mengganggu target kinerja operasional prodi/bidang.
+                                @else
+                                    Evaluasi porsi keterlibatan anggota panitia agar tidak mengganggu performa target rutin bulanan.
+                                @endif
+                            @else
+                                @if($uLvl === 1)
+                                    Perlu peninjauan alokasi waktu supervisi strategis dan koordinasi antar pimpinan universitas.
+                                @elseif($uLvl === 2)
+                                    Perlu evaluasi efektivitas manajemen internal unit & penguatan pengawasan manajerial unit.
+                                @elseif($uLvl === 3)
+                                    Perlu penguatan manajemen waktu pengerjaan target operasional dan optimalisasi koordinasi tim prodi/bidang.
+                                @else
+                                    Perlu pendampingan dan monitoring manajemen waktu pengerjaan tugas rutin staf.
+                                @endif
+                            @endif
                         @endif
                     </td>
                 </tr>

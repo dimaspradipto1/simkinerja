@@ -63,7 +63,7 @@ class UserSeeder extends Seeder
             ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK', 'name' => 'ANDI MUAMAR, S.Kom', 'unit' => 'LPTI'],
             ['jabatan' => 'DIVISI INFRASTRUKTUR, JARINGAN, DAN LAYANAN TROUBLESHOOTING', 'name' => 'DICKY ASHRUL IBRAHIM, S.Kom', 'unit' => 'LPTI'],
             ['jabatan' => 'PROGRAMMER', 'name' => 'DIMAS PRADIPTO, S.KOM., M.KOM', 'unit' => 'LPTI'],
-            ['jabatan' => 'IT SUPPORT', 'name' => 'RUSDIYANTO, S.Kom', 'unit' => 'LPTI'],
+            ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING', 'name' => 'RUSDIYANTO, S.Kom', 'unit' => 'LPTI'],
 
             // BIRO KEMAHASISWAAN, ALUMNI & KERJASAMA
             ['jabatan' => 'KA. BIRO KEMAHASISWAAN, ALUMNI, KERJASAMA, PERENCANAAN DAN PENGEMBANGAN', 'name' => 'Dr. HERDIANTI, M.Kes', 'unit' => 'BIRO KEMAHASISWAAN'],
