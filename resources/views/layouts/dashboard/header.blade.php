@@ -23,76 +23,115 @@
                       <i class="bi bi-search"></i>
                   </a>
               </li> --}}
+              @php
+                  $authUser = auth()->user();
+                  $notifications = collect();
+
+                  if ($authUser) {
+                      $today = \Carbon\Carbon::now()->format('Y-m-d');
+
+                      // 1. Overdue Tasks
+                      $overdueTasks = \App\Models\RencanaKerja::where(function($q) use ($authUser) {
+                              $q->where('user_id', $authUser->id)
+                                ->orWhereHas('taggedUsers', function($qu) use ($authUser) {
+                                    $qu->where('users.id', $authUser->id);
+                                });
+                          })
+                          ->where('status', '!=', 'Selesai')
+                          ->whereNotNull('estimasi_tanggal_selesai')
+                          ->where('estimasi_tanggal_selesai', '<', $today)
+                          ->latest()
+                          ->take(3)
+                          ->get();
+
+                      foreach ($overdueTasks as $t) {
+                          $notifications->push([
+                              'icon' => 'bi-exclamation-triangle-fill text-danger',
+                              'title' => 'Tugas Melewati Deadline',
+                              'message' => \Illuminate\Support\Str::limit($t->uraian_tugas, 45),
+                              'time' => 'Batas: ' . date('d/m/Y', strtotime($t->estimasi_tanggal_selesai)),
+                              'url' => route('rencana-kerja.index')
+                          ]);
+                      }
+
+                      // 2. Running Tasks
+                      $runningTasks = \App\Models\RencanaKerja::where(function($q) use ($authUser) {
+                              $q->where('user_id', $authUser->id)
+                                ->orWhereHas('taggedUsers', function($qu) use ($authUser) {
+                                    $qu->where('users.id', $authUser->id);
+                                });
+                          })
+                          ->where('status', 'Berjalan')
+                          ->latest()
+                          ->take(2)
+                          ->get();
+
+                      foreach ($runningTasks as $t) {
+                          $notifications->push([
+                              'icon' => 'bi-play-circle-fill text-primary',
+                              'title' => 'Tugas Sedang Berjalan',
+                              'message' => \Illuminate\Support\Str::limit($t->uraian_tugas, 45),
+                              'time' => 'Timer aktif saat ini',
+                              'url' => route('rencana-kerja.index')
+                          ]);
+                      }
+
+                      // 3. Tagged Kepanitiaan Tasks
+                      $taggedKepanitiaans = $authUser->taggedKepanitiaans()->latest()->take(2)->get();
+                      foreach ($taggedKepanitiaans as $k) {
+                          $notifications->push([
+                              'icon' => 'bi-people-fill text-warning',
+                              'title' => 'Penugasan Kepanitiaan',
+                              'message' => \Illuminate\Support\Str::limit($k->nama_kegiatan ?? $k->uraian_tugas, 45),
+                              'time' => 'Terdaftar dalam tim',
+                              'url' => route('kepanitiaan.index')
+                          ]);
+                      }
+                  }
+                  $notifCount = $notifications->count();
+              @endphp
+
               <li class="nav-item dropdown">
 
                   <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
                       <i class="bi bi-bell"></i>
-                      <span class="badge bg-primary badge-number">4</span>
+                      @if($notifCount > 0)
+                          <span class="badge bg-danger badge-number">{{ $notifCount }}</span>
+                      @endif
                   </a><!-- End Notification Icon -->
 
                   <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
                       <li class="dropdown-header">
-                          You have 4 new notifications
-                          <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+                          @if($notifCount > 0)
+                              Anda memiliki {{ $notifCount }} pemberitahuan
+                          @else
+                              Tidak ada pemberitahuan baru
+                          @endif
                       </li>
                       <li>
                           <hr class="dropdown-divider">
                       </li>
 
-                      <li class="notification-item">
-                          <i class="bi bi-exclamation-circle text-warning"></i>
-                          <div>
-                              <h4>Lorem Ipsum</h4>
-                              <p>Quae dolorem earum veritatis oditseno</p>
-                              <p>30 min. ago</p>
-                          </div>
-                      </li>
-
-                      <li>
-                          <hr class="dropdown-divider">
-                      </li>
-
-                      <li class="notification-item">
-                          <i class="bi bi-x-circle text-danger"></i>
-                          <div>
-                              <h4>Atque rerum nesciunt</h4>
-                              <p>Quae dolorem earum veritatis oditseno</p>
-                              <p>1 hr. ago</p>
-                          </div>
-                      </li>
-
-                      <li>
-                          <hr class="dropdown-divider">
-                      </li>
-
-                      <li class="notification-item">
-                          <i class="bi bi-check-circle text-success"></i>
-                          <div>
-                              <h4>Sit rerum fuga</h4>
-                              <p>Quae dolorem earum veritatis oditseno</p>
-                              <p>2 hrs. ago</p>
-                          </div>
-                      </li>
-
-                      <li>
-                          <hr class="dropdown-divider">
-                      </li>
-
-                      <li class="notification-item">
-                          <i class="bi bi-info-circle text-primary"></i>
-                          <div>
-                              <h4>Dicta reprehenderit</h4>
-                              <p>Quae dolorem earum veritatis oditseno</p>
-                              <p>4 hrs. ago</p>
-                          </div>
-                      </li>
-
-                      <li>
-                          <hr class="dropdown-divider">
-                      </li>
-                      <li class="dropdown-footer">
-                          <a href="#">Show all notifications</a>
-                      </li>
+                      @forelse($notifications as $notif)
+                          <li class="notification-item">
+                              <a href="{{ $notif['url'] }}" class="d-flex text-dark text-decoration-none w-100">
+                                  <i class="bi {{ $notif['icon'] }} me-2 fs-5"></i>
+                                  <div>
+                                      <h4 class="mb-1" style="font-size: 0.85rem; font-weight: 600;">{{ $notif['title'] }}</h4>
+                                      <p class="mb-1 text-muted" style="font-size: 0.78rem;">{{ $notif['message'] }}</p>
+                                      <p class="mb-0 text-secondary" style="font-size: 0.72rem;">{{ $notif['time'] }}</p>
+                                  </div>
+                              </a>
+                          </li>
+                          <li>
+                              <hr class="dropdown-divider">
+                          </li>
+                      @empty
+                          <li class="p-3 text-center text-muted small">
+                              <i class="bi bi-check-circle text-success d-block fs-3 mb-1"></i>
+                              Semua tugas Anda tepat waktu dan berjalan lancar!
+                          </li>
+                      @endforelse
 
                   </ul><!-- End Notification Dropdown Items -->
 
