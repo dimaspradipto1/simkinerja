@@ -1087,10 +1087,6 @@ class KepanitiaanController extends Controller
     public function exportExcel(Request $request)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isPimpinanUnit() && !$authUser->isAdmin())) {
-            Alert::error('Gagal', 'Akses ditolak. Fitur ini khusus Pimpinan dan Admin.')->toToast();
-            return redirect()->back();
-        }
 
         $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
 

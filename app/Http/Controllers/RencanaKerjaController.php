@@ -1204,16 +1204,11 @@ class RencanaKerjaController extends Controller
     }
 
     /**
-     * Export Rencana Kerja to Excel (Khusus Pimpinan & Admin)
+     * Export Rencana Kerja to Excel
      */
     public function exportExcel(Request $request)
     {
         $authUser = Auth::user();
-
-        if (!$authUser || (!$authUser->isPimpinanUnit() && !$authUser->isAdmin())) {
-            Alert::error('Gagal', 'Akses ditolak. Fitur ini khusus Pimpinan dan Admin.')->toToast();
-            return redirect()->back();
-        }
 
         $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
 
