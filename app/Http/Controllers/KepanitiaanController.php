@@ -1176,15 +1176,15 @@ class KepanitiaanController extends Controller
         $sheet->setTitle('Laporan Kepanitiaan');
 
         // Header styles
-        // Row 1: Title (Merged A1:I1 across all columns)
+        // Row 1: Title (Merged A1:J1 across all columns)
         $titleText = 'LAPORAN RENCANA KERJA KEPANITIAAN DAN REALISASI KERJA (' . $periodeText . ')';
-        $sheet->mergeCells('A1:I1');
+        $sheet->mergeCells('A1:J1');
         $sheet->setCellValue('A1', $titleText);
-        $sheet->getStyle('A1:I1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:I1')->getFill()
+        $sheet->getStyle('A1:J1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:J1')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setRGB('15432D');
-        $sheet->getStyle('A1:I1')->getAlignment()
+        $sheet->getStyle('A1:J1')->getAlignment()
             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
             ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
         $sheet->getRowDimension(1)->setRowHeight(30);
@@ -1208,7 +1208,7 @@ class KepanitiaanController extends Controller
         $sheet->getStyle('A5')->getFont()->setBold(true);
         $sheet->getStyle('C5')->getFont()->setBold(true);
 
-        // Row 7: Table Header Columns (9 Grouped Columns matching PDF layout)
+        // Row 7: Table Header Columns (10 Grouped Columns matching PDF layout)
         $headers = [
             'A7' => 'NO',
             'B7' => 'HARI',
@@ -1217,15 +1217,16 @@ class KepanitiaanController extends Controller
             'E7' => 'REALISASI PELAKSANAAN',
             'F7' => 'DURASI',
             'G7' => 'STATUS & BERKAS',
-            'H7' => 'HASIL KERJA & BUKTI',
+            'H7' => 'INDIKATOR KINERJA',
             'I7' => 'RENCANA TINDAK LANJUT',
+            'J7' => 'BUKTI',
         ];
 
         foreach ($headers as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
 
-        $headerRange = 'A7:I7';
+        $headerRange = 'A7:J7';
         $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(9);
         $sheet->getStyle($headerRange)->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
@@ -1275,9 +1276,8 @@ class KepanitiaanController extends Controller
             $extLinkStr = $item->url_external ?? '-';
             $hasilKerjaText = !empty($item->hasil_kerja) ? trim(strip_tags($item->hasil_kerja)) : '-';
 
-            $hasilBuktiStr = $hasilKerjaText . "\n" .
-                             'Berkas: ' . $fileLinkStr . "\n" .
-                             'Link External: ' . $extLinkStr;
+            $buktiStr = 'Berkas: ' . $fileLinkStr . "\n" .
+                        'Link External: ' . $extLinkStr;
 
             $taggedNames = '';
             if ($item->taggedUsers->count() > 0) {
@@ -1291,21 +1291,23 @@ class KepanitiaanController extends Controller
             $sheet->setCellValue('E' . $rowNum, $realStr);
             $sheet->setCellValue('F' . $rowNum, $durasiStr);
             $sheet->setCellValue('G' . $rowNum, $item->status ?? 'Selesai');
-            $sheet->setCellValue('H' . $rowNum, $hasilBuktiStr);
+            $sheet->setCellValue('H' . $rowNum, $hasilKerjaText);
             $sheet->setCellValue('I' . $rowNum, !empty($item->rencana_tindak_lanjut) ? trim(strip_tags($item->rencana_tindak_lanjut)) : '-');
+            $sheet->setCellValue('J' . $rowNum, $buktiStr);
 
             // Alignments & Styles
             $sheet->getStyle('A' . $rowNum . ':B' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
             $sheet->getStyle('C' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
-            $sheet->getStyle('D' . $rowNum . ':G' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
-            $sheet->getStyle('H' . $rowNum . ':I' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $sheet->getStyle('D' . $rowNum . ':E' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $sheet->getStyle('F' . $rowNum . ':G' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $sheet->getStyle('H' . $rowNum . ':J' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
 
             $rowNum++;
         }
 
         // Apply Borders & Wrap Text
         $lastRow = max(7, $rowNum - 1);
-        $tableRange = 'A7:I' . $lastRow;
+        $tableRange = 'A7:J' . $lastRow;
         $sheet->getStyle($tableRange)->getBorders()->getAllBorders()
             ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)
             ->getColor()->setRGB('CCCCCC');
@@ -1320,8 +1322,9 @@ class KepanitiaanController extends Controller
             'E' => 26,
             'F' => 12,
             'G' => 15,
-            'H' => 45,
-            'I' => 45,
+            'H' => 32,
+            'I' => 32,
+            'J' => 32,
         ];
         foreach ($colWidths as $col => $w) {
             $sheet->getColumnDimension($col)->setWidth($w);

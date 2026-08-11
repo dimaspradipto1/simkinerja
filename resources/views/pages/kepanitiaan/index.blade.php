@@ -239,11 +239,9 @@
                         <button type="button" id="btn-voice-kepanitiaan" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
                             <i class="bi bi-volume-up-fill me-1"></i> Suara
                         </button>
-                        @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
-                            <button type="button" class="btn btn-sm btn-success text-white fw-semibold text-nowrap" style="background-color: #2d6a4f; border-color: #2d6a4f;" data-bs-toggle="modal" data-bs-target="#modalExportExcel">
-                                <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export Laporan
-                            </button>
-                        @endif
+                        <button type="button" class="btn btn-sm btn-success text-white fw-semibold text-nowrap" style="background-color: #2d6a4f; border-color: #2d6a4f;" data-bs-toggle="modal" data-bs-target="#modalExportExcel">
+                            <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export Laporan
+                        </button>
                         <button type="button" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
                             <i class="bi bi-file-earmark-excel text-success me-1"></i> Import Excel
                         </button>

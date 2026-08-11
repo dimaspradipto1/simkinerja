@@ -45,6 +45,7 @@
         }
         .data-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             font-size: 7.5pt;
         }
@@ -57,11 +58,14 @@
             padding: 5px 3px;
             border: 1px solid #0d2c1d;
             font-size: 7pt;
+            word-wrap: break-word;
         }
         .data-table td {
             border: 1px solid #cccccc;
             padding: 4px 3px;
             vertical-align: middle;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .text-center { text-align: center; }
         .text-left { text-align: left; }
@@ -139,10 +143,11 @@
                 <th style="width: 17%;">URAIAN TUGAS</th>
                 <th style="width: 12.5%;">ESTIMASI PELAKSANAAN</th>
                 <th style="width: 12.5%;">REALISASI PELAKSANAAN</th>
-                <th style="width: 5.5%;">DURASI</th>
+                <th style="width: 4.5%;">DURASI</th>
                 <th style="width: 6.5%;">STATUS & BERKAS</th>
-                <th style="width: 19%;">HASIL KERJA & BUKTI</th>
-                <th style="width: 19%;">RENCANA TINDAK LANJUT</th>
+                <th style="width: 9%;">INDIKATOR KINERJA</th>
+                <th style="width: 22%;">RENCANA TINDAK LANJUT</th>
+                <th style="width: 8%;">BUKTI</th>
             </tr>
         </thead>
         <tbody>
@@ -184,7 +189,7 @@
                             </div>
                         @endif
                     </td>
-                    <td class="text-center" style="font-size: 7pt; line-height: 1.3;">
+                    <td class="text-left" style="font-size: 7pt; line-height: 1.3;">
                         @if($item->estimasi_tanggal_mulai)
                             <div><strong>Mulai:</strong> {{ date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) }} {{ $item->estimasi_jam_mulai ? substr($item->estimasi_jam_mulai, 0, 5) : '' }}</div>
                         @endif
@@ -195,7 +200,7 @@
                             -
                         @endif
                     </td>
-                    <td class="text-center" style="font-size: 7pt; line-height: 1.3;">
+                    <td class="text-left" style="font-size: 7pt; line-height: 1.3;">
                         @if($item->tanggal_mulai)
                             <div><strong>Mulai:</strong> {{ date('d/m/Y', strtotime($item->tanggal_mulai)) }} {{ $item->waktu_mulai ? substr($item->waktu_mulai, 0, 5) : '' }}</div>
                         @else
@@ -211,11 +216,11 @@
                     <td class="text-center" style="font-size: 7pt;">
                         <div><strong>{{ $item->status ?? 'Selesai' }}</strong></div>
                     </td>
+                    <td class="text-left" style="font-size: 7pt; line-height: 1.3;">{!! $item->hasil_kerja ? trim(strip_tags($item->hasil_kerja)) : '-' !!}</td>
+                    <td class="text-left" style="font-size: 7pt; line-height: 1.3;">{!! $item->rencana_tindak_lanjut ? trim(strip_tags($item->rencana_tindak_lanjut)) : '-' !!}</td>
                     <td class="text-left" style="font-size: 7pt; line-height: 1.3;">
-                        <div>{!! $item->hasil_kerja ? trim(strip_tags($item->hasil_kerja)) : '-' !!}</div>
-
-                        <div style="font-size: 6.5pt; margin-top: 3px;">
-                            <strong>Berkas:</strong> 
+                        <div>
+                            <strong>Berkas:</strong>
                             @if($item->file)
                                 @php $fileUrl = asset('storage/' . $item->file); @endphp
                                 <a href="{{ $fileUrl }}" target="_blank" style="color: #15803d; text-decoration: underline;">{{ $fileUrl }}</a>
@@ -224,8 +229,8 @@
                             @endif
                         </div>
 
-                        <div style="font-size: 6.5pt; margin-top: 2px; word-break: break-all;">
-                            <strong>Link External:</strong> 
+                        <div style="margin-top: 2px; word-break: break-all;">
+                            <strong>Link External:</strong>
                             @if($item->url_external)
                                 <a href="{{ $item->url_external }}" target="_blank" style="color: #0369a1; text-decoration: underline;">{{ $item->url_external }}</a>
                             @else
@@ -233,11 +238,10 @@
                             @endif
                         </div>
                     </td>
-                    <td class="text-left" style="font-size: 7pt; line-height: 1.3;">{!! $item->rencana_tindak_lanjut ? trim(strip_tags($item->rencana_tindak_lanjut)) : '-' !!}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center" style="padding: 15px; color: #777777;">
+                    <td colspan="10" class="text-center" style="padding: 15px; color: #777777;">
                         Tidak ada data rencana kerja kepanitiaan untuk kriteria yang dipilih.
                     </td>
                 </tr>
