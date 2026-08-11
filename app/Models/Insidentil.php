@@ -29,6 +29,8 @@ class Insidentil extends Model
         'hasil_kerja',
         'rencana_tindak_lanjut',
         'status',
+        'estimasi_unlock_reason',
+        'estimasi_unlock_requested_at',
     ];
 
     public function user()

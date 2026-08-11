@@ -30,6 +30,8 @@ class RencanaKerja extends Model
         'rencana_tindak_lanjut',
         'saran_pimpinan',
         'status',
+        'estimasi_unlock_reason',
+        'estimasi_unlock_requested_at',
     ];
 
     public function user()

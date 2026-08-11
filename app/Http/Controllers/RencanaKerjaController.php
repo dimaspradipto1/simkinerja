@@ -545,10 +545,13 @@ class RencanaKerjaController extends Controller
             }
         }
 
+        $isPimpinanOrAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
+        $estimasiLocked = !$isPimpinanOrAdmin;
+
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
 
-        return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users', 'periodeAkademiks'));
+        return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users', 'periodeAkademiks', 'estimasiLocked'));
     }
 
     /**
@@ -563,7 +566,28 @@ class RencanaKerjaController extends Controller
             }
         }
 
+        $isPimpinanOrAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
+
         $validated = $request->validated();
+
+        // Tanggal & Waktu (estimasi maupun realisasi) terkunci untuk bawahan begitu tugas
+        // sudah tersimpan; hanya Pimpinan/Admin yang boleh mengubahnya langsung.
+        // Realisasi (tanggal_mulai/selesai, waktu_mulai/selesai) tetap bisa terisi otomatis
+        // lewat tombol Start/Pause/Stop karena rute itu tidak lewat method update() ini.
+        $estimasiFields = [
+            'estimasi_tanggal_mulai', 'estimasi_tanggal_selesai', 'estimasi_jam_mulai', 'estimasi_jam_selesai',
+            'tanggal_mulai', 'tanggal_selesai', 'waktu_mulai', 'waktu_selesai',
+        ];
+
+        if (!$isPimpinanOrAdmin) {
+            foreach ($estimasiFields as $field) {
+                unset($validated[$field]);
+            }
+        } elseif ($rencanaKerja->estimasi_unlock_requested_at) {
+            // Pimpinan menyimpan perubahan pada tugas yang punya permintaan tertunda -> tandai selesai.
+            $validated['estimasi_unlock_reason'] = null;
+            $validated['estimasi_unlock_requested_at'] = null;
+        }
 
         if ($request->hasFile('file')) {
             if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
@@ -582,6 +606,34 @@ class RencanaKerjaController extends Controller
             ->timerProgressBar();
 
         return redirect()->route('rencana-kerja.index');
+    }
+
+    /**
+     * Bawahan mengajukan permintaan perubahan Estimasi Pelaksanaan ke pimpinan.
+     */
+    public function requestUnlockEstimasi(Request $request, RencanaKerja $rencanaKerja)
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser || $rencanaKerja->user_id !== $authUser->id) {
+            abort(403, 'Anda tidak memiliki hak akses untuk tugas ini.');
+        }
+
+        $request->validate([
+            'estimasi_unlock_reason' => 'required|string|max:1000',
+        ]);
+
+        $rencanaKerja->update([
+            'estimasi_unlock_reason' => $request->input('estimasi_unlock_reason'),
+            'estimasi_unlock_requested_at' => now(),
+        ]);
+
+        Alert::success('Berhasil', 'Permintaan perubahan estimasi telah dikirim ke pimpinan.')
+            ->toToast()
+            ->autoClose(4000)
+            ->timerProgressBar();
+
+        return redirect()->back();
     }
 
     /**

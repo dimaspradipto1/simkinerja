@@ -87,6 +87,39 @@
                               'url' => route('kepanitiaan.index')
                           ]);
                       }
+
+                      // 4. Permintaan Perubahan Estimasi dari bawahan (khusus Pimpinan/Admin)
+                      if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit()) {
+                          $isFullAccess = $authUser->isAdmin() || $authUser->isPimpinanRektorat();
+
+                          $unlockSources = [
+                              ['model' => \App\Models\RencanaKerja::class, 'label' => 'Rencana Kerja', 'route' => 'rencana-kerja.edit'],
+                              ['model' => \App\Models\Kepanitiaan::class, 'label' => 'Kepanitiaan', 'route' => 'kepanitiaan.edit'],
+                              ['model' => \App\Models\Insidentil::class, 'label' => 'Insidentil', 'route' => 'insidentil.edit'],
+                          ];
+
+                          foreach ($unlockSources as $src) {
+                              $unlockQuery = $src['model']::whereNotNull('estimasi_unlock_requested_at');
+
+                              if (!$isFullAccess) {
+                                  $unlockQuery->whereHas('user', function ($q) use ($authUser) {
+                                      $q->where('unit', $authUser->unit);
+                                  });
+                              }
+
+                              $unlockRequests = $unlockQuery->latest('estimasi_unlock_requested_at')->take(2)->get();
+
+                              foreach ($unlockRequests as $r) {
+                                  $notifications->push([
+                                      'icon' => 'bi-unlock-fill text-warning',
+                                      'title' => 'Permintaan Perubahan Estimasi (' . $src['label'] . ')',
+                                      'message' => \Illuminate\Support\Str::limit(($r->user->name ?? '-') . ': ' . $r->uraian_tugas, 45),
+                                      'time' => 'Diajukan ' . \Carbon\Carbon::parse($r->estimasi_unlock_requested_at)->diffForHumans(),
+                                      'url' => route($src['route'], $r->id)
+                                  ]);
+                              }
+                          }
+                      }
                   }
                   $notifCount = $notifications->count();
               @endphp

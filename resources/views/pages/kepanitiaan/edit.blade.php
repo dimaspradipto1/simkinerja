@@ -90,9 +90,32 @@
                             @enderror
                         </div>
 
+                        @if($estimasiLocked)
+                        <div class="col-md-12">
+                            <div class="alert alert-secondary d-flex align-items-start gap-2 mb-0 py-2">
+                                <i class="bi bi-lock-fill mt-1"></i>
+                                <div>
+                                    <strong>Tanggal &amp; Waktu Pelaksanaan terkunci.</strong>
+                                    Tugas ini sudah tersimpan, sehingga estimasi maupun realisasi tanggal/jam hanya dapat diubah oleh Pimpinan.
+                                    Ajukan permintaan perubahan jika perlu direvisi.
+                                </div>
+                            </div>
+                        </div>
+                        @elseif($kepanitiaan->estimasi_unlock_requested_at)
+                        <div class="col-md-12">
+                            <div class="alert alert-warning mb-0 py-2">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <strong>Ada permintaan perubahan tanggal &amp; waktu</strong> dari {{ $kepanitiaan->user->name ?? 'staff' }}
+                                pada {{ \Carbon\Carbon::parse($kepanitiaan->estimasi_unlock_requested_at)->translatedFormat('d M Y H:i') }}:
+                                <div class="fst-italic mt-1">"{{ $kepanitiaan->estimasi_unlock_reason }}"</div>
+                                <div class="small text-muted mt-1">Ubah tanggal/waktu di bawah ini lalu simpan untuk menyelesaikan permintaan.</div>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="col-md-3">
                             <label for="estimasi_tanggal_mulai" class="form-label fw-semibold text-secondary">Estimasi Tgl Mulai</label>
-                            <input type="date" class="form-control @error('estimasi_tanggal_mulai') is-invalid @enderror" id="estimasi_tanggal_mulai" name="estimasi_tanggal_mulai" value="{{ old('estimasi_tanggal_mulai', $kepanitiaan->estimasi_tanggal_mulai) }}">
+                            <input type="date" class="form-control @error('estimasi_tanggal_mulai') is-invalid @enderror" id="estimasi_tanggal_mulai" name="estimasi_tanggal_mulai" value="{{ old('estimasi_tanggal_mulai', $kepanitiaan->estimasi_tanggal_mulai) }}" {{ $estimasiLocked ? 'disabled' : '' }}>
                             @error('estimasi_tanggal_mulai')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -100,7 +123,7 @@
 
                         <div class="col-md-3">
                             <label for="estimasi_tanggal_selesai" class="form-label fw-semibold text-secondary">Estimasi Tgl Selesai</label>
-                            <input type="date" class="form-control @error('estimasi_tanggal_selesai') is-invalid @enderror" id="estimasi_tanggal_selesai" name="estimasi_tanggal_selesai" value="{{ old('estimasi_tanggal_selesai', $kepanitiaan->estimasi_tanggal_selesai) }}">
+                            <input type="date" class="form-control @error('estimasi_tanggal_selesai') is-invalid @enderror" id="estimasi_tanggal_selesai" name="estimasi_tanggal_selesai" value="{{ old('estimasi_tanggal_selesai', $kepanitiaan->estimasi_tanggal_selesai) }}" {{ $estimasiLocked ? 'disabled' : '' }}>
                             @error('estimasi_tanggal_selesai')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -108,7 +131,7 @@
 
                         <div class="col-md-3">
                             <label for="estimasi_jam_mulai" class="form-label fw-semibold text-secondary">Estimasi Jam Mulai</label>
-                            <input type="time" class="form-control @error('estimasi_jam_mulai') is-invalid @enderror" id="estimasi_jam_mulai" name="estimasi_jam_mulai" value="{{ old('estimasi_jam_mulai', $kepanitiaan->estimasi_jam_mulai) }}">
+                            <input type="time" class="form-control @error('estimasi_jam_mulai') is-invalid @enderror" id="estimasi_jam_mulai" name="estimasi_jam_mulai" value="{{ old('estimasi_jam_mulai', $kepanitiaan->estimasi_jam_mulai) }}" {{ $estimasiLocked ? 'disabled' : '' }}>
                             @error('estimasi_jam_mulai')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -116,12 +139,13 @@
 
                         <div class="col-md-3">
                             <label for="estimasi_jam_selesai" class="form-label fw-semibold text-secondary">Estimasi Jam Selesai</label>
-                            <input type="time" class="form-control @error('estimasi_jam_selesai') is-invalid @enderror" id="estimasi_jam_selesai" name="estimasi_jam_selesai" value="{{ old('estimasi_jam_selesai', $kepanitiaan->estimasi_jam_selesai) }}">
+                            <input type="time" class="form-control @error('estimasi_jam_selesai') is-invalid @enderror" id="estimasi_jam_selesai" name="estimasi_jam_selesai" value="{{ old('estimasi_jam_selesai', $kepanitiaan->estimasi_jam_selesai) }}" {{ $estimasiLocked ? 'disabled' : '' }}>
                             @error('estimasi_jam_selesai')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
+                        @if(!$estimasiLocked)
                         <div class="col-md-3">
                             <label for="tanggal_mulai" class="form-label">Tanggal Mulai</label>
                             <input type="date" class="form-control @error('tanggal_mulai') is-invalid @enderror" id="tanggal_mulai" name="tanggal_mulai" value="{{ old('tanggal_mulai', $kepanitiaan->tanggal_mulai) }}">
@@ -153,6 +177,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        @endif
 
                         <div class="col-md-6">
                             <label for="file" class="form-label">Unggah Berkas Baru <small class="text-muted">(Biarkan kosong jika tidak diubah)</small></label>
@@ -176,9 +201,21 @@
                             @enderror
                         </div>
 
-                        <div class="col-12 mt-4">
+                        <div class="col-12 mt-4 d-flex flex-wrap align-items-center gap-2">
                             <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Perbarui Rencana Kerja Kepanitiaan</button>
                             <a href="{{ route('kepanitiaan.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
+                            @if($estimasiLocked)
+                                @if($kepanitiaan->estimasi_unlock_requested_at)
+                                    <span class="badge text-bg-info fw-normal py-2 px-3">
+                                        <i class="bi bi-hourglass-split me-1"></i>
+                                        Menunggu persetujuan Pimpinan (diajukan {{ \Carbon\Carbon::parse($kepanitiaan->estimasi_unlock_requested_at)->translatedFormat('d M Y H:i') }})
+                                    </span>
+                                @else
+                                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalRequestUnlockEstimasi">
+                                        <i class="bi bi-send-fill me-1"></i> Ajukan Perubahan Tanggal &amp; Waktu ke Pimpinan
+                                    </button>
+                                @endif
+                            @endif
                         </div>
                     </form>
 
@@ -187,6 +224,32 @@
         </div>
     </div>
 </section>
+
+@if($estimasiLocked && !$kepanitiaan->estimasi_unlock_requested_at)
+<!-- Modal Ajukan Perubahan Estimasi -->
+<div class="modal fade" id="modalRequestUnlockEstimasi" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ route('kepanitiaan.request-unlock-estimasi', $kepanitiaan->id) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-send-fill me-1"></i> Ajukan Perubahan Tanggal &amp; Waktu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Jelaskan alasan mengapa tanggal/waktu (estimasi maupun realisasi) tugas ini perlu diubah. Permintaan akan dikirim ke Pimpinan untuk ditindaklanjuti.</p>
+                    <label for="estimasi_unlock_reason" class="form-label fw-semibold">Alasan Perubahan <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="estimasi_unlock_reason" name="estimasi_unlock_reason" rows="4" maxlength="1000" required placeholder="Contoh: Jadwal mundur karena menunggu data dari unit lain"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-send-fill me-1"></i> Kirim Permintaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
 
 @push('scripts')

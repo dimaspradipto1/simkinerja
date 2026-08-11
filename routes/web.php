@@ -51,6 +51,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('rencana-kerja/{rencana_kerja}/upload-attachment', [RencanaKerjaController::class, 'uploadAttachment'])->name('rencana-kerja.upload-attachment');
     Route::post('rencana-kerja/bulk-delete', [RencanaKerjaController::class, 'bulkDelete'])->name('rencana-kerja.bulk-delete');
     Route::post('rencana-kerja/{rencana_kerja}/update-tags', [RencanaKerjaController::class, 'updateTags'])->name('rencana-kerja.update-tags');
+    Route::post('rencana-kerja/{rencana_kerja}/request-unlock-estimasi', [RencanaKerjaController::class, 'requestUnlockEstimasi'])->name('rencana-kerja.request-unlock-estimasi');
     Route::resource('rencana-kerja', RencanaKerjaController::class);
 
     Route::get('rekapitulasi/data', [RekapitulasiController::class, 'getData'])->name('rekapitulasi.data');
@@ -67,6 +68,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('kepanitiaan/{kepanitiaan}/upload-attachment', [KepanitiaanController::class, 'uploadAttachment'])->name('kepanitiaan.upload-attachment');
     Route::post('kepanitiaan/bulk-delete', [KepanitiaanController::class, 'bulkDelete'])->name('kepanitiaan.bulk-delete');
     Route::post('kepanitiaan/{kepanitiaan}/update-tags', [KepanitiaanController::class, 'updateTags'])->name('kepanitiaan.update-tags');
+    Route::post('kepanitiaan/{kepanitiaan}/request-unlock-estimasi', [KepanitiaanController::class, 'requestUnlockEstimasi'])->name('kepanitiaan.request-unlock-estimasi');
     Route::resource('kepanitiaan', KepanitiaanController::class);
 
     // Rekapitulasi Kepanitiaan Routes
@@ -84,6 +86,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('insidentil/{insidentil}/upload-attachment', [InsidentilController::class, 'uploadAttachment'])->name('insidentil.upload-attachment');
     Route::post('insidentil/bulk-delete', [InsidentilController::class, 'bulkDelete'])->name('insidentil.bulk-delete');
     Route::post('insidentil/{insidentil}/update-tags', [InsidentilController::class, 'updateTags'])->name('insidentil.update-tags');
+    Route::post('insidentil/{insidentil}/request-unlock-estimasi', [InsidentilController::class, 'requestUnlockEstimasi'])->name('insidentil.request-unlock-estimasi');
     Route::resource('insidentil', InsidentilController::class);
 
     // Rekapitulasi Insidentil Routes
