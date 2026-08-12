@@ -70,6 +70,14 @@ class AbsensiPkkmbKetigaController extends Controller
             $validated['user_id'] = $authUser->id;
         }
 
+        $currentTime = now()->format('H:i');
+        if ($validated['hadir_datang'] && empty($validated['waktu_datang'])) {
+            $validated['waktu_datang'] = $currentTime;
+        }
+        if ($validated['hadir_pulang'] && empty($validated['waktu_pulang'])) {
+            $validated['waktu_pulang'] = $currentTime;
+        }
+
         if ($request->hasFile('bukti_izin')) {
             $validated['bukti_izin'] = $request->file('bukti_izin')->store('absensi_pkkmb', 'public');
         }
@@ -118,6 +126,14 @@ class AbsensiPkkmbKetigaController extends Controller
             'catatan_hadir_pulang' => 'nullable|string',
             'bukti_izin' => 'nullable|file|max:5120|mimes:jpeg,png,jpg,pdf,doc,docx',
         ]);
+
+        $currentTime = now()->format('H:i');
+        if ($validated['hadir_datang'] && empty($validated['waktu_datang'])) {
+            $validated['waktu_datang'] = $currentTime;
+        }
+        if ($validated['hadir_pulang'] && empty($validated['waktu_pulang'])) {
+            $validated['waktu_pulang'] = $currentTime;
+        }
 
         if ($request->hasFile('bukti_izin')) {
             if ($absensi->bukti_izin) {

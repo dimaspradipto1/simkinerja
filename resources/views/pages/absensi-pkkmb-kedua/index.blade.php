@@ -214,6 +214,13 @@
                 updateQrCode();
                 startTimer();
             });
+
+            // Auto reload DataTable every 5 seconds to show real-time scans
+            setInterval(function() {
+                if ($.fn.DataTable.isDataTable('#absensipkkmbkedua-table')) {
+                    $('#absensipkkmbkedua-table').DataTable().ajax.reload(null, false);
+                }
+            }, 5000);
         });
 
         function deleteAbsensi(id) {
