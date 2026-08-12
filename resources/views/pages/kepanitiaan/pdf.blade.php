@@ -140,14 +140,15 @@
             <tr>
                 <th style="width: 3%;">NO</th>
                 <th style="width: 5%;">HARI</th>
-                <th style="width: 17%;">URAIAN TUGAS</th>
-                <th style="width: 12.5%;">ESTIMASI PELAKSANAAN</th>
-                <th style="width: 12.5%;">REALISASI PELAKSANAAN</th>
+                <th style="width: 14%;">URAIAN TUGAS</th>
+                <th style="width: 11%;">ESTIMASI PELAKSANAAN</th>
+                <th style="width: 11%;">REALISASI PELAKSANAAN</th>
                 <th style="width: 4.5%;">DURASI</th>
                 <th style="width: 6.5%;">STATUS & BERKAS</th>
                 <th style="width: 9%;">INDIKATOR KINERJA</th>
-                <th style="width: 22%;">RENCANA TINDAK LANJUT</th>
+                <th style="width: 18%;">RENCANA TINDAK LANJUT</th>
                 <th style="width: 8%;">BUKTI</th>
+                <th style="width: 10%;">MILESTONE</th>
             </tr>
         </thead>
         <tbody>
@@ -238,10 +239,20 @@
                             @endif
                         </div>
                     </td>
+                    <td class="text-left" style="font-size: 6.5pt; line-height: 1.3;">
+                        @forelse($item->milestones as $ms)
+                            <div style="margin-bottom: 2px;">
+                                <strong>{{ $ms->nama_milestone }}</strong><br>
+                                {{ $ms->status }}, {{ $ms->formatted_durasi }}
+                            </div>
+                        @empty
+                            -
+                        @endforelse
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="text-center" style="padding: 15px; color: #777777;">
+                    <td colspan="11" class="text-center" style="padding: 15px; color: #777777;">
                         Tidak ada data rencana kerja kepanitiaan untuk kriteria yang dipilih.
                     </td>
                 </tr>

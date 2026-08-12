@@ -10,6 +10,31 @@
               </a>
           </li><!-- End Dashboard Nav -->
 
+          <li class="nav-heading">Absensi</li>
+
+            <li class="nav-item">
+                <a class="nav-link" data-bs-target="#absensi-nav" data-bs-toggle="collapse" href="#">
+                    <i class="bi bi-calendar-check-fill"></i><span>Kepanitiaan PKKMB</span><i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <ul id="absensi-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-circle"></i><span>Absensi Hari Pertama</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-circle"></i><span>Absensi Hari Kedua</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-circle"></i><span>Absensi Hari Ketiga</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+ 
           <li class="nav-heading">Tugas & Kinerja</li>
           <li class="nav-item">
               <a class="{{ request()->routeIs('rencana-kerja.*') ? 'nav-link' : 'nav-link collapsed' }}"

@@ -1140,7 +1140,7 @@ class KepanitiaanController extends Controller
     {
         $authUser = Auth::user();
 
-        $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
+        $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
@@ -1224,15 +1224,15 @@ class KepanitiaanController extends Controller
         $sheet->setTitle('Laporan Kepanitiaan');
 
         // Header styles
-        // Row 1: Title (Merged A1:J1 across all columns)
+        // Row 1: Title (Merged A1:K1 across all columns)
         $titleText = 'LAPORAN RENCANA KERJA KEPANITIAAN DAN REALISASI KERJA (' . $periodeText . ')';
-        $sheet->mergeCells('A1:J1');
+        $sheet->mergeCells('A1:K1');
         $sheet->setCellValue('A1', $titleText);
-        $sheet->getStyle('A1:J1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:J1')->getFill()
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:K1')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setRGB('15432D');
-        $sheet->getStyle('A1:J1')->getAlignment()
+        $sheet->getStyle('A1:K1')->getAlignment()
             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
             ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
         $sheet->getRowDimension(1)->setRowHeight(30);
@@ -1268,13 +1268,14 @@ class KepanitiaanController extends Controller
             'H7' => 'INDIKATOR KINERJA',
             'I7' => 'RENCANA TINDAK LANJUT',
             'J7' => 'BUKTI',
+            'K7' => 'MILESTONE',
         ];
 
         foreach ($headers as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
 
-        $headerRange = 'A7:J7';
+        $headerRange = 'A7:K7';
         $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(9);
         $sheet->getStyle($headerRange)->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
@@ -1332,6 +1333,15 @@ class KepanitiaanController extends Controller
                 $taggedNames = "\n[Tag: " . implode(', ', $item->taggedUsers->pluck('name')->toArray()) . ']';
             }
 
+            $milestoneStr = '-';
+            if ($item->milestones->count() > 0) {
+                $milestoneLines = [];
+                foreach ($item->milestones as $ms) {
+                    $milestoneLines[] = '- ' . $ms->nama_milestone . ' (' . $ms->status . ', ' . $ms->formatted_durasi . ')';
+                }
+                $milestoneStr = implode("\n", $milestoneLines);
+            }
+
             $sheet->setCellValue('A' . $rowNum, $no++);
             $sheet->setCellValue('B' . $rowNum, $item->hari ?? '-');
             $sheet->setCellValue('C' . $rowNum, $item->uraian_tugas . $taggedNames);
@@ -1342,20 +1352,21 @@ class KepanitiaanController extends Controller
             $sheet->setCellValue('H' . $rowNum, $hasilKerjaText);
             $sheet->setCellValue('I' . $rowNum, !empty($item->rencana_tindak_lanjut) ? trim(strip_tags($item->rencana_tindak_lanjut)) : '-');
             $sheet->setCellValue('J' . $rowNum, $buktiStr);
+            $sheet->setCellValue('K' . $rowNum, $milestoneStr);
 
             // Alignments & Styles
             $sheet->getStyle('A' . $rowNum . ':B' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
             $sheet->getStyle('C' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
             $sheet->getStyle('D' . $rowNum . ':E' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
             $sheet->getStyle('F' . $rowNum . ':G' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
-            $sheet->getStyle('H' . $rowNum . ':J' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            $sheet->getStyle('H' . $rowNum . ':K' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
 
             $rowNum++;
         }
 
         // Apply Borders & Wrap Text
         $lastRow = max(7, $rowNum - 1);
-        $tableRange = 'A7:J' . $lastRow;
+        $tableRange = 'A7:K' . $lastRow;
         $sheet->getStyle($tableRange)->getBorders()->getAllBorders()
             ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)
             ->getColor()->setRGB('CCCCCC');
@@ -1373,6 +1384,7 @@ class KepanitiaanController extends Controller
             'H' => 32,
             'I' => 32,
             'J' => 32,
+            'K' => 35,
         ];
         foreach ($colWidths as $col => $w) {
             $sheet->getColumnDimension($col)->setWidth($w);
@@ -1396,7 +1408,7 @@ class KepanitiaanController extends Controller
     public function exportPdf(Request $request)
     {
         $authUser = auth()->user();
-        $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers']);
+        $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
         if ($request->filled('periode_akademik_id')) {
             $query->where('periode_akademik_id', $request->periode_akademik_id);
