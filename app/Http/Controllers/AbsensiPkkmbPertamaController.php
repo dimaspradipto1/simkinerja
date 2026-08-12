@@ -32,8 +32,12 @@ class AbsensiPkkmbPertamaController extends Controller
      */
     public function create()
     {
-        $this->checkAdmin();
-        $users = User::orderBy('name', 'asc')->get();
+        $authUser = auth()->user();
+        if ($authUser->isAdmin() || $authUser->isSuperAdmin()) {
+            $users = User::orderBy('name', 'asc')->get();
+        } else {
+            $users = collect([$authUser]);
+        }
         return view('pages.absensi-pkkmb-pertama.create', compact('users'));
     }
 
@@ -42,7 +46,7 @@ class AbsensiPkkmbPertamaController extends Controller
      */
     public function store(Request $request)
     {
-        $this->checkAdmin();
+        $authUser = auth()->user();
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'hadir_datang' => 'nullable|string',
@@ -53,6 +57,10 @@ class AbsensiPkkmbPertamaController extends Controller
             'catatan_hadir_pulang' => 'nullable|string',
             'bukti_izin' => 'nullable|file|max:5120|mimes:jpeg,png,jpg,pdf,doc,docx',
         ]);
+
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin()) {
+            $validated['user_id'] = $authUser->id;
+        }
 
         if ($request->hasFile('bukti_izin')) {
             $validated['bukti_izin'] = $request->file('bukti_izin')->store('absensi_pkkmb', 'public');
@@ -249,6 +257,54 @@ class AbsensiPkkmbPertamaController extends Controller
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    /**
+     * Process scanned QR Code to record attendance automatically.
+     */
+    public function scanProses(Request $request)
+    {
+        $authUser = auth()->user();
+        if (!$authUser) {
+            abort(401, 'Silakan login terlebih dahulu.');
+        }
+
+        $session = $request->query('session');
+        if (!in_array($session, ['datang', 'pulang'])) {
+            Alert::error('Gagal', 'Sesi absensi tidak valid.');
+            return redirect()->route('absensi-pkkmb-pertama.index');
+        }
+
+        $currentTime = now()->format('H:i');
+        $absensi = AbsensiPkkmbPertama::where('user_id', $authUser->id)->first();
+
+        if (!$absensi) {
+            $absensi = new AbsensiPkkmbPertama();
+            $absensi->user_id = $authUser->id;
+        }
+
+        if ($session === 'datang') {
+            if ($absensi->hadir_datang === 'Hadir') {
+                Alert::warning('Info', 'Anda sudah melakukan absensi datang sebelumnya.');
+                return redirect()->route('absensi-pkkmb-pertama.index');
+            }
+            $absensi->hadir_datang = 'Hadir';
+            $absensi->waktu_datang = $currentTime;
+            $msg = 'Absensi Datang berhasil dicatat otomatis pada pukul ' . $currentTime . ' WIB.';
+        } else {
+            if ($absensi->hadir_pulang === 'Hadir') {
+                Alert::warning('Info', 'Anda sudah melakukan absensi pulang sebelumnya.');
+                return redirect()->route('absensi-pkkmb-pertama.index');
+            }
+            $absensi->hadir_pulang = 'Hadir';
+            $absensi->waktu_pulang = $currentTime;
+            $msg = 'Absensi Pulang berhasil dicatat otomatis pada pukul ' . $currentTime . ' WIB.';
+        }
+
+        $absensi->save();
+
+        Alert::success('Berhasil', $msg);
+        return redirect()->route('absensi-pkkmb-pertama.index');
     }
 
     /**

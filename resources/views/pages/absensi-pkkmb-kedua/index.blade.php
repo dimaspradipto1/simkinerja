@@ -2,11 +2,11 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Data Absensi Hari Pertama</h1>
+    <h1>Data Absensi Hari Kedua</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active">Absensi Pertama</li>
+            <li class="breadcrumb-item active">Absensi Kedua</li>
         </ol>
     </nav>
 </div><!-- End Page Title -->
@@ -23,11 +23,11 @@
                         </div>
                         <div>
                             <h5 class="fw-bold m-0 fs-5 mb-1">Scan Absensi Mandiri</h5>
-                            <p class="m-0 bg-opacity-75 small">Silahkan scan QR Panitia untuk mencatat kehadiran Anda.</p>
+                            <p class="m-0 bg-opacity-75 small">Silahkan scan QR Panitia untuk mencatat kehadiran Anda secara otomatis.</p>
                         </div>
                     </div>
                     <div>
-                        <a href="{{ route('absensi-pkkmb-pertama.scan') }}" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
+                        <a href="{{ route('absensi-pkkmb-kedua.scan') }}" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
                             <i class="bi bi-qr-code-scan"></i> Scan QR Kehadiran (Sesi Aktif)
                         </a>
                     </div>
@@ -36,7 +36,7 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="card-title m-0 p-0 fs-5 font-semibold text-primary">List Absensi Hari I</h5>
+                    <h5 class="card-title m-0 p-0 fs-5 font-semibold text-primary">List Absensi Hari II</h5>
                     @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
                     <div class="d-flex gap-2">
                         <!-- Premium QR Absensi Button -->
@@ -44,11 +44,11 @@
                             <i class="bi bi-qr-code"></i> QR Absensi
                         </button>
                         <!-- Export Excel Button -->
-                        <a href="{{ route('absensi-pkkmb-pertama.export-excel') }}" class="btn btn-success rounded btn-sm d-inline-flex align-items-center gap-1 font-medium bg-emerald-600 hover:bg-emerald-700 border-0">
+                        <a href="{{ route('absensi-pkkmb-kedua.export-excel') }}" class="btn btn-success rounded btn-sm d-inline-flex align-items-center gap-1 font-medium bg-emerald-600 hover:bg-emerald-700 border-0">
                             <i class="bi bi-file-earmark-excel"></i> Export Excel
                         </a>
                         <!-- Add Button -->
-                        <a href="{{ route('absensi-pkkmb-pertama.create') }}" class="btn btn-primary rounded btn-sm d-inline-flex align-items-center gap-1 font-medium">
+                        <a href="{{ route('absensi-pkkmb-kedua.create') }}" class="btn btn-primary rounded btn-sm d-inline-flex align-items-center gap-1 font-medium">
                             <i class="bi bi-plus-circle"></i> Tambah
                         </a>
                     </div>
@@ -85,7 +85,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
             <div class="modal-header border-0 pb-0 justify-content-center position-relative pt-4">
-                <h5 class="modal-title font-bold text-center w-100" id="qrModalLabel" style="color: #1e3a8a; font-weight: 700; font-size: 1.35rem;">QR Absensi Hari 1 (Waktu Datang)</h5>
+                <h5 class="modal-title font-bold text-center w-100" id="qrModalLabel" style="color: #1e3a8a; font-weight: 700; font-size: 1.35rem;">QR Absensi Hari 2 (Waktu Datang)</h5>
                 <button type="button" class="btn-close position-absolute end-0 top-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center px-4 pb-4 pt-3">
@@ -191,7 +191,7 @@
                 activeSession = 'datang';
                 
                 // UI updates
-                $('#qrModalLabel').text('QR Absensi Hari 1 (Waktu Datang)');
+                $('#qrModalLabel').text('QR Absensi Hari 2 (Waktu Datang)');
                 $(this).removeClass('btn-outline-success').addClass('btn-success');
                 $('#btn-session-pulang').removeClass('btn-session-pulang-active').addClass('btn-session-pulang-inactive');
                 $('#qr-progress').removeClass('bg-primary').addClass('bg-success');
@@ -200,12 +200,13 @@
                 startTimer();
             });
 
+            // Tab session selection handlers for pulang
             $('#btn-session-pulang').on('click', function() {
                 if (activeSession === 'pulang') return;
                 activeSession = 'pulang';
                 
                 // UI updates
-                $('#qrModalLabel').text('QR Absensi Hari 1 (Waktu Pulang)');
+                $('#qrModalLabel').text('QR Absensi Hari 2 (Waktu Pulang)');
                 $(this).removeClass('btn-session-pulang-inactive').addClass('btn-session-pulang-active');
                 $('#btn-session-datang').removeClass('btn-success').addClass('btn-outline-success');
                 $('#qr-progress').removeClass('bg-success').addClass('bg-primary');
@@ -228,7 +229,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ url('absensi-pkkmb-pertama') }}/" + id,
+                        url: "{{ url('absensi-pkkmb-kedua') }}/" + id,
                         type: 'DELETE',
                         data: {
                             "_token": "{{ csrf_token() }}"
@@ -242,7 +243,7 @@
                                     timer: 1500,
                                     showConfirmButton: false
                                 });
-                                $('#absensipkkmbpertama-table').DataTable().ajax.reload();
+                                $('#absensipkkmbkedua-table').DataTable().ajax.reload();
                             } else {
                                 Swal.fire({
                                     title: 'Gagal!',
@@ -256,7 +257,7 @@
                                 title: 'Gagal!',
                                 text: xhr.responseJSON?.message || 'Terjadi kesalahan saat menghapus data.',
                                 icon: 'error'
-                            });
+                             });
                         }
                     });
                 }

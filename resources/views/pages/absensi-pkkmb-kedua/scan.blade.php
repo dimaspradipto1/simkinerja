@@ -6,7 +6,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('absensi-pkkmb-pertama.index') }}">Absensi Pertama</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('absensi-pkkmb-kedua.index') }}">Absensi Kedua</a></li>
             <li class="breadcrumb-item active">Scan</li>
         </ol>
     </nav>
@@ -20,7 +20,7 @@
                     <!-- Card Header with Back Button -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold m-0 text-primary" style="font-size: 1.25rem;">Portal Scan Kehadiran</h5>
-                        <a href="{{ route('absensi-pkkmb-pertama.index') }}" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1 py-1 px-3 rounded shadow-sm">
+                        <a href="{{ route('absensi-pkkmb-kedua.index') }}" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1 py-1 px-3 rounded shadow-sm">
                             <i class="bi bi-arrow-left"></i> Kembali
                         </a>
                     </div>

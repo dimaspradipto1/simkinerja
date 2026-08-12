@@ -2,11 +2,11 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Tambah Absensi Hari Pertama</h1>
+    <h1>Tambah Absensi Hari Kedua</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('absensi-pkkmb-pertama.index') }}">Absensi Pertama</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('absensi-pkkmb-kedua.index') }}">Absensi Kedua</a></li>
             <li class="breadcrumb-item active">Tambah</li>
         </ol>
     </nav>
@@ -17,9 +17,9 @@
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold text-primary mb-4">Form Tambah Absensi PKKMB Hari Pertama</h5>
+                    <h5 class="card-title fw-bold text-primary mb-4">Form Tambah Absensi PKKMB Hari Kedua</h5>
 
-                    <form action="{{ route('absensi-pkkmb-pertama.store') }}" method="POST" enctype="multipart/form-data" class="row g-4">
+                    <form action="{{ route('absensi-pkkmb-kedua.store') }}" method="POST" enctype="multipart/form-data" class="row g-4">
                         @csrf
 
                         <!-- User / Nama Pengguna Selection -->
@@ -154,7 +154,7 @@
                         <!-- Form Actions -->
                         <div class="col-12 mt-4 d-flex gap-2">
                             <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Simpan</button>
-                            <a href="{{ route('absensi-pkkmb-pertama.index') }}" class="btn btn-secondary px-4"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
+                            <a href="{{ route('absensi-pkkmb-kedua.index') }}" class="btn btn-secondary px-4"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
                         </div>
                     </form>
 
@@ -210,7 +210,6 @@
 
         // Automatically set/update waktu_datang when Hadir Datang status is changed
         $('input[name="hadir_datang"]').on('change', function() {
-            // Find if any radio in the group is checked
             const checkedRadio = $('input[name="hadir_datang"]:checked');
             if (checkedRadio.length > 0) {
                 $('#waktu_datang').val(getCurrentTime());
@@ -221,7 +220,6 @@
 
         // Automatically set/update waktu_pulang when Hadir Pulang status is changed
         $('input[name="hadir_pulang"]').on('change', function() {
-            // Find if any radio in the group is checked
             const checkedRadio = $('input[name="hadir_pulang"]:checked');
             if (checkedRadio.length > 0) {
                 $('#waktu_pulang').val(getCurrentTime());
