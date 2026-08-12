@@ -28,9 +28,9 @@ class UserDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 $editUrl = route('user.edit', $row->id);
                 $btn = '<div class="d-inline-flex gap-1 flex-nowrap align-items-center">';
-                $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-pencil-square"></i> Edit</a>';
-                $btn .= '<button type="button" onclick="openPasswordModal(' . $row->id . ', \'' . addslashes($row->name) . '\')" class="btn btn-info btn-sm text-white d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-key"></i> Password</button>';
-                $btn .= '<button type="button" onclick="deleteUser(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-trash"></i> Hapus</button>';
+                $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center justify-content-center" title="Edit"><i class="bi bi-pencil-square"></i></a>';
+                $btn .= '<button type="button" onclick="openPasswordModal(' . $row->id . ', \'' . addslashes($row->name) . '\')" class="btn btn-info btn-sm text-white d-inline-flex align-items-center justify-content-center" title="Ganti Password"><i class="bi bi-key"></i></button>';
+                $btn .= '<button type="button" onclick="deleteUser(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center justify-content-center" title="Hapus"><i class="bi bi-trash"></i></button>';
                 $btn .= '</div>';
                 return $btn;
             })

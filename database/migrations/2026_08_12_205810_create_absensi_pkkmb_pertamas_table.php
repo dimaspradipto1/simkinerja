@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('absensi_pkkmb_pertamas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('hadir_datang')->nullable();
+            $table->time('waktu_datang')->nullable();
+            $table->text('catatan_hadir_datang')->nullable();
+            $table->string('hadir_pulang')->nullable();
+            $table->time('waktu_pulang')->nullable();
+            $table->text('catatan_hadir_pulang')->nullable();
+            $table->string('bukti_izin')->nullable();
             $table->timestamps();
         });
     }

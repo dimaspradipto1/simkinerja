@@ -14,6 +14,7 @@ use App\Http\Controllers\InsidentilController;
 use App\Http\Controllers\RekapitulasiInsidentilController;
 use App\Http\Controllers\AnalisisKeterlambatanController;
 use App\Http\Controllers\MilestoneController;
+use App\Http\Controllers\AbsensiPkkmbPertamaController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -117,4 +118,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
         ->parameters([
             'evaluasi-pengenalan-wawasan-ibnu-sina' => 'wawasan'
         ]);
+
+    Route::get('absensi-pkkmb-pertama/export-excel', [AbsensiPkkmbPertamaController::class, 'exportExcel'])->name('absensi-pkkmb-pertama.export-excel');
+    Route::get('absensi-pkkmb-pertama/scan', [AbsensiPkkmbPertamaController::class, 'scan'])->name('absensi-pkkmb-pertama.scan');
+    Route::resource('absensi-pkkmb-pertama', AbsensiPkkmbPertamaController::class);
 });
