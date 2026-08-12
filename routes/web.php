@@ -16,6 +16,7 @@ use App\Http\Controllers\AnalisisKeterlambatanController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\AbsensiPkkmbPertamaController;
 use App\Http\Controllers\AbsensiPkkmbKeduaController;
+use App\Http\Controllers\AbsensiPkkmbKetigaController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -129,4 +130,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('absensi-pkkmb-kedua/scan', [AbsensiPkkmbKeduaController::class, 'scan'])->name('absensi-pkkmb-kedua.scan');
     Route::get('absensi-pkkmb-kedua/scan-proses', [AbsensiPkkmbKeduaController::class, 'scanProses'])->name('absensi-pkkmb-kedua.scan-proses');
     Route::resource('absensi-pkkmb-kedua', AbsensiPkkmbKeduaController::class);
+
+    Route::get('absensi-pkkmb-ketiga/export-excel', [AbsensiPkkmbKetigaController::class, 'exportExcel'])->name('absensi-pkkmb-ketiga.export-excel');
+    Route::get('absensi-pkkmb-ketiga/scan', [AbsensiPkkmbKetigaController::class, 'scan'])->name('absensi-pkkmb-ketiga.scan');
+    Route::get('absensi-pkkmb-ketiga/scan-proses', [AbsensiPkkmbKetigaController::class, 'scanProses'])->name('absensi-pkkmb-ketiga.scan-proses');
+    Route::resource('absensi-pkkmb-ketiga', AbsensiPkkmbKetigaController::class);
 });
