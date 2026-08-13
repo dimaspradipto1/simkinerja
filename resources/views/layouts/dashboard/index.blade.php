@@ -315,6 +315,7 @@
     </div>
 </div>
 
+@unless(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
 <!-- Scan Absensi Barcode Card -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-4">
@@ -338,6 +339,7 @@
         </div>
     </div>
 </div>
+@endunless
 
 @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
 <div class="card scan-menu-card mb-4 border-0">
@@ -362,9 +364,9 @@
                     <i class="bi bi-chevron-up"></i>
                 </div>
                 <div id="pkkmbSessions" class="collapse show scan-accordion-body">
-                    <a href="{{ route('absensi-pkkmb-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
-                    <a href="{{ route('absensi-pkkmb-kedua.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
-                    <a href="{{ route('absensi-pkkmb-ketiga.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
+                    <a href="{{ route('absensi-pkkmb-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
+                    <a href="{{ route('absensi-pkkmb-kedua.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
+                    <a href="{{ route('absensi-pkkmb-ketiga.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
                 </div>
             </div>
 
@@ -377,9 +379,9 @@
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div id="esqSessions" class="collapse scan-accordion-body">
-                    <a href="{{ route('absensi-esq-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
-                    <a href="{{ route('absensi-esq-kedua.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
-                    <a href="{{ route('absensi-esq-ketiga.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
+                    <a href="{{ route('absensi-esq-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
+                    <a href="{{ route('absensi-esq-kedua.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
+                    <a href="{{ route('absensi-esq-ketiga.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
                 </div>
             </div>
 
@@ -392,8 +394,8 @@
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div id="miladSessions" class="collapse scan-accordion-body">
-                    <a href="{{ route('absensi-milad-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
-                    <a href="{{ route('absensi-milad-kedua.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
+                    <a href="{{ route('absensi-milad-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
+                    <a href="{{ route('absensi-milad-kedua.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
                 </div>
             </div>
 
@@ -406,7 +408,7 @@
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div id="kuliahUmumSessions" class="collapse scan-accordion-body">
-                    <a href="{{ route('absensi-kuliah-umum-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi</a>
+                    <a href="{{ route('absensi-kuliah-umum-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi</a>
                 </div>
             </div>
         </div>

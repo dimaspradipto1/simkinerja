@@ -18,17 +18,17 @@
                  </a>
                  <ul id="absensi-nav" class="nav-content collapse {{ (request()->routeIs('absensi-pkkmb-pertama.*') || request()->routeIs('absensi-pkkmb-kedua.*') || request()->routeIs('absensi-pkkmb-ketiga.*')) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
                      <li>
-                         <a href="{{ route('absensi-pkkmb-pertama.index') }}" class="{{ request()->routeIs('absensi-pkkmb-pertama.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-pkkmb-pertama.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-pkkmb-pertama.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Pertama</span>
                          </a>
                      </li>
                      <li>
-                         <a href="{{ route('absensi-pkkmb-kedua.index') }}" class="{{ request()->routeIs('absensi-pkkmb-kedua.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-pkkmb-kedua.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-pkkmb-kedua.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Kedua</span>
                          </a>
                      </li>
                      <li>
-                         <a href="{{ route('absensi-pkkmb-ketiga.index') }}" class="{{ request()->routeIs('absensi-pkkmb-ketiga.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-pkkmb-ketiga.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-pkkmb-ketiga.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Ketiga</span>
                          </a>
                      </li>
@@ -41,17 +41,17 @@
                  </a>
                  <ul id="absensi-esq-nav" class="nav-content collapse {{ (request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*')) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
                      <li>
-                         <a href="{{ route('absensi-esq-pertama.index') }}" class="{{ request()->routeIs('absensi-esq-pertama.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-esq-pertama.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-esq-pertama.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Pertama</span>
                          </a>
                      </li>
                      <li>
-                         <a href="{{ route('absensi-esq-kedua.index') }}" class="{{ request()->routeIs('absensi-esq-kedua.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-esq-kedua.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-esq-kedua.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Kedua</span>
                          </a>
                      </li>
                      <li>
-                         <a href="{{ route('absensi-esq-ketiga.index') }}" class="{{ request()->routeIs('absensi-esq-ketiga.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-esq-ketiga.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-esq-ketiga.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Ketiga</span>
                          </a>
                      </li>
@@ -64,12 +64,12 @@
                  </a>
                  <ul id="absensi-milad-nav" class="nav-content collapse {{ (request()->routeIs('absensi-milad-pertama.*') || request()->routeIs('absensi-milad-kedua.*') || request()->routeIs('absensi-milad-ketiga.*')) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
                      <li>
-                         <a href="{{ route('absensi-milad-pertama.index') }}" class="{{ request()->routeIs('absensi-milad-pertama.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-milad-pertama.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-milad-pertama.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Pertama</span>
                          </a>
                      </li>
                      <li>
-                         <a href="{{ route('absensi-milad-kedua.index') }}" class="{{ request()->routeIs('absensi-milad-kedua.*') ? 'active' : '' }}">
+                         <a href="{{ route('absensi-milad-kedua.index') }}?show_qr=1" class="{{ request()->routeIs('absensi-milad-kedua.*') ? 'active' : '' }}">
                              <i class="bi bi-circle"></i><span>Absensi Hari Kedua</span>
                          </a>
                      </li>
@@ -78,7 +78,7 @@
 
              <li class="nav-item">
                  <a class="{{ request()->routeIs('absensi-kuliah-umum-pertama.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                     href="{{ route('absensi-kuliah-umum-pertama.index') }}">
+                     href="{{ route('absensi-kuliah-umum-pertama.index') }}?show_qr=1">
                      <i class="bi bi-calendar-check-fill"></i>
                      <span>Kepanitiaan Kuliah Umum</span>
                  </a>

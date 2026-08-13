@@ -102,12 +102,12 @@
                 </div>
 
                 <!-- QR Code Display Box -->
-                <div class="d-inline-block p-3 border rounded shadow-sm bg-white mb-3" style="border-radius: 0.75rem;">
-                    <img id="qr-code-img" src="" alt="QR Absensi" style="width: 340px; height: 340px; object-fit: contain;">
+                <div class="p-3 border rounded shadow-sm bg-white mb-3 mx-auto" style="border-radius: 0.75rem; max-width: 340px;">
+                    <img id="qr-code-img" src="" alt="QR Absensi" style="width: 100%; max-width: 340px; height: auto; aspect-ratio: 1 / 1; object-fit: contain; display: block; margin: 0 auto;">
                 </div>
 
                 <!-- Progress Bar -->
-                <div class="progress mb-2" style="height: 6px; width: 340px; margin: 0 auto; background-color: #e9ecef; border-radius: 1rem;">
+                <div class="progress mb-2" style="height: 6px; width: 100%; max-width: 340px; margin: 0 auto; background-color: #e9ecef; border-radius: 1rem;">
                     <div id="qr-progress" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%; border-radius: 1rem; transition: width 1s linear;"></div>
                 </div>
 
@@ -207,6 +207,14 @@
                 updateQrCode();
                 startTimer();
             });
+
+            // Auto-open QR modal when navigated directly from sidebar menu
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('show_qr') === '1') {
+                    $('#qrModal').modal('show');
+                }
+            } catch (e) {}
 
             // Auto reload DataTable every 5 seconds to show real-time scans
             setInterval(function() {
