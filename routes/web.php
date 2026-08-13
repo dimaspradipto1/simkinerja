@@ -22,6 +22,7 @@ use App\Http\Controllers\AbsensiEsqKeduaController;
 use App\Http\Controllers\AbsensiEsqKetigaController;
 use App\Http\Controllers\AbsensiMiladPertamaController;
 use App\Http\Controllers\AbsensiMiladKeduaController;
+use App\Http\Controllers\AbsensiKuliahUmumPertamaController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -165,4 +166,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('absensi-milad-kedua/scan', [AbsensiMiladKeduaController::class, 'scan'])->name('absensi-milad-kedua.scan');
     Route::get('absensi-milad-kedua/scan-proses', [AbsensiMiladKeduaController::class, 'scanProses'])->name('absensi-milad-kedua.scan-proses');
     Route::resource('absensi-milad-kedua', AbsensiMiladKeduaController::class);
+
+    Route::get('absensi-kuliah-umum-pertama/export-excel', [AbsensiKuliahUmumPertamaController::class, 'exportExcel'])->name('absensi-kuliah-umum-pertama.export-excel');
+    Route::get('absensi-kuliah-umum-pertama/scan', [AbsensiKuliahUmumPertamaController::class, 'scan'])->name('absensi-kuliah-umum-pertama.scan');
+    Route::get('absensi-kuliah-umum-pertama/scan-proses', [AbsensiKuliahUmumPertamaController::class, 'scanProses'])->name('absensi-kuliah-umum-pertama.scan-proses');
+    Route::resource('absensi-kuliah-umum-pertama', AbsensiKuliahUmumPertamaController::class);
 });

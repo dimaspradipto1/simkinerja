@@ -75,7 +75,15 @@
                      </li>
                  </ul>
              </li>
- 
+
+             <li class="nav-item">
+                 <a class="{{ request()->routeIs('absensi-kuliah-umum-pertama.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                     href="{{ route('absensi-kuliah-umum-pertama.index') }}">
+                     <i class="bi bi-calendar-check-fill"></i>
+                     <span>Kepanitiaan Kuliah Umum</span>
+                 </a>
+             </li>
+
           <li class="nav-heading">Tugas & Kinerja</li>
           <li class="nav-item">
               <a class="{{ request()->routeIs('rencana-kerja.*') ? 'nav-link' : 'nav-link collapsed' }}"
