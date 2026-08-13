@@ -194,7 +194,7 @@
                 </div>
             </div>
             <div class="col-md-4 text-md-end">
-                <a href="{{ route('scan-absensi') }}" class="btn btn-success btn-lg text-nowrap">
+                <a href="{{ route('scan-absensi') }}?start=1" class="btn btn-success btn-lg text-nowrap btn-equal-width">
                     <i class="bi bi-camera-fill me-1"></i> Scan Sekarang
                 </a>
             </div>

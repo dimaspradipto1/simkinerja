@@ -88,10 +88,7 @@
             });
         };
 
-        // Start button click handler
-        $('#btn-start-scan').on('click', function() {
-            // Camera access requires a secure context (HTTPS or localhost).
-            // Fail fast with a clear reason instead of letting getUserMedia throw a generic error.
+        function startScanning() {
             if (!window.isSecureContext) {
                 Swal.fire({
                     title: 'Koneksi Tidak Aman!',
@@ -106,7 +103,6 @@
             $('#btn-start-scan').hide();
             $('#btn-stop-scan').show();
 
-            // Request camera permissions and start scanning
             html5QrCode.start(
                 { facingMode: "environment" },
                 config,
@@ -134,6 +130,11 @@
                 $('#btn-start-scan').show();
                 $('#btn-stop-scan').hide();
             });
+        }
+
+        // Start button click handler
+        $('#btn-start-scan').on('click', function() {
+            startScanning();
         });
 
         // Stop button click handler
@@ -146,6 +147,16 @@
                 console.error("Unable to stop scanning", err);
             });
         });
+
+        // Auto-start when `?start=1` is present in URL
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('start') === '1') {
+                startScanning();
+            }
+        } catch (e) {
+            // URLSearchParams may not be available in very old browsers; ignore
+        }
     });
 </script>
 @endpush
