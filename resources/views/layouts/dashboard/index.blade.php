@@ -52,9 +52,146 @@
         justify-content: center;
         text-align: center;
     }
+    .scan-menu-card {
+        background: linear-gradient(135deg, #f4f9f6 0%, #eaf7ef 100%);
+        border: 1px solid #d9efe1;
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(25, 135, 84, 0.08);
+    }
+    .scan-category-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+    }
+    .scan-category-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 190px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.32);
+        border: 1px solid rgba(25, 135, 84, 0.08);
+        text-decoration: none;
+        color: #1f2d3d;
+        padding: 1rem 0.75rem;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+    .scan-category-tile:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 18px rgba(25, 135, 84, 0.12);
+        text-decoration: none;
+        color: #1f2d3d;
+    }
+    .scan-category-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #198754 0%, #9ec4b1 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 0.9rem;
+    }
+    .scan-category-name {
+        font-size: 1.1rem;
+        font-weight: 800;
+        margin: 0;
+    }
+    .scan-category-count {
+        font-size: 1rem;
+        color: #4b5a63;
+        margin: 0.35rem 0 0;
+    }
+    .scan-accordion {
+        margin-top: 1.5rem;
+    }
+    .scan-accordion-item {
+        border: 1px solid rgba(25, 135, 84, 0.15);
+        border-radius: 14px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.7);
+        margin-bottom: 0.75rem;
+    }
+    .scan-accordion-header {
+        background: #4d74ff;
+        color: white;
+        padding: 1rem 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 1.05rem;
+    }
+    .scan-accordion-header .left {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+    .scan-accordion-header .check {
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.4);
+        font-size: 0.8rem;
+    }
+    .scan-accordion-body {
+        background: #fff;
+        padding: 0.8rem 0.8rem 0.35rem;
+    }
+    .scan-session-link {
+        display: flex;
+        align-items: center;
+        padding: 0.7rem 0.5rem;
+        color: #1f2d3d;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 1.05rem;
+        transition: background 0.2s ease;
+    }
+    .scan-session-link:hover {
+        background: #f4f8f5;
+        color: #198754;
+        text-decoration: none;
+    }
+    .scan-session-link .dot {
+        width: 12px;
+        height: 12px;
+        border: 2px solid #7d8796;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.85rem;
+    }
+    .scan-session-link.active .dot {
+        background: #4d74ff;
+        border-color: #4d74ff;
+    }
+    .scan-session-link.active {
+        color: #1f2d3d;
+        font-weight: 600;
+    }
+    @media (max-width: 991.98px) {
+        .scan-category-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
     @media (max-width: 575.98px) {
         .btn-equal-width {
             width: 100%;
+        }
+        .scan-category-grid {
+            grid-template-columns: 1fr;
+        }
+        .scan-category-tile {
+            min-height: 150px;
         }
     }
 
@@ -201,6 +338,81 @@
         </div>
     </div>
 </div>
+
+@if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+<div class="card scan-menu-card mb-4 border-0">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 52px; height: 52px; background: linear-gradient(135deg, #198754 0%, #a3cfbb 100%);">
+                <i class="bi bi-qr-code-scan fs-4"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold m-0 text-dark">Menu Scan Barcode</h5>
+                <p class="m-0 text-muted small">Navigasi cepat ke semua sesi absensi.</p>
+            </div>
+        </div>
+
+        <div class="scan-accordion">
+            <div class="scan-accordion-item">
+                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#pkkmbSessions" aria-expanded="true">
+                    <div class="left">
+                        <span class="check"><i class="bi bi-check"></i></span>
+                        <span>Kepanitiaan PKKMB</span>
+                    </div>
+                    <i class="bi bi-chevron-up"></i>
+                </div>
+                <div id="pkkmbSessions" class="collapse show scan-accordion-body">
+                    <a href="{{ route('absensi-pkkmb-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
+                    <a href="{{ route('absensi-pkkmb-kedua.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
+                    <a href="{{ route('absensi-pkkmb-ketiga.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
+                </div>
+            </div>
+
+            <div class="scan-accordion-item">
+                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#esqSessions" aria-expanded="false">
+                    <div class="left">
+                        <span class="check"><i class="bi bi-check"></i></span>
+                        <span>Kepanitiaan ESQ</span>
+                    </div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div id="esqSessions" class="collapse scan-accordion-body">
+                    <a href="{{ route('absensi-esq-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
+                    <a href="{{ route('absensi-esq-kedua.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
+                    <a href="{{ route('absensi-esq-ketiga.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
+                </div>
+            </div>
+
+            <div class="scan-accordion-item">
+                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#miladSessions" aria-expanded="false">
+                    <div class="left">
+                        <span class="check"><i class="bi bi-check"></i></span>
+                        <span>Kepanitiaan MILAD</span>
+                    </div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div id="miladSessions" class="collapse scan-accordion-body">
+                    <a href="{{ route('absensi-milad-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
+                    <a href="{{ route('absensi-milad-kedua.index') }}" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
+                </div>
+            </div>
+
+            <div class="scan-accordion-item">
+                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#kuliahUmumSessions" aria-expanded="false">
+                    <div class="left">
+                        <span class="check"><i class="bi bi-check"></i></span>
+                        <span>Kepanitiaan Kuliah Umum</span>
+                    </div>
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <div id="kuliahUmumSessions" class="collapse scan-accordion-body">
+                    <a href="{{ route('absensi-kuliah-umum-pertama.index') }}" class="scan-session-link active"><span class="dot"></span> Absensi</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 <!-- Stat Metric Cards -->
 <div class="row g-3 mb-4">

@@ -1,68 +1,251 @@
 @extends('layouts.dashboard.template')
 
 @section('content')
-<div class="pagetitle">
-    <h1>Scan Absensi Kehadiran</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('absensi-pkkmb-kedua.index') }}">Absensi Kedua</a></li>
-            <li class="breadcrumb-item active">Scan</li>
-        </ol>
-    </nav>
-</div><!-- End Page Title -->
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+    }
+    .scan-page-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin: 0 auto;
+        overflow-x: hidden;
+    }
+    .scan-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding-top: 0;
+    }
+    .scan-title {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #1f2d3d;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+    }
+    .scan-subtitle {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 400;
+    }
+    .time-toggle-group {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        justify-content: center;
+        width: 100%;
+        max-width: 500px;
+    }
+    .time-toggle-btn {
+        flex: 1;
+        max-width: 180px;
+        padding: 0.7rem 1.25rem;
+        border: 2px solid #ddd;
+        background: white;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #1f2d3d;
+    }
+    .time-toggle-btn.active {
+        background: #198754;
+        border-color: #198754;
+        color: white;
+        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+    }
+    .time-toggle-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.2);
+    }
+    .scanner-card {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        width: 100%;
+        max-width: 400px;
+    }
+    .scan-inner {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+    }
+    #scanner-wrapper {
+        width: 100%;
+        aspect-ratio: 1;
+        background-color: #000;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        flex-shrink: 0;
+    }
+    #reader {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .scan-progress {
+        width: 100%;
+    }
+    .progress {
+        height: 4px;
+        background: #e9ecef !important;
+        border-radius: 2px;
+    }
+    .progress-bar {
+        background: linear-gradient(90deg, #198754 0%, #20c997 100%) !important;
+    }
+    .scan-status-text {
+        font-size: 0.85rem;
+        color: #ff9800;
+        font-weight: 600;
+        margin-top: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .button-group {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .btn-scan {
+        padding: 0.85rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        width: 100%;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    #btn-start-scan {
+        background: #198754;
+        color: white;
+        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+    }
+    #btn-start-scan:hover {
+        background: #157347;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(25, 135, 84, 0.4);
+    }
+    #btn-stop-scan {
+        background: #dc3545;
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+    #btn-stop-scan:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+    }
+    @media (max-width: 768px) {
+        .scan-page-container {
+            padding: 1rem;
+            min-height: 100vh;
+        }
+        .scan-header {
+            margin-bottom: 1.25rem;
+            padding-top: 0;
+        }
+        .scan-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+        .time-toggle-group {
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            width: 100%;
+            max-width: 100%;
+        }
+        .time-toggle-btn {
+            max-width: 100%;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+        .scanner-card {
+            padding: 1.25rem;
+            gap: 1.25rem;
+            max-width: 100%;
+            border-radius: 1.25rem;
+        }
+        .scan-inner {
+            gap: 1.25rem;
+        }
+        #scanner-wrapper {
+            width: 100%;
+            max-width: 100%;
+        }
+    }
+</style>
 
-<section class="section">
-    <div class="row">
-        <div class="col-lg-6 mx-auto">
-            <div class="card shadow-sm border-0" style="border-radius: 1rem;">
-                <div class="card-body p-4">
-                    <!-- Card Header with Back Button -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold m-0 text-primary" style="font-size: 1.25rem;">Portal Scan Kehadiran</h5>
-                        <a href="{{ route('absensi-pkkmb-kedua.index') }}" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1 py-1 px-3 rounded shadow-sm">
-                            <i class="bi bi-arrow-left"></i> Kembali
-                        </a>
-                    </div>
+<div class="scan-page-container">
+    <div class="scan-header">
+        <div class="scan-title">QR Absensi Hari 2</div>
+        <div class="scan-subtitle">(Waktu Datang)</div>
+    </div>
 
-                    <!-- Center Subtitle -->
-                    <div class="text-center my-4">
-                        <h6 class="fw-bold text-dark m-0" style="font-size: 1.1rem; color: #1e3a8a !important;">Silakan Scan Terhadap QR Admin</h6>
-                    </div>
+    <div class="time-toggle-group">
+        <button class="time-toggle-btn active" data-time="datang"><i class="bi bi-sun"></i> Waktu Datang</button>
+        <button class="time-toggle-btn" data-time="pulang"><i class="bi bi-moon"></i> Waktu Pulang</button>
+    </div>
 
-                    <!-- Green Solid Divider Bar -->
-                    <div class="my-4" style="height: 6px; background-color: #198754; border-radius: 1rem;"></div>
+    <div class="scanner-card">
+        <div class="scan-inner">
+            <!-- Camera Scanner Container -->
+            <div id="scanner-wrapper" style="display: none;"></div>
+            <div id="reader" style="display: none;"></div>
 
-                    <!-- Camera Scanner Container with Custom CSS Overlay Spotlight -->
-                    <div id="scanner-wrapper" class="position-relative overflow-hidden border border-2 border-success rounded-3 mx-auto shadow-sm mb-4" style="max-width: 640px; display: none;">
-                        <div id="reader" style="width: 100%; aspect-ratio: 4/3; background-color: #000;"></div>
-                        <!-- Spotlight Mask Overlay -->
-                        <div class="scanner-overlay position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.4); pointer-events: none;">
-                            <div class="position-relative" style="width: 280px; height: 280px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);">
-                                <!-- White Frame Corners -->
-                                <div class="position-absolute border-top border-start border-4 border-white" style="width: 30px; height: 30px; top: 0; left: 0;"></div>
-                                <div class="position-absolute border-top border-end border-4 border-white" style="width: 30px; height: 30px; top: 0; right: 0;"></div>
-                                <div class="position-absolute border-bottom border-start border-4 border-white" style="width: 30px; height: 30px; bottom: 0; left: 0;"></div>
-                                <div class="position-absolute border-bottom border-end border-4 border-white" style="width: 30px; height: 30px; bottom: 0; right: 0;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="mt-4 d-flex flex-column gap-3">
-                        <button type="button" id="btn-start-scan" class="btn btn-primary btn-lg w-100 py-3 rounded-3 font-semibold shadow-sm d-flex align-items-center justify-content-center gap-2 fs-6">
-                            <i class="bi bi-camera-fill"></i> Mulai Scan Sekarang
-                        </button>
-
-                        <button type="button" id="btn-stop-scan" class="btn btn-danger btn-lg w-100 py-3 rounded-3 font-semibold shadow-sm d-flex align-items-center justify-content-center gap-2 fs-6" style="display: none;">
-                            <i class="bi bi-stop-circle-fill"></i> Berhenti
-                        </button>
-                    </div>
+            <!-- Scan Progress Indicator -->
+            <div id="scan-progress" class="scan-progress" style="display: none;">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 33%;"></div>
                 </div>
+                <div class="scan-status-text">
+                    <i class="bi bi-lightning-fill"></i>Sedang Aktif — berganti dalam 52 detik
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="button-group">
+                <button type="button" id="btn-start-scan" class="btn-scan">
+                    <i class="bi bi-camera-fill"></i> Mulai Scan
+                </button>
+
+                <button type="button" id="btn-stop-scan" class="btn-scan" style="display: none;">
+                    <i class="bi bi-stop-circle-fill"></i> Berhenti
+                </button>
             </div>
         </div>
     </div>
-</section>
+</div>
 @endsection
 
 @push('scripts')
@@ -70,10 +253,26 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
     $(document).ready(function() {
-        // Initialize HTML5 QrCode
-        const html5QrCode = new Html5Qrcode("reader");
-        const config = { 
-            fps: 15, 
+        let currentTimeMode = 'datang';
+        
+        // Time toggle buttons
+        $('.time-toggle-btn').on('click', function() {
+            $('.time-toggle-btn').removeClass('active');
+            $(this).addClass('active');
+            currentTimeMode = $(this).data('time');
+            
+            // Update title
+            const titleMap = {
+                'datang': '(Waktu Datang)',
+                'pulang': '(Waktu Pulang)'
+            };
+            $('.scan-subtitle').text(titleMap[currentTimeMode]);
+        });
+        
+        // Initialize HTML5 QrCode - use body element for camera
+        const html5QrCode = new Html5Qrcode("scanner-wrapper");
+        const config = {
+            fps: 15,
             qrbox: { width: 280, height: 280 }
         };
 
@@ -90,7 +289,6 @@
         // Start button click handler
         $('#btn-start-scan').on('click', function() {
             // Camera access requires a secure context (HTTPS or localhost).
-            // Fail fast with a clear reason instead of letting getUserMedia throw a generic error.
             if (!window.isSecureContext) {
                 Swal.fire({
                     title: 'Koneksi Tidak Aman!',
@@ -102,6 +300,7 @@
             }
 
             $('#scanner-wrapper').show();
+            $('#scan-progress').show();
             $('#btn-start-scan').hide();
             $('#btn-stop-scan').show();
 
@@ -130,6 +329,7 @@
                     confirmButtonColor: '#3085d6'
                 });
                 $('#scanner-wrapper').hide();
+                $('#scan-progress').hide();
                 $('#btn-start-scan').show();
                 $('#btn-stop-scan').hide();
             });
@@ -139,12 +339,23 @@
         $('#btn-stop-scan').on('click', function() {
             html5QrCode.stop().then((ignore) => {
                 $('#scanner-wrapper').hide();
+                $('#scan-progress').hide();
                 $('#btn-start-scan').show();
                 $('#btn-stop-scan').hide();
             }).catch((err) => {
                 console.error("Unable to stop scanning", err);
             });
         });
+
+        // Auto-start if parameter is present
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('start') === '1') {
+                $('#btn-start-scan').trigger('click');
+            }
+        } catch (e) {
+            // URLSearchParams may not be available in very old browsers; ignore
+        }
     });
 </script>
 @endpush

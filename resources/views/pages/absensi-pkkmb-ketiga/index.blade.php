@@ -16,7 +16,7 @@
         <div class="col-lg-12">
             <!-- Scan Absensi Mandiri Green Gradient Banner -->
             @unless(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-            <div class="card border-0 mb-4 text-white shadow-sm" style="background: linear-gradient(135deg, #198754 0%, #a3cfbb 100%); border-radius: 0.75rem;">
+            <div class="card border-0 mb-4 text-white shadow-sm absensi-mobile-banner" style="background: linear-gradient(135deg, #198754 0%, #a3cfbb 100%); border-radius: 0.75rem;">
                 <div class="card-body p-4 d-flex flex-column gap-3 justify-content-center">
                     <div class="d-flex align-items-start gap-3">
                         <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4" style="width: 48px; height: 48px; min-width: 48px; background-color: rgba(255, 255, 255, 0.2);">
@@ -28,7 +28,7 @@
                         </div>
                     </div>
                     <div>
-                        <a href="{{ route('absensi-pkkmb-ketiga.scan') }}" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
+                        <a href="{{ route('absensi-pkkmb-ketiga.scan') }}?start=1" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
                             <i class="bi bi-qr-code-scan"></i> Scan QR Kehadiran (Sesi Aktif)
                         </a>
                     </div>

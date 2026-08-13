@@ -77,6 +77,11 @@
             flex-wrap: nowrap;
         }
 
+        .absensi-mobile-banner {
+            width: 100%;
+            max-width: none;
+        }
+
         /* Mobile Edge-to-Edge Fullwidth Layout */
         @media (max-width: 767.98px) {
             #main.main {
@@ -102,6 +107,20 @@
             .card-header-green {
                 border-radius: 0 !important;
                 padding: 12px 10px !important;
+            }
+            .absensi-mobile-banner {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin-left: calc(50% - 50vw) !important;
+                margin-right: calc(50% - 50vw) !important;
+                border-radius: 0 !important;
+            }
+            .absensi-mobile-banner .card-body {
+                padding: 16px 12px !important;
+            }
+            .absensi-mobile-banner .btn {
+                width: 100% !important;
+                justify-content: center !important;
             }
         }
     </style>
