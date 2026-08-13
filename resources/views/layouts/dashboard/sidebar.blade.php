@@ -34,6 +34,47 @@
                      </li>
                  </ul>
              </li>
+             
+             <li class="nav-item">
+                 <a class="{{ (request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*')) ? 'nav-link' : 'nav-link collapsed' }}" data-bs-target="#absensi-esq-nav" data-bs-toggle="collapse" href="#">
+                     <i class="bi bi-calendar-check-fill"></i><span>Kepanitiaan ESQ</span><i class="bi bi-chevron-down ms-auto"></i>
+                 </a>
+                 <ul id="absensi-esq-nav" class="nav-content collapse {{ (request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*')) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
+                     <li>
+                         <a href="{{ route('absensi-esq-pertama.index') }}" class="{{ request()->routeIs('absensi-esq-pertama.*') ? 'active' : '' }}">
+                             <i class="bi bi-circle"></i><span>Absensi Hari Pertama</span>
+                         </a>
+                     </li>
+                     <li>
+                         <a href="{{ route('absensi-esq-kedua.index') }}" class="{{ request()->routeIs('absensi-esq-kedua.*') ? 'active' : '' }}">
+                             <i class="bi bi-circle"></i><span>Absensi Hari Kedua</span>
+                         </a>
+                     </li>
+                     <li>
+                         <a href="{{ route('absensi-esq-ketiga.index') }}" class="{{ request()->routeIs('absensi-esq-ketiga.*') ? 'active' : '' }}">
+                             <i class="bi bi-circle"></i><span>Absensi Hari Ketiga</span>
+                         </a>
+                     </li>
+                 </ul>
+             </li>
+
+             <li class="nav-item">
+                 <a class="{{ (request()->routeIs('absensi-milad-pertama.*') || request()->routeIs('absensi-milad-kedua.*') || request()->routeIs('absensi-milad-ketiga.*')) ? 'nav-link' : 'nav-link collapsed' }}" data-bs-target="#absensi-milad-nav" data-bs-toggle="collapse" href="#">
+                     <i class="bi bi-calendar-check-fill"></i><span>Kepanitiaan MILAD</span><i class="bi bi-chevron-down ms-auto"></i>
+                 </a>
+                 <ul id="absensi-milad-nav" class="nav-content collapse {{ (request()->routeIs('absensi-milad-pertama.*') || request()->routeIs('absensi-milad-kedua.*') || request()->routeIs('absensi-milad-ketiga.*')) ? 'show' : '' }}" data-bs-parent="#sidebar-nav">
+                     <li>
+                         <a href="{{ route('absensi-milad-pertama.index') }}" class="{{ request()->routeIs('absensi-milad-pertama.*') ? 'active' : '' }}">
+                             <i class="bi bi-circle"></i><span>Absensi Hari Pertama</span>
+                         </a>
+                     </li>
+                     <li>
+                         <a href="{{ route('absensi-milad-kedua.index') }}" class="{{ request()->routeIs('absensi-milad-kedua.*') ? 'active' : '' }}">
+                             <i class="bi bi-circle"></i><span>Absensi Hari Kedua</span>
+                         </a>
+                     </li>
+                 </ul>
+             </li>
  
           <li class="nav-heading">Tugas & Kinerja</li>
           <li class="nav-item">

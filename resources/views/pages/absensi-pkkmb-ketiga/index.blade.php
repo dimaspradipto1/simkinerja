@@ -15,6 +15,7 @@
     <div class="row">
         <div class="col-lg-12">
             <!-- Scan Absensi Mandiri Green Gradient Banner -->
+            @unless(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
             <div class="card border-0 mb-4 text-white shadow-sm" style="background: linear-gradient(135deg, #198754 0%, #a3cfbb 100%); border-radius: 0.75rem;">
                 <div class="card-body p-4 d-flex flex-column gap-3 justify-content-center">
                     <div class="d-flex align-items-start gap-3">
@@ -33,6 +34,7 @@
                     </div>
                 </div>
             </div>
+            @endunless
 
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -99,22 +101,13 @@
                     </button>
                 </div>
 
-                <!-- Info Alert Banner -->
-                <div class="alert alert-success d-flex justify-content-between align-items-center rounded-pill py-2 px-3 mb-4 mx-2" style="background-color: #e2f0d9; border: 1px solid #c5e0b4; color: #385723;">
-                    <div class="d-flex align-items-center gap-2 small">
-                        <i class="bi bi-clock-history"></i> <i class="bi bi-lightning-fill text-warning"></i> 
-                        <strong style="font-weight: 600;">Selalu Aktif (Tanpa Batas Waktu)</strong>
-                    </div>
-                    <span class="badge bg-white text-success border-success-subtle px-2 py-1 fs-6 font-bold shadow-sm" style="color: #385723; border: 1px solid #c5e0b4; border-radius: 0.25rem;">∞</span>
-                </div>
-
                 <!-- QR Code Display Box -->
                 <div class="d-inline-block p-3 border rounded shadow-sm bg-white mb-3" style="border-radius: 0.75rem;">
-                    <img id="qr-code-img" src="" alt="QR Absensi" style="width: 250px; height: 250px; object-fit: contain;">
+                    <img id="qr-code-img" src="" alt="QR Absensi" style="width: 340px; height: 340px; object-fit: contain;">
                 </div>
 
                 <!-- Progress Bar -->
-                <div class="progress mb-2" style="height: 6px; width: 250px; margin: 0 auto; background-color: #e9ecef; border-radius: 1rem;">
+                <div class="progress mb-2" style="height: 6px; width: 340px; margin: 0 auto; background-color: #e9ecef; border-radius: 1rem;">
                     <div id="qr-progress" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%; border-radius: 1rem; transition: width 1s linear;"></div>
                 </div>
 
@@ -149,7 +142,7 @@
             function updateQrCode() {
                 const timestamp = Math.floor(Date.now() / 60000); // changes every 1 minute
                 const qrData = `${baseUrl}?session=${activeSession}&t=${timestamp}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=340x340&data=${encodeURIComponent(qrData)}`;
                 $('#qr-code-img').attr('src', qrUrl);
             }
 

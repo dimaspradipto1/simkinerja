@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Data Absensi Hari Pertama</h1>
+    <h1>Data Absensi MILAD Hari Pertama</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
@@ -28,7 +28,7 @@
                         </div>
                     </div>
                     <div>
-                        <a href="{{ route('absensi-pkkmb-pertama.scan') }}" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
+                        <a href="{{ route('absensi-milad-pertama.scan') }}" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
                             <i class="bi bi-qr-code-scan"></i> Scan QR Kehadiran (Sesi Aktif)
                         </a>
                     </div>
@@ -46,11 +46,11 @@
                             <i class="bi bi-qr-code"></i> QR Absensi
                         </button>
                         <!-- Export Excel Button -->
-                        <a href="{{ route('absensi-pkkmb-pertama.export-excel') }}" class="btn btn-success rounded btn-sm d-inline-flex align-items-center gap-1 font-medium bg-emerald-600 hover:bg-emerald-700 border-0">
+                        <a href="{{ route('absensi-milad-pertama.export-excel') }}" class="btn btn-success rounded btn-sm d-inline-flex align-items-center gap-1 font-medium bg-emerald-600 hover:bg-emerald-700 border-0">
                             <i class="bi bi-file-earmark-excel"></i> Export Excel
                         </a>
                         <!-- Add Button -->
-                        <a href="{{ route('absensi-pkkmb-pertama.create') }}" class="btn btn-primary rounded btn-sm d-inline-flex align-items-center gap-1 font-medium">
+                        <a href="{{ route('absensi-milad-pertama.create') }}" class="btn btn-primary rounded btn-sm d-inline-flex align-items-center gap-1 font-medium">
                             <i class="bi bi-plus-circle"></i> Tambah
                         </a>
                     </div>
@@ -150,7 +150,7 @@
                 clearInterval(timer);
                 countdown = 60;
                 updateTimerUI();
-                
+
                 timer = setInterval(function() {
                     countdown--;
                     if (countdown <= 0) {
@@ -182,13 +182,13 @@
             $('#btn-session-datang').on('click', function() {
                 if (activeSession === 'datang') return;
                 activeSession = 'datang';
-                
+
                 // UI updates
                 $('#qrModalLabel').text('QR Absensi Hari 1 (Waktu Datang)');
                 $(this).removeClass('btn-outline-success').addClass('btn-success');
                 $('#btn-session-pulang').removeClass('btn-session-pulang-active').addClass('btn-session-pulang-inactive');
                 $('#qr-progress').removeClass('bg-primary').addClass('bg-success');
-                
+
                 updateQrCode();
                 startTimer();
             });
@@ -196,21 +196,21 @@
             $('#btn-session-pulang').on('click', function() {
                 if (activeSession === 'pulang') return;
                 activeSession = 'pulang';
-                
+
                 // UI updates
                 $('#qrModalLabel').text('QR Absensi Hari 1 (Waktu Pulang)');
                 $(this).removeClass('btn-session-pulang-inactive').addClass('btn-session-pulang-active');
                 $('#btn-session-datang').removeClass('btn-success').addClass('btn-outline-success');
                 $('#qr-progress').removeClass('bg-success').addClass('bg-primary');
-                
+
                 updateQrCode();
                 startTimer();
             });
 
             // Auto reload DataTable every 5 seconds to show real-time scans
             setInterval(function() {
-                if ($.fn.DataTable.isDataTable('#absensipkkmbpertama-table')) {
-                    $('#absensipkkmbpertama-table').DataTable().ajax.reload(null, false);
+                if ($.fn.DataTable.isDataTable('#absensimiladpertama-table')) {
+                    $('#absensimiladpertama-table').DataTable().ajax.reload(null, false);
                 }
             }, 5000);
         });
@@ -228,7 +228,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ url('absensi-pkkmb-pertama') }}/" + id,
+                        url: "{{ url('absensi-milad-pertama') }}/" + id,
                         type: 'DELETE',
                         data: {
                             "_token": "{{ csrf_token() }}"
@@ -242,7 +242,7 @@
                                     timer: 1500,
                                     showConfirmButton: false
                                 });
-                                $('#absensipkkmbpertama-table').DataTable().ajax.reload();
+                                $('#absensimiladpertama-table').DataTable().ajax.reload();
                             } else {
                                 Swal.fire({
                                     title: 'Gagal!',

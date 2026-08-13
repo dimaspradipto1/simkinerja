@@ -34,11 +34,11 @@
                     <div class="my-4" style="height: 6px; background-color: #198754; border-radius: 1rem;"></div>
 
                     <!-- Camera Scanner Container with Custom CSS Overlay Spotlight -->
-                    <div id="scanner-wrapper" class="position-relative overflow-hidden border border-2 border-success rounded-3 mx-auto shadow-sm mb-4" style="max-width: 500px; display: none;">
+                    <div id="scanner-wrapper" class="position-relative overflow-hidden border border-2 border-success rounded-3 mx-auto shadow-sm mb-4" style="max-width: 640px; display: none;">
                         <div id="reader" style="width: 100%; aspect-ratio: 4/3; background-color: #000;"></div>
                         <!-- Spotlight Mask Overlay -->
                         <div class="scanner-overlay position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.4); pointer-events: none;">
-                            <div class="position-relative" style="width: 200px; height: 200px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);">
+                            <div class="position-relative" style="width: 280px; height: 280px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);">
                                 <!-- White Frame Corners -->
                                 <div class="position-absolute border-top border-start border-4 border-white" style="width: 30px; height: 30px; top: 0; left: 0;"></div>
                                 <div class="position-absolute border-top border-end border-4 border-white" style="width: 30px; height: 30px; top: 0; right: 0;"></div>
@@ -74,7 +74,7 @@
         const html5QrCode = new Html5Qrcode("reader");
         const config = { 
             fps: 15, 
-            qrbox: { width: 200, height: 200 } 
+            qrbox: { width: 280, height: 280 }
         };
 
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
@@ -89,20 +89,43 @@
 
         // Start button click handler
         $('#btn-start-scan').on('click', function() {
+            // Camera access requires a secure context (HTTPS or localhost).
+            // Fail fast with a clear reason instead of letting getUserMedia throw a generic error.
+            if (!window.isSecureContext) {
+                Swal.fire({
+                    title: 'Koneksi Tidak Aman!',
+                    html: 'Akses kamera browser hanya diizinkan melalui koneksi <strong>HTTPS</strong> (atau <code>localhost</code>).<br><br>Anda mengakses melalui:<br><code>' + window.location.protocol + '//' + window.location.host + '</code><br><br>Silakan hubungi admin untuk mengaktifkan HTTPS pada server.',
+                    icon: 'error',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
             $('#scanner-wrapper').show();
             $('#btn-start-scan').hide();
             $('#btn-stop-scan').show();
 
             // Request camera permissions and start scanning
             html5QrCode.start(
-                { facingMode: "environment" }, 
-                config, 
+                { facingMode: "environment" },
+                config,
                 qrCodeSuccessCallback
             ).catch((err) => {
                 console.error("Camera access failed", err);
+
+                let errorMsg = 'Pastikan Anda telah memberikan izin akses kamera ke browser Anda.';
+                const errName = err && err.name;
+                if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+                    errorMsg = 'Izin akses kamera ditolak. Aktifkan izin kamera untuk situs ini melalui pengaturan browser Anda, lalu coba lagi.';
+                } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+                    errorMsg = 'Kamera tidak ditemukan pada perangkat ini.';
+                } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+                    errorMsg = 'Kamera sedang digunakan oleh aplikasi lain. Tutup aplikasi lain yang menggunakan kamera lalu coba lagi.';
+                }
+
                 Swal.fire({
                     title: 'Gagal Mengakses Kamera!',
-                    text: 'Pastikan Anda telah memberikan izin akses kamera ke browser Anda dan menggunakan HTTPS.',
+                    text: errorMsg,
                     icon: 'error',
                     confirmButtonColor: '#3085d6'
                 });
