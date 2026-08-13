@@ -23,6 +23,7 @@ use App\Http\Controllers\AbsensiEsqKetigaController;
 use App\Http\Controllers\AbsensiMiladPertamaController;
 use App\Http\Controllers\AbsensiMiladKeduaController;
 use App\Http\Controllers\AbsensiKuliahUmumPertamaController;
+use App\Http\Controllers\ScanAbsensiController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -46,6 +47,7 @@ Route::controller(AuthController::class)->group(function () {
 Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+    Route::get('scan-absensi', [ScanAbsensiController::class, 'index'])->name('scan-absensi');
     Route::put('user/{user}/password', [UserController::class, 'updatePassword'])->name('user.update-password');
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);

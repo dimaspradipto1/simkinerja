@@ -178,6 +178,30 @@
     </div>
 </div>
 
+<!-- Scan Absensi Barcode Card -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4" style="width: 48px; height: 48px; min-width: 48px; background-color: #198754;">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold m-0 fs-5 mb-1 text-dark">Scan Absensi Kehadiran</h5>
+                        <p class="m-0 text-muted small">Scan QR Code untuk mencatat kehadiran Anda pada kegiatan yang sedang berlangsung.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{{ route('scan-absensi') }}" class="btn btn-success btn-lg text-nowrap">
+                    <i class="bi bi-camera-fill me-1"></i> Scan Sekarang
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Stat Metric Cards -->
 <div class="row g-3 mb-4">
     <!-- Total Rencana Kerja Utama -->
