@@ -48,6 +48,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
     Route::get('scan-absensi', [ScanAbsensiController::class, 'index'])->name('scan-absensi');
+    Route::get('user/download-template', [UserController::class, 'downloadTemplate'])->name('user.download-template');
+    Route::post('user/import-excel', [UserController::class, 'importExcel'])->name('user.import-excel');
     Route::put('user/{user}/password', [UserController::class, 'updatePassword'])->name('user.update-password');
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);
