@@ -19,9 +19,13 @@ return new class extends Migration
             $table->string('password');
             $table->string('roles');
             $table->boolean('is_active')->default(true);
-            $table->string('nidn');
-            $table->string('unit');
-            $table->string('jabatan');
+            $table->string('nidn')->nullable();
+            $table->string('unit')->nullable();
+            $table->string('jabatan')->nullable();
+            $table->string('jabatan_pkkmb')->nullable();
+            $table->string('jabatan_esq')->nullable();
+            $table->string('jabatan_milad')->nullable();
+            $table->string('jabatan_kuliah_umum')->nullable();
             $table->string('status');
             $table->rememberToken();
             $table->timestamps();

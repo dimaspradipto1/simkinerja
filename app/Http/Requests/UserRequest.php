@@ -30,9 +30,13 @@ class UserRequest extends FormRequest
             'password' => $userId ? ['nullable', 'string', 'min:6'] : ['required', 'string', 'min:6'],
             'roles' => ['required', 'string'],
             'is_active' => ['required', 'boolean'],
-            'nidn' => ['required', 'string', 'max:100'],
-            'unit' => ['required', 'string', 'max:255'],
-            'jabatan' => ['required', 'string', 'max:255'],
+            'nidn' => ['nullable', 'string', 'max:100'],
+            'unit' => ['nullable', 'string', 'max:255'],
+            'jabatan' => ['nullable', 'string', 'max:255'],
+            'jabatan_pkkmb' => ['nullable', 'string', 'max:255'],
+            'jabatan_esq' => ['nullable', 'string', 'max:255'],
+            'jabatan_milad' => ['nullable', 'string', 'max:255'],
+            'jabatan_kuliah_umum' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', 'max:100'],
         ];
     }
@@ -51,9 +55,6 @@ class UserRequest extends FormRequest
             'password.min' => 'Password minimal 6 karakter.',
             'roles.required' => 'Role wajib dipilih.',
             'is_active.required' => 'Status Aktif wajib dipilih.',
-            'nidn.required' => 'NIDN wajib diisi.',
-            'unit.required' => 'Unit wajib diisi.',
-            'jabatan.required' => 'Jabatan wajib diisi.',
             'status.required' => 'Status wajib diisi.',
         ];
     }

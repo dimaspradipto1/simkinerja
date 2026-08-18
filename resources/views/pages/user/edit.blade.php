@@ -44,48 +44,49 @@
                             <select class="form-select @error('roles') is-invalid @enderror" id="roles" name="roles">
                                 <option value="" disabled>-- Pilih Role Akses --</option>
                                 @php
-                                    $rolesList = [
-                                        'SUPER ADMIN',
-                                        'REKTOR',
-                                        'WAKIL REKTOR I',
-                                        'WAKIL REKTOR II',
-                                        'WAKIL REKTOR III',
-                                        'KEPALA BIRO',
-                                        'KEPALA LPTI',
-                                        'STAFF LPTI',
-                                        'ADMIN AKADEMIK UNIVERSITAS',
-                                        'STAFF AKADEMIK FAKULTAS',
-                                        'ADMIN KEMAHASISWAAN',
-                                        'ADMIN IJAZAH',
-                                        'ADMIN PERPUSTAKAAN',
-                                        'ADMIN KEUANGAN',
-                                        'KASIR',
-                                        'ADMIN SDM',
-                                        'ADMIN SARPRAS',
-                                        'ADMIN HUMAS',
-                                        'ADMIN KERJASAMA',
-                                        'ADMIN KEMAHASISWAAN PRESTASI',
-                                        'ADMIN KARIR ALUMNI',
-                                        'ADMIN PERENCANAAN',
-                                        'ADMIN LPPM',
-                                        'ADMIN HAKI',
-                                        'ADMIN LPMI',
-                                        'DEKAN',
-                                        'WAKIL DEKAN I',
-                                        'WAKIL DEKAN II',
-                                        'KAPRODI',
-                                        'SEKRETARIS PRODI',
-                                        'DOSEN',
-                                        'DOSEN PEMBIMBING',
-                                        'STAFF TU FAKULTAS',
-                                        'ADMIN LABORATORIUM',
-                                        'MAHASISWA',
-                                        'ALUMNI',
-                                    ];
-                                @endphp
-                                @foreach($rolesList as $roleItem)
-                                    <option value="{{ $roleItem }}" {{ old('roles', $user->roles) == $roleItem ? 'selected' : '' }}>{{ $roleItem }}</option>
-                                @endforeach
+                                     $rolesList = [
+                                         'super admin',
+                                         'rektor',
+                                         'wakil rektor i',
+                                         'wakil rektor ii',
+                                         'wakil rektor iii',
+                                         'kepala biro',
+                                         'kepala lpti',
+                                         'staff lpti',
+                                         'admin akademik universitas',
+                                         'staff akademik fakultas',
+                                         'admin kemahasiswaan',
+                                         'admin ijazah',
+                                         'admin perpustakaan',
+                                         'admin keuangan universitas',
+                                         'staff keuangan fakultas',
+                                         'admin kepegawaian',
+                                         'admin sarana prasarana',
+                                         'admin humas dan publikasi',
+                                         'admin kerjasama',
+                                         'admin karir dan alumni',
+                                         'admin perencanaan dan pengembangan',
+                                         'kepala lppm',
+                                         'staff lppm',
+                                         'kepala lpmi',
+                                         'staff lpmi',
+                                         'dekan',
+                                         'wakil dekan i',
+                                         'wakil dekan ii',
+                                         'ketua program studi',
+                                         'sekretaris program studi',
+                                         'kepala upmi',
+                                         'kepala uppm',
+                                         'staff uppm',
+                                         'gkm',
+                                         'kepala laboratorium',
+                                         'staff laboratorium',
+                                         'tata usaha fakultas',
+                                     ];
+                                 @endphp
+                                 @foreach($rolesList as $roleItem)
+                                     <option value="{{ $roleItem }}" {{ strtolower(old('roles', $user->roles ?? '')) == $roleItem ? 'selected' : '' }}>{{ $roleItem }}</option>
+                                 @endforeach
                             </select>
                             @error('roles')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -93,7 +94,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="nidn" class="form-label">NIDN <span class="text-danger">*</span></label>
+                            <label for="nidn" class="form-label">NIDN</label>
                             <input type="text" class="form-control @error('nidn') is-invalid @enderror" id="nidn" name="nidn" value="{{ old('nidn', $user->nidn) }}" placeholder="Masukkan NIDN">
                             @error('nidn')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -101,7 +102,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="unit" class="form-label">Unit <span class="text-danger">*</span></label>
+                            <label for="unit" class="form-label">Unit</label>
                             <input type="text" class="form-control @error('unit') is-invalid @enderror" id="unit" name="unit" value="{{ old('unit', $user->unit) }}" placeholder="Masukkan Unit">
                             @error('unit')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -109,9 +110,41 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="jabatan" class="form-label">Jabatan <span class="text-danger">*</span></label>
+                            <label for="jabatan" class="form-label">Jabatan</label>
                             <input type="text" class="form-control @error('jabatan') is-invalid @enderror" id="jabatan" name="jabatan" value="{{ old('jabatan', $user->jabatan) }}" placeholder="Masukkan Jabatan">
                             @error('jabatan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="jabatan_pkkmb" class="form-label">Jabatan Kepanitiaan PKKMB</label>
+                            <input type="text" class="form-control @error('jabatan_pkkmb') is-invalid @enderror" id="jabatan_pkkmb" name="jabatan_pkkmb" value="{{ old('jabatan_pkkmb', $user->jabatan_pkkmb) }}" placeholder="Masukkan Jabatan PKKMB">
+                            @error('jabatan_pkkmb')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="jabatan_esq" class="form-label">Jabatan Kepanitiaan ESQ</label>
+                            <input type="text" class="form-control @error('jabatan_esq') is-invalid @enderror" id="jabatan_esq" name="jabatan_esq" value="{{ old('jabatan_esq', $user->jabatan_esq) }}" placeholder="Masukkan Jabatan ESQ">
+                            @error('jabatan_esq')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="jabatan_milad" class="form-label">Jabatan Kepanitiaan MILAD</label>
+                            <input type="text" class="form-control @error('jabatan_milad') is-invalid @enderror" id="jabatan_milad" name="jabatan_milad" value="{{ old('jabatan_milad', $user->jabatan_milad) }}" placeholder="Masukkan Jabatan MILAD">
+                            @error('jabatan_milad')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="jabatan_kuliah_umum" class="form-label">Jabatan Kepanitiaan Kuliah Umum</label>
+                            <input type="text" class="form-control @error('jabatan_kuliah_umum') is-invalid @enderror" id="jabatan_kuliah_umum" name="jabatan_kuliah_umum" value="{{ old('jabatan_kuliah_umum', $user->jabatan_kuliah_umum) }}" placeholder="Masukkan Jabatan Kuliah Umum">
+                            @error('jabatan_kuliah_umum')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

@@ -27,6 +27,10 @@ class User extends Authenticatable
         'nidn',
         'unit',
         'jabatan',
+        'jabatan_pkkmb',
+        'jabatan_esq',
+        'jabatan_milad',
+        'jabatan_kuliah_umum',
         'status',
     ];
 
@@ -124,7 +128,11 @@ class User extends Authenticatable
 
         $pimpinanRoles = [
             'KEPALA BIRO', 'KEPALA ICT', 'KEPALA LPTI', 'DEKAN', 'WAKIL DEKAN I', 'WAKIL DEKAN II', 
-            'KAPRODI', 'ADMIN PERPUSTAKAAN', 'ADMIN LPPM', 'ADMIN LPMI'
+            'KETUA PROGRAM STUDI', 'KAPRODI', 'ADMIN PERPUSTAKAAN', 'ADMIN LPPM', 'ADMIN LPMI',
+            'KEPALA LPPM', 'KEPALA LPMI', 'KEPALA UPMI', 'KEPALA UPPM', 'KEPALA LABORATORIUM',
+            'ADMIN AKADEMIK UNIVERSITAS', 'ADMIN KEUANGAN UNIVERSITAS', 'ADMIN KEPEGAWAIAN',
+            'ADMIN SARANA PRASARANA', 'ADMIN HUMAS DAN PUBLIKASI', 'ADMIN KERJASAMA',
+            'ADMIN KARIR DAN ALUMNI', 'ADMIN PERENCANAAN DAN PENGEMBANGAN'
         ];
 
         if (in_array($role, $pimpinanRoles)) {
