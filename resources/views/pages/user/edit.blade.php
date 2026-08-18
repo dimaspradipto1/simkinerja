@@ -41,8 +41,8 @@
 
                         <div class="col-md-6">
                             <label for="roles" class="form-label">Role Akses <span class="text-danger">*</span></label>
-                            <select class="form-select @error('roles') is-invalid @enderror" id="roles" name="roles">
-                                <option value="" disabled>-- Pilih Role Akses --</option>
+                            <select class="form-select select2 @error('roles') is-invalid @enderror" id="roles" name="roles">
+                                <option value="">-- Pilih Role Akses --</option>
                                 @php
                                      $rolesList = [
                                          'super admin',
@@ -180,3 +180,18 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        if ($.fn.select2) {
+            $('#roles').select2({
+                theme: 'bootstrap-5',
+                placeholder: '-- Pilih Role Akses --',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+    });
+</script>
+@endpush
