@@ -116,11 +116,66 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user has specific Kepanitiaan role (only accesses Kepanitiaan Attendance)
+     * Check if user has Kepanitiaan role
      */
     public function isKepanitiaan(): bool
     {
-        return $this->hasAnyRole(['kepanitiaan', 'panitia', 'admin kepanitiaan', 'staff kepanitiaan']);
+        return $this->hasAnyRole(['kepanitiaan', 'panitia', 'admin kepanitiaan', 'staff kepanitiaan'])
+            || !empty($this->jabatan_pkkmb)
+            || !empty($this->jabatan_esq)
+            || !empty($this->jabatan_milad)
+            || !empty($this->jabatan_kuliah_umum);
+    }
+
+    /**
+     * Check if user has ONLY kepanitiaan role (no other roles)
+     */
+    public function isOnlyKepanitiaan(): bool
+    {
+        if ($this->isAdmin() || $this->isSuperAdmin() || $this->isRektorOrSuperAdmin()) {
+            return false;
+        }
+
+        $roles = array_map('strtolower', $this->roles_array);
+        $kepanitiaanAliases = ['kepanitiaan', 'panitia', 'admin kepanitiaan', 'staff kepanitiaan'];
+
+        $hasKepanitiaan = false;
+        $hasOtherRole = false;
+
+        foreach ($roles as $r) {
+            if (in_array($r, $kepanitiaanAliases, true)) {
+                $hasKepanitiaan = true;
+            } elseif (!empty($r)) {
+                $hasOtherRole = true;
+            }
+        }
+
+        // If user has non-kepanitiaan roles, they are NOT only kepanitiaan
+        if ($hasOtherRole) {
+            return false;
+        }
+
+        return $hasKepanitiaan;
+    }
+
+    /**
+     * Check if user can access Absensi Kepanitiaan menu
+     */
+    public function canAccessAbsensi(): bool
+    {
+        if ($this->isAdmin() || $this->isSuperAdmin() || $this->isRektorOrSuperAdmin()) {
+            return true;
+        }
+
+        return $this->isKepanitiaan();
+    }
+
+    /**
+     * Check if user can access Tugas & Kinerja menu
+     */
+    public function canAccessKinerja(): bool
+    {
+        return !$this->isOnlyKepanitiaan();
     }
 
     /**

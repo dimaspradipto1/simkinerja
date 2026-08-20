@@ -388,10 +388,10 @@
         <form action="{{ route('login.proses') }}" method="POST" class="needs-validation" novalidate>
           @csrf
 
-          <!-- Username / Email Field -->
+          <!-- Email / NUP Field -->
           <div class="mb-3">
             <label for="yourUsername" class="form-label fw-semibold text-dark small mb-1">
-              Email / NUP / Username <span class="text-danger">*</span>
+              Email / NUP <span class="text-danger">*</span>
             </label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-person-badge-fill"></i></span>
@@ -419,35 +419,17 @@
             @enderror
           </div>
 
-          <!-- Remember Me -->
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="form-check mb-0">
-              <input class="form-check-input" type="checkbox" name="remember" value="true" id="rememberMe">
-              <label class="form-check-label text-muted small" for="rememberMe">
-                Ingat sesi saya
-              </label>
-            </div>
-          </div>
-
           <!-- Submit Button -->
-          <button class="btn btn-submit-uis w-100 mb-4" type="submit">
+          <button class="btn btn-submit-uis w-100 mb-2 mt-2" type="submit">
             <i class="bi bi-box-arrow-in-right fs-5"></i>
             <span>Masuk ke Sistem</span>
           </button>
-
-          <!-- System Note -->
-          <div class="system-info-card d-flex align-items-start gap-2">
-            <i class="bi bi-info-circle-fill text-success fs-6 mt-1"></i>
-            <div>
-              Portal ini khusus diperuntukkan bagi <strong>Dosen & Tenaga Kependidikan</strong> Universitas Ibnu Sina. Jika mengalami kendala login, silakan hubungi <strong>LPTI UIS</strong>.
-            </div>
-          </div>
         </form>
       </div>
 
       <!-- Bottom Info -->
       <div class="text-center pt-3 text-muted small border-top">
-        SIM Kinerja &bull; Lembaga Pengembangan Teknologi & Informasi (LPTI) UIS
+        SIM Kinerja &bull; Universitas Ibnu Sina
       </div>
     </div>
 

@@ -24,6 +24,7 @@ use App\Http\Controllers\AbsensiEsqKetigaController;
 use App\Http\Controllers\AbsensiMiladPertamaController;
 use App\Http\Controllers\AbsensiMiladKeduaController;
 use App\Http\Controllers\AbsensiKuliahUmumPertamaController;
+use App\Http\Controllers\RekapitulasiAbsensiController;
 use App\Http\Controllers\ScanAbsensiController;
 use Illuminate\Support\Facades\Route;
 
@@ -183,4 +184,10 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('absensi-kuliah-umum-pertama/scan', [AbsensiKuliahUmumPertamaController::class, 'scan'])->name('absensi-kuliah-umum-pertama.scan');
     Route::get('absensi-kuliah-umum-pertama/scan-proses', [AbsensiKuliahUmumPertamaController::class, 'scanProses'])->name('absensi-kuliah-umum-pertama.scan-proses');
     Route::resource('absensi-kuliah-umum-pertama', AbsensiKuliahUmumPertamaController::class);
+
+    // Rekapitulasi Absensi Kepanitiaan (Sudah & Belum Absen)
+    Route::get('rekapitulasi-absensi', [RekapitulasiAbsensiController::class, 'index'])->name('rekapitulasi-absensi.index');
+    Route::get('rekapitulasi-absensi/data-sudah', [RekapitulasiAbsensiController::class, 'getDataSudah'])->name('rekapitulasi-absensi.data-sudah');
+    Route::get('rekapitulasi-absensi/data-belum', [RekapitulasiAbsensiController::class, 'getDataBelum'])->name('rekapitulasi-absensi.data-belum');
+    Route::get('rekapitulasi-absensi/stats', [RekapitulasiAbsensiController::class, 'getStats'])->name('rekapitulasi-absensi.stats');
 });

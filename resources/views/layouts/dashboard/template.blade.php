@@ -38,14 +38,19 @@
     <style>
         /* Table Symmetrical Alignment & Responsive Container */
         .card-body {
-            overflow-x: hidden;
+            overflow-x: auto;
         }
 
-        .table-responsive {
+        .table-responsive,
+        .dataTables_wrapper,
+        .dataTables_scroll,
+        .dataTables_scrollHead,
+        .dataTables_scrollBody {
             display: block;
-            width: 100%;
+            width: 100% !important;
             overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: thin;
         }
 
         .table-responsive table {
@@ -53,8 +58,14 @@
             margin-bottom: 0;
         }
 
-        .dataTables_wrapper {
+        .dataTables_scrollHeadInner,
+        .dataTables_scrollHeadInner > table,
+        .dataTables_scrollBody > table {
             width: 100% !important;
+            min-width: 100%;
+        }
+
+        .dataTables_wrapper {
             max-width: 100% !important;
             clear: both;
         }
@@ -69,6 +80,18 @@
         .table th, .table td {
             vertical-align: middle !important;
             box-sizing: border-box;
+        }
+
+        /* Mobile specific horizontal scroll polish */
+        @media (max-width: 991.98px) {
+            .table-responsive table,
+            table.dataTable {
+                min-width: 750px !important;
+            }
+            .dataTables_scrollBody {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
         }
 
         /* Keep action buttons neatly aligned */

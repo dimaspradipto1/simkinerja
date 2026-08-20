@@ -25,16 +25,15 @@ class AuthController extends Controller
             'username' => 'required|string',
             'password' => 'required|string',
         ], [
-            'username.required' => 'NUP, Email, atau Username wajib diisi.',
+            'username.required' => 'Email atau NUP wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ]);
 
         $login = trim((string) $request->input('username'));
 
-        // Cari user berdasarkan NUP, Email, atau Nama
+        // Cari user berdasarkan NUP atau Email
         $user = User::where('nidn', $login)
             ->orWhereRaw('LOWER(TRIM(email)) = ?', [strtolower($login)])
-            ->orWhereRaw('LOWER(TRIM(name)) = ?', [strtolower($login)])
             ->first();
 
         if ($user && Hash::check($request->input('password'), $user->password)) {
@@ -56,13 +55,13 @@ class AuthController extends Controller
             return redirect()->intended(route('dashboard'));
         }
 
-        Alert::error('Login Gagal', 'NUP/Email/Username atau Password salah')
+        Alert::error('Login Gagal', 'Email/NUP atau Password salah')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
         return back()->withErrors([
-            'login_error' => 'NUP/Email/Username atau Password yang Anda masukkan salah.',
+            'login_error' => 'Email/NUP atau Password yang Anda masukkan salah.',
         ])->withInput();
     }
 
