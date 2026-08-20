@@ -18,7 +18,10 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center pt-3 mb-3">
                         <h5 class="card-title p-0 m-0">Daftar Pengguna</h5>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center">
+                            <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 d-none">
+                                <i class="bi bi-trash-fill"></i> Hapus Terpilih (<span id="selected-count">0</span>)
+                            </button>
                             <a href="{{ route('user.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-plus-circle"></i> Tambah
                             </a>
@@ -56,6 +59,9 @@
                     <div class="p-3 mb-3 rounded" style="background-color: #e0f2fe; border: 1px solid #bae6fd;">
                         <p class="mb-1 text-dark" style="font-size: 0.9rem;">
                             Format header: <strong>name, email, password, roles, nidn, unit, jabatan, jabatan_pkkmb, jabatan_esq, jabatan_milad, jabatan_kuliah_umum</strong>.
+                        </p>
+                        <p class="mb-1 text-success fw-semibold small">
+                            <i class="bi bi-info-circle me-1"></i> Data user yang sudah ada (berdasarkan Email / NIDN) akan otomatis diperbarui (Update Data).
                         </p>
                         <a href="{{ route('user.download-template') }}" class="btn btn-sm text-primary p-0 fw-bold border-0 bg-transparent mt-1 d-inline-block" style="font-size: 0.95rem;">
                             <i class="bi bi-download me-1"></i> Download Template Excel
@@ -118,6 +124,120 @@
     @endif
 
     <script>
+        // Multi-select & Bulk Delete
+        let selectedUserIds = new Set();
+
+        function updateBulkDeleteButton() {
+            let count = selectedUserIds.size;
+            $('#selected-count').text(count);
+            if (count > 0) {
+                $('#btn-bulk-delete').removeClass('d-none');
+            } else {
+                $('#btn-bulk-delete').addClass('d-none');
+            }
+        }
+
+        // Toggle check-all
+        $(document).on('change', '#check-all-users', function() {
+            let isChecked = $(this).is(':checked');
+            $('.select-user-checkbox:not(:disabled)').prop('checked', isChecked);
+            $('.select-user-checkbox:not(:disabled)').each(function() {
+                let val = parseInt($(this).val());
+                if (isChecked) {
+                    selectedUserIds.add(val);
+                } else {
+                    selectedUserIds.delete(val);
+                }
+            });
+            updateBulkDeleteButton();
+        });
+
+        // Individual checkbox change
+        $(document).on('change', '.select-user-checkbox', function() {
+            let val = parseInt($(this).val());
+            if ($(this).is(':checked')) {
+                selectedUserIds.add(val);
+            } else {
+                selectedUserIds.delete(val);
+            }
+
+            let totalOnPage = $('.select-user-checkbox:not(:disabled)').length;
+            let checkedOnPage = $('.select-user-checkbox:checked').length;
+            $('#check-all-users').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+            $('#check-all-users').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+
+            updateBulkDeleteButton();
+        });
+
+        // Re-sync on table draw (pagination / search / reload)
+        $(document).on('draw.dt', '#user-table', function() {
+            let totalOnPage = $('.select-user-checkbox:not(:disabled)').length;
+            let checkedOnPage = 0;
+
+            $('.select-user-checkbox:not(:disabled)').each(function() {
+                let val = parseInt($(this).val());
+                if (selectedUserIds.has(val)) {
+                    $(this).prop('checked', true);
+                    checkedOnPage++;
+                } else {
+                    $(this).prop('checked', false);
+                }
+            });
+
+            $('#check-all-users').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+            $('#check-all-users').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+
+            updateBulkDeleteButton();
+        });
+
+        // Handle Bulk Delete Click
+        $(document).on('click', '#btn-bulk-delete', function() {
+            let ids = Array.from(selectedUserIds);
+            if (ids.length === 0) return;
+
+            Swal.fire({
+                title: 'Hapus User Terpilih?',
+                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' data user terpilih ini secara permanen?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmColor: '#dc3545',
+                cancelColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Ya, Hapus ' + ids.length + ' User',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('user.bulk-delete') }}",
+                        type: 'POST',
+                        data: {
+                            "_token": "{{ csrf_token() }}",
+                            "ids": ids
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: response.message || 'Data user terpilih berhasil dihapus.'
+                                });
+                                selectedUserIds.clear();
+                                updateBulkDeleteButton();
+                                $('#check-all-users').prop('checked', false).prop('indeterminate', false);
+                                $('#user-table').DataTable().ajax.reload(null, false);
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menghapus user terpilih.'
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
         function openPasswordModal(id, name) {
             $('#password_user_id').val(id);
             $('#password_user_name').html('Ganti password untuk: <strong>' + name + '</strong>');

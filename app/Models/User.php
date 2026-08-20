@@ -67,6 +67,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user has specific Kepanitiaan role (only accesses Kepanitiaan Attendance)
+     */
+    public function isKepanitiaan(): bool
+    {
+        $role = strtolower(trim($this->roles ?? ''));
+        return in_array($role, ['kepanitiaan', 'panitia', 'admin kepanitiaan', 'staff kepanitiaan']);
+    }
+
+    /**
      * Check if user is Superadmin or Rektor (Pimpinan Rektorat Utama)
      */
     public function isRektorOrSuperAdmin(): bool

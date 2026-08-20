@@ -20,6 +20,12 @@ class UserDataTable extends DataTable
     {
         return (new EloquentDataTable($query))
             ->addIndexColumn()
+            ->addColumn('checkbox', function ($row) {
+                if (auth()->check() && $row->id === auth()->id()) {
+                    return '<input type="checkbox" class="form-check-input" disabled title="Tidak dapat memilih akun sendiri" style="cursor: not-allowed; width: 18px; height: 18px;">';
+                }
+                return '<input type="checkbox" class="form-check-input select-user-checkbox" value="' . $row->id . '" style="cursor: pointer; width: 18px; height: 18px;">';
+            })
             ->editColumn('is_active', function ($row) {
                 return $row->is_active
                     ? '<span class="badge bg-success">Aktif</span>'
@@ -34,7 +40,7 @@ class UserDataTable extends DataTable
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['is_active', 'action']);
+            ->rawColumns(['checkbox', 'is_active', 'action']);
     }
 
     /**
@@ -91,6 +97,14 @@ class UserDataTable extends DataTable
     public function getColumns(): array
     {
         return [
+            Column::computed('checkbox')
+                ->title('<input type="checkbox" id="check-all-users" class="form-check-input" style="cursor: pointer; width: 18px; height: 18px;" title="Pilih Semua">')
+                ->orderable(false)
+                ->searchable(false)
+                ->exportable(false)
+                ->printable(false)
+                ->width('3%')
+                ->addClass('text-center align-middle'),
             Column::computed('DT_RowIndex')
                 ->title('No')
                 ->orderable(false)

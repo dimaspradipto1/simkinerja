@@ -46,6 +46,8 @@
                                 @php
                                      $rolesList = [
                                          'super admin',
+                                         'admin',
+                                         'kepanitiaan',
                                          'rektor',
                                          'wakil rektor i',
                                          'wakil rektor ii',

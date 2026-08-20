@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluasiController;
 use App\Http\Controllers\EvaluasiPengenalanWawasanIbnuSinaController;
 use App\Http\Controllers\PeriodeAkademikController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RencanaKerjaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RekapitulasiController;
@@ -47,9 +48,14 @@ Route::controller(AuthController::class)->group(function () {
 Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+    Route::get('profile', [ProfileController::class, 'index'])->name('profile');
+    Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('profile/password', [ProfileController::class, 'editPassword'])->name('profile.password');
+    Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::get('scan-absensi', [ScanAbsensiController::class, 'index'])->name('scan-absensi');
     Route::get('user/download-template', [UserController::class, 'downloadTemplate'])->name('user.download-template');
     Route::post('user/import-excel', [UserController::class, 'importExcel'])->name('user.import-excel');
+    Route::post('user/bulk-delete', [UserController::class, 'bulkDelete'])->name('user.bulk-delete');
     Route::put('user/{user}/password', [UserController::class, 'updatePassword'])->name('user.update-password');
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);

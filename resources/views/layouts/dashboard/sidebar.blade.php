@@ -84,6 +84,7 @@
                  </a>
              </li>
 
+          @if(!Auth::user() || !Auth::user()->isKepanitiaan())
           <li class="nav-heading">Tugas & Kinerja</li>
           <li class="nav-item">
               <a class="{{ request()->routeIs('rencana-kerja.*') ? 'nav-link' : 'nav-link collapsed' }}"
@@ -126,6 +127,7 @@
                   <span>Analisis Keterlambatan</span>
               </a>
           </li>
+          @endif
 
           @if(Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin()))
           <li class="nav-heading">Pengaturan</li>
