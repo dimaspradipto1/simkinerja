@@ -24,6 +24,9 @@ class UserDataTable extends DataTable
                 if (auth()->check() && $row->id === auth()->id()) {
                     return '<input type="checkbox" class="form-check-input" disabled title="Tidak dapat memilih akun sendiri" style="cursor: not-allowed; width: 18px; height: 18px;">';
                 }
+                if ($row->isProtectedAdmin()) {
+                    return '<input type="checkbox" class="form-check-input" disabled title="Akun Super Admin / Admin tidak dapat dipilih" style="cursor: not-allowed; width: 18px; height: 18px;">';
+                }
                 return '<input type="checkbox" class="form-check-input select-user-checkbox" value="' . $row->id . '" style="cursor: pointer; width: 18px; height: 18px;">';
             })
             ->editColumn('roles', function ($row) {
@@ -49,7 +52,9 @@ class UserDataTable extends DataTable
                 $btn = '<div class="d-inline-flex gap-1 flex-nowrap align-items-center">';
                 $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center justify-content-center" title="Edit"><i class="bi bi-pencil-square"></i></a>';
                 $btn .= '<button type="button" onclick="openPasswordModal(' . $row->id . ', \'' . addslashes($row->name) . '\')" class="btn btn-info btn-sm text-white d-inline-flex align-items-center justify-content-center" title="Ganti Password"><i class="bi bi-key"></i></button>';
-                $btn .= '<button type="button" onclick="deleteUser(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center justify-content-center" title="Hapus"><i class="bi bi-trash"></i></button>';
+                if ($row->id !== auth()->id() && !$row->isProtectedAdmin()) {
+                    $btn .= '<button type="button" onclick="deleteUser(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center justify-content-center" title="Hapus"><i class="bi bi-trash"></i></button>';
+                }
                 $btn .= '</div>';
                 return $btn;
             })
@@ -94,12 +99,24 @@ class UserDataTable extends DataTable
                 'autoWidth' => false,
                 'ordering' => true,
                 'scrollX' => true,
+                'lengthMenu' => [
+                    [10, 25, 50, 100, -1],
+                    [10, 25, 50, 100, 'Semua']
+                ],
+                'pageLength' => 10,
                 'language' => [
                     'search' => 'Cari:',
                     'lengthMenu' => 'Tampilkan _MENU_ data',
                     'zeroRecords' => 'Data tidak ditemukan',
                     'info' => 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
                     'infoEmpty' => 'Tidak ada data',
+                    'infoFiltered' => '(difilter dari _MAX_ total data)',
+                    'paginate' => [
+                        'first' => 'Pertama',
+                        'last' => 'Terakhir',
+                        'next' => 'Berikutnya',
+                        'previous' => 'Sebelumnya',
+                    ],
                 ]
             ]);
     }

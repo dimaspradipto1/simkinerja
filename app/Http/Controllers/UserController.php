@@ -131,6 +131,13 @@ class UserController extends Controller
             ], 403);
         }
 
+        if ($user->isProtectedAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Superadmin dan Admin tidak dapat dihapus.'
+            ], 403);
+        }
+
         $user->delete();
 
         return response()->json([
@@ -155,9 +162,11 @@ class UserController extends Controller
         // Disallow deleting self
         $query->where('id', '!=', $authUser->id);
 
-        if ($authUser->isPimpinanUnit()) {
+        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+            // Superadmin, Admin, Pimpinan Rektorat -> Seluruh user (kecuali diri sendiri)
+        } elseif ($authUser->isPimpinanUnit()) {
             $query->where('unit', $authUser->unit);
-        } elseif (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
+        } else {
             $query->where('id', $authUser->id);
         }
 
@@ -165,6 +174,10 @@ class UserController extends Controller
         $count = 0;
 
         foreach ($items as $item) {
+            // Skip protected admin accounts
+            if ($item->isProtectedAdmin()) {
+                continue;
+            }
             $item->delete();
             $count++;
         }
@@ -216,11 +229,11 @@ class UserController extends Controller
             ->getStartColor()->setARGB('15432D');
         $sheet->getStyle($headerRange)->getFont()->getColor()->setARGB('FFFFFF');
 
-        // Sample Data 1
+        // Sample Data 1 (Contoh Multi-Role & Multi-Jabatan)
         $sheet->setCellValue('A2', 'Ahmad Fadillah, S.Kom., M.Kom');
         $sheet->setCellValue('B2', 'ahmad.fadillah@gmail.com');
         $sheet->setCellValue('C2', 'password123');
-        $sheet->setCellValue('D2', 'staff lpti');
+        $sheet->setCellValue('D2', 'staff lpti, kepanitiaan');
         $sheet->setCellValue('E2', '1028067804');
         $sheet->setCellValue('F2', 'LPTI');
         $sheet->setCellValue('G2', 'Staff Programmer');
@@ -270,7 +283,7 @@ class UserController extends Controller
     }
 
     /**
-     * Import Users from Excel file (Supports Insert & Update)
+     * Import Users from Excel file (Supports Insert & Update, imports all rows, fills empty fields with '-')
      */
     public function importExcel(Request $request)
     {
@@ -315,188 +328,124 @@ class UserController extends Controller
             $statusIdx = array_search('status', $header);
             $isActiveIdx = array_search('is_active', $header);
 
-            if ($nameIdx === false || $emailIdx === false) {
-                Alert::error('Format Salah', 'Kolom header "name" dan "email" wajib ada di baris pertama Excel.')->toToast();
-                return redirect()->back();
-            }
-
             $imported = 0;
             $updated = 0;
 
             for ($i = 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
-                $name = isset($row[$nameIdx]) ? trim((string) $row[$nameIdx]) : '';
-                $email = ($emailIdx !== false && isset($row[$emailIdx])) ? strtolower(trim((string) $row[$emailIdx])) : '';
 
-                if (empty($name) && empty($email)) {
+                // Periksa apakah baris memiliki data (tidak kosong total)
+                $hasData = false;
+                foreach ($row as $cell) {
+                    if ($cell !== null && trim((string)$cell) !== '') {
+                        $hasData = true;
+                        break;
+                    }
+                }
+                if (!$hasData) {
                     continue;
                 }
 
-                $rawPassword = ($passwordIdx !== false && !empty($row[$passwordIdx])) ? trim((string) $row[$passwordIdx]) : null;
-                $roles = ($rolesIdx !== false && isset($row[$rolesIdx])) ? strtolower(trim((string) $row[$rolesIdx])) : null;
-                $nidn = ($nidnIdx !== false && isset($row[$nidnIdx])) ? trim((string) $row[$nidnIdx]) : null;
-                $unit = ($unitIdx !== false && isset($row[$unitIdx])) ? trim((string) $row[$unitIdx]) : null;
-                $jabatan = ($jabatanIdx !== false && isset($row[$jabatanIdx])) ? trim((string) $row[$jabatanIdx]) : null;
-                $jabatanPkkmb = ($jabatanPkkmbIdx !== false && isset($row[$jabatanPkkmbIdx])) ? trim((string) $row[$jabatanPkkmbIdx]) : null;
-                $jabatanEsq = ($jabatanEsqIdx !== false && isset($row[$jabatanEsqIdx])) ? trim((string) $row[$jabatanEsqIdx]) : null;
-                $jabatanMilad = ($jabatanMiladIdx !== false && isset($row[$jabatanMiladIdx])) ? trim((string) $row[$jabatanMiladIdx]) : null;
-                $jabatanKuliahUmum = ($jabatanKuliahUmumIdx !== false && isset($row[$jabatanKuliahUmumIdx])) ? trim((string) $row[$jabatanKuliahUmumIdx]) : null;
+                $name = ($nameIdx !== false && isset($row[$nameIdx]) && trim((string) $row[$nameIdx]) !== '')
+                    ? trim((string) $row[$nameIdx])
+                    : '-';
 
-                $status = ($statusIdx !== false && !empty($row[$statusIdx])) ? trim((string) $row[$statusIdx]) : null;
-                
-                $isActiveVal = null;
+                $rawEmail = ($emailIdx !== false && isset($row[$emailIdx]) && trim((string) $row[$emailIdx]) !== '')
+                    ? strtolower(trim((string) $row[$emailIdx]))
+                    : null;
+
+                $rawPassword = ($passwordIdx !== false && isset($row[$passwordIdx]) && trim((string) $row[$passwordIdx]) !== '')
+                    ? trim((string) $row[$passwordIdx])
+                    : null;
+
+                $roles = ($rolesIdx !== false && isset($row[$rolesIdx]) && trim((string) $row[$rolesIdx]) !== '')
+                    ? strtolower(trim((string) $row[$rolesIdx]))
+                    : 'kepanitiaan';
+
+                $nidn = ($nidnIdx !== false && isset($row[$nidnIdx]) && trim((string) $row[$nidnIdx]) !== '')
+                    ? trim((string) $row[$nidnIdx])
+                    : '-';
+
+                $unit = ($unitIdx !== false && isset($row[$unitIdx]) && trim((string) $row[$unitIdx]) !== '')
+                    ? trim((string) $row[$unitIdx])
+                    : '-';
+
+                $jabatan = ($jabatanIdx !== false && isset($row[$jabatanIdx]) && trim((string) $row[$jabatanIdx]) !== '')
+                    ? trim((string) $row[$jabatanIdx])
+                    : '-';
+
+                $jabatanPkkmb = ($jabatanPkkmbIdx !== false && isset($row[$jabatanPkkmbIdx]) && trim((string) $row[$jabatanPkkmbIdx]) !== '')
+                    ? trim((string) $row[$jabatanPkkmbIdx])
+                    : '-';
+
+                $jabatanEsq = ($jabatanEsqIdx !== false && isset($row[$jabatanEsqIdx]) && trim((string) $row[$jabatanEsqIdx]) !== '')
+                    ? trim((string) $row[$jabatanEsqIdx])
+                    : '-';
+
+                $jabatanMilad = ($jabatanMiladIdx !== false && isset($row[$jabatanMiladIdx]) && trim((string) $row[$jabatanMiladIdx]) !== '')
+                    ? trim((string) $row[$jabatanMiladIdx])
+                    : '-';
+
+                $jabatanKuliahUmum = ($jabatanKuliahUmumIdx !== false && isset($row[$jabatanKuliahUmumIdx]) && trim((string) $row[$jabatanKuliahUmumIdx]) !== '')
+                    ? trim((string) $row[$jabatanKuliahUmumIdx])
+                    : '-';
+
+                $status = ($statusIdx !== false && isset($row[$statusIdx]) && trim((string) $row[$statusIdx]) !== '')
+                    ? trim((string) $row[$statusIdx])
+                    : 'Aktif';
+
+                $isActiveVal = true;
                 if ($isActiveIdx !== false && isset($row[$isActiveIdx]) && trim((string) $row[$isActiveIdx]) !== '') {
                     $rawActive = strtolower(trim((string) $row[$isActiveIdx]));
                     $isActiveVal = !in_array($rawActive, ['0', 'nonaktif', 'false', 'non aktif']);
                 }
 
-                // 1. Cari user yang sudah ada berdasarkan Email, NIDN, atau Nama (fleksibel)
-                $existingUser = null;
-                if (!empty($email)) {
-                    $existingUser = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
-                }
-                if (!$existingUser && !empty($nidn) && $nidn !== '-') {
-                    $existingUser = User::where('nidn', trim($nidn))->first();
-                }
-                if (!$existingUser && !empty($name)) {
-                    $cleanName = strtolower(trim($name));
-                    $existingUser = User::whereRaw('LOWER(TRIM(name)) = ?', [$cleanName])->first();
-                    
-                    // Cek fallback email dari nama
-                    if (!$existingUser) {
-                        $fallbackEmail = \Illuminate\Support\Str::slug($name, '.') . '@uis.ac.id';
-                        $existingUser = User::whereRaw('LOWER(TRIM(email)) = ?', [$fallbackEmail])->first();
-                    }
-
-                    // Pencarian nama berbasis LIKE
-                    if (!$existingUser) {
-                        $existingUser = User::whereRaw('LOWER(name) LIKE ?', ['%' . $cleanName . '%'])->first();
-                    }
-                }
-
-                if ($existingUser) {
-                    $updateData = [];
-
-                    // Jika nama diisi di Excel, update
-                    if (!empty($name)) {
-                        $updateData['name'] = $name;
-                    }
-
-                    // Jika email diisi di Excel, update (jika belum dipakai user lain)
-                    if (!empty($email) && $email !== strtolower($existingUser->email)) {
-                        $emailTaken = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->where('id', '!=', $existingUser->id)->exists();
-                        if (!$emailTaken) {
-                            $updateData['email'] = $email;
-                        }
-                    }
-
-                    // Role: Jika di Excel diisi role baru (tidak kosong / bukan '-'), pakai role baru.
-                    // Jika di Excel KOSONG / '-', TETAP memakai role lama (tidak diubah).
-                    if (!empty($roles) && $roles !== '-') {
-                        $updateData['roles'] = $roles;
-                    }
-
-                    // Field data lainnya: update jika diisi di Excel (tidak kosong / bukan '-')
-                    if ($nidn !== null && $nidn !== '' && $nidn !== '-') {
-                        $updateData['nidn'] = $nidn;
-                    }
-                    if ($unit !== null && $unit !== '' && $unit !== '-') {
-                        $updateData['unit'] = $unit;
-                    }
-                    if ($jabatan !== null && $jabatan !== '' && $jabatan !== '-') {
-                        $updateData['jabatan'] = $jabatan;
-                    }
-                    if ($jabatanPkkmb !== null && $jabatanPkkmb !== '' && $jabatanPkkmb !== '-') {
-                        $updateData['jabatan_pkkmb'] = $jabatanPkkmb;
-                    }
-                    if ($jabatanEsq !== null && $jabatanEsq !== '' && $jabatanEsq !== '-') {
-                        $updateData['jabatan_esq'] = $jabatanEsq;
-                    }
-                    if ($jabatanMilad !== null && $jabatanMilad !== '' && $jabatanMilad !== '-') {
-                        $updateData['jabatan_milad'] = $jabatanMilad;
-                    }
-                    if ($jabatanKuliahUmum !== null && $jabatanKuliahUmum !== '' && $jabatanKuliahUmum !== '-') {
-                        $updateData['jabatan_kuliah_umum'] = $jabatanKuliahUmum;
-                    }
-                    if ($status !== null && $status !== '' && $status !== '-') {
-                        $updateData['status'] = $status;
-                    }
-                    if ($isActiveVal !== null) {
-                        $updateData['is_active'] = $isActiveVal;
-                    }
-
-                    // Password: Hanya update jika diisi password baru & bukan placeholder umum
-                    if (!empty($rawPassword) && !in_array(strtolower($rawPassword), ['password123', 'password', '-'])) {
-                        $updateData['password'] = Hash::make($rawPassword);
-                    }
-
-                    if (!empty($updateData)) {
-                        $existingUser->update($updateData);
-                    }
-                    $updated++;
+                // Buat email unik untuk SETIAP baris agar setiap data di Excel masuk 100%
+                if (!empty($rawEmail)) {
+                    $baseEmail = $rawEmail;
                 } else {
-                    // Cek apakah email yang akan digunakan sudah ada di database agar tidak terjadi SQL duplicate entry
-                    if (empty($email)) {
-                        $slugName = \Illuminate\Support\Str::slug($name, '.');
-                        $candidateEmail = $slugName . '@uis.ac.id';
-                        
-                        $userWithEmail = User::whereRaw('LOWER(TRIM(email)) = ?', [$candidateEmail])->first();
-                        if ($userWithEmail) {
-                            $userWithEmail->update([
-                                'roles' => (!empty($roles) && $roles !== '-') ? $roles : $userWithEmail->roles,
-                                'jabatan_pkkmb' => (!empty($jabatanPkkmb) && $jabatanPkkmb !== '-') ? $jabatanPkkmb : $userWithEmail->jabatan_pkkmb,
-                                'jabatan_esq' => (!empty($jabatanEsq) && $jabatanEsq !== '-') ? $jabatanEsq : $userWithEmail->jabatan_esq,
-                                'jabatan_milad' => (!empty($jabatanMilad) && $jabatanMilad !== '-') ? $jabatanMilad : $userWithEmail->jabatan_milad,
-                                'jabatan_kuliah_umum' => (!empty($jabatanKuliahUmum) && $jabatanKuliahUmum !== '-') ? $jabatanKuliahUmum : $userWithEmail->jabatan_kuliah_umum,
-                            ]);
-                            $updated++;
-                            continue;
-                        }
-
-                        $email = $candidateEmail;
-                    } else {
-                        $userWithEmail = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
-                        if ($userWithEmail) {
-                            $userWithEmail->update([
-                                'name' => !empty($name) ? $name : $userWithEmail->name,
-                                'roles' => (!empty($roles) && $roles !== '-') ? $roles : $userWithEmail->roles,
-                                'nidn' => (!empty($nidn) && $nidn !== '-') ? $nidn : $userWithEmail->nidn,
-                                'unit' => (!empty($unit) && $unit !== '-') ? $unit : $userWithEmail->unit,
-                                'jabatan' => (!empty($jabatan) && $jabatan !== '-') ? $jabatan : $userWithEmail->jabatan,
-                                'jabatan_pkkmb' => (!empty($jabatanPkkmb) && $jabatanPkkmb !== '-') ? $jabatanPkkmb : $userWithEmail->jabatan_pkkmb,
-                                'jabatan_esq' => (!empty($jabatanEsq) && $jabatanEsq !== '-') ? $jabatanEsq : $userWithEmail->jabatan_esq,
-                                'jabatan_milad' => (!empty($jabatanMilad) && $jabatanMilad !== '-') ? $jabatanMilad : $userWithEmail->jabatan_milad,
-                                'jabatan_kuliah_umum' => (!empty($jabatanKuliahUmum) && $jabatanKuliahUmum !== '-') ? $jabatanKuliahUmum : $userWithEmail->jabatan_kuliah_umum,
-                            ]);
-                            $updated++;
-                            continue;
-                        }
+                    $slugName = \Illuminate\Support\Str::slug($name !== '-' ? $name : 'pegawai', '.');
+                    if (empty($slugName)) {
+                        $slugName = 'pegawai';
                     }
-
-                    $newUserPassword = (!empty($rawPassword) && !in_array(strtolower($rawPassword), ['password123', 'password', '-']))
-                        ? $rawPassword
-                        : 'password123';
-
-                    User::create([
-                        'name' => $name,
-                        'email' => $email,
-                        'password' => Hash::make($newUserPassword),
-                        'roles' => (!empty($roles) && $roles !== '-') ? $roles : 'staff',
-                        'nidn' => ($nidn !== '-' ? $nidn : null),
-                        'unit' => ($unit !== '-' ? $unit : null),
-                        'jabatan' => ($jabatan !== '-' ? $jabatan : null),
-                        'jabatan_pkkmb' => ($jabatanPkkmb !== '-' ? $jabatanPkkmb : null),
-                        'jabatan_esq' => ($jabatanEsq !== '-' ? $jabatanEsq : null),
-                        'jabatan_milad' => ($jabatanMilad !== '-' ? $jabatanMilad : null),
-                        'jabatan_kuliah_umum' => ($jabatanKuliahUmum !== '-' ? $jabatanKuliahUmum : null),
-                        'status' => ($status !== null && $status !== '-') ? $status : 'Aktif',
-                        'is_active' => ($isActiveVal !== null) ? $isActiveVal : true,
-                    ]);
-                    $imported++;
+                    $baseEmail = $slugName . '@uis.ac.id';
                 }
+
+                // Pastikan email unik di DB agar tidak terjadi duplicate error dan semua baris PASTI masuk
+                $finalEmail = $baseEmail;
+                $suffix = 1;
+                while (User::whereRaw('LOWER(TRIM(email)) = ?', [$finalEmail])->exists()) {
+                    $parts = explode('@', $baseEmail);
+                    $localPart = $parts[0];
+                    $domainPart = isset($parts[1]) ? '@' . $parts[1] : '@uis.ac.id';
+                    $finalEmail = $localPart . '.' . $suffix . $domainPart;
+                    $suffix++;
+                }
+
+                // Password
+                $password = (!empty($rawPassword) && $rawPassword !== '-')
+                    ? Hash::make($rawPassword)
+                    : Hash::make('password123');
+
+                User::create([
+                    'name' => $name,
+                    'email' => $finalEmail,
+                    'password' => $password,
+                    'roles' => $roles,
+                    'nidn' => $nidn,
+                    'unit' => $unit,
+                    'jabatan' => $jabatan,
+                    'jabatan_pkkmb' => $jabatanPkkmb,
+                    'jabatan_esq' => $jabatanEsq,
+                    'jabatan_milad' => $jabatanMilad,
+                    'jabatan_kuliah_umum' => $jabatanKuliahUmum,
+                    'status' => $status,
+                    'is_active' => $isActiveVal,
+                ]);
+                $imported++;
             }
 
-            Alert::success('Berhasil', "Import selesai: {$imported} user baru ditambahkan, {$updated} user diperbarui.")->toToast();
+            Alert::success('Berhasil', "Import selesai: Seluruh {$imported} data dari file Excel berhasil dimasukkan ke sistem.")->toToast();
             return redirect()->route('user.index');
 
         } catch (\Exception $e) {

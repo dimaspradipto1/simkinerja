@@ -109,10 +109,18 @@ class User extends Authenticatable
      */
     public function isSuperAdmin(): bool
     {
-        if ($this->email === 'admin@gmail.com') {
+        if (in_array(strtolower(trim($this->email ?? '')), ['admin@gmail.com', 'superadmin@uis.ac.id']) || strtolower(trim($this->name ?? '')) === 'superadmin') {
             return true;
         }
-        return $this->hasAnyRole(['SUPER ADMIN', 'SUPERADMIN']);
+        return $this->hasAnyRole(['SUPER ADMIN', 'SUPERADMIN']) || str_contains(strtoupper($this->jabatan ?? ''), 'SUPERADMIN');
+    }
+
+    /**
+     * Check if this user is a protected system account (Superadmin / Admin)
+     */
+    public function isProtectedAdmin(): bool
+    {
+        return $this->isSuperAdmin() || $this->isAdmin();
     }
 
     /**
@@ -200,7 +208,10 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->hasAnyRole(['SUPER ADMIN', 'ADMIN ICT', 'SUPERADMIN', 'ADMIN']);
+        if (in_array(strtolower(trim($this->email ?? '')), ['admin@uis.ac.id', 'admin@gmail.com', 'superadmin@uis.ac.id']) || in_array(strtolower(trim($this->name ?? '')), ['admin', 'superadmin'])) {
+            return true;
+        }
+        return $this->hasAnyRole(['SUPER ADMIN', 'ADMIN ICT', 'SUPERADMIN', 'ADMIN']) || in_array(strtoupper(trim($this->jabatan ?? '')), ['ADMIN', 'SUPERADMIN', 'ADMIN ICT']);
     }
 
     /**

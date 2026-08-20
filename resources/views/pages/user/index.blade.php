@@ -60,6 +60,9 @@
                         <p class="mb-1 text-dark" style="font-size: 0.9rem;">
                             Format header: <strong>name, email, password, roles, nup, unit, jabatan, jabatan_pkkmb, jabatan_esq, jabatan_milad, jabatan_kuliah_umum</strong>.
                         </p>
+                        <p class="mb-1 text-secondary small">
+                            <i class="bi bi-check2-circle me-1 text-primary"></i> <strong>Role lebih dari satu:</strong> Pisahkan dengan koma pada kolom <code>roles</code> (contoh: <code>staff lpti, kepanitiaan</code>).
+                        </p>
                         <p class="mb-1 text-success fw-semibold small">
                             <i class="bi bi-info-circle me-1"></i> Data user yang sudah ada (berdasarkan Email / NUP / Nama) akan otomatis diperbarui (Update Data).
                         </p>
