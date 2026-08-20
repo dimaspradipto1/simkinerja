@@ -26,6 +26,19 @@ class UserDataTable extends DataTable
                 }
                 return '<input type="checkbox" class="form-check-input select-user-checkbox" value="' . $row->id . '" style="cursor: pointer; width: 18px; height: 18px;">';
             })
+            ->editColumn('roles', function ($row) {
+                if (empty($row->roles)) {
+                    return '-';
+                }
+                $roles = array_filter(array_map('trim', explode(',', $row->roles)));
+                if (empty($roles)) {
+                    return '-';
+                }
+                $badges = array_map(function ($r) {
+                    return '<span class="badge bg-secondary me-1 text-uppercase" style="font-size: 0.72rem; font-weight: 500;">' . e($r) . '</span>';
+                }, $roles);
+                return implode(' ', $badges);
+            })
             ->editColumn('is_active', function ($row) {
                 return $row->is_active
                     ? '<span class="badge bg-success">Aktif</span>'
@@ -40,7 +53,7 @@ class UserDataTable extends DataTable
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['checkbox', 'is_active', 'action']);
+            ->rawColumns(['checkbox', 'roles', 'is_active', 'action']);
     }
 
     /**
@@ -113,7 +126,7 @@ class UserDataTable extends DataTable
                 ->addClass('text-center align-middle'),
             Column::make('name')->title('Nama Pegawai')->addClass('text-nowrap align-middle'),
             Column::make('email')->title('Email')->addClass('text-nowrap align-middle'),
-            Column::make('nidn')->title('NIDN')->addClass('text-nowrap align-middle')->defaultContent('-'),
+            Column::make('nidn')->title('NUP')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('unit')->title('Unit')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('jabatan')->title('Jabatan')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('jabatan_pkkmb')->title('Jabatan PKKMB')->addClass('text-nowrap align-middle')->defaultContent('-'),

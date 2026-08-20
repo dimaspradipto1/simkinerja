@@ -25,24 +25,30 @@ class AuthController extends Controller
             'username' => 'required|string',
             'password' => 'required|string',
         ], [
-            'username.required' => 'Username atau email wajib diisi.',
+            'username.required' => 'NUP, Email, atau Username wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        $login = $request->input('username');
-        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+        $login = trim((string) $request->input('username'));
 
-        $credentials = [
-            $field => $login,
-            'password' => $request->input('password'),
-        ];
+        // Cari user berdasarkan NUP, Email, atau Nama
+        $user = User::where('nidn', $login)
+            ->orWhereRaw('LOWER(TRIM(email)) = ?', [strtolower($login)])
+            ->orWhereRaw('LOWER(TRIM(name)) = ?', [strtolower($login)])
+            ->first();
 
-        $remember = $request->has('remember');
+        if ($user && Hash::check($request->input('password'), $user->password)) {
+            if (!$user->is_active) {
+                Alert::error('Akun Nonaktif', 'Akun Anda sedang dinonaktifkan. Silakan hubungi admin.')->toToast();
+                return back()->withErrors([
+                    'login_error' => 'Akun Anda sedang dinonaktifkan. Silakan hubungi admin.',
+                ])->withInput();
+            }
 
-        if (Auth::attempt($credentials, $remember)) {
+            Auth::login($user, $request->has('remember'));
             $request->session()->regenerate();
 
-            Alert::success('Login Berhasil', 'Anda berhasil login')
+            Alert::success('Login Berhasil', 'Selamat datang, ' . $user->name)
                 ->toToast()
                 ->autoClose(4000)
                 ->timerProgressBar();
@@ -50,13 +56,13 @@ class AuthController extends Controller
             return redirect()->intended(route('dashboard'));
         }
 
-        Alert::error('Login Gagal', 'Username/Email atau Password salah')
+        Alert::error('Login Gagal', 'NUP/Email/Username atau Password salah')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
         return back()->withErrors([
-            'login_error' => 'Username/Email atau Password salah.',
+            'login_error' => 'NUP/Email/Username atau Password yang Anda masukkan salah.',
         ])->withInput();
     }
 

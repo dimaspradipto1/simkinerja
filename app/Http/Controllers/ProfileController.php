@@ -42,10 +42,18 @@ class ProfileController extends Controller
 
         // Only allow admin or superadmin to change their own role from profile
         if ($user->isAdmin() || $user->isSuperAdmin()) {
-            $rules['roles'] = ['nullable', 'string', 'max:100'];
+            $rules['roles'] = ['nullable'];
         }
 
         $validated = $request->validate($rules);
+
+        if (isset($validated['roles'])) {
+            if (is_array($validated['roles'])) {
+                $validated['roles'] = implode(', ', array_filter(array_map('trim', $validated['roles'])));
+            } else {
+                $validated['roles'] = trim((string) $validated['roles']);
+            }
+        }
 
         $user->update($validated);
 

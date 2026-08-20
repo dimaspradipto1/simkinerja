@@ -19,7 +19,14 @@
                 <div class="card-body profile-card pt-4 d-flex flex-column align-items-center text-center">
                     <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&size=128&background=15432d&color=ffffff&bold=true" alt="Profile" class="rounded-circle shadow-sm mb-3" style="width: 110px; height: 110px;">
                     <h5 class="fw-bold text-dark mb-1">{{ $user->name }}</h5>
-                    <span class="badge bg-primary px-3 py-1 mb-2 text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">{{ $user->roles ?? 'Staff' }}</span>
+                    <div class="d-flex flex-wrap justify-content-center gap-1 mb-2">
+                        @php
+                            $pRoles = array_filter(array_map('trim', explode(',', $user->roles ?? 'Staff')));
+                        @endphp
+                        @foreach($pRoles as $r)
+                            <span class="badge bg-primary px-2 py-1 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">{{ $r }}</span>
+                        @endforeach
+                    </div>
                     <p class="text-muted small mb-3"><i class="bi bi-envelope me-1"></i> {{ $user->email }}</p>
 
                     <div class="w-100 border-top pt-3 text-start small">
@@ -83,11 +90,15 @@
 
                             <div class="row mb-3">
                                 <div class="col-lg-4 col-md-4 text-muted fw-semibold">Role Sistem</div>
-                                <div class="col-lg-8 col-md-8"><span class="badge bg-secondary text-uppercase">{{ $user->roles ?? 'Staff' }}</span></div>
+                                <div class="col-lg-8 col-md-8 d-flex flex-wrap gap-1">
+                                    @foreach($pRoles as $r)
+                                        <span class="badge bg-secondary text-uppercase">{{ $r }}</span>
+                                    @endforeach
+                                </div>
                             </div>
 
                             <div class="row mb-3">
-                                <div class="col-lg-4 col-md-4 text-muted fw-semibold">NIDN</div>
+                                <div class="col-lg-4 col-md-4 text-muted fw-semibold">NUP</div>
                                 <div class="col-lg-8 col-md-8 text-dark">{{ $user->nidn ?: '-' }}</div>
                             </div>
 
@@ -153,9 +164,9 @@
                                 </div>
 
                                 <div class="row mb-3">
-                                    <label for="nidn" class="col-md-4 col-lg-3 col-form-label fw-semibold">NIDN</label>
+                                    <label for="nidn" class="col-md-4 col-lg-3 col-form-label fw-semibold">NUP</label>
                                     <div class="col-md-8 col-lg-9">
-                                        <input name="nidn" type="text" class="form-control @error('nidn') is-invalid @enderror" id="nidn" value="{{ old('nidn', $user->nidn) }}" placeholder="Nomor Induk Dosen Nasional">
+                                        <input name="nidn" type="text" class="form-control @error('nidn') is-invalid @enderror" id="nidn" value="{{ old('nidn', $user->nidn) }}" placeholder="Nomor Urut Pegawai / Pendidik">
                                         @error('nidn')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror

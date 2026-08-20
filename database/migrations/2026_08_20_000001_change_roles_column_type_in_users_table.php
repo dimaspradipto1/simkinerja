@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('absensi_esq_keduas', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('users', function (Blueprint $table) {
+            $table->text('roles')->nullable()->change();
         });
     }
 
@@ -22,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('absensi_esq_keduas');
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('roles', 255)->nullable()->change();
+        });
     }
 };

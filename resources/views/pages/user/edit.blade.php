@@ -40,9 +40,8 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="roles" class="form-label">Role Akses <span class="text-danger">*</span></label>
-                            <select class="form-select select2 @error('roles') is-invalid @enderror" id="roles" name="roles">
-                                <option value="">-- Pilih Role Akses --</option>
+                            <label for="roles" class="form-label">Role Akses <span class="text-danger">*</span> <small class="text-muted">(Boleh pilih lebih dari satu)</small></label>
+                            <select class="form-select select2 @error('roles') is-invalid @enderror" id="roles" name="roles[]" multiple="multiple">
                                 @php
                                      $rolesList = [
                                          'super admin',
@@ -85,9 +84,15 @@
                                          'staff laboratorium',
                                          'tata usaha fakultas',
                                      ];
+                                     $selectedRoles = old('roles', $user->roles ?? '');
+                                     if (is_string($selectedRoles)) {
+                                         $selectedRoles = array_map('trim', explode(',', strtolower($selectedRoles)));
+                                     } elseif (is_array($selectedRoles)) {
+                                         $selectedRoles = array_map(function($r) { return strtolower(trim((string)$r)); }, $selectedRoles);
+                                     }
                                  @endphp
                                  @foreach($rolesList as $roleItem)
-                                     <option value="{{ $roleItem }}" {{ strtolower(old('roles', $user->roles ?? '')) == $roleItem ? 'selected' : '' }}>{{ $roleItem }}</option>
+                                     <option value="{{ $roleItem }}" {{ in_array(strtolower($roleItem), (array)$selectedRoles) ? 'selected' : '' }}>{{ ucwords($roleItem) }}</option>
                                  @endforeach
                             </select>
                             @error('roles')
@@ -96,8 +101,8 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="nidn" class="form-label">NIDN</label>
-                            <input type="text" class="form-control @error('nidn') is-invalid @enderror" id="nidn" name="nidn" value="{{ old('nidn', $user->nidn) }}" placeholder="Masukkan NIDN">
+                            <label for="nidn" class="form-label">NUP</label>
+                            <input type="text" class="form-control @error('nidn') is-invalid @enderror" id="nidn" name="nidn" value="{{ old('nidn', $user->nidn) }}" placeholder="Masukkan NUP (Nomor Urut Pegawai/Pendidik)">
                             @error('nidn')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -189,9 +194,10 @@
         if ($.fn.select2) {
             $('#roles').select2({
                 theme: 'bootstrap-5',
-                placeholder: '-- Pilih Role Akses --',
+                placeholder: '-- Pilih Role Akses (Bisa pilih lebih dari satu) --',
                 allowClear: true,
-                width: '100%'
+                width: '100%',
+                closeOnSelect: false
             });
         }
     });

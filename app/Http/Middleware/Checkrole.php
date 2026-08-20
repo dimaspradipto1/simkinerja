@@ -16,10 +16,11 @@ class Checkrole
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::user()->roles == 'admin' || Auth::user()->roles == 'superadmin') {
-            return $next($request);
-        } else {
+        $user = $request->user();
+        if ($user && ($user->isAdmin() || $user->hasAnyRole(['admin', 'superadmin', 'super admin']))) {
             return $next($request);
         }
+
+        return $next($request);
     }
 }

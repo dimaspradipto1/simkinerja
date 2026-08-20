@@ -37,6 +37,14 @@ class UserController extends Controller
         $validated = $request->validated();
         $validated['password'] = Hash::make($validated['password']);
 
+        if (isset($validated['roles'])) {
+            if (is_array($validated['roles'])) {
+                $validated['roles'] = implode(', ', array_filter(array_map('trim', $validated['roles'])));
+            } else {
+                $validated['roles'] = trim((string) $validated['roles']);
+            }
+        }
+
         User::create($validated);
 
         Alert::success('Berhasil', 'User berhasil ditambahkan.');
@@ -73,6 +81,14 @@ class UserController extends Controller
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
+        }
+
+        if (isset($validated['roles'])) {
+            if (is_array($validated['roles'])) {
+                $validated['roles'] = implode(', ', array_filter(array_map('trim', $validated['roles'])));
+            } else {
+                $validated['roles'] = trim((string) $validated['roles']);
+            }
         }
 
         $user->update($validated);
@@ -180,7 +196,7 @@ class UserController extends Controller
             'B1' => 'email',
             'C1' => 'password',
             'D1' => 'roles',
-            'E1' => 'nidn',
+            'E1' => 'nup',
             'F1' => 'unit',
             'G1' => 'jabatan',
             'H1' => 'jabatan_pkkmb',
@@ -258,12 +274,13 @@ class UserController extends Controller
      */
     public function importExcel(Request $request)
     {
-        $request->validate([
-            'file_excel' => 'required|file|mimes:xlsx,xls,csv|max:10240',
-        ]);
+        $file = $request->file('file') ?? $request->file('file_excel');
+        if (!$file) {
+            Alert::error('Gagal', 'File Excel wajib diunggah.')->toToast();
+            return redirect()->back();
+        }
 
         try {
-            $file = $request->file('file_excel');
             $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
             $sheet = $spreadsheet->getActiveSheet();
             $rows = $sheet->toArray();
@@ -287,7 +304,8 @@ class UserController extends Controller
             $rolesIdx = array_search('roles', $header);
             if ($rolesIdx === false) $rolesIdx = array_search('role', $header);
 
-            $nidnIdx = array_search('nidn', $header);
+            $nidnIdx = array_search('nup', $header);
+            if ($nidnIdx === false) $nidnIdx = array_search('nidn', $header);
             $unitIdx = array_search('unit', $header);
             $jabatanIdx = array_search('jabatan', $header);
             $jabatanPkkmbIdx = array_search('jabatan_pkkmb', $header);
@@ -332,16 +350,28 @@ class UserController extends Controller
                     $isActiveVal = !in_array($rawActive, ['0', 'nonaktif', 'false', 'non aktif']);
                 }
 
-                // 1. Cari user yang sudah ada berdasarkan Email, NIDN, atau Nama
+                // 1. Cari user yang sudah ada berdasarkan Email, NIDN, atau Nama (fleksibel)
                 $existingUser = null;
                 if (!empty($email)) {
-                    $existingUser = User::whereRaw('LOWER(email) = ?', [$email])->first();
+                    $existingUser = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
                 }
                 if (!$existingUser && !empty($nidn) && $nidn !== '-') {
-                    $existingUser = User::where('nidn', $nidn)->first();
+                    $existingUser = User::where('nidn', trim($nidn))->first();
                 }
                 if (!$existingUser && !empty($name)) {
-                    $existingUser = User::whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($name))])->first();
+                    $cleanName = strtolower(trim($name));
+                    $existingUser = User::whereRaw('LOWER(TRIM(name)) = ?', [$cleanName])->first();
+                    
+                    // Cek fallback email dari nama
+                    if (!$existingUser) {
+                        $fallbackEmail = \Illuminate\Support\Str::slug($name, '.') . '@uis.ac.id';
+                        $existingUser = User::whereRaw('LOWER(TRIM(email)) = ?', [$fallbackEmail])->first();
+                    }
+
+                    // Pencarian nama berbasis LIKE
+                    if (!$existingUser) {
+                        $existingUser = User::whereRaw('LOWER(name) LIKE ?', ['%' . $cleanName . '%'])->first();
+                    }
                 }
 
                 if ($existingUser) {
@@ -352,9 +382,12 @@ class UserController extends Controller
                         $updateData['name'] = $name;
                     }
 
-                    // Jika email diisi di Excel, update
-                    if (!empty($email)) {
-                        $updateData['email'] = $email;
+                    // Jika email diisi di Excel, update (jika belum dipakai user lain)
+                    if (!empty($email) && $email !== strtolower($existingUser->email)) {
+                        $emailTaken = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->where('id', '!=', $existingUser->id)->exists();
+                        if (!$emailTaken) {
+                            $updateData['email'] = $email;
+                        }
                     }
 
                     // Role: Jika di Excel diisi role baru (tidak kosong / bukan '-'), pakai role baru.
@@ -402,10 +435,42 @@ class UserController extends Controller
                     }
                     $updated++;
                 } else {
-                    // Buat user baru
+                    // Cek apakah email yang akan digunakan sudah ada di database agar tidak terjadi SQL duplicate entry
                     if (empty($email)) {
                         $slugName = \Illuminate\Support\Str::slug($name, '.');
-                        $email = $slugName . '@uis.ac.id';
+                        $candidateEmail = $slugName . '@uis.ac.id';
+                        
+                        $userWithEmail = User::whereRaw('LOWER(TRIM(email)) = ?', [$candidateEmail])->first();
+                        if ($userWithEmail) {
+                            $userWithEmail->update([
+                                'roles' => (!empty($roles) && $roles !== '-') ? $roles : $userWithEmail->roles,
+                                'jabatan_pkkmb' => (!empty($jabatanPkkmb) && $jabatanPkkmb !== '-') ? $jabatanPkkmb : $userWithEmail->jabatan_pkkmb,
+                                'jabatan_esq' => (!empty($jabatanEsq) && $jabatanEsq !== '-') ? $jabatanEsq : $userWithEmail->jabatan_esq,
+                                'jabatan_milad' => (!empty($jabatanMilad) && $jabatanMilad !== '-') ? $jabatanMilad : $userWithEmail->jabatan_milad,
+                                'jabatan_kuliah_umum' => (!empty($jabatanKuliahUmum) && $jabatanKuliahUmum !== '-') ? $jabatanKuliahUmum : $userWithEmail->jabatan_kuliah_umum,
+                            ]);
+                            $updated++;
+                            continue;
+                        }
+
+                        $email = $candidateEmail;
+                    } else {
+                        $userWithEmail = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
+                        if ($userWithEmail) {
+                            $userWithEmail->update([
+                                'name' => !empty($name) ? $name : $userWithEmail->name,
+                                'roles' => (!empty($roles) && $roles !== '-') ? $roles : $userWithEmail->roles,
+                                'nidn' => (!empty($nidn) && $nidn !== '-') ? $nidn : $userWithEmail->nidn,
+                                'unit' => (!empty($unit) && $unit !== '-') ? $unit : $userWithEmail->unit,
+                                'jabatan' => (!empty($jabatan) && $jabatan !== '-') ? $jabatan : $userWithEmail->jabatan,
+                                'jabatan_pkkmb' => (!empty($jabatanPkkmb) && $jabatanPkkmb !== '-') ? $jabatanPkkmb : $userWithEmail->jabatan_pkkmb,
+                                'jabatan_esq' => (!empty($jabatanEsq) && $jabatanEsq !== '-') ? $jabatanEsq : $userWithEmail->jabatan_esq,
+                                'jabatan_milad' => (!empty($jabatanMilad) && $jabatanMilad !== '-') ? $jabatanMilad : $userWithEmail->jabatan_milad,
+                                'jabatan_kuliah_umum' => (!empty($jabatanKuliahUmum) && $jabatanKuliahUmum !== '-') ? $jabatanKuliahUmum : $userWithEmail->jabatan_kuliah_umum,
+                            ]);
+                            $updated++;
+                            continue;
+                        }
                     }
 
                     $newUserPassword = (!empty($rawPassword) && !in_array(strtolower($rawPassword), ['password123', 'password', '-']))

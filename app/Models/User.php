@@ -58,12 +58,61 @@ class User extends Authenticatable
     }
 
     /**
+     * Get array of roles for this user
+     *
+     * @return array<string>
+     */
+    public function getRolesArrayAttribute(): array
+    {
+        if (empty($this->roles)) {
+            return [];
+        }
+        $parts = explode(',', $this->roles);
+        return array_values(array_filter(array_map('trim', $parts)));
+    }
+
+    /**
+     * Check if user has specific role (case-insensitive)
+     */
+    public function hasRole(string $role): bool
+    {
+        $target = strtolower(trim($role));
+        $myRoles = array_map('strtolower', $this->roles_array);
+        return in_array($target, $myRoles, true);
+    }
+
+    /**
+     * Check if user has any of the given roles (case-insensitive)
+     */
+    public function hasAnyRole(array|string $roles): bool
+    {
+        if (is_string($roles)) {
+            $roles = array_map('trim', explode(',', $roles));
+        }
+
+        $myRoles = array_map('strtolower', $this->roles_array);
+        $targetRoles = array_map(function ($r) {
+            return strtolower(trim($r));
+        }, (array) $roles);
+
+        foreach ($targetRoles as $target) {
+            if (in_array($target, $myRoles, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Check if user is Superadmin
      */
     public function isSuperAdmin(): bool
     {
-        $role = strtoupper(trim($this->roles ?? ''));
-        return in_array($role, ['SUPER ADMIN', 'SUPERADMIN']) || $this->email === 'admin@gmail.com';
+        if ($this->email === 'admin@gmail.com') {
+            return true;
+        }
+        return $this->hasAnyRole(['SUPER ADMIN', 'SUPERADMIN']);
     }
 
     /**
@@ -71,8 +120,7 @@ class User extends Authenticatable
      */
     public function isKepanitiaan(): bool
     {
-        $role = strtolower(trim($this->roles ?? ''));
-        return in_array($role, ['kepanitiaan', 'panitia', 'admin kepanitiaan', 'staff kepanitiaan']);
+        return $this->hasAnyRole(['kepanitiaan', 'panitia', 'admin kepanitiaan', 'staff kepanitiaan']);
     }
 
     /**
@@ -84,13 +132,11 @@ class User extends Authenticatable
             return true;
         }
 
-        $role = strtoupper(trim($this->roles ?? ''));
-        $jabatan = strtoupper($this->jabatan ?? '');
-
-        if (in_array($role, ['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])) {
+        if ($this->hasAnyRole(['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])) {
             return true;
         }
 
+        $jabatan = strtoupper($this->jabatan ?? '');
         return str_contains($jabatan, 'REKTOR') || str_contains($jabatan, 'WAKIL REKTOR');
     }
 
@@ -99,8 +145,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        $role = strtoupper(trim($this->roles ?? ''));
-        return in_array($role, ['SUPER ADMIN', 'ADMIN ICT', 'SUPERADMIN', 'ADMIN']);
+        return $this->hasAnyRole(['SUPER ADMIN', 'ADMIN ICT', 'SUPERADMIN', 'ADMIN']);
     }
 
     /**
@@ -112,14 +157,11 @@ class User extends Authenticatable
             return true;
         }
 
-        $role = strtoupper(trim($this->roles ?? ''));
-        $jabatan = strtoupper($this->jabatan ?? '');
-        $unit = strtoupper($this->unit ?? '');
-
-        if (in_array($role, ['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III', 'SUPER ADMIN', 'ADMIN'])) {
+        if ($this->hasAnyRole(['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III', 'SUPER ADMIN', 'ADMIN'])) {
             return true;
         }
 
+        $jabatan = strtoupper($this->jabatan ?? '');
         return str_contains($jabatan, 'REKTOR') || str_contains($jabatan, 'WAKIL REKTOR');
     }
 
@@ -132,9 +174,6 @@ class User extends Authenticatable
             return true;
         }
 
-        $role = strtoupper(trim($this->roles ?? ''));
-        $jabatan = strtoupper($this->jabatan ?? '');
-
         $pimpinanRoles = [
             'KEPALA BIRO', 'KEPALA ICT', 'KEPALA LPTI', 'DEKAN', 'WAKIL DEKAN I', 'WAKIL DEKAN II', 
             'KETUA PROGRAM STUDI', 'KAPRODI', 'ADMIN PERPUSTAKAAN', 'ADMIN LPPM', 'ADMIN LPMI',
@@ -144,7 +183,7 @@ class User extends Authenticatable
             'ADMIN KARIR DAN ALUMNI', 'ADMIN PERENCANAAN DAN PENGEMBANGAN'
         ];
 
-        if (in_array($role, $pimpinanRoles)) {
+        if ($this->hasAnyRole($pimpinanRoles)) {
             return true;
         }
 
@@ -154,6 +193,7 @@ class User extends Authenticatable
             'KA. LPPM', 'KA. HUMAS', 'KA. UPPM', 'KA. LABORATORIUM', 'KA. PUSAT'
         ];
 
+        $jabatan = strtoupper($this->jabatan ?? '');
         foreach ($pimpinanKeywords as $kw) {
             if (str_contains($jabatan, $kw)) {
                 return true;

@@ -58,10 +58,10 @@
                 <div class="modal-body p-4">
                     <div class="p-3 mb-3 rounded" style="background-color: #e0f2fe; border: 1px solid #bae6fd;">
                         <p class="mb-1 text-dark" style="font-size: 0.9rem;">
-                            Format header: <strong>name, email, password, roles, nidn, unit, jabatan, jabatan_pkkmb, jabatan_esq, jabatan_milad, jabatan_kuliah_umum</strong>.
+                            Format header: <strong>name, email, password, roles, nup, unit, jabatan, jabatan_pkkmb, jabatan_esq, jabatan_milad, jabatan_kuliah_umum</strong>.
                         </p>
                         <p class="mb-1 text-success fw-semibold small">
-                            <i class="bi bi-info-circle me-1"></i> Data user yang sudah ada (berdasarkan Email / NIDN) akan otomatis diperbarui (Update Data).
+                            <i class="bi bi-info-circle me-1"></i> Data user yang sudah ada (berdasarkan Email / NUP / Nama) akan otomatis diperbarui (Update Data).
                         </p>
                         <a href="{{ route('user.download-template') }}" class="btn btn-sm text-primary p-0 fw-bold border-0 bg-transparent mt-1 d-inline-block" style="font-size: 0.95rem;">
                             <i class="bi bi-download me-1"></i> Download Template Excel
