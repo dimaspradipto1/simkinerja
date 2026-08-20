@@ -275,6 +275,41 @@
         margin: 0 auto 1.25rem auto;
         opacity: 0.85;
     }
+
+    /* Attendance Realtime DataTables Styling */
+    .day-pill-btn {
+        border-radius: 8px;
+        font-weight: 700;
+        padding: 6px 18px;
+        font-size: 0.95rem;
+        border: none;
+        background: transparent;
+        color: #0d6efd;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .day-pill-btn.active {
+        background: #0d6efd !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.35);
+    }
+    .day-pill-btn:hover:not(.active) {
+        background: #eff6ff;
+        color: #0d6efd;
+    }
+    #dashboard-attendance-table th {
+        font-weight: 800;
+        color: #1e3a8a;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    #dashboard-attendance-table td {
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .dataTables_paginate .pagination {
+        margin-bottom: 0;
+    }
 </style>
 
 <div class="pagetitle mb-4">
@@ -416,192 +451,91 @@
 </div>
 @endif
 
-<!-- Stat Metric Cards -->
-<div class="row g-3 mb-4">
-    <!-- Total Rencana Kerja Utama -->
-    <div class="col-12 col-sm-6 col-xl-4">
-        <div class="card stat-card p-3 h-100">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase">Rencana Kerja Utama</span>
-                    <h3 class="fw-bold mb-0 mt-1 text-dark">{{ $totalTugas }}</h3>
-                </div>
-                <div class="stat-icon stat-icon-teal">
-                    <i class="bi bi-journal-check"></i>
-                </div>
-            </div>
-            <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                <small class="text-muted"><i class="bi bi-check-circle me-1"></i> {{ $tugasSelesai }} Selesai</small>
-                <small class="text-success fw-bold">{{ $persentaseSelesai }}% Capaian</small>
-            </div>
-        </div>
-    </div>
+<!-- ============================================================== -->
+<!-- DataTables Monitoring Presensi Real-Time (Datang & Pulang)     -->
+<!-- ============================================================== -->
+<div class="card shadow-sm border-0 mb-4 attendance-monitor-card" id="section-monitoring-absensi">
+    <div class="card-body p-4">
+        
+        <!-- Header Subtitle -->
+        <p class="text-muted small mb-3">Monitoring kehadiran pegawai real-time.</p>
 
-    <!-- Total Kepanitiaan -->
-    <div class="col-12 col-sm-6 col-xl-4">
-        <div class="card stat-card p-3 h-100">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase">Tugas Kepanitiaan</span>
-                    <h3 class="fw-bold mb-0 mt-1 text-primary">{{ $totalKepanitiaan }}</h3>
+        <!-- Manage Dropdown & Kepanitiaan Tabs -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Manage Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.9rem;">
+                        <i class="bi bi-box-arrow-up-right"></i> Manage
+                    </button>
+                    <ul class="dropdown-menu shadow-sm border-0 rounded-3">
+                        <li><h6 class="dropdown-header text-uppercase small fw-bold text-muted">Manajemen Presensi</h6></li>
+                        <li><a class="dropdown-item py-2" href="{{ route('absensi-pkkmb-pertama.index') }}"><i class="bi bi-mortarboard me-2 text-success"></i>Absensi PKKMB</a></li>
+                        <li><a class="dropdown-item py-2" href="{{ route('absensi-esq-pertama.index') }}"><i class="bi bi-heart-pulse me-2 text-primary"></i>Absensi ESQ</a></li>
+                        <li><a class="dropdown-item py-2" href="{{ route('absensi-milad-pertama.index') }}"><i class="bi bi-stars me-2 text-warning"></i>Absensi MILAD</a></li>
+                        <li><a class="dropdown-item py-2" href="{{ route('absensi-kuliah-umum-pertama.index') }}"><i class="bi bi-book me-2 text-info"></i>Absensi Kuliah Umum</a></li>
+                    </ul>
                 </div>
-                <div class="stat-icon stat-icon-purple">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-            </div>
-            <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                <small class="text-muted"><i class="bi bi-check-circle me-1"></i> {{ $kepanitiaanSelesai }} Selesai</small>
-                <small class="text-primary fw-bold">{{ $totalKepanitiaan > 0 ? round(($kepanitiaanSelesai / $totalKepanitiaan) * 100) : 0 }}% Capaian</small>
-            </div>
-        </div>
-    </div>
 
-    <!-- Total Insidentil -->
-    <div class="col-12 col-sm-6 col-xl-4">
-        <div class="card stat-card p-3 h-100">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase">Tugas Insidentil</span>
-                    <h3 class="fw-bold mb-0 mt-1 text-warning">{{ $totalInsidentil }}</h3>
-                </div>
-                <div class="stat-icon stat-icon-amber">
-                    <i class="bi bi-lightning-charge"></i>
-                </div>
-            </div>
-            <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                <small class="text-muted"><i class="bi bi-check-circle me-1"></i> {{ $insidentilSelesai }} Selesai</small>
-                <small class="text-warning fw-bold">{{ $totalInsidentil > 0 ? round(($insidentilSelesai / $totalInsidentil) * 100) : 0 }}% Capaian</small>
+                <!-- Kepanitiaan Switcher Tabs -->
+                <ul class="nav nav-pills gap-1 p-1 bg-light rounded-pill" id="attendanceKepanitiaanTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill py-1 px-3 fw-bold active btn-kepanitiaan-tab" data-kepanitiaan="pkkmb" type="button">PKKMB</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill py-1 px-3 fw-semibold text-secondary btn-kepanitiaan-tab" data-kepanitiaan="esq" type="button">ESQ</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill py-1 px-3 fw-semibold text-secondary btn-kepanitiaan-tab" data-kepanitiaan="milad" type="button">MILAD</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill py-1 px-3 fw-semibold text-secondary btn-kepanitiaan-tab" data-kepanitiaan="kuliah_umum" type="button">Kuliah Umum</button>
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- EdLink-Style Weekly Calendar Widget (Jadwal Minggu Ini) -->
-<div class="card edlink-card shadow-sm border-0 mb-4">
-    <div class="edlink-header d-flex flex-wrap align-items-center justify-content-between">
-        <div>
-            <h5 class="fw-bold text-dark fs-5 mb-0">Jadwal Minggu Ini</h5>
+        <!-- Pill Search Bar -->
+        <div class="position-relative mb-3">
+            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            <input type="text" id="attendance-custom-search" class="form-control rounded-pill ps-5 py-2 shadow-none" placeholder="Cari..." style="background-color: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.95rem;">
         </div>
-        <div class="text-muted small">
-            Hari ini: <span class="fw-bold text-dark">{{ \Carbon\Carbon::parse(date('Y-m-d'))->translatedFormat('j F Y') }}</span>
-        </div>
-    </div>
 
-    <!-- Weekly Calendar Horizontal Strip -->
-    <div class="edlink-calendar-strip">
-        <div class="d-flex align-items-center justify-content-around text-center">
-            @foreach($weekDays as $day)
-                <a href="{{ request()->fullUrlWithQuery(['selected_date' => $day['date']]) }}" 
-                   class="edlink-day-btn {{ $day['is_selected'] ? 'active' : '' }}" 
-                   title="Lihat jadwal {{ $day['day_name'] }}, {{ $day['day_num'] }}">
-                    <span class="edlink-day-name">{{ $day['day_name'] }}</span>
-                    <span class="edlink-day-badge">{{ $day['day_num'] }}</span>
-                    <div class="edlink-active-arrow"></div>
-                </a>
-            @endforeach
+        <!-- Day Selector Buttons (H-1, H-2, H-3) -->
+        <div class="d-flex align-items-center gap-2 mb-3" id="attendance-day-selector">
+            <button type="button" class="day-pill-btn active" data-day="1">H-1</button>
+            <button type="button" class="day-pill-btn" data-day="2">H-2</button>
+            <button type="button" class="day-pill-btn" data-day="3">H-3</button>
         </div>
-    </div>
 
-    <!-- Scheduled Tasks List on Selected Date -->
-    <div class="card-body p-0">
-        @if($scheduledTasksOnDate->count() > 0)
-            <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
-                <span class="small fw-bold text-secondary text-uppercase">
-                    <i class="bi bi-calendar-event text-success me-1"></i>
-                    Jadwal {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, j F Y') }}
-                </span>
-                <span class="badge bg-success px-2 py-1">{{ $scheduledTasksOnDate->count() }} Kegiatan</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="4%" class="ps-3">No</th>
-                            <th width="14%">Kategori</th>
-                            <th width="32%">Uraian Tugas</th>
-                            <th width="28%">Tanggal & Jam Estimasi</th>
-                            <th width="22%" class="pe-3 text-center">Status & Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($scheduledTasksOnDate as $idx => $task)
-                            <tr>
-                                <td class="ps-3 text-muted fw-semibold">{{ $idx + 1 }}</td>
-                                <td>
-                                    <span class="badge {{ $task->badge_class }} px-2 py-1">
-                                        {{ $task->kategori_label }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark">{{ $task->uraian_tugas }}</div>
-                                    <div class="small text-muted mt-1">
-                                        <i class="bi bi-person-fill text-secondary me-1"></i>{{ $task->user ? $task->user->name : '-' }}
-                                    </div>
-                                    @if($task->taggedUsers && $task->taggedUsers->count() > 0)
-                                        <div class="small text-muted" style="font-size: 0.75rem;">
-                                            <strong>Rekan:</strong> {{ $task->taggedUsers->pluck('name')->implode(', ') }}
-                                        </div>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="small">
-                                        <div class="text-secondary">
-                                            <i class="bi bi-calendar-range me-1 text-secondary"></i>
-                                            {{ $task->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($task->estimasi_tanggal_mulai)) : '-' }} 
-                                            s/d 
-                                            {{ $task->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) : '-' }}
-                                        </div>
-                                        @if($task->estimasi_jam_mulai)
-                                            <div class="text-muted mt-1">
-                                                <i class="bi bi-clock me-1"></i>{{ substr($task->estimasi_jam_mulai, 0, 5) }} - {{ substr($task->estimasi_jam_selesai ?? '23:59', 0, 5) }} WIB
-                                            </div>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="pe-3 text-center">
-                                    @if($task->status == 'Selesai')
-                                        <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
-                                    @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
-                                        <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
-                                            <i class="bi bi-stop-fill me-1"></i>Selesaikan
-                                        </button>
-                                    @else
-                                        <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="start" data-id="{{ $task->id }}">
-                                            <i class="bi bi-play-fill me-1"></i>Mulai
-                                        </button>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @else
-            <!-- EdLink Empty State Graphic -->
-            <div class="edlink-empty-state">
-                <div class="edlink-empty-icon">
-                    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="25" y="30" width="70" height="65" rx="12" fill="#F1F3F5" stroke="#CED4DA" stroke-width="3"/>
-                        <rect x="25" y="30" width="70" height="18" rx="12" fill="#E9ECEF"/>
-                        <circle cx="42" cy="22" r="4" fill="#6C757D"/>
-                        <circle cx="78" cy="22" r="4" fill="#6C757D"/>
-                        <rect x="36" y="58" width="10" height="10" rx="3" fill="#DDE2E5"/>
-                        <rect x="55" y="58" width="10" height="10" rx="3" fill="#DDE2E5"/>
-                        <rect x="74" y="58" width="10" height="10" rx="3" fill="#DDE2E5"/>
-                        <rect x="36" y="74" width="10" height="10" rx="3" fill="#DDE2E5"/>
-                        <rect x="55" y="74" width="10" height="10" rx="3" fill="#DDE2E5"/>
-                        <circle cx="85" cy="85" r="18" fill="#FFFFFF" stroke="#ADB5BD" stroke-width="3"/>
-                        <path d="M80 85L84 89L91 81" stroke="#198754" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <h6 class="fw-semibold text-secondary mb-1">Tidak ada jadwal kegiatan di tanggal ini</h6>
-                <small class="text-muted">Pilih tanggal lain pada kalender minggu di atas untuk melihat jadwal tugas.</small>
-            </div>
-        @endif
+        <!-- DataTables Container -->
+        <div class="table-responsive border-0">
+            <table class="table table-hover align-middle mb-0 w-100" id="dashboard-attendance-table">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e2e8f0;">
+                        <th width="8%" class="ps-4 text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">NO</th>
+                        <th width="62%" class="text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">NAMA</th>
+                        <th width="15%" class="text-center text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">DATANG</th>
+                        <th width="15%" class="text-center pe-4 text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">PULANG</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Loaded via AJAX DataTables -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legend at the Bottom -->
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 pt-4 mt-2 text-center" style="font-size: 0.85rem;">
+            <span class="fw-bold text-secondary text-uppercase me-2" style="letter-spacing: 0.5px;">KETERANGAN:</span>
+            <span class="badge px-3 py-2 fw-bold" style="background-color: #15803d; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">H: Hadir</span>
+            <span class="badge px-3 py-2 fw-bold" style="background-color: #eab308; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">I: Izin</span>
+            <span class="badge px-3 py-2 fw-bold" style="background-color: #06b6d4; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">S: Sakit</span>
+            <span class="badge px-3 py-2 fw-bold" style="background-color: #dc2626; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">A: Alpa</span>
+        </div>
+
     </div>
 </div>
-
-
 
 <!-- Main Content Grid -->
 <div class="row g-3">
@@ -1020,6 +954,77 @@
                     }
                 }
             });
+        });
+
+        // -------------------------------------------------------------
+        // Real-time Kepanitiaan Attendance DataTables Initialization
+        // -------------------------------------------------------------
+        let currentKepanitiaan = 'pkkmb';
+        let currentDay = 1;
+
+        let attendanceDataTable = $('#dashboard-attendance-table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('dashboard.attendance-data') }}",
+                data: function (d) {
+                    d.kepanitiaan = currentKepanitiaan;
+                    d.day = currentDay;
+                }
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-semibold ps-4' },
+                { data: 'name', name: 'name', className: 'text-dark' },
+                { data: 'datang', name: 'datang', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'pulang', name: 'pulang', orderable: false, searchable: false, className: 'text-center pe-4' },
+            ],
+            dom: 't<"d-flex flex-wrap align-items-center justify-content-between p-3 border-top gap-2"ip>',
+            pageLength: 10,
+            language: {
+                processing: '<div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data presensi...',
+                zeroRecords: "Data tidak ditemukan",
+                info: "Menampilkan <strong>_START_-_END_</strong> dari <strong>_TOTAL_</strong> data",
+                infoEmpty: "Menampilkan 0 data",
+                infoFiltered: "(disaring dari _MAX_ data)",
+                paginate: {
+                    previous: "<",
+                    next: ">"
+                }
+            }
+        });
+
+        // Bind Custom Search Box
+        $('#attendance-custom-search').on('keyup', function () {
+            attendanceDataTable.search(this.value).draw();
+        });
+
+        // Day Selector Pill Click
+        $(document).on('click', '.day-pill-btn', function () {
+            $('.day-pill-btn').removeClass('active');
+            $(this).addClass('active');
+            currentDay = $(this).data('day');
+            attendanceDataTable.ajax.reload();
+        });
+
+        // Kepanitiaan Tabs Switcher
+        $('.btn-kepanitiaan-tab').on('click', function () {
+            $('.btn-kepanitiaan-tab').removeClass('active fw-bold text-white bg-primary').addClass('text-secondary fw-semibold');
+            $(this).removeClass('text-secondary fw-semibold').addClass('active fw-bold text-white bg-primary');
+            currentKepanitiaan = $(this).data('kepanitiaan');
+            currentDay = 1;
+
+            // Update Day Pills based on kepanitiaan
+            let daySelector = $('#attendance-day-selector');
+            daySelector.empty();
+            let totalDays = (currentKepanitiaan === 'milad') ? 2 : (currentKepanitiaan === 'kuliah_umum' ? 1 : 3);
+
+            for (let d = 1; d <= totalDays; d++) {
+                let label = (currentKepanitiaan === 'kuliah_umum') ? 'Sesi ' + d : 'H-' + d;
+                let activeClass = (d === 1) ? 'active' : '';
+                daySelector.append('<button type="button" class="day-pill-btn ' + activeClass + '" data-day="' + d + '">' + label + '</button>');
+            }
+
+            attendanceDataTable.ajax.reload();
         });
 
         $('#btn-voice-dashboard').on('click', function() {
