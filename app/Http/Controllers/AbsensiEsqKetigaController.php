@@ -63,10 +63,10 @@ class AbsensiEsqKetigaController extends Controller
         }
 
         $currentTime = now()->format('H:i');
-        if ($validated['hadir_datang'] && empty($validated['waktu_datang'])) {
+        if (!empty($validated['hadir_datang']) && empty($validated['waktu_datang'])) {
             $validated['waktu_datang'] = $currentTime;
         }
-        if ($validated['hadir_pulang'] && empty($validated['waktu_pulang'])) {
+        if (!empty($validated['hadir_pulang']) && empty($validated['waktu_pulang'])) {
             $validated['waktu_pulang'] = $currentTime;
         }
 
@@ -85,7 +85,11 @@ class AbsensiEsqKetigaController extends Controller
      */
     public function show($id)
     {
+        $authUser = auth()->user();
         $absensi = AbsensiEsqKetiga::with('user')->findOrFail($id);
+        if ($authUser && !$authUser->isAdmin() && !$authUser->isSuperAdmin() && $absensi->user_id !== $authUser->id) {
+            abort(403, 'Unauthorized action.');
+        }
         return view('pages.absensi-esq-ketiga.show', compact('absensi'));
     }
 
@@ -120,10 +124,10 @@ class AbsensiEsqKetigaController extends Controller
         ]);
 
         $currentTime = now()->format('H:i');
-        if ($validated['hadir_datang'] && empty($validated['waktu_datang'])) {
+        if (!empty($validated['hadir_datang']) && empty($validated['waktu_datang'])) {
             $validated['waktu_datang'] = $currentTime;
         }
-        if ($validated['hadir_pulang'] && empty($validated['waktu_pulang'])) {
+        if (!empty($validated['hadir_pulang']) && empty($validated['waktu_pulang'])) {
             $validated['waktu_pulang'] = $currentTime;
         }
 

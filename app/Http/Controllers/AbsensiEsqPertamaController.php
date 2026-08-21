@@ -46,8 +46,7 @@ class AbsensiEsqPertamaController extends Controller
      */
     public function store(Request $request)
     {
-
-        $validated = $request->validate([
+        $authUser = auth()->user();        $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'hadir_datang' => 'nullable|string',
             'waktu_datang' => 'nullable',
@@ -63,10 +62,10 @@ class AbsensiEsqPertamaController extends Controller
         }
 
         $currentTime = now()->format('H:i');
-        if ($validated['hadir_datang'] && empty($validated['waktu_datang'])) {
+        if (!empty($validated['hadir_datang']) && empty($validated['waktu_datang'])) {
             $validated['waktu_datang'] = $currentTime;
         }
-        if ($validated['hadir_pulang'] && empty($validated['waktu_pulang'])) {
+        if (!empty($validated['hadir_pulang']) && empty($validated['waktu_pulang'])) {
             $validated['waktu_pulang'] = $currentTime;
         }
 
@@ -85,7 +84,11 @@ class AbsensiEsqPertamaController extends Controller
      */
     public function show($id)
     {
+        $authUser = auth()->user();
         $absensi = AbsensiEsqPertama::with('user')->findOrFail($id);
+        if ($authUser && !$authUser->isAdmin() && !$authUser->isSuperAdmin() && $absensi->user_id !== $authUser->id) {
+            abort(403, 'Unauthorized action.');
+        }
         return view('pages.absensi-esq-pertama.show', compact('absensi'));
     }
 
@@ -120,10 +123,10 @@ class AbsensiEsqPertamaController extends Controller
         ]);
 
         $currentTime = now()->format('H:i');
-        if ($validated['hadir_datang'] && empty($validated['waktu_datang'])) {
+        if (!empty($validated['hadir_datang']) && empty($validated['waktu_datang'])) {
             $validated['waktu_datang'] = $currentTime;
         }
-        if ($validated['hadir_pulang'] && empty($validated['waktu_pulang'])) {
+        if (!empty($validated['hadir_pulang']) && empty($validated['waktu_pulang'])) {
             $validated['waktu_pulang'] = $currentTime;
         }
 

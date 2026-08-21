@@ -54,7 +54,12 @@ class AbsensiPkkmbKeduaDataTable extends DataTable
      */
     public function query(AbsensiPkkmbKedua $model): QueryBuilder
     {
-        return $model->newQuery()->with('user')->orderBy('id', 'asc');
+        $query = $model->newQuery()->with('user')->orderBy('id', 'asc');
+        $authUser = auth()->user();
+        if ($authUser && !$authUser->isAdmin() && !$authUser->isSuperAdmin()) {
+            $query->where('user_id', $authUser->id);
+        }
+        return $query;
     }
 
     /**
