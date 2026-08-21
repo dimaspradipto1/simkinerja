@@ -146,9 +146,22 @@ class RekapitulasiAbsensiController extends Controller
                     return '<div class="fw-bold text-dark" style="font-size: 0.95rem;">' . e($user->name) . '</div>' .
                            '<small class="text-muted"><i class="bi bi-person-vcard me-1"></i>NUP: ' . e($user->nidn ?: '-') . '</small>';
                 })
+                ->filterColumn('name', function ($query, $keyword) {
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%")
+                          ->orWhere('nidn', 'like', "%{$keyword}%")
+                          ->orWhere('email', 'like', "%{$keyword}%");
+                    });
+                })
                 ->addColumn('unit_jabatan', function ($user) {
                     return '<div><span class="badge bg-light text-dark border me-1">' . e($user->unit ?: '-') . '</span></div>' .
                            '<small class="text-muted">' . e($user->jabatan ?: '-') . '</small>';
+                })
+                ->filterColumn('unit_jabatan', function ($query, $keyword) {
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('unit', 'like', "%{$keyword}%")
+                          ->orWhere('jabatan', 'like', "%{$keyword}%");
+                    });
                 })
                 ->addColumn('absen_datang', function ($user) use ($att1, $att2, $att3) {
                     $d1 = $att1->get($user->id);
@@ -205,9 +218,22 @@ class RekapitulasiAbsensiController extends Controller
                 return '<div class="fw-bold text-dark" style="font-size: 0.95rem;">' . e($user->name) . '</div>' .
                        '<small class="text-muted"><i class="bi bi-person-vcard me-1"></i>NUP: ' . e($user->nidn ?: '-') . '</small>';
             })
+            ->filterColumn('name', function ($query, $keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%")
+                      ->orWhere('nidn', 'like', "%{$keyword}%")
+                      ->orWhere('email', 'like', "%{$keyword}%");
+                });
+            })
             ->addColumn('unit_jabatan', function ($user) {
                 return '<div><span class="badge bg-light text-dark border me-1">' . e($user->unit ?: '-') . '</span></div>' .
                        '<small class="text-muted">' . e($user->jabatan ?: '-') . '</small>';
+            })
+            ->filterColumn('unit_jabatan', function ($query, $keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('unit', 'like', "%{$keyword}%")
+                      ->orWhere('jabatan', 'like', "%{$keyword}%");
+                });
             })
             ->addColumn('absen_datang', function ($user) use ($attendances) {
                 $att = $attendances->get($user->id);
@@ -293,6 +319,13 @@ class RekapitulasiAbsensiController extends Controller
                     return '<div class="fw-bold text-dark" style="font-size: 0.95rem;">' . e($user->name) . '</div>' .
                            '<small class="text-muted"><i class="bi bi-envelope me-1"></i>' . e($user->email ?: '-') . '</small>';
                 })
+                ->filterColumn('name', function ($query, $keyword) {
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%")
+                          ->orWhere('email', 'like', "%{$keyword}%")
+                          ->orWhere('nidn', 'like', "%{$keyword}%");
+                    });
+                })
                 ->editColumn('nidn', function ($user) {
                     return '<span class="badge bg-light text-dark border">' . e($user->nidn ?: '-') . '</span>';
                 })
@@ -328,6 +361,13 @@ class RekapitulasiAbsensiController extends Controller
             ->editColumn('name', function ($user) {
                 return '<div class="fw-bold text-dark" style="font-size: 0.95rem;">' . e($user->name) . '</div>' .
                        '<small class="text-muted"><i class="bi bi-envelope me-1"></i>' . e($user->email ?: '-') . '</small>';
+            })
+            ->filterColumn('name', function ($query, $keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%")
+                      ->orWhere('email', 'like', "%{$keyword}%")
+                      ->orWhere('nidn', 'like', "%{$keyword}%");
+                });
             })
             ->editColumn('nidn', function ($user) {
                 return '<span class="badge bg-light text-dark border">' . e($user->nidn ?: '-') . '</span>';

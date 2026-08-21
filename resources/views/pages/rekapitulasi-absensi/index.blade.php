@@ -440,7 +440,7 @@ $(document).ready(function() {
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
             { data: 'name', name: 'name' },
-            { data: 'unit_jabatan', name: 'unit' },
+            { data: 'unit_jabatan', name: 'unit_jabatan' },
             { data: 'absen_datang', name: 'absen_datang', orderable: false, searchable: false },
             { data: 'absen_pulang', name: 'absen_pulang', orderable: false, searchable: false },
             { data: 'bukti_izin', name: 'bukti_izin', orderable: false, searchable: false, className: 'text-center' },

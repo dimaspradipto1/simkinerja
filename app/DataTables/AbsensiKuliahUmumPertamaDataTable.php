@@ -3,6 +3,7 @@
 namespace App\DataTables;
 
 use App\Models\AbsensiKuliahUmumPertama;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder as QueryBuilder;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Builder as HtmlBuilder;
@@ -24,11 +25,37 @@ class AbsensiKuliahUmumPertamaDataTable extends DataTable
             ->addColumn('user_name', function ($row) {
                 return $row->user ? $row->user->name : '-';
             })
+            ->filterColumn('user_name', function ($query, $keyword) {
+                $query->whereHas('user', function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%")
+                      ->orWhere('nidn', 'like', "%{$keyword}%")
+                      ->orWhere('email', 'like', "%{$keyword}%");
+                });
+            })
+            ->orderColumn('user_name', function ($query, $order) {
+                $query->orderBy(
+                    User::select('name')
+                        ->whereColumn('users.id', $query->getModel()->getTable() . '.user_id'),
+                    $order
+                );
+            })
             ->addColumn('waktu_datang_formatted', function ($row) {
                 return $row->waktu_datang ? substr($row->waktu_datang, 0, 5) : '-';
             })
+            ->filterColumn('waktu_datang_formatted', function ($query, $keyword) {
+                $query->where('waktu_datang', 'like', "%{$keyword}%");
+            })
+            ->orderColumn('waktu_datang_formatted', function ($query, $order) {
+                $query->orderBy('waktu_datang', $order);
+            })
             ->addColumn('waktu_pulang_formatted', function ($row) {
                 return $row->waktu_pulang ? substr($row->waktu_pulang, 0, 5) : '-';
+            })
+            ->filterColumn('waktu_pulang_formatted', function ($query, $keyword) {
+                $query->where('waktu_pulang', 'like', "%{$keyword}%");
+            })
+            ->orderColumn('waktu_pulang_formatted', function ($query, $order) {
+                $query->orderBy('waktu_pulang', $order);
             })
             ->addColumn('bukti_izin_badge', function ($row) {
                 if ($row->bukti_izin) {
@@ -98,14 +125,18 @@ class AbsensiKuliahUmumPertamaDataTable extends DataTable
                 ->searchable(false)
                 ->width('4%')
                 ->addClass('text-center align-middle'),
-            Column::computed('user_name')
+            Column::make('user_name')
                 ->title('NAMA PENGGUNA')
+                ->searchable(true)
+                ->orderable(true)
                 ->addClass('align-middle'),
             Column::make('hadir_datang')
                 ->title('HADIR DATANG')
                 ->addClass('text-center align-middle'),
-            Column::computed('waktu_datang_formatted')
+            Column::make('waktu_datang_formatted')
                 ->title('WAKTU DATANG')
+                ->searchable(true)
+                ->orderable(true)
                 ->addClass('text-center align-middle'),
             Column::make('catatan_hadir_datang')
                 ->title('CATATAN DATANG')
@@ -113,14 +144,18 @@ class AbsensiKuliahUmumPertamaDataTable extends DataTable
             Column::make('hadir_pulang')
                 ->title('HADIR PULANG')
                 ->addClass('text-center align-middle'),
-            Column::computed('waktu_pulang_formatted')
+            Column::make('waktu_pulang_formatted')
                 ->title('WAKTU PULANG')
+                ->searchable(true)
+                ->orderable(true)
                 ->addClass('text-center align-middle'),
             Column::make('catatan_hadir_pulang')
                 ->title('CATATAN PULANG')
                 ->addClass('align-middle'),
             Column::computed('bukti_izin_badge')
                 ->title('BUKTI IZIN')
+                ->orderable(false)
+                ->searchable(false)
                 ->addClass('text-center align-middle'),
         ];
 
