@@ -62,6 +62,12 @@ class AbsensiMiladPertamaController extends Controller
             $validated['user_id'] = $authUser->id;
         }
 
+        $exists = AbsensiMiladPertama::where('user_id', $validated['user_id'])->exists();
+        if ($exists) {
+            Alert::error('Gagal', 'Data absensi untuk pengguna ini sudah ada.');
+            return redirect()->back()->withInput();
+        }
+
         $currentTime = now()->format('H:i');
         if (!empty($validated['hadir_datang']) && empty($validated['waktu_datang'])) {
             $validated['waktu_datang'] = $currentTime;
@@ -122,6 +128,14 @@ class AbsensiMiladPertamaController extends Controller
             'catatan_hadir_pulang' => 'nullable|string',
             'bukti_izin' => 'nullable|file|max:5120|mimes:jpeg,png,jpg,pdf,doc,docx',
         ]);
+
+        $exists = AbsensiMiladPertama::where('user_id', $validated['user_id'])
+            ->where('id', '!=', $id)
+            ->exists();
+        if ($exists) {
+            Alert::error('Gagal', 'Data absensi untuk pengguna ini sudah ada.');
+            return redirect()->back()->withInput();
+        }
 
         $currentTime = now()->format('H:i');
         if (!empty($validated['hadir_datang']) && empty($validated['waktu_datang'])) {
