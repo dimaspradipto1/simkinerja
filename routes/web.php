@@ -11,6 +11,7 @@ use App\Http\Controllers\RencanaKerjaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RekapitulasiController;
 use App\Http\Controllers\KepanitiaanController;
+use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\RekapitulasiKepanitiaanController;
 use App\Http\Controllers\InsidentilController;
 use App\Http\Controllers\RekapitulasiInsidentilController;
@@ -94,6 +95,17 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('kepanitiaan/{kepanitiaan}/update-tags', [KepanitiaanController::class, 'updateTags'])->name('kepanitiaan.update-tags');
     Route::post('kepanitiaan/{kepanitiaan}/request-unlock-estimasi', [KepanitiaanController::class, 'requestUnlockEstimasi'])->name('kepanitiaan.request-unlock-estimasi');
     Route::resource('kepanitiaan', KepanitiaanController::class);
+
+    // Kegiatan Routes
+    Route::get('kegiatan/export-pdf', [KegiatanController::class, 'exportPdf'])->name('kegiatan.export-pdf');
+    Route::post('kegiatan/{kegiatan}/start', [KegiatanController::class, 'start'])->name('kegiatan.start');
+    Route::post('kegiatan/{kegiatan}/pause', [KegiatanController::class, 'pause'])->name('kegiatan.pause');
+    Route::post('kegiatan/{kegiatan}/stop', [KegiatanController::class, 'stop'])->name('kegiatan.stop');
+    Route::post('kegiatan/{kegiatan}/upload-attachment', [KegiatanController::class, 'uploadAttachment'])->name('kegiatan.upload-attachment');
+    Route::post('kegiatan/bulk-delete', [KegiatanController::class, 'bulkDelete'])->name('kegiatan.bulk-delete');
+    Route::post('kegiatan/{kegiatan}/update-tags', [KegiatanController::class, 'updateTags'])->name('kegiatan.update-tags');
+    Route::post('kegiatan/{kegiatan}/request-unlock-estimasi', [KegiatanController::class, 'requestUnlockEstimasi'])->name('kegiatan.request-unlock-estimasi');
+    Route::resource('kegiatan', KegiatanController::class);
 
     // Rekapitulasi Kepanitiaan Routes
     Route::get('rekapitulasi-kepanitiaan/data', [RekapitulasiKepanitiaanController::class, 'getData'])->name('rekapitulasi-kepanitiaan.data');

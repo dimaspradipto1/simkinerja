@@ -92,6 +92,14 @@
                       <span>Rekapitulasi Absensi</span>
                   </a>
               </li>
+
+              <li class="nav-item">
+                  <a class="{{ request()->routeIs('kegiatan.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                      href="{{ route('kegiatan.index') }}">
+                      <i class="bi bi-calendar2-event-fill"></i>
+                      <span>Kegiatan</span>
+                  </a>
+              </li>
            @endif
 
            @if(!Auth::check() || Auth::user()->canAccessKinerja())
