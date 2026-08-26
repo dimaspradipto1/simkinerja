@@ -81,9 +81,6 @@
         <div class="card-header-green d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span class="header-title-text"><i class="bi bi-lightning-charge me-2"></i>Daftar Rencana Kerja Insidentil</span>
             <div class="header-action-group d-flex gap-2">
-                <a href="{{ route('insidentil.create') }}" class="btn btn-green-add btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i> Tambah Data
-                </a>
                 <button type="button" class="btn btn-danger btn-sm text-white" id="btn-bulk-delete" style="display: none;">
                     <i class="bi bi-trash me-1"></i> Hapus Terpilih
                 </button>

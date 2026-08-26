@@ -180,9 +180,6 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                     <span class="header-title-text">Kriteria Checklist Jabatan</span>
-                    <a href="{{ route('rencana-kerja.create') }}" class="btn btn-green-add text-nowrap ms-auto ms-md-0">
-                        <i class="bi bi-plus-lg me-1"></i> Tambah Tugas
-                    </a>
                 </div>
                 <div class="card-body pt-3">
                     <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
@@ -225,9 +222,6 @@
                         <button type="button" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
                             <i class="bi bi-file-earmark-excel text-success me-1"></i> Import Excel
                         </button>
-                        <a href="{{ route('rencana-kerja.create') }}" class="btn btn-sm btn-success text-white fw-bold text-nowrap px-3 shadow-xs" style="background-color: #15432d; border-color: #15432d;">
-                            <i class="bi bi-plus-circle-fill me-1"></i> Tambah Rencana Kerja
-                        </a>
                     </div>
                 </div>
                 <div class="card-body p-3">
