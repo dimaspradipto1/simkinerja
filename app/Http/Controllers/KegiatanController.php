@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\KegiatanRequest;
+use App\Models\Kategori;
 use App\Models\PeriodeAkademik;
 use App\Models\Kegiatan;
+use App\Models\RencanaKerja;
+use App\Models\Kepanitiaan;
+use App\Models\Insidentil;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -25,7 +29,7 @@ class KegiatanController extends Controller
         if ($request->ajax()) {
             $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
-            if ($authUser && !$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
+            if ($authUser && !$request->filled('jabatan') && !$authUser->isAdmin()) {
                 $query->where(function ($q) use ($authUser) {
                     $q->where('user_id', $authUser->id)
                       ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
@@ -310,10 +314,11 @@ class KegiatanController extends Controller
     {
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
+        $kategoris = Kategori::orderBy('id', 'asc')->get();
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
-        return view('pages.kegiatan.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId'));
+        return view('pages.kegiatan.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId', 'kategoris'));
     }
 
     /**
@@ -323,9 +328,16 @@ class KegiatanController extends Controller
     {
         $validated = $request->validated();
         $validated['user_id'] = $validated['user_id'] ?? Auth::id();
+        $kategori = $validated['kategori'] ?? 'Rencana Kerja';
 
         if ($request->hasFile('file')) {
-            $validated['file'] = $request->file('file')->store('kegiatan', 'public');
+            $folder = 'rencana_kerja';
+            if ($kategori === 'Kepanitiaan') {
+                $folder = 'kepanitiaan';
+            } elseif ($kategori === 'Insidentil') {
+                $folder = 'insidentil';
+            }
+            $validated['file'] = $request->file('file')->store($folder, 'public');
         }
 
         if ($request->has('start_now') && $request->start_now) {
@@ -336,18 +348,41 @@ class KegiatanController extends Controller
             $validated['status'] = 'Belum Dimulai';
         }
 
-        $kegiatan = Kegiatan::create($validated);
+        // Simpan data sesuai dengan kategori yang dipilih
+        if (trim($kategori) === 'Kepanitiaan') {
+            $record = Kepanitiaan::create($validated);
+            if ($request->has('tagged_users')) {
+                $record->taggedUsers()->sync($request->input('tagged_users'));
+            }
+            Alert::success('Berhasil', 'Data berhasil ditambahkan ke Rencana Kerja Kepanitiaan.')
+                ->toToast()
+                ->autoClose(4000)
+                ->timerProgressBar();
 
-        if ($request->has('tagged_users')) {
-            $kegiatan->taggedUsers()->sync($request->input('tagged_users'));
+            return redirect()->route('kepanitiaan.index');
+        } elseif (trim($kategori) === 'Insidentil') {
+            $record = Insidentil::create($validated);
+            if ($request->has('tagged_users')) {
+                $record->taggedUsers()->sync($request->input('tagged_users'));
+            }
+            Alert::success('Berhasil', 'Data berhasil ditambahkan ke Rencana Kerja Insidentil.')
+                ->toToast()
+                ->autoClose(4000)
+                ->timerProgressBar();
+
+            return redirect()->route('insidentil.index');
+        } else {
+            $record = RencanaKerja::create($validated);
+            if ($request->has('tagged_users')) {
+                $record->taggedUsers()->sync($request->input('tagged_users'));
+            }
+            Alert::success('Berhasil', 'Data berhasil ditambahkan ke Rencana Kerja Utama.')
+                ->toToast()
+                ->autoClose(4000)
+                ->timerProgressBar();
+
+            return redirect()->route('rencana-kerja.index');
         }
-
-        Alert::success('Berhasil', 'Kegiatan berhasil ditambahkan')
-            ->toToast()
-            ->autoClose(4000)
-            ->timerProgressBar();
-
-        return redirect()->route('kegiatan.create');
     }
 
     /**
@@ -367,8 +402,9 @@ class KegiatanController extends Controller
 
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
+        $kategoris = Kategori::orderBy('id', 'asc')->get();
 
-        return view('pages.kegiatan.edit', compact('kegiatan', 'users', 'periodeAkademiks', 'estimasiLocked'));
+        return view('pages.kegiatan.edit', compact('kegiatan', 'users', 'periodeAkademiks', 'kategoris', 'estimasiLocked'));
     }
 
     /**

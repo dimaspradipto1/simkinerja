@@ -25,9 +25,9 @@
                         <div class="col-md-12">
                             <label for="user_id" class="form-label fw-semibold">Jabatan - Nama Pegawai <span class="text-danger">*</span></label>
                             <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
-                                <option value="" disabled {{ old('user_id') ? '' : 'selected' }}>-- Pilih Jabatan - Nama --</option>
+                                <option value="" {{ old('user_id') ? '' : 'selected' }}>-- Pilih Jabatan - Nama Pegawai --</option>
                                 @foreach($users as $u)
-                                    <option value="{{ $u->id }}" {{ old('user_id', auth()->id()) == $u->id ? 'selected' : '' }}>
+                                    <option value="{{ $u->id }}" {{ old('user_id') == $u->id ? 'selected' : '' }}>
                                         {{ $u->jabatan ?? '-' }} - {{ $u->name }}
                                     </option>
                                 @endforeach
@@ -40,7 +40,7 @@
                         <input type="hidden" name="user_id" value="{{ auth()->id() }}">
                         @endif
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="periode_akademik_id" class="form-label fw-semibold">Periode Akademik <span class="text-danger">*</span></label>
                             <select class="form-select @error('periode_akademik_id') is-invalid @enderror" id="periode_akademik_id" name="periode_akademik_id" required>
                                 <option value="" disabled {{ old('periode_akademik_id') ? '' : 'selected' }}>-- Pilih Periode Akademik --</option>
@@ -55,7 +55,28 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label for="kategori" class="form-label fw-semibold">Kategori <span class="text-danger">*</span></label>
+                            <select class="form-select @error('kategori') is-invalid @enderror" id="kategori" name="kategori" required>
+                                <option value="" disabled {{ old('kategori') ? '' : 'selected' }}>-- Pilih Kategori --</option>
+                                @if(isset($kategoris) && $kategoris->count() > 0)
+                                    @foreach($kategoris as $k)
+                                        <option value="{{ $k->nama_kategori }}" {{ old('kategori', 'Rencana Kerja') == $k->nama_kategori ? 'selected' : '' }}>
+                                            {{ $k->nama_kategori }}
+                                        </option>
+                                    @endforeach
+                                @else
+                                    <option value="Rencana Kerja" {{ old('kategori', 'Rencana Kerja') == 'Rencana Kerja' ? 'selected' : '' }}>Rencana Kerja</option>
+                                    <option value="Kepanitiaan" {{ old('kategori') == 'Kepanitiaan' ? 'selected' : '' }}>Kepanitiaan</option>
+                                    <option value="Insidentil" {{ old('kategori') == 'Insidentil' ? 'selected' : '' }}>Insidentil</option>
+                                @endif
+                            </select>
+                            @error('kategori')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4">
                             <label for="hari" class="form-label fw-semibold">Hari Pelaksanaan</label>
                             <select class="form-select @error('hari') is-invalid @enderror" id="hari" name="hari">
                                 <option value="" {{ old('hari') ? '' : 'selected' }}>-- Pilih Hari --</option>
@@ -162,8 +183,17 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
+        if ($('#user_id').length) {
+            $('#user_id').select2({
+                theme: 'bootstrap-5',
+                placeholder: "-- Pilih Jabatan - Nama --",
+                allowClear: true,
+                width: '100%'
+            });
+        }
         if ($('#tagged_users').length) {
             $('#tagged_users').select2({
+                theme: 'bootstrap-5',
                 placeholder: "-- Pilih Rekan Kerja --",
                 allowClear: true,
                 width: '100%'

@@ -223,7 +223,16 @@
 <script>
     $(document).ready(function() {
         if ($.fn.select2) {
+            if ($('#user_id').length) {
+                $('#user_id').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: "-- Pilih Pegawai / User --",
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
             $('#tagged_users').select2({
+                theme: 'bootstrap-5',
                 placeholder: "-- Pilih Rekan Kerja --",
                 allowClear: true,
                 width: '100%'

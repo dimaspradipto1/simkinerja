@@ -25,7 +25,7 @@ class InsidentilController extends Controller
         if ($request->ajax()) {
             $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
-            if ($authUser && !$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
+            if ($authUser && !$request->filled('jabatan') && !$authUser->isAdmin()) {
                 $query->where(function ($q) use ($authUser) {
                     $q->where('user_id', $authUser->id)
                       ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {

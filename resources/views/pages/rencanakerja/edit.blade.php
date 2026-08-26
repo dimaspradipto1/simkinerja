@@ -276,6 +276,14 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
+        if ($('#user_id').length) {
+            $('#user_id').select2({
+                theme: 'bootstrap-5',
+                placeholder: "-- Pilih Pegawai / User --",
+                allowClear: true,
+                width: '100%'
+            });
+        }
         $('#tagged_users').select2({
             theme: 'bootstrap-5',
             placeholder: "Cari & pilih rekan kerja...",
