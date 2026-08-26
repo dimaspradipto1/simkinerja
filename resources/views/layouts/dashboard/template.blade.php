@@ -266,14 +266,43 @@
             const btn = $(el);
             const uraian = btn.data('uraian');
             const pegawai = btn.data('pegawai');
-            const reason = btn.data('reason');
+            let reason = btn.data('reason') || '-';
             const tglSelesai = btn.data('tgl-selesai');
             const jamSelesai = btn.data('jam-selesai') || '23:59';
             const route = btn.data('route');
 
             $('#approveTaskPegawai').text(pegawai || '-');
             $('#approveTaskUraian').text(uraian || '-');
-            $('#approveTaskReason').text(reason || '-');
+
+            let tujuanHtml = '';
+            let cleanReason = reason;
+            const match = reason.match(/^\[Tujuan:\s*([^\]]+)\]\s*(.*)$/s);
+            if (match) {
+                const pimpinanName = match[1];
+                cleanReason = match[2];
+                tujuanHtml = `
+                    <div class="mb-2 p-2 bg-primary-subtle text-primary border border-primary-subtle rounded d-flex align-items-center gap-2">
+                        <i class="bi bi-person-badge-fill fs-5"></i>
+                        <div>
+                            <span class="d-block text-muted" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Pimpinan Tujuan</span>
+                            <strong class="text-dark" style="font-size: 0.85rem;">${pimpinanName}</strong>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const reasonCardHtml = `
+                ${tujuanHtml}
+                <div class="p-2.5 p-2 bg-danger-subtle text-danger rounded border border-danger-subtle d-flex align-items-start gap-2">
+                    <i class="bi bi-chat-square-quote-fill fs-6 mt-1 text-danger"></i>
+                    <div>
+                        <span class="d-block fw-bold text-danger mb-1" style="font-size: 0.75rem; text-transform: uppercase;">Alasan / Kendala Pegawai:</span>
+                        <div class="text-dark fw-medium small" style="font-size: 0.85rem; line-height: 1.4;">${cleanReason || '-'}</div>
+                    </div>
+                </div>
+            `;
+
+            $('#approveTaskReasonContainer').html(reasonCardHtml);
             $('#appr_tgl').val(tglSelesai || new Date().toISOString().split('T')[0]);
             $('#appr_jam').val(jamSelesai);
             $('#appr_catatan').val('');
@@ -308,8 +337,8 @@
                             <div id="approveTaskUraian" class="p-2 bg-light rounded border text-dark fw-semibold small"></div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Alasan Kendala / Mengapa Melewati Batas:</label>
-                            <div id="approveTaskReason" class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle small fw-medium"></div>
+                            <label class="form-label fw-bold small text-secondary">Rincian Permohonan & Kendala:</label>
+                            <div id="approveTaskReasonContainer"></div>
                         </div>
                         <hr class="my-3">
                         <div class="row g-2 mb-3">

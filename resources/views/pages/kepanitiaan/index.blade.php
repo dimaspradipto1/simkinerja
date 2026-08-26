@@ -239,9 +239,21 @@
                             <div class="fw-bold text-dark small">
                                 <i class="bi bi-person-fill text-primary me-1"></i>{{ $pr->user->name ?? '-' }} <span class="text-muted fw-normal">({{ $pr->user->jabatan ?? '-' }})</span> &mdash; <span class="text-success fw-bold">{{ $pr->uraian_tugas }}</span>
                             </div>
-                            <div class="text-secondary small mt-1" style="font-size: 0.76rem;">
-                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle me-1"><i class="bi bi-exclamation-circle me-1"></i>Kendala:</span> {{ $pr->estimasi_unlock_reason }}
-                                &bull; <span class="text-muted"><i class="bi bi-clock me-1"></i>Diajukan: {{ \Carbon\Carbon::parse($pr->estimasi_unlock_requested_at)->diffForHumans() }}</span>
+                            @php
+                                $rReason = $pr->estimasi_unlock_reason;
+                                $tujuanPimpinan = null;
+                                if (preg_match('/^\[Tujuan:\s*([^\]]+)\]\s*(.*)$/s', $rReason, $mMatches)) {
+                                    $tujuanPimpinan = $mMatches[1];
+                                    $rReason = $mMatches[2];
+                                }
+                            @endphp
+                            <div class="text-secondary small mt-1 d-flex flex-wrap align-items-center gap-1" style="font-size: 0.76rem;">
+                                @if($tujuanPimpinan)
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-person-badge-fill me-1"></i>Tujuan: {{ $tujuanPimpinan }}</span>
+                                @endif
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-exclamation-circle me-1"></i>Kendala:</span>
+                                <span class="text-dark fw-medium">{{ $rReason }}</span>
+                                <span class="text-muted ms-1">&bull; <i class="bi bi-clock me-1"></i>Diajukan: {{ \Carbon\Carbon::parse($pr->estimasi_unlock_requested_at)->diffForHumans() }}</span>
                             </div>
                         </div>
                         <div>
