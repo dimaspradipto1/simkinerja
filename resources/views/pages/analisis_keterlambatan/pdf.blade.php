@@ -175,7 +175,7 @@
                         @elseif($item->kategori_kendala === 'kepanitiaan')
                             <span class="badge-info">Beban Tugas Kepanitiaan</span>
                         @else
-                            <span class="badge-secondary">Keterlambatan Murni Staff</span>
+                            <span class="badge-secondary" style="color: #1e40af; font-weight: bold;">Rencana Kerja</span>
                         @endif
                     </td>
                     <td class="text-left" style="font-size: 6.5pt; line-height: 1.3;">

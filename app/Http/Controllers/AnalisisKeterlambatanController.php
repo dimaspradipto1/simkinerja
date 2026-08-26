@@ -382,7 +382,7 @@ class AnalisisKeterlambatanController extends Controller
                 } elseif ($row->kategori_kendala === 'kepanitiaan') {
                     $html .= '<span class="badge bg-info text-dark px-2 py-1 fs-7 d-inline-block mb-1"><i class="bi bi-people-fill me-1"></i>Beban Tugas Kepanitiaan</span>';
                 } else {
-                    $html .= '<span class="badge bg-secondary px-2 py-1 fs-7 d-inline-block mb-1"><i class="bi bi-person-x-fill me-1"></i>Keterlambatan Murni Staff</span>';
+                    $html .= '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fs-7 d-inline-block mb-1"><i class="bi bi-journal-text me-1"></i>Rencana Kerja</span>';
                 }
 
                 if (!empty($row->estimasi_unlock_reason) || !empty($row->estimasi_unlock_approved_at)) {
@@ -719,7 +719,7 @@ class AnalisisKeterlambatanController extends Controller
                 $hasPan = true;
             }
 
-            $diagLabel = 'Keterlambatan Murni Staff';
+            $diagLabel = 'Rencana Kerja';
             $rekomendasi = 'Pendampingan & monitoring manajemen waktu rutin.';
             if ($hasIns && $hasPan) {
                 $diagLabel = 'Beban Ganda (Panitia & Insidentil)';

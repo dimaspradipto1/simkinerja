@@ -163,7 +163,7 @@
                             <option value="insidentil">🔴 Insidentil</option>
                             <option value="kepanitiaan">🟠 Kepanitiaan</option>
                             <option value="beban_ganda">🟡 Beban Ganda</option>
-                            <option value="murni">⚪ Murni Staff</option>
+                            <option value="murni">🔵 Rencana Kerja</option>
                         </select>
                     </div>
                 </div>
@@ -183,7 +183,7 @@
                         <div>
                             <span class="text-muted small fw-bold text-uppercase d-block">Total Pekerjaan Terlambat</span>
                             <h3 id="stat-total" class="fw-bold mb-0 text-danger">0</h3>
-                            <span class="small text-muted">Rencana Kerja Utama</span>
+                            <span class="small text-muted">Semua Kategori Tugas</span>
                         </div>
                     </div>
                 </div>
@@ -225,16 +225,16 @@
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm border-start border-secondary border-4 h-100">
+            <div class="card border-0 shadow-sm border-start border-primary border-4 h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center">
-                        <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3 text-secondary fs-3">
-                            <i class="bi bi-person-x-fill"></i>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary fs-3">
+                            <i class="bi bi-journal-bookmark-fill"></i>
                         </div>
                         <div>
-                            <span class="text-muted small fw-bold text-uppercase d-block">Keterlambatan Murni</span>
+                            <span class="text-muted small fw-bold text-uppercase d-block">Rencana Kerja</span>
                             <h3 id="stat-murni" class="fw-bold mb-0 text-dark">0</h3>
-                            <span id="stat-percent-murni" class="small badge bg-secondary text-white">0% dari keterlambatan</span>
+                            <span id="stat-percent-murni" class="small badge bg-primary text-white">0% dari keterlambatan</span>
                         </div>
                     </div>
                 </div>
@@ -727,15 +727,15 @@ $(document).ready(function() {
         let ctxPenyebab = document.getElementById('chartPenyebab').getContext('2d');
         if (chartPenyebabInst) chartPenyebabInst.destroy();
 
-        let labels = ['Insidentil', 'Kepanitiaan', 'Beban Ganda', 'Murni Staff'];
+        let labels = ['Insidentil', 'Kepanitiaan', 'Beban Ganda', 'Rencana Kerja'];
         let dataValues = [st.insidentil, st.kepanitiaan, st.beban_ganda, st.murni];
-        let bgColors = ['#dc3545', '#ffc107', '#fd7e14', '#6c757d'];
+        let bgColors = ['#dc3545', '#ffc107', '#fd7e14', '#0d6efd'];
 
         let datasetConfig = {
             label: 'Jumlah Keterlambatan',
             data: dataValues,
-            backgroundColor: currentChartType === 'radar' ? 'rgba(220, 53, 69, 0.25)' : bgColors,
-            borderColor: currentChartType === 'radar' ? '#dc3545' : '#ffffff',
+            backgroundColor: currentChartType === 'radar' ? 'rgba(13, 110, 253, 0.25)' : bgColors,
+            borderColor: currentChartType === 'radar' ? '#0d6efd' : '#ffffff',
             borderWidth: 2,
             pointBackgroundColor: bgColors,
             pointBorderColor: '#fff',
@@ -787,7 +787,7 @@ $(document).ready(function() {
         chartBarKendalaInst = new Chart(ctxBar, {
             type: 'bar',
             data: {
-                labels: ['Insidentil', 'Kepanitiaan', 'Beban Ganda', 'Murni Staff'],
+                labels: ['Insidentil', 'Kepanitiaan', 'Beban Ganda', 'Rencana Kerja'],
                 datasets: [{
                     label: 'Jumlah Tugas Terlambat',
                     data: [st.insidentil, st.kepanitiaan, st.beban_ganda, st.murni],
