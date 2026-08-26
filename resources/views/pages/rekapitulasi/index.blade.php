@@ -38,6 +38,30 @@
         background: #f0f8f4;
     }
     .tab-icon { font-size: 1rem; margin-right: 6px; }
+    /* Top Horizontal Scrollbar */
+    .top-scrollbar-wrapper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        width: 100%;
+        height: 14px;
+        margin-bottom: 8px;
+        background-color: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+    }
+    .top-scrollbar-wrapper::-webkit-scrollbar {
+        height: 10px;
+    }
+    .top-scrollbar-wrapper::-webkit-scrollbar-thumb {
+        background: #198754;
+        border-radius: 5px;
+    }
+    .top-scrollbar-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #15432d;
+    }
+    .top-scrollbar-content {
+        height: 1px;
+    }
 </style>
 
 <div class="pagetitle">
@@ -707,6 +731,41 @@ $(document).ready(function() {
         }
     }
 
+    // ---- Helper: Top Horizontal Scrollbar Synchronization ----
+    function syncTopScrollbars() {
+        $('.table-responsive').each(function() {
+            const $container = $(this);
+            let $wrapper = $container.prev('.top-scrollbar-wrapper');
+            if ($wrapper.length === 0) {
+                $wrapper = $('<div class="top-scrollbar-wrapper"><div class="top-scrollbar-content"></div></div>');
+                $container.before($wrapper);
+
+                $wrapper.on('scroll', function() {
+                    $container.scrollLeft($(this).scrollLeft());
+                });
+                $container.on('scroll', function() {
+                    $wrapper.scrollLeft($(this).scrollLeft());
+                });
+            }
+
+            const $table = $container.find('table');
+            if ($table.length) {
+                const sWidth = $table[0].scrollWidth || $container[0].scrollWidth;
+                $wrapper.find('.top-scrollbar-content').width(sWidth);
+                if (sWidth > $container.width() + 10) {
+                    $wrapper.show();
+                    $wrapper.scrollLeft($container.scrollLeft());
+                } else {
+                    $wrapper.hide();
+                }
+            }
+        });
+    }
+
+    $(window).on('resize', function() {
+        syncTopScrollbars();
+    });
+
     // ---- Charts ----
     const kegChart = makeChart('keg-chartStatus');
     const rkChart  = makeChart('rk-chartStatus');
@@ -744,6 +803,7 @@ $(document).ready(function() {
                 updateStats('keg', json.rekap);
                 updateProgress('keg', json.rekap, kegChart, 'keg-chart-no-data');
             }
+            setTimeout(syncTopScrollbars, 100);
         }
     });
 
@@ -760,6 +820,10 @@ $(document).ready(function() {
     let insTable;
 
     // Lazy-load tabs on first show
+    $('#tab-keg-btn').on('shown.bs.tab', function() {
+        setTimeout(syncTopScrollbars, 100);
+    });
+
     $('#tab-rk-btn').on('shown.bs.tab', function() {
         if (!rkInitialized) {
             rkInitialized = true;
@@ -789,10 +853,12 @@ $(document).ready(function() {
                         updateStats('rk', json.rekap);
                         updateProgress('rk', json.rekap, rkChart, 'rk-chart-no-data');
                     }
+                    setTimeout(syncTopScrollbars, 100);
                 }
             });
         } else {
             rkTable.ajax.reload();
+            setTimeout(syncTopScrollbars, 100);
         }
     });
 
@@ -825,10 +891,12 @@ $(document).ready(function() {
                         updateStats('pan', json.rekap);
                         updateProgress('pan', json.rekap, panChart, 'pan-chart-no-data');
                     }
+                    setTimeout(syncTopScrollbars, 100);
                 }
             });
         } else {
             panTable.ajax.reload();
+            setTimeout(syncTopScrollbars, 100);
         }
     });
 
@@ -878,10 +946,12 @@ $(document).ready(function() {
                             }
                         }
                     }
+                    setTimeout(syncTopScrollbars, 100);
                 }
             });
         } else {
             insTable.ajax.reload();
+            setTimeout(syncTopScrollbars, 100);
         }
     });
 
@@ -897,6 +967,7 @@ $(document).ready(function() {
         } else if (activeTab === 'tab-ins-btn' && insInitialized) {
             insTable.ajax.reload();
         }
+        setTimeout(syncTopScrollbars, 200);
     });
 
     // ---- Reset ----
@@ -906,6 +977,8 @@ $(document).ready(function() {
         $('#filter_kategori').val('').trigger('change');
         $('#filter_jabatan').val('').trigger('change');
     });
+
+    setTimeout(syncTopScrollbars, 300);
 });
 </script>
 @endpush

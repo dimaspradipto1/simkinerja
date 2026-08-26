@@ -54,6 +54,19 @@ class MilestoneController extends Controller
     {
         $now = Carbon::now();
 
+        $parent = $milestone->milestonable;
+        if ($parent && $parent->status !== 'Selesai' && !empty($parent->estimasi_tanggal_selesai)) {
+            $endTime = $parent->estimasi_jam_selesai ?: '23:59:59';
+            $estimasiEnd = Carbon::parse($parent->estimasi_tanggal_selesai . ' ' . $endTime);
+            if ($now->gt($estimasiEnd)) {
+                return response()->json([
+                    'success' => false,
+                    'is_expired' => true,
+                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
+                ], 422);
+            }
+        }
+
         if ($milestone->status === 'Di-pause') {
             // Complete current paused milestone phase
             $milestone->status = 'Selesai';
@@ -63,7 +76,6 @@ class MilestoneController extends Controller
             $milestone->save();
 
             // Create a new continuation milestone (Point #2, Point #3, etc.)
-            $parent = $milestone->milestonable;
             $newMilestone = null;
             if ($parent) {
                 $newMilestone = $parent->milestones()->create([
@@ -96,7 +108,6 @@ class MilestoneController extends Controller
         $milestone->save();
 
         if ($milestone->milestonable) {
-            $parent = $milestone->milestonable;
             $updateData = [
                 'status' => 'Berjalan',
                 'last_started_at' => $now,
@@ -157,6 +168,19 @@ class MilestoneController extends Controller
     public function stop(Milestone $milestone)
     {
         $now = Carbon::now();
+
+        $parent = $milestone->milestonable;
+        if ($parent && $parent->status !== 'Selesai' && !empty($parent->estimasi_tanggal_selesai)) {
+            $endTime = $parent->estimasi_jam_selesai ?: '23:59:59';
+            $estimasiEnd = Carbon::parse($parent->estimasi_tanggal_selesai . ' ' . $endTime);
+            if ($now->gt($estimasiEnd)) {
+                return response()->json([
+                    'success' => false,
+                    'is_expired' => true,
+                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
+                ], 422);
+            }
+        }
 
         if ($milestone->status === 'Berjalan' && $milestone->last_started_at) {
             $elapsedSeconds = (int) abs($now->diffInSeconds($milestone->last_started_at));

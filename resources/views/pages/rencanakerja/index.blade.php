@@ -201,6 +201,46 @@
     </div>
     @endif
 
+    @if(isset($pendingRequests) && $pendingRequests->isNotEmpty())
+    <!-- Section: Permohonan Perpanjangan Waktu Masuk -->
+    <div class="row mb-3">
+        <div class="col-lg-12">
+            <div class="alert alert-warning border border-warning shadow-sm p-3 rounded-3 mb-0">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom border-warning-subtle">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger fs-6 px-2 py-1"><i class="bi bi-bell-fill me-1"></i> {{ $pendingRequests->count() }} Permohonan Perpanjangan Waktu Masuk</span>
+                        <span class="text-dark small fw-semibold">Tugas di bawah ini telah melewati estimasi dan membutuhkan persetujuan batas waktu baru:</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    @foreach($pendingRequests as $pr)
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 bg-white p-2 px-3 rounded border border-warning shadow-2xs">
+                        <div class="d-flex flex-column">
+                            <div class="fw-bold text-dark small">
+                                <i class="bi bi-person-fill text-primary me-1"></i>{{ $pr->user->name ?? '-' }} <span class="text-muted fw-normal">({{ $pr->user->jabatan ?? '-' }})</span> &mdash; <span class="text-success fw-bold">{{ $pr->uraian_tugas }}</span>
+                            </div>
+                            <div class="text-secondary small mt-1" style="font-size: 0.76rem;">
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle me-1"><i class="bi bi-exclamation-circle me-1"></i>Kendala:</span> {{ $pr->estimasi_unlock_reason }}
+                                &bull; <span class="text-muted"><i class="bi bi-clock me-1"></i>Diajukan: {{ \Carbon\Carbon::parse($pr->estimasi_unlock_requested_at)->diffForHumans() }}</span>
+                            </div>
+                        </div>
+                        <div>
+                            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit()))
+                            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" data-id="{{ $pr->id }}" data-uraian="{{ e($pr->uraian_tugas) }}" data-pegawai="{{ e($pr->user->name ?? '-') }}" data-reason="{{ e($pr->estimasi_unlock_reason) }}" data-tgl-selesai="{{ e($pr->estimasi_tanggal_selesai ?? date('Y-m-d')) }}" data-jam-selesai="{{ e($pr->estimasi_jam_selesai ? substr($pr->estimasi_jam_selesai, 0, 5) : '23:59') }}" data-route="{{ route('rencana-kerja.approve-extension', $pr->id) }}" onclick="window.openApproveExtensionModal(this)">
+                                <i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu
+                            </button>
+                            @else
+                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Bottom Section: Checklist Tugas -->
     <div class="row">
         <div class="col-lg-12">

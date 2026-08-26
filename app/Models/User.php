@@ -283,5 +283,33 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Insidentil::class, 'insidentil_user', 'user_id', 'insidentil_id')->withTimestamps();
     }
+
+    /**
+     * Get direct supervisor(s) based on unit and role hierarchy.
+     */
+    public function getDirectSupervisors()
+    {
+        $allPimpinan = self::where('is_active', 1)
+            ->where('id', '!=', $this->id)
+            ->get()
+            ->filter(function ($u) {
+                return $u->isPimpinanUnit() || $u->isPimpinanRektorat() || $u->isAdmin();
+            });
+
+        $myUnit = trim(strtoupper($this->unit ?? ''));
+
+        if (!empty($myUnit)) {
+            $unitPimpinan = $allPimpinan->filter(function ($u) use ($myUnit) {
+                $pUnit = trim(strtoupper($u->unit ?? ''));
+                return $pUnit === $myUnit || str_contains($pUnit, $myUnit) || str_contains($myUnit, $pUnit);
+            });
+
+            if ($unitPimpinan->isNotEmpty()) {
+                return $unitPimpinan->concat($allPimpinan->diff($unitPimpinan));
+            }
+        }
+
+        return $allPimpinan;
+    }
 }
 

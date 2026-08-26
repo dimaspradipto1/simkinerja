@@ -215,9 +215,29 @@ class InsidentilController extends Controller
                         $allMilestonesSelesai = ($uncompleted === 0);
                     }
 
+                    $isExpired = false;
+                    if ($row->status !== 'Selesai' && !empty($row->estimasi_tanggal_selesai)) {
+                        $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
+                        $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
+                        if (\Carbon\Carbon::now()->gt($estimasiEnd)) {
+                            $isExpired = true;
+                        }
+                    }
+
                     // Start/Pause/Stop Timer buttons
                     if ($row->status === 'Selesai' || $allMilestonesSelesai) {
                         $btn .= '<button type="button" class="btn btn-sm text-white fw-bold disabled me-1" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
+                    } elseif ($isExpired) {
+                        $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
+                        if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
+                            if ($isLeader) {
+                                $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($row->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . route('insidentil.approve-extension', $row->id) . '" onclick="window.openApproveExtensionModal(this)" style="height: 32px;" title="Permohonan perpanjangan waktu diajukan pegawai. Klik untuk setujui & beri waktu baru"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
+                            } else {
+                                $btn .= '<span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;" title="Permohonan perpanjangan waktu sedang menunggu persetujuan pimpinan"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>';
+                            }
+                        } else {
+                            $btn .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-2 me-1 btn-request-extension" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-route="' . route('insidentil.request-unlock-estimasi', $row->id) . '" onclick="window.openExtensionModal(this)" style="height: 32px;" title="Tugas gagal karena melewati estimasi waktu. Klik untuk minta perpanjangan waktu ke pimpinan"><i class="bi bi-clock-history me-1"></i> Tugas Gagal - Minta Perpanjangan Waktu</button>';
+                        }
                     } elseif ($row->status === 'Belum Dimulai') {
                         $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Mulai Pekerjaan"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
                     } elseif ($row->status === 'Di-pause') {
@@ -269,7 +289,19 @@ class InsidentilController extends Controller
             }
         }
 
-        return view('pages.insidentil.index', compact('periodeAkademiks', 'users', 'usersWithJabatan'));
+        $pendingRequestsQuery = Insidentil::whereNotNull('estimasi_unlock_requested_at');
+        if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
+            if ($authUser->isPimpinanUnit()) {
+                $pendingRequestsQuery->whereHas('user', function ($q) use ($authUser) {
+                    $q->where('unit', $authUser->unit);
+                });
+            } else {
+                $pendingRequestsQuery->where('user_id', $authUser->id);
+            }
+        }
+        $pendingRequests = $pendingRequestsQuery->with(['user', 'periodeAkademik'])->latest('estimasi_unlock_requested_at')->get();
+
+        return view('pages.insidentil.index', compact('periodeAkademiks', 'users', 'usersWithJabatan', 'pendingRequests'));
     }
 
     /**
@@ -399,7 +431,18 @@ class InsidentilController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser || $insidentil->user_id !== $authUser->id) {
+        if (!$authUser) {
+            abort(403, 'Anda belum login.');
+        }
+
+        $canAccess = false;
+        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit() || $insidentil->user_id === $authUser->id) {
+            $canAccess = true;
+        } elseif ($insidentil->relationLoaded('taggedUsers') ? $insidentil->taggedUsers->contains($authUser->id) : $insidentil->taggedUsers()->where('users.id', $authUser->id)->exists()) {
+            $canAccess = true;
+        }
+
+        if (!$canAccess) {
             abort(403, 'Anda tidak memiliki hak akses untuk tugas ini.');
         }
 
@@ -407,12 +450,60 @@ class InsidentilController extends Controller
             'estimasi_unlock_reason' => 'required|string|max:1000',
         ]);
 
+        $reason = $request->input('estimasi_unlock_reason');
+        if ($request->filled('pimpinan_id')) {
+            $pimpinan = \App\Models\User::find($request->input('pimpinan_id'));
+            if ($pimpinan) {
+                $reason = "[Tujuan: " . $pimpinan->name . " - " . ($pimpinan->jabatan ?: $pimpinan->roles) . "] " . $reason;
+            }
+        }
+
         $insidentil->update([
-            'estimasi_unlock_reason' => $request->input('estimasi_unlock_reason'),
+            'estimasi_unlock_reason' => $reason,
             'estimasi_unlock_requested_at' => now(),
         ]);
 
         Alert::success('Berhasil', 'Permintaan perubahan estimasi telah dikirim ke pimpinan.')
+            ->toToast()
+            ->autoClose(4000)
+            ->timerProgressBar();
+
+        return redirect()->back();
+    }
+
+    /**
+     * Pimpinan menyetujui dan memberikan perpanjangan estimasi waktu pengerjaan tugas.
+     */
+    public function approveExtension(Request $request, Insidentil $insidentil)
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
+            abort(403, 'Hanya pimpinan atau administrator yang dapat menyetujui perpanjangan waktu.');
+        }
+
+        $request->validate([
+            'estimasi_tanggal_selesai' => 'required|date',
+            'estimasi_jam_selesai'     => 'required|string',
+            'catatan_pimpinan'         => 'nullable|string|max:1000',
+        ]);
+
+        $updateData = [
+            'estimasi_tanggal_selesai'    => $request->input('estimasi_tanggal_selesai'),
+            'estimasi_jam_selesai'        => $request->input('estimasi_jam_selesai'),
+            'estimasi_unlock_requested_at' => null, // Reset request flag
+        ];
+
+        if ($request->filled('catatan_pimpinan')) {
+            $existing = $insidentil->estimasi_unlock_reason ? $insidentil->estimasi_unlock_reason . " | " : "";
+            $updateData['estimasi_unlock_reason'] = $existing . "[Disetujui oleh " . $authUser->name . "]: " . $request->input('catatan_pimpinan');
+        } else {
+            $updateData['estimasi_unlock_reason'] = null; // Clear so staff can work normally
+        }
+
+        $insidentil->update($updateData);
+
+        Alert::success('Berhasil', 'Perpanjangan waktu tugas berhasil disetujui & diberikan kepada pegawai.')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
@@ -514,6 +605,19 @@ class InsidentilController extends Controller
     public function start(Insidentil $insidentil)
     {
         $now = \Carbon\Carbon::now();
+
+        if ($insidentil->status !== 'Selesai' && !empty($insidentil->estimasi_tanggal_selesai)) {
+            $endTime = $insidentil->estimasi_jam_selesai ?: '23:59:59';
+            $estimasiEnd = \Carbon\Carbon::parse($insidentil->estimasi_tanggal_selesai . ' ' . $endTime);
+            if ($now->gt($estimasiEnd)) {
+                return response()->json([
+                    'status' => 'error',
+                    'is_expired' => true,
+                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
+                ], 422);
+            }
+        }
+
         $updateData = [
             'status' => 'Proses',
             'last_started_at' => $now,
@@ -560,6 +664,18 @@ class InsidentilController extends Controller
     public function stop(Insidentil $insidentil)
     {
         $now = \Carbon\Carbon::now();
+
+        if ($insidentil->status !== 'Selesai' && !empty($insidentil->estimasi_tanggal_selesai)) {
+            $endTime = $insidentil->estimasi_jam_selesai ?: '23:59:59';
+            $estimasiEnd = \Carbon\Carbon::parse($insidentil->estimasi_tanggal_selesai . ' ' . $endTime);
+            if ($now->gt($estimasiEnd)) {
+                return response()->json([
+                    'status' => 'error',
+                    'is_expired' => true,
+                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
+                ], 422);
+            }
+        }
 
         if (($insidentil->status === 'Proses' || $insidentil->status === 'Berjalan') && $insidentil->last_started_at) {
             $elapsedSeconds = (int) abs($now->diffInSeconds($insidentil->last_started_at));

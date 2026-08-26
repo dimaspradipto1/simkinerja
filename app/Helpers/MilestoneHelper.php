@@ -137,10 +137,47 @@ class MilestoneHelper
                 $html .= '</div>';
                 $html .= '</div>'; // end timer row
 
+                // Check if parent task is expired (Tugas Gagal)
+                $parent = $m->milestonable;
+                $isParentExpired = false;
+                if ($parent && $parent->status !== 'Selesai' && !empty($parent->estimasi_tanggal_selesai)) {
+                    $endTime = $parent->estimasi_jam_selesai ?: '23:59:59';
+                    $estimasiEnd = Carbon::parse($parent->estimasi_tanggal_selesai . ' ' . $endTime);
+                    if (Carbon::now()->gt($estimasiEnd)) {
+                        $isParentExpired = true;
+                    }
+                }
+
                 // Control Action Buttons
                 $html .= '<div class="btn-group btn-group-sm w-100" role="group">';
 
-                if ($m->status === 'Belum Dimulai') {
+                if ($m->status === 'Selesai') {
+                    $html .= '<span class="btn btn-sm btn-light text-success fw-bold disabled py-0 px-1 w-100 border text-center" style="font-size: 0.72rem; opacity: 1;"><i class="bi bi-check-all me-1"></i>Selesai</span>';
+                } elseif ($isParentExpired) {
+                    $typeStr = strtolower(class_basename($milestonableType));
+                    $routePrefix = 'kegiatan';
+                    if (str_contains($typeStr, 'rencanakerja') || str_contains($typeStr, 'rencana_kerja')) {
+                        $routePrefix = 'rencana-kerja';
+                    } elseif (str_contains($typeStr, 'kepanitiaan')) {
+                        $routePrefix = 'kepanitiaan';
+                    } elseif (str_contains($typeStr, 'insidentil')) {
+                        $routePrefix = 'insidentil';
+                    }
+                    $unlockRoute = route($routePrefix . '.request-unlock-estimasi', $milestonableId);
+                    $approveRoute = route($routePrefix . '.approve-extension', $milestonableId);
+                    $authUser = auth()->user();
+                    $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
+
+                    if (!empty($parent->estimasi_unlock_reason) && !empty($parent->estimasi_unlock_requested_at)) {
+                        if ($isLeader) {
+                            $html .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-1 w-100 text-wrap" data-id="' . $milestonableId . '" data-uraian="' . e($parent->uraian_tugas ?? '') . '" data-pegawai="' . e($parent->user->name ?? '-') . '" data-reason="' . e($parent->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($parent->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($parent->estimasi_jam_selesai ? substr($parent->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . $approveRoute . '" onclick="window.openApproveExtensionModal(this)" style="font-size: 0.68rem; line-height: 1.2;" title="Permohonan masuk. Klik untuk beri perpanjangan waktu"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
+                        } else {
+                            $html .= '<span class="badge bg-warning text-dark px-1 py-1 w-100 text-center text-wrap" style="font-size: 0.65rem;" title="Permohonan perpanjangan waktu sedang menunggu persetujuan pimpinan"><i class="bi bi-hourglass-split me-1"></i>Menunggu Persetujuan</span>';
+                        }
+                    } else {
+                        $html .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold py-1 px-1 w-100 text-wrap btn-request-extension" data-id="' . $milestonableId . '" data-uraian="' . e($parent->uraian_tugas ?? '') . '" data-route="' . $unlockRoute . '" onclick="window.openExtensionModal(this)" style="font-size: 0.68rem; line-height: 1.2;" title="Tugas gagal karena melewati batas waktu. Klik untuk minta perpanjangan waktu"><i class="bi bi-clock-history me-1"></i>Tugas Gagal - Minta Perpanjangan Waktu</button>';
+                    }
+                } elseif ($m->status === 'Belum Dimulai') {
                     $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-0 px-2 w-100" style="font-size: 0.72rem;" onclick="window.startMilestone(' . $m->id . ')" title="Mulai Milestone"><i class="bi bi-play-fill me-1"></i>Mulai</button>';
                 } elseif ($m->status === 'Berjalan') {
                     $html .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-0 px-1" style="font-size: 0.72rem;" onclick="window.pauseMilestone(' . $m->id . ')" title="Pause Timer"><i class="bi bi-pause-fill me-1"></i>Pause</button>';
@@ -148,8 +185,6 @@ class MilestoneHelper
                 } elseif ($m->status === 'Di-pause') {
                     $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-0 px-1" style="font-size: 0.72rem;" onclick="window.startMilestone(' . $m->id . ')" title="Lanjut (Resume)"><i class="bi bi-play-fill me-1"></i>Lanjut</button>';
                     $html .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold py-0 px-1" style="font-size: 0.72rem;" onclick="window.stopMilestone(' . $m->id . ')" title="Berhenti / Selesai"><i class="bi bi-stop-fill me-1"></i>Berhenti</button>';
-                } else { // Selesai
-                    $html .= '<span class="btn btn-sm btn-light text-success fw-bold disabled py-0 px-1 w-100 border text-center" style="font-size: 0.72rem; opacity: 1;"><i class="bi bi-check-all me-1"></i>Selesai</span>';
                 }
 
                 $html .= '</div>'; // end btn group
