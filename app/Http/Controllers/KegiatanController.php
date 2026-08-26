@@ -771,13 +771,19 @@ class KegiatanController extends Controller
         $authUser = Auth::user();
         $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers'])->latest();
 
-        if ($authUser && !$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
-            $query->where(function ($q) use ($authUser) {
-                $q->where('user_id', $authUser->id)
-                  ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                      $qu->where('users.id', $authUser->id);
-                  });
-            });
+        if ($authUser && !$request->filled('jabatan') && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
+            if ($authUser->isPimpinanUnit()) {
+                $query->whereHas('user', function ($qu) use ($authUser) {
+                    $qu->where('unit', $authUser->unit);
+                });
+            } else {
+                $query->where(function ($q) use ($authUser) {
+                    $q->where('user_id', $authUser->id)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                          $qu->where('users.id', $authUser->id);
+                      });
+                });
+            }
         }
 
         if ($request->filled('jabatan')) {
@@ -797,5 +803,198 @@ class KegiatanController extends Controller
             ->setPaper('a4', 'landscape');
 
         return $pdf->download('Laporan_Kegiatan_' . date('YmdHis') . '.pdf');
+    }
+
+    /**
+     * Get DataTable source and overall rekap counts for Kegiatan (Semua Kegiatan).
+     */
+    public function getRekapData(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers']);
+
+        if (!$request->filled('jabatan') && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
+            if ($authUser->isPimpinanUnit()) {
+                $query->whereHas('user', function ($qu) use ($authUser) {
+                    $qu->where('unit', $authUser->unit);
+                });
+            } else {
+                $query->where(function ($q) use ($authUser) {
+                    $q->where('user_id', $authUser->id)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                          $qu->where('users.id', $authUser->id);
+                      });
+                });
+            }
+        }
+
+        if ($request->filled('periode_akademik_id')) {
+            $query->where('periode_akademik_id', $request->periode_akademik_id);
+        }
+
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
+        if ($request->filled('status_filter')) {
+            $st = $request->status_filter;
+            if ($st === 'belum_selesai') {
+                $query->where('status', '!=', 'Selesai');
+            } elseif ($st === 'terlambat') {
+                $nowStr = now()->format('Y-m-d');
+                $query->where('status', '!=', 'Selesai')
+                      ->whereNotNull('estimasi_tanggal_selesai')
+                      ->where('estimasi_tanggal_selesai', '<', $nowStr);
+            } elseif ($st === 'proses') {
+                $query->whereIn('status', ['Proses', 'Berjalan']);
+            } elseif ($st === 'belum_dimulai') {
+                $query->where('status', 'Belum Dimulai');
+            } elseif ($st === 'selesai') {
+                $query->where('status', 'Selesai');
+            }
+        }
+
+        if ($request->filled('jabatan')) {
+            $filterValue = $request->jabatan;
+            if (is_numeric($filterValue)) {
+                $query->where('user_id', $filterValue);
+            } else {
+                $query->where(function ($q) use ($request) {
+                    $q->whereHas('user', function ($qu) use ($request) {
+                        $qu->where('jabatan', $request->jabatan);
+                    })->orWhereHas('taggedUsers', function ($qt) use ($request) {
+                        $qt->where('jabatan', $request->jabatan);
+                    });
+                });
+            }
+        }
+
+        $nowStr = now()->format('Y-m-d');
+        $total = (clone $query)->count();
+        $belum = (clone $query)->where('status', 'Belum Dimulai')->count();
+        $proses = (clone $query)->whereIn('status', ['Proses', 'Berjalan'])->count();
+        $selesai = (clone $query)->where('status', 'Selesai')->count();
+        $terlambat = (clone $query)->where('status', '!=', 'Selesai')
+            ->whereNotNull('estimasi_tanggal_selesai')
+            ->where('estimasi_tanggal_selesai', '<', $nowStr)
+            ->count();
+        $percent = $total > 0 ? round(($selesai / $total) * 100) : 0;
+
+        return DataTables::of($query)
+            ->addColumn('pembuat', function ($row) {
+                $nama = $row->user ? e($row->user->name) : '-';
+                $jabatan = $row->user && $row->user->jabatan ? '<small class="text-muted d-block">' . e($row->user->jabatan) . '</small>' : '';
+                return '<div class="fw-semibold text-dark">' . $nama . '</div>' . $jabatan;
+            })
+            ->addColumn('kategori_badge', function ($row) {
+                $kat = $row->kategori ?: 'Rencana Kerja';
+                $color = match ($kat) {
+                    'Kepanitiaan' => 'info',
+                    'Insidentil' => 'warning',
+                    default => 'success',
+                };
+                $icon = match ($kat) {
+                    'Kepanitiaan' => 'bi-people-fill',
+                    'Insidentil' => 'bi-lightning-charge-fill',
+                    default => 'bi-journal-check',
+                };
+                return '<span class="badge bg-' . $color . ' text-white px-2 py-1 text-nowrap"><i class="bi ' . $icon . ' me-1"></i>' . e($kat) . '</span>';
+            })
+            ->addColumn('estimasi_waktu', function ($row) {
+                $html = '<div class="small">';
+                if ($row->estimasi_tanggal_mulai && $row->estimasi_tanggal_selesai) {
+                    $html .= '<div class="fw-semibold text-dark"><i class="bi bi-calendar3 me-1 text-secondary"></i>' . date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) . ' - ' . date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) . '</div>';
+                } elseif ($row->estimasi_tanggal_selesai) {
+                    $html .= '<div class="fw-semibold text-dark"><i class="bi bi-calendar-event me-1 text-secondary"></i>s/d ' . date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) . '</div>';
+                }
+                if ($row->estimasi_jam_mulai && $row->estimasi_jam_selesai) {
+                    $html .= '<div class="text-muted"><i class="bi bi-clock me-1"></i>' . substr($row->estimasi_jam_mulai, 0, 5) . ' - ' . substr($row->estimasi_jam_selesai, 0, 5) . '</div>';
+                }
+                $html .= '</div>';
+                return $html ?: '<span class="text-muted small">-</span>';
+            })
+            ->addColumn('rekan_kerja', function ($row) {
+                if ($row->taggedUsers->count() > 0) {
+                    return '<div class="small text-secondary"><i class="bi bi-people me-1"></i>' . e($row->taggedUsers->pluck('name')->implode(', ')) . '</div>';
+                }
+                return '<span class="text-muted small">-</span>';
+            })
+            ->addColumn('status_badge', function ($row) {
+                if ($row->status === 'Selesai') {
+                    return '<span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Selesai</span>';
+                } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
+                    if ($row->is_paused) {
+                        return '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-pause-circle me-1"></i>Dijeda</span>';
+                    }
+                    return '<span class="badge bg-primary px-2 py-1"><i class="bi bi-play-circle me-1"></i>Proses</span>';
+                }
+                return '<span class="badge bg-secondary px-2 py-1"><i class="bi bi-x-circle me-1"></i>Belum Mulai</span>';
+            })
+            ->addColumn('analisis_kendala', function ($row) {
+                if ($row->status === 'Selesai') {
+                    $res = '<span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="bi bi-check2-all me-1"></i>Selesai Tuntas</span>';
+                    if ($row->tanggal_selesai) {
+                        $res .= '<div class="small text-muted mt-1">Selesai: ' . date('d/m/Y', strtotime($row->tanggal_selesai)) . '</div>';
+                    }
+                    return $res;
+                }
+
+                $now = \Carbon\Carbon::now();
+                $badges = [];
+                $isOverdue = false;
+
+                // 1. Cek Keterlambatan batas akhir
+                if (!empty($row->estimasi_tanggal_selesai)) {
+                    $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
+                    $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
+                    if ($now->gt($estimasiEnd)) {
+                        $isOverdue = true;
+                        $diffDays = $now->diffInDays($estimasiEnd);
+                        $diffHours = $now->diffInHours($estimasiEnd);
+                        $durasiText = $diffDays > 0 ? "{$diffDays} hari" : "{$diffHours} jam";
+                        $badges[] = '<div class="mb-1"><span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Terlambat ' . $durasiText . ' (Lewat Estimasi)</span></div>';
+                    }
+                }
+
+                // 2. Cek Status Proses & Penyebab
+                if ($row->status === 'Belum Dimulai') {
+                    if (!$isOverdue && !empty($row->estimasi_tanggal_mulai) && $now->lt(\Carbon\Carbon::parse($row->estimasi_tanggal_mulai))) {
+                        $badges[] = '<div><span class="badge bg-secondary-subtle text-secondary border px-2 py-1"><i class="bi bi-calendar-event me-1"></i>Menunggu Jadwal Mulai</span></div>';
+                    } else {
+                        $badges[] = '<div><span class="badge bg-warning-subtle text-dark border border-warning px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Kendala: Tugas Belum Dimulai Pegawai</span></div>';
+                    }
+                } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
+                    if ($row->is_paused) {
+                        $badges[] = '<div><span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-pause-circle-fill me-1"></i>Kendala: Tugas Sedang Dijeda (Paused)</span></div>';
+                    } else {
+                        $badges[] = '<div><span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1"><i class="bi bi-arrow-repeat me-1"></i>Penyebab: Sedang Dikerjakan (Belum Upload Hasil)</span></div>';
+                    }
+                }
+
+                // 3. Catatan Kendala Tambahan
+                if (!empty($row->estimasi_unlock_reason)) {
+                    $badges[] = '<div class="small text-danger mt-1 p-1 bg-danger-subtle rounded border border-danger-subtle"><i class="bi bi-chat-left-dots-fill me-1"></i><strong>Alasan Kendala:</strong> ' . e($row->estimasi_unlock_reason) . '</div>';
+                }
+
+                if (!empty($row->rencana_tindak_lanjut)) {
+                    $badges[] = '<div class="small text-secondary mt-1"><i class="bi bi-arrow-right-circle-fill me-1"></i><strong>Tindak Lanjut:</strong> ' . e($row->rencana_tindak_lanjut) . '</div>';
+                }
+
+                return implode('', $badges) ?: '<span class="text-muted small">-</span>';
+            })
+            ->rawColumns(['pembuat', 'kategori_badge', 'estimasi_waktu', 'rekan_kerja', 'status_badge', 'analisis_kendala'])
+            ->with('rekap', [
+                'total' => $total,
+                'belum' => $belum,
+                'proses' => $proses,
+                'selesai' => $selesai,
+                'terlambat' => $terlambat,
+                'percent' => $percent
+            ])
+            ->make(true);
     }
 }

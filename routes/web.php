@@ -105,6 +105,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('kegiatan/bulk-delete', [KegiatanController::class, 'bulkDelete'])->name('kegiatan.bulk-delete');
     Route::post('kegiatan/{kegiatan}/update-tags', [KegiatanController::class, 'updateTags'])->name('kegiatan.update-tags');
     Route::post('kegiatan/{kegiatan}/request-unlock-estimasi', [KegiatanController::class, 'requestUnlockEstimasi'])->name('kegiatan.request-unlock-estimasi');
+    Route::get('rekapitulasi-kegiatan/data', [KegiatanController::class, 'getRekapData'])->name('rekapitulasi-kegiatan.data');
     Route::resource('kegiatan', KegiatanController::class);
 
     // Rekapitulasi Kepanitiaan Routes

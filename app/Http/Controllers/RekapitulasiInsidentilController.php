@@ -53,13 +53,19 @@ class RekapitulasiInsidentilController extends Controller
 
         $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers']);
 
-        if (!$request->filled('jabatan') && !$authUser->isSuperAdmin()) {
-            $query->where(function ($q) use ($authUser) {
-                $q->where('user_id', $authUser->id)
-                  ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                      $qu->where('users.id', $authUser->id);
-                  });
-            });
+        if (!$request->filled('jabatan') && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
+            if ($authUser->isPimpinanUnit()) {
+                $query->whereHas('user', function ($qu) use ($authUser) {
+                    $qu->where('unit', $authUser->unit);
+                });
+            } else {
+                $query->where(function ($q) use ($authUser) {
+                    $q->where('user_id', $authUser->id)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                          $qu->where('users.id', $authUser->id);
+                      });
+                });
+            }
         }
 
         if ($request->filled('periode_akademik_id')) {

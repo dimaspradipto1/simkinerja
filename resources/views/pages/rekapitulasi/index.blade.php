@@ -1,6 +1,6 @@
 @extends('layouts.dashboard.template')
 
-@section('title', 'Rekapitulasi Capaian')
+@section('title', 'Rekapitulasi Capaian & Diagnosis Kendala')
 
 @section('content')
 <style>
@@ -41,11 +41,11 @@
 </style>
 
 <div class="pagetitle">
-    <h1><i class="bi bi-pie-chart-fill text-success me-2"></i>Rekapitulasi Capaian Kinerja</h1>
+    <h1><i class="bi bi-pie-chart-fill text-success me-2"></i>Rekapitulasi Capaian & Analisis Kendala Kinerja</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active">Rekapitulasi</li>
+            <li class="breadcrumb-item active">Rekapitulasi & Analisis Kendala</li>
         </ol>
     </nav>
 </div>
@@ -55,11 +55,11 @@
     {{-- ===== SHARED FILTER ===== --}}
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header-green">
-            <i class="bi bi-filter-square me-1"></i> Filter Rekapitulasi
+            <i class="bi bi-filter-square me-1"></i> Filter & Diagnosis Kinerja
         </div>
         <div class="card-body pt-3">
             <form id="filter-form" class="row g-3 align-items-end">
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-3">
                     <label for="filter_periode" class="form-label fw-semibold text-secondary small">Periode Akademik</label>
                     <select name="periode_akademik_id" id="filter_periode" class="form-select select2-simple">
                         <option value="">Semua Periode</option>
@@ -71,9 +71,31 @@
                     </select>
                 </div>
 
-                @if(auth()->check() && auth()->user()->isRektorOrSuperAdmin())
-                <div class="col-md-6 col-lg-5">
-                    <label for="filter_jabatan" class="form-label fw-semibold text-secondary small">Kriteria Checklist Jabatan</label>
+                <div class="col-md-6 col-lg-3">
+                    <label for="filter_status" class="form-label fw-semibold text-secondary small">Filter Status / Kendala</label>
+                    <select name="status_filter" id="filter_status" class="form-select select2-simple">
+                        <option value="">Semua Status</option>
+                        <option value="belum_selesai" class="fw-bold text-danger">⚠️ Belum Selesai (Semua Kendala)</option>
+                        <option value="terlambat" class="fw-bold text-danger">🚨 Terlambat (Lewat Estimasi)</option>
+                        <option value="proses" class="text-primary">▶️ Sedang Proses</option>
+                        <option value="belum_dimulai" class="text-secondary">⏳ Belum Dimulai</option>
+                        <option value="selesai" class="text-success">✅ Sudah Selesai</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3" id="wrapper_filter_kategori">
+                    <label for="filter_kategori" class="form-label fw-semibold text-secondary small">Kategori Kegiatan</label>
+                    <select name="kategori" id="filter_kategori" class="form-select select2-simple">
+                        <option value="">Semua Kategori</option>
+                        <option value="Rencana Kerja">Rencana Kerja Utama</option>
+                        <option value="Kepanitiaan">Kepanitiaan</option>
+                        <option value="Insidentil">Insidentil</option>
+                    </select>
+                </div>
+
+                @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat()))
+                <div class="col-md-6 col-lg-3">
+                    <label for="filter_jabatan" class="form-label fw-semibold text-secondary small">Pegawai / Jabatan</label>
                     <select name="jabatan" id="filter_jabatan" class="form-select select2-simple">
                         <option value="">Semua Jabatan</option>
                         @foreach($usersWithJabatan as $u)
@@ -97,7 +119,12 @@
     {{-- ===== TAB NAVIGATION ===== --}}
     <ul class="nav rekap-tab-nav border-bottom mb-0" id="rekapTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tab-rk-btn" data-bs-toggle="tab" data-bs-target="#tab-rk" type="button" role="tab">
+            <button class="nav-link active" id="tab-keg-btn" data-bs-toggle="tab" data-bs-target="#tab-keg" type="button" role="tab">
+                <i class="bi bi-grid-fill tab-icon"></i> Semua Kegiatan (Diagnosis)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-rk-btn" data-bs-toggle="tab" data-bs-target="#tab-rk" type="button" role="tab">
                 <i class="bi bi-journal-text tab-icon"></i> Rencana Kerja Utama
             </button>
         </li>
@@ -116,9 +143,156 @@
     <div class="tab-content bg-white border border-top-0 rounded-bottom shadow-sm p-4" id="rekapTabContent">
 
         {{-- ============================================================ --}}
+        {{-- TAB 0: SEMUA KEGIATAN (MASTER DIAGNOSIS)                      --}}
+        {{-- ============================================================ --}}
+        <div class="tab-pane fade show active" id="tab-keg" role="tabpanel">
+            {{-- Stat Cards --}}
+            <div class="row row-cols-2 row-cols-md-3 row-cols-xl-5 g-3 mb-4 mt-1">
+                <div class="col">
+                    <div class="card rekap-card shadow-sm border-0 border-start border-4 border-info h-100 mb-0">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-2 me-2 text-info d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-grid-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-secondary small fw-bold mb-0">TOTAL</div>
+                                <h4 class="mb-0 fw-bold text-dark" id="keg-stat-total">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card rekap-card shadow-sm border-0 border-start border-4 border-secondary h-100 mb-0">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="rounded-circle bg-secondary bg-opacity-10 p-2 me-2 text-secondary d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-hourglass-split fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-secondary small fw-bold mb-0">BELUM MULAI</div>
+                                <h4 class="mb-0 fw-bold text-secondary" id="keg-stat-belum">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card rekap-card shadow-sm border-0 border-start border-4 border-primary h-100 mb-0">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-2 text-primary d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-play-circle fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-secondary small fw-bold mb-0">PROSES</div>
+                                <h4 class="mb-0 fw-bold text-primary" id="keg-stat-proses">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card rekap-card shadow-sm border-0 border-start border-4 border-danger h-100 mb-0">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-2 text-danger d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-danger small fw-bold mb-0">TERLAMBAT</div>
+                                <h4 class="mb-0 fw-bold text-danger" id="keg-stat-terlambat">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card rekap-card shadow-sm border-0 border-start border-4 border-success h-100 mb-0">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-2 me-2 text-success d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                                <i class="bi bi-check-circle fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-secondary small fw-bold mb-0">SELESAI</div>
+                                <h4 class="mb-0 fw-bold text-success" id="keg-stat-selesai">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Chart + Progress --}}
+            <div class="row mb-4">
+                <div class="col-lg-5 mb-3 mb-lg-0">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header-green"><i class="bi bi-pie-chart-fill me-1"></i> Perbandingan Status & Kendala</div>
+                        <div class="card-body pt-3 d-flex flex-column justify-content-center align-items-center" style="min-height:260px;">
+                            <div style="width:200px;height:200px;"><canvas id="keg-chartStatus"></canvas></div>
+                            <div class="mt-2 text-center text-muted small" id="keg-chart-no-data" style="display:none;"><i class="bi bi-info-circle me-1"></i> Tidak ada data</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header-green"><i class="bi bi-percent me-1"></i> Persentase Capaian Semua Kegiatan</div>
+                        <div class="card-body pt-3 d-flex flex-column justify-content-between">
+                            <div>
+                                <h6 class="fw-bold text-secondary mb-3">Persentase Capaian Kerja (Selesai vs Total)</h6>
+                                <div class="d-flex align-items-baseline mb-3">
+                                    <span class="fs-1 fw-bold text-success" id="keg-big-percent">0%</span>
+                                    <span class="ms-2 text-secondary">Tugas Terselesaikan</span>
+                                </div>
+                                <div class="progress mb-4" style="height:18px;border-radius:9px;">
+                                    <div id="keg-bar-selesai" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%">0%</div>
+                                    <div id="keg-bar-proses" class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%">0%</div>
+                                    <div id="keg-bar-belum" class="progress-bar bg-secondary progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%">0%</div>
+                                </div>
+                            </div>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="row text-center">
+                                    <div class="col-4 border-end">
+                                        <div class="text-secondary small fw-bold">BELUM MULAI</div>
+                                        <div class="fw-semibold text-secondary" id="keg-percent-belum">0%</div>
+                                    </div>
+                                    <div class="col-4 border-end">
+                                        <div class="text-primary small fw-bold">SEDANG PROSES</div>
+                                        <div class="fw-semibold text-primary" id="keg-percent-proses">0%</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-success small fw-bold">SELESAI</div>
+                                        <div class="fw-semibold text-success" id="keg-percent-selesai">0%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- DataTable --}}
+            <div class="card shadow-sm border-0">
+                <div class="card-header-green d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-list-check me-1"></i> Rincian Seluruh Kegiatan & Diagnosis Kendala</span>
+                </div>
+                <div class="card-body pt-3">
+                    <div class="table-responsive">
+                        <table id="keg-table" class="table table-hover w-100 align-middle" style="font-size:0.88rem;">
+                            <thead class="table-light text-secondary fw-semibold">
+                                <tr>
+                                    <th style="width:40px;" class="text-center">No</th>
+                                    <th style="width:110px;">Kategori Modul</th>
+                                    <th style="min-width:200px;">Uraian Tugas</th>
+                                    <th style="min-width:140px;">Pembuat & Rekan</th>
+                                    <th style="min-width:130px;">Estimasi Waktu</th>
+                                    <th style="width:90px;" class="text-center">Status</th>
+                                    <th style="min-width:240px;">Analisis Penyebab / Kendala Belum Selesai</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>{{-- end tab-keg --}}
+
+        {{-- ============================================================ --}}
         {{-- TAB 1: RENCANA KERJA UTAMA                                   --}}
         {{-- ============================================================ --}}
-        <div class="tab-pane fade show active" id="tab-rk" role="tabpanel">
+        <div class="tab-pane fade" id="tab-rk" role="tabpanel">
             {{-- Stat Cards --}}
             <div class="row g-3 mb-4 mt-1">
                 <div class="col-6 col-lg-3">
@@ -293,7 +467,7 @@
             <div class="row mb-4">
                 <div class="col-lg-5 mb-3 mb-lg-0">
                     <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header-green"><i class="bi bi-pie-chart-fill me-1"></i> Perbandingan Status Kepanitiaan</div>
+                        <div class="card-header-green"><i class="bi bi-pie-chart-fill me-1"></i> Perbandingan Status</div>
                         <div class="card-body pt-3 d-flex flex-column justify-content-center align-items-center" style="min-height:260px;">
                             <div style="width:200px;height:200px;"><canvas id="pan-chartStatus"></canvas></div>
                             <div class="mt-2 text-center text-muted small" id="pan-chart-no-data" style="display:none;"><i class="bi bi-info-circle me-1"></i> Tidak ada data</div>
@@ -302,10 +476,10 @@
                 </div>
                 <div class="col-lg-7">
                     <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header-green"><i class="bi bi-percent me-1"></i> Persentase Capaian Kepanitiaan</div>
+                        <div class="card-header-green"><i class="bi bi-percent me-1"></i> Persentase Capaian</div>
                         <div class="card-body pt-3 d-flex flex-column justify-content-between">
                             <div>
-                                <h6 class="fw-bold text-secondary mb-3">Persentase Capaian Kerja Kepanitiaan (Selesai vs Total)</h6>
+                                <h6 class="fw-bold text-secondary mb-3">Persentase Capaian Kerja (Selesai vs Total)</h6>
                                 <div class="d-flex align-items-baseline mb-3">
                                     <span class="fs-1 fw-bold text-success" id="pan-big-percent">0%</span>
                                     <span class="ms-2 text-secondary">Tugas Terselesaikan</span>
@@ -346,9 +520,9 @@
                             <thead class="table-light text-secondary fw-semibold">
                                 <tr>
                                     <th style="width:50px;">No</th>
-                                    <th>Uraian Tugas</th>
+                                    <th>Uraian Tugas Kepanitiaan</th>
                                     <th>Pembuat</th>
-                                    <th>Rekan Kerja (Tag)</th>
+                                    <th>Rekan Kerja</th>
                                     <th style="width:120px;">Status</th>
                                 </tr>
                             </thead>
@@ -383,18 +557,18 @@
                                 <i class="bi bi-x-circle fs-4"></i>
                             </div>
                             <div><div class="text-secondary small fw-bold mb-0">BELUM DIMULAI</div>
-                            <h4 class="mb-0 fw-bold text-dark" id="ins-stat-belum">0</h4></div>
+                            <h4 class="mb-0 fw-bold text-secondary" id="ins-stat-belum">0</h4></div>
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
-                    <div class="card rekap-card shadow-sm border-0 border-start border-4 border-warning h-100 mb-0">
+                    <div class="card rekap-card shadow-sm border-0 border-start border-4 border-primary h-100 mb-0">
                         <div class="card-body p-3 d-flex align-items-center">
-                            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3 text-warning d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                                <i class="bi bi-clock-history fs-4"></i>
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="bi bi-play-circle fs-4"></i>
                             </div>
-                            <div><div class="text-secondary small fw-bold mb-0">PROSES</div>
-                            <h4 class="mb-0 fw-bold text-dark" id="ins-stat-proses">0</h4></div>
+                            <div><div class="text-secondary small fw-bold mb-0">SEDANG PROSES</div>
+                            <h4 class="mb-0 fw-bold text-primary" id="ins-stat-proses">0</h4></div>
                         </div>
                     </div>
                 </div>
@@ -404,29 +578,46 @@
                             <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 text-success d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
                                 <i class="bi bi-check-circle fs-4"></i>
                             </div>
-                            <div><div class="text-secondary small fw-bold mb-0">SELESAI</div>
-                            <h4 class="mb-0 fw-bold text-dark" id="ins-stat-selesai">0</h4></div>
+                            <div><div class="text-secondary small fw-bold mb-0">SUDAH SELESAI</div>
+                            <h4 class="mb-0 fw-bold text-success" id="ins-stat-selesai">0</h4></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Progress Bar --}}
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-bold text-dark small"><i class="bi bi-pie-chart-fill text-success me-1"></i> Persentase Capaian Penyelesaian Insidentil</span>
-                        <span class="fw-bold text-success" id="ins-percent-text">0%</span>
+            {{-- Chart + Progress --}}
+            <div class="row mb-4">
+                <div class="col-lg-5 mb-3 mb-lg-0">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header-green"><i class="bi bi-pie-chart-fill me-1"></i> Perbandingan Status Insidentil</div>
+                        <div class="card-body pt-3 d-flex flex-column justify-content-center align-items-center" style="min-height:260px;">
+                            <div style="width:200px;height:200px;"><canvas id="ins-chartStatus"></canvas></div>
+                            <div class="mt-2 text-center text-muted small" id="ins-chart-no-data" style="display:none;"><i class="bi bi-info-circle me-1"></i> Tidak ada data</div>
+                        </div>
                     </div>
-                    <div class="progress" style="height:14px;border-radius:7px;">
-                        <div id="ins-progress-bar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%"></div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header-green"><i class="bi bi-percent me-1"></i> Persentase Capaian Insidentil</div>
+                        <div class="card-body pt-3 d-flex flex-column justify-content-between">
+                            <div>
+                                <h6 class="fw-bold text-secondary mb-3">Persentase Capaian Kerja (Selesai vs Total)</h6>
+                                <div class="d-flex align-items-baseline mb-3">
+                                    <span class="fs-1 fw-bold text-success" id="ins-percent-text">0%</span>
+                                    <span class="ms-2 text-secondary">Tugas Terselesaikan</span>
+                                </div>
+                                <div class="progress mb-4" style="height:18px;border-radius:9px;">
+                                    <div id="ins-progress-bar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%">0%</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {{-- DataTable --}}
             <div class="card shadow-sm border-0">
-                <div class="card-header-green"><i class="bi bi-table me-1"></i> Tabel Rekapitulasi Rencana Kerja Insidentil</div>
+                <div class="card-header-green"><i class="bi bi-list-check me-1"></i> Rincian Tugas Insidentil</div>
                 <div class="card-body pt-3">
                     <div class="table-responsive">
                         <table class="table table-striped table-hover align-middle w-100" id="ins-table">
@@ -462,7 +653,9 @@ $(document).ready(function() {
 
     // ---- Helper: build chart ----
     function makeChart(canvasId) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
+        const el = document.getElementById(canvasId);
+        if (!el) return null;
+        const ctx = el.getContext('2d');
         return new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -479,10 +672,13 @@ $(document).ready(function() {
 
     // ---- Helper: update stats UI ----
     function updateStats(prefix, r) {
-        $('#' + prefix + '-stat-total').text(r.total);
-        $('#' + prefix + '-stat-belum').text(r.belum);
-        $('#' + prefix + '-stat-proses').text(r.proses);
-        $('#' + prefix + '-stat-selesai').text(r.selesai);
+        $('#' + prefix + '-stat-total').text(r.total || 0);
+        $('#' + prefix + '-stat-belum').text(r.belum || 0);
+        $('#' + prefix + '-stat-proses').text(r.proses || 0);
+        $('#' + prefix + '-stat-selesai').text(r.selesai || 0);
+        if ($('#' + prefix + '-stat-terlambat').length) {
+            $('#' + prefix + '-stat-terlambat').text(r.terlambat || 0);
+        }
     }
 
     function updateProgress(prefix, r, chart, noDataId) {
@@ -512,38 +708,48 @@ $(document).ready(function() {
     }
 
     // ---- Charts ----
+    const kegChart = makeChart('keg-chartStatus');
     const rkChart  = makeChart('rk-chartStatus');
     const panChart = makeChart('pan-chartStatus');
+    const insChart = makeChart('ins-chartStatus');
 
-    // ---- Tab 1: Rencana Kerja ----
-    const rkTable = $('#rk-table').DataTable({
+    // ---- Tab 0: Semua Kegiatan ----
+    const kegTable = $('#keg-table').DataTable({
         processing: true, serverSide: true,
         ajax: {
-            url: "{{ route('rekapitulasi.data') }}",
+            url: "{{ route('rekapitulasi-kegiatan.data') }}",
             data: function(d) {
                 d.periode_akademik_id = $('#filter_periode').val();
+                d.status_filter = $('#filter_status').val();
+                d.kategori = $('#filter_kategori').val();
                 d.jabatan = $('#filter_jabatan').val();
             }
         },
         columns: [
-            { data: null, orderable: false, searchable: false,
+            { data: null, orderable: false, searchable: false, className: 'text-center',
               render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
+            { data: 'kategori_badge', name: 'kategori', className: 'text-center' },
             { data: 'uraian_tugas', name: 'uraian_tugas',
-              render: function(data) { return '<div class="fw-semibold text-dark text-wrap">' + data + '</div>'; } },
+              render: function(data) { return '<div class="fw-bold text-dark text-wrap">' + (data || '-') + '</div>'; } },
             { data: 'pembuat', name: 'user.name' },
-            { data: 'rekan_kerja', name: 'taggedUsers.name', orderable: false },
-            { data: 'status_badge', name: 'status', className: 'text-center' }
+            { data: 'estimasi_waktu', name: 'estimasi_tanggal_selesai' },
+            { data: 'status_badge', name: 'status', className: 'text-center' },
+            { data: 'analisis_kendala', name: 'status', orderable: false, searchable: false }
         ],
         language: { url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json" },
-        order: [[1, 'asc']],
+        order: [[0, 'desc']],
         drawCallback: function() {
             let json = this.api().ajax.json();
             if (json && json.rekap) {
-                updateStats('rk', json.rekap);
-                updateProgress('rk', json.rekap, rkChart, 'rk-chart-no-data');
+                updateStats('keg', json.rekap);
+                updateProgress('keg', json.rekap, kegChart, 'keg-chart-no-data');
             }
         }
     });
+
+    // ---- Tab 1: Rencana Kerja ----
+    let rkInitialized = false;
+    let rkTable;
 
     // ---- Tab 2: Kepanitiaan ----
     let panInitialized = false;
@@ -554,6 +760,42 @@ $(document).ready(function() {
     let insTable;
 
     // Lazy-load tabs on first show
+    $('#tab-rk-btn').on('shown.bs.tab', function() {
+        if (!rkInitialized) {
+            rkInitialized = true;
+            rkTable = $('#rk-table').DataTable({
+                processing: true, serverSide: true,
+                ajax: {
+                    url: "{{ route('rekapitulasi.data') }}",
+                    data: function(d) {
+                        d.periode_akademik_id = $('#filter_periode').val();
+                        d.jabatan = $('#filter_jabatan').val();
+                    }
+                },
+                columns: [
+                    { data: null, orderable: false, searchable: false,
+                      render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
+                    { data: 'uraian_tugas', name: 'uraian_tugas',
+                      render: function(data) { return '<div class="fw-semibold text-dark text-wrap">' + (data || '-') + '</div>'; } },
+                    { data: 'pembuat', name: 'user.name' },
+                    { data: 'rekan_kerja', name: 'taggedUsers.name', orderable: false },
+                    { data: 'status_badge', name: 'status', className: 'text-center' }
+                ],
+                language: { url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json" },
+                order: [[0, 'desc']],
+                drawCallback: function() {
+                    let json = this.api().ajax.json();
+                    if (json && json.rekap) {
+                        updateStats('rk', json.rekap);
+                        updateProgress('rk', json.rekap, rkChart, 'rk-chart-no-data');
+                    }
+                }
+            });
+        } else {
+            rkTable.ajax.reload();
+        }
+    });
+
     $('#tab-pan-btn').on('shown.bs.tab', function() {
         if (!panInitialized) {
             panInitialized = true;
@@ -570,13 +812,13 @@ $(document).ready(function() {
                     { data: null, orderable: false, searchable: false,
                       render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
                     { data: 'uraian_tugas', name: 'uraian_tugas',
-                      render: function(data) { return '<div class="fw-semibold text-dark text-wrap">' + data + '</div>'; } },
+                      render: function(data) { return '<div class="fw-semibold text-dark text-wrap">' + (data || '-') + '</div>'; } },
                     { data: 'pembuat', name: 'user.name' },
                     { data: 'rekan_kerja', name: 'taggedUsers.name', orderable: false },
                     { data: 'status_badge', name: 'status', className: 'text-center' }
                 ],
                 language: { url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json" },
-                order: [[1, 'asc']],
+                order: [[0, 'desc']],
                 drawCallback: function() {
                     let json = this.api().ajax.json();
                     if (json && json.rekap) {
@@ -616,16 +858,25 @@ $(document).ready(function() {
                     infoEmpty: "Menampilkan 0 data",
                     paginate: { first: "Awal", last: "Akhir", next: "►", previous: "◄" }
                 },
+                order: [[0, 'desc']],
                 drawCallback: function() {
                     let json = this.api().ajax.json();
                     if (json && json.rekap) {
-                        $('#ins-stat-total').text(json.rekap.total);
-                        $('#ins-stat-belum').text(json.rekap.belum);
-                        $('#ins-stat-proses').text(json.rekap.proses);
-                        $('#ins-stat-selesai').text(json.rekap.selesai);
+                        updateStats('ins', json.rekap);
                         let pct = json.rekap.percent;
                         $('#ins-percent-text').text(pct + '%');
                         $('#ins-progress-bar').css('width', pct + '%').attr('aria-valuenow', pct);
+                        if (insChart) {
+                            if (json.rekap.total > 0) {
+                                $('#ins-chartStatus').show();
+                                $('#ins-chart-no-data').hide();
+                                insChart.data.datasets[0].data = [json.rekap.belum, json.rekap.proses, json.rekap.selesai];
+                                insChart.update();
+                            } else {
+                                $('#ins-chartStatus').hide();
+                                $('#ins-chart-no-data').show();
+                            }
+                        }
                     }
                 }
             });
@@ -635,9 +886,11 @@ $(document).ready(function() {
     });
 
     // ---- Filter changes reload active tab ----
-    $('#filter_periode, #filter_jabatan').on('change', function() {
+    $('#filter_periode, #filter_status, #filter_kategori, #filter_jabatan').on('change', function() {
         let activeTab = $('#rekapTab .nav-link.active').attr('id');
-        if (activeTab === 'tab-rk-btn') {
+        if (activeTab === 'tab-keg-btn') {
+            kegTable.ajax.reload();
+        } else if (activeTab === 'tab-rk-btn' && rkInitialized) {
             rkTable.ajax.reload();
         } else if (activeTab === 'tab-pan-btn' && panInitialized) {
             panTable.ajax.reload();
@@ -648,7 +901,9 @@ $(document).ready(function() {
 
     // ---- Reset ----
     $('#btn-reset').on('click', function() {
-        $('#filter_periode').val($('#filter_periode option:eq(1)').val()).trigger('change');
+        $('#filter_periode').val('').trigger('change');
+        $('#filter_status').val('').trigger('change');
+        $('#filter_kategori').val('').trigger('change');
         $('#filter_jabatan').val('').trigger('change');
     });
 });
