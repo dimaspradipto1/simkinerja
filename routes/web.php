@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluasiController;
 use App\Http\Controllers\EvaluasiPengenalanWawasanIbnuSinaController;
 use App\Http\Controllers\PeriodeAkademikController;
+use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RencanaKerjaController;
 use App\Http\Controllers\UserController;
@@ -62,6 +63,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::put('user/{user}/password', [UserController::class, 'updatePassword'])->name('user.update-password');
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);
+    Route::resource('kategori', KategoriController::class);
 
     Route::get('rencana-kerja/download-template', [RencanaKerjaController::class, 'downloadTemplate'])->name('rencana-kerja.download-template');
     Route::get('rencana-kerja/export-excel', [RencanaKerjaController::class, 'exportExcel'])->name('rencana-kerja.export-excel');

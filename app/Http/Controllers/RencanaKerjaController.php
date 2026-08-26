@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RencanaKerjaRequest;
+use App\Models\Kategori;
 use App\Models\PeriodeAkademik;
 use App\Models\RencanaKerja;
 use App\Models\User;
@@ -498,10 +499,11 @@ class RencanaKerjaController extends Controller
     {
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
+        $kategoris = Kategori::orderBy('id', 'asc')->get();
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
-        return view('pages.rencanakerja.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId'));
+        return view('pages.rencanakerja.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId', 'kategoris'));
     }
 
     /**
@@ -511,6 +513,7 @@ class RencanaKerjaController extends Controller
     {
         $validated = $request->validated();
         $validated['user_id'] = $validated['user_id'] ?? Auth::id();
+        $validated['kategori'] = $validated['kategori'] ?? 'Rencana Kerja';
 
         if ($request->hasFile('file')) {
             $validated['file'] = $request->file('file')->store('rencana_kerja', 'public');
@@ -555,8 +558,9 @@ class RencanaKerjaController extends Controller
 
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
+        $kategoris = Kategori::orderBy('id', 'asc')->get();
 
-        return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users', 'periodeAkademiks', 'estimasiLocked'));
+        return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users', 'periodeAkademiks', 'kategoris', 'estimasiLocked'));
     }
 
     /**

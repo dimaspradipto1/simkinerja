@@ -156,6 +156,13 @@
                   <span>Periode Akademik</span>
               </a>
           </li>
+          <li class="nav-item">
+              <a class="{{ request()->routeIs('kategori.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  href="{{ route('kategori.index') }}">
+                  <i class="bi bi-tags"></i>
+                  <span>Kategori</span>
+              </a>
+          </li>
           @endif
 
       </ul>
