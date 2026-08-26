@@ -2,12 +2,11 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Tambah Kegiatan</h1>
+    <h1>Kegiatan</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('kegiatan.index') }}">Kegiatan</a></li>
-            <li class="breadcrumb-item active">Tambah</li>
+            <li class="breadcrumb-item active">Kegiatan</li>
         </ol>
     </nav>
 </div><!-- End Page Title -->
@@ -17,7 +16,7 @@
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">Form Tambah Kegiatan</h5>
+                    <h5 class="card-title fw-bold">Form Input Kegiatan</h5>
 
                     <form action="{{ route('kegiatan.store') }}" method="POST" enctype="multipart/form-data" class="row g-3">
                         @csrf

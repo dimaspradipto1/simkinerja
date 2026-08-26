@@ -95,7 +95,7 @@
 
               <li class="nav-item">
                   <a class="{{ request()->routeIs('kegiatan.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                      href="{{ route('kegiatan.index') }}">
+                      href="{{ route('kegiatan.create') }}">
                       <i class="bi bi-calendar2-event-fill"></i>
                       <span>Kegiatan</span>
                   </a>

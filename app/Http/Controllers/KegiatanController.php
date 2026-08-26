@@ -245,11 +245,7 @@ class KegiatanController extends Controller
                 ->make(true);
         }
 
-        $jabatanList = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->distinct()->pluck('jabatan');
-        $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
-        $users = User::orderBy('name')->get();
-
-        return view('pages.kegiatan.index', compact('jabatanList', 'periodeAkademiks', 'users'));
+        return redirect()->route('kegiatan.create');
     }
 
     /**
@@ -351,7 +347,7 @@ class KegiatanController extends Controller
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('kegiatan.index');
+        return redirect()->route('kegiatan.create');
     }
 
     /**
@@ -421,7 +417,7 @@ class KegiatanController extends Controller
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('kegiatan.index');
+        return redirect()->route('kegiatan.create');
     }
 
     /**
