@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Insidentil extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\SyncsToKegiatan;
 
     protected $table = 'insidentils';
 

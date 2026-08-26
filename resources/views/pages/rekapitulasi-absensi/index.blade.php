@@ -52,6 +52,15 @@
         font-size: 1.25rem;
         flex-shrink: 0;
     }
+    .stat-label {
+        font-size: 0.85rem !important;
+        line-height: 1.25 !important;
+        white-space: normal !important;
+        word-break: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        margin-bottom: 0.25rem;
+    }
 
     /* Table Custom Styles */
     .table-card {
@@ -213,16 +222,16 @@
     <!-- ============================================================== -->
     <!-- STATISTIK RINGKASAN REKAPITULASI (KPI CARDS)                   -->
     <!-- ============================================================== -->
-    <div class="row g-3 g-md-4 mb-4">
+    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         <!-- Total Pegawai -->
-        <div class="col-6 col-md-4 col-xl-2">
+        <div class="col">
             <div class="card stat-kpi-card h-100 p-2 p-md-3">
                 <div class="d-flex align-items-center gap-2 gap-md-3">
                     <div class="stat-icon-wrapper bg-primary-subtle text-primary">
                         <i class="bi bi-people-fill"></i>
                     </div>
-                    <div class="overflow-hidden">
-                        <div class="text-muted stat-label text-truncate fw-semibold">Total Pegawai</div>
+                    <div class="flex-grow-1">
+                        <div class="text-muted stat-label fw-semibold">Total Pegawai</div>
                         <h4 class="fw-bold mb-0 text-dark" id="stat-total-pegawai">0</h4>
                     </div>
                 </div>
@@ -230,14 +239,14 @@
         </div>
 
         <!-- Sudah Absen Datang -->
-        <div class="col-6 col-md-4 col-xl-2">
+        <div class="col">
             <div class="card stat-kpi-card h-100 p-2 p-md-3 border-start border-success border-3">
                 <div class="d-flex align-items-center gap-2 gap-md-3">
                     <div class="stat-icon-wrapper bg-success-subtle text-success">
                         <i class="bi bi-box-arrow-in-right"></i>
                     </div>
-                    <div class="overflow-hidden">
-                        <div class="text-muted stat-label text-truncate fw-semibold" id="label-sudah-datang">Sudah Datang</div>
+                    <div class="flex-grow-1">
+                        <div class="text-muted stat-label fw-semibold" id="label-sudah-datang">Presensi Datang</div>
                         <h4 class="fw-bold mb-0 text-success" id="stat-sudah-datang">0</h4>
                     </div>
                 </div>
@@ -245,14 +254,14 @@
         </div>
 
         <!-- Belum Absen Datang -->
-        <div class="col-6 col-md-4 col-xl-2">
+        <div class="col">
             <div class="card stat-kpi-card h-100 p-2 p-md-3 border-start border-danger border-3">
                 <div class="d-flex align-items-center gap-2 gap-md-3">
                     <div class="stat-icon-wrapper bg-danger-subtle text-danger">
                         <i class="bi bi-x-circle-fill"></i>
                     </div>
-                    <div class="overflow-hidden">
-                        <div class="text-muted stat-label text-truncate fw-semibold" id="label-belum-datang">Belum Datang</div>
+                    <div class="flex-grow-1">
+                        <div class="text-muted stat-label fw-semibold" id="label-belum-datang">Belum Datang</div>
                         <h4 class="fw-bold mb-0 text-danger" id="stat-belum-datang">0</h4>
                     </div>
                 </div>
@@ -260,14 +269,14 @@
         </div>
 
         <!-- Sudah Absen Pulang -->
-        <div class="col-6 col-md-6 col-xl-3">
+        <div class="col">
             <div class="card stat-kpi-card h-100 p-2 p-md-3 border-start border-info border-3">
                 <div class="d-flex align-items-center gap-2 gap-md-3">
                     <div class="stat-icon-wrapper bg-info-subtle text-info">
                         <i class="bi bi-box-arrow-right"></i>
                     </div>
-                    <div class="overflow-hidden">
-                        <div class="text-muted stat-label text-truncate fw-semibold" id="label-sudah-pulang">Sudah Pulang</div>
+                    <div class="flex-grow-1">
+                        <div class="text-muted stat-label fw-semibold" id="label-sudah-pulang">Presensi Pulang</div>
                         <h4 class="fw-bold mb-0 text-info" id="stat-sudah-pulang">0</h4>
                     </div>
                 </div>
@@ -275,14 +284,14 @@
         </div>
 
         <!-- Belum Absen Pulang -->
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-4 col-xl">
             <div class="card stat-kpi-card h-100 p-2 p-md-3 border-start border-warning border-3">
                 <div class="d-flex align-items-center gap-2 gap-md-3">
                     <div class="stat-icon-wrapper bg-warning-subtle text-warning">
                         <i class="bi bi-dash-circle-fill"></i>
                     </div>
-                    <div class="overflow-hidden">
-                        <div class="text-muted stat-label text-truncate fw-semibold" id="label-belum-pulang">Belum Pulang</div>
+                    <div class="flex-grow-1">
+                        <div class="text-muted stat-label fw-semibold" id="label-belum-pulang">Belum Pulang</div>
                         <h4 class="fw-bold mb-0 text-warning" id="stat-belum-pulang">0</h4>
                     </div>
                 </div>

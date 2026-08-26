@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class RencanaKerja extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\SyncsToKegiatan;
 
     protected $table = 'rencana_kerjas';
 

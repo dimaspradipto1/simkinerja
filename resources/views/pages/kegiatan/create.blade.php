@@ -61,12 +61,12 @@
                                 <option value="" disabled {{ old('kategori') ? '' : 'selected' }}>-- Pilih Kategori --</option>
                                 @if(isset($kategoris) && $kategoris->count() > 0)
                                     @foreach($kategoris as $k)
-                                        <option value="{{ $k->nama_kategori }}" {{ old('kategori', 'Rencana Kerja') == $k->nama_kategori ? 'selected' : '' }}>
+                                        <option value="{{ $k->nama_kategori }}" {{ old('kategori') == $k->nama_kategori ? 'selected' : '' }}>
                                             {{ $k->nama_kategori }}
                                         </option>
                                     @endforeach
                                 @else
-                                    <option value="Rencana Kerja" {{ old('kategori', 'Rencana Kerja') == 'Rencana Kerja' ? 'selected' : '' }}>Rencana Kerja</option>
+                                    <option value="Rencana Kerja" {{ old('kategori') == 'Rencana Kerja' ? 'selected' : '' }}>Rencana Kerja</option>
                                     <option value="Kepanitiaan" {{ old('kategori') == 'Kepanitiaan' ? 'selected' : '' }}>Kepanitiaan</option>
                                     <option value="Insidentil" {{ old('kategori') == 'Insidentil' ? 'selected' : '' }}>Insidentil</option>
                                 @endif

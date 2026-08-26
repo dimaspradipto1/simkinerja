@@ -348,13 +348,14 @@ class KegiatanController extends Controller
             $validated['status'] = 'Belum Dimulai';
         }
 
-        // Simpan data sesuai dengan kategori yang dipilih
+        // Simpan data ke model target (secara otomatis akan disinkronkan ke tabel kegiatans via SyncsToKegiatan trait)
         if (trim($kategori) === 'Kepanitiaan') {
             $record = Kepanitiaan::create($validated);
             if ($request->has('tagged_users')) {
                 $record->taggedUsers()->sync($request->input('tagged_users'));
+                $record->syncToKegiatan();
             }
-            Alert::success('Berhasil', 'Data berhasil ditambahkan ke Rencana Kerja Kepanitiaan.')
+            Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Rencana Kerja Kepanitiaan.')
                 ->toToast()
                 ->autoClose(4000)
                 ->timerProgressBar();
@@ -364,8 +365,9 @@ class KegiatanController extends Controller
             $record = Insidentil::create($validated);
             if ($request->has('tagged_users')) {
                 $record->taggedUsers()->sync($request->input('tagged_users'));
+                $record->syncToKegiatan();
             }
-            Alert::success('Berhasil', 'Data berhasil ditambahkan ke Rencana Kerja Insidentil.')
+            Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Rencana Kerja Insidentil.')
                 ->toToast()
                 ->autoClose(4000)
                 ->timerProgressBar();
@@ -375,8 +377,9 @@ class KegiatanController extends Controller
             $record = RencanaKerja::create($validated);
             if ($request->has('tagged_users')) {
                 $record->taggedUsers()->sync($request->input('tagged_users'));
+                $record->syncToKegiatan();
             }
-            Alert::success('Berhasil', 'Data berhasil ditambahkan ke Rencana Kerja Utama.')
+            Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Rencana Kerja Utama.')
                 ->toToast()
                 ->autoClose(4000)
                 ->timerProgressBar();

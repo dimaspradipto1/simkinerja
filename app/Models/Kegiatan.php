@@ -15,6 +15,8 @@ class Kegiatan extends Model
         'user_id',
         'periode_akademik_id',
         'kategori',
+        'source_type',
+        'source_id',
         'uraian_tugas',
         'hari',
         'estimasi_jam_mulai',

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Kepanitiaan extends Model
 {
-    use \Illuminate\Database\Eloquent\Factories\HasFactory;
+    use \Illuminate\Database\Eloquent\Factories\HasFactory, \App\Traits\SyncsToKegiatan;
 
     protected $table = 'kepanitiaans';
 
