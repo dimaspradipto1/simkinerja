@@ -199,11 +199,32 @@ class AnalisisKeterlambatanController extends Controller
 
         foreach ($allTasks as $task) {
             $isLate = false;
-            $estimasiSelesai = $task->estimasi_tanggal_selesai;
+            $estimasiTglAwal = $task->estimasi_tanggal_selesai_awal ?? $task->estimasi_tanggal_selesai;
+            $estimasiJamAwal = $task->estimasi_jam_selesai_awal ?? $task->estimasi_jam_selesai ?? '23:59:59';
+            $estimasiTglSelesai = $task->estimasi_tanggal_selesai;
+            $estimasiJamSelesai = $task->estimasi_jam_selesai ?? '23:59:59';
 
-            if (!empty($task->tanggal_selesai) && !empty($estimasiSelesai) && $task->tanggal_selesai > $estimasiSelesai) {
-                $isLate = true;
-            } elseif (($task->status !== 'Selesai') && !empty($estimasiSelesai) && $estimasiSelesai < $today) {
+            $now = Carbon::now();
+
+            // 1. Check if task has requested/approved extension or has reason submitted
+            $hasSubmittedReason = !empty($task->estimasi_unlock_reason) || !empty($task->estimasi_unlock_requested_at) || !empty($task->estimasi_unlock_approved_at);
+
+            // 2. Check if completion time passed the original or current deadline
+            if (!empty($estimasiTglAwal)) {
+                $estEndDateTime = Carbon::parse($estimasiTglAwal . ' ' . $estimasiJamAwal);
+                if (!empty($task->tanggal_selesai)) {
+                    $actEndDateTime = Carbon::parse($task->tanggal_selesai . ' ' . ($task->waktu_selesai ?: '23:59:59'));
+                    if ($actEndDateTime->gt($estEndDateTime)) {
+                        $isLate = true;
+                    }
+                } elseif ($task->status !== 'Selesai') {
+                    if ($now->gt($estEndDateTime)) {
+                        $isLate = true;
+                    }
+                }
+            }
+
+            if ($hasSubmittedReason) {
                 $isLate = true;
             }
 
@@ -256,6 +277,17 @@ class AnalisisKeterlambatanController extends Controller
             $hasInsidentil = $overlappingInsidentil->count() > 0;
             $hasKepanitiaan = $overlappingKepanitiaan->count() > 0;
 
+            // Parse reason for keywords if overlap is not explicitly logged
+            $reasonRaw = $task->estimasi_unlock_reason ?? '';
+            $reasonLower = strtolower($reasonRaw);
+
+            if ($hasInsidentil || str_contains($reasonLower, 'insidentil')) {
+                $hasInsidentil = true;
+            }
+            if ($hasKepanitiaan || str_contains($reasonLower, 'panitia') || str_contains($reasonLower, 'kepanitiaan')) {
+                $hasKepanitiaan = true;
+            }
+
             $kategoriKendala = 'murni';
             if ($hasInsidentil && $hasKepanitiaan) {
                 $kategoriKendala = 'beban_ganda';
@@ -282,10 +314,14 @@ class AnalisisKeterlambatanController extends Controller
             $task->overlapping_insidentil = $overlappingInsidentil;
             $task->overlapping_kepanitiaan = $overlappingKepanitiaan;
             
-            // Calculate delay days
-            $estDateObj = Carbon::parse($estimasiSelesai);
-            $actualEndObj = Carbon::parse($endDate);
-            $task->delay_days = max(1, (int) $estDateObj->diffInDays($actualEndObj));
+            // Calculate delay text in minutes
+            $estDateObj = Carbon::parse($estimasiTglAwal . ' ' . $estimasiJamAwal);
+            $actualEndObj = !empty($task->tanggal_selesai)
+                ? Carbon::parse($task->tanggal_selesai . ' ' . ($task->waktu_selesai ?: '23:59:59'))
+                : $now;
+            $diffMinsTotal = (int) max(1, $estDateObj->diffInMinutes($actualEndObj, false));
+            $task->delay_text = $diffMinsTotal . ' Menit';
+            $task->delay_days = $diffMinsTotal;
 
             $lateTasks->push($task);
         }
@@ -321,35 +357,67 @@ class AnalisisKeterlambatanController extends Controller
             })
             ->addColumn('task_details', function ($row) {
                 $estMulai = $row->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '-';
-                $estSelesai = $row->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) : '-';
-                $realSelesai = $row->tanggal_selesai ? date('d/m/Y', strtotime($row->tanggal_selesai)) : 'Belum Selesai (Current)';
+                $estSelesaiAwal = $row->estimasi_tanggal_selesai_awal ?? $row->estimasi_tanggal_selesai;
+                $estSelesaiAwalFmt = $estSelesaiAwal ? date('d/m/Y', strtotime($estSelesaiAwal)) : '-';
+                $estJamAwalFmt = $row->estimasi_jam_selesai_awal ? substr($row->estimasi_jam_selesai_awal, 0, 5) : ($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '');
+
+                $realSelesai = $row->tanggal_selesai ? (date('d/m/Y', strtotime($row->tanggal_selesai)) . ' (' . substr($row->waktu_selesai ?? '00:00', 0, 5) . ' WIB)') : 'Belum Selesai (Current)';
 
                 $html = '<div class="fw-bold text-dark mb-1">' . e($row->uraian_tugas) . '</div>';
-                $html .= '<div class="small text-muted mb-1"><i class="bi bi-calendar-event me-1 text-secondary"></i><strong>Estimasi:</strong> ' . $estMulai . ' s/d ' . $estSelesai . '</div>';
-                $html .= '<div class="small text-danger mb-1"><i class="bi bi-clock-history me-1"></i><strong>Realisasi:</strong> ' . $realSelesai . ' <span class="badge bg-danger-subtle text-danger border border-danger ms-1">Terlambat ' . $row->delay_days . ' Hari</span></div>';
+                $html .= '<div class="small text-muted mb-1"><i class="bi bi-calendar-event me-1 text-secondary"></i><strong>Estimasi Awal:</strong> ' . $estMulai . ' s/d ' . $estSelesaiAwalFmt . ($estJamAwalFmt ? ' (' . $estJamAwalFmt . ' WIB)' : '') . '</div>';
+                
+                if (!empty($row->estimasi_tanggal_selesai_awal) && $row->estimasi_tanggal_selesai_awal !== $row->estimasi_tanggal_selesai) {
+                    $html .= '<div class="small text-info mb-1"><i class="bi bi-clock-history me-1"></i><strong>Perpanjangan:</strong> ' . date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) . ' (' . substr($row->estimasi_jam_selesai, 0, 5) . ' WIB)</div>';
+                }
+
+                $html .= '<div class="small text-danger mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Realisasi:</strong> ' . $realSelesai . ' <span class="badge bg-danger-subtle text-danger border border-danger ms-1">Terlambat ' . ($row->delay_text ?? ($row->delay_days . ' Hari')) . '</span></div>';
                 return $html;
             })
             ->addColumn('diagnostik_kendala', function ($row) {
+                $html = '';
                 if ($row->kategori_kendala === 'beban_ganda') {
-                    return '<span class="badge bg-warning text-dark px-2 py-1 fs-7"><i class="bi bi-exclamation-octagon-fill me-1"></i>Beban Ganda (Panitia & Insidentil)</span>';
+                    $html .= '<span class="badge bg-warning text-dark px-2 py-1 fs-7 d-inline-block mb-1"><i class="bi bi-exclamation-octagon-fill me-1"></i>Beban Ganda (Panitia & Insidentil)</span>';
                 } elseif ($row->kategori_kendala === 'insidentil') {
-                    return '<span class="badge bg-danger px-2 py-1 fs-7"><i class="bi bi-lightning-charge-fill me-1"></i>Terganggu Tugas Insidentil</span>';
+                    $html .= '<span class="badge bg-danger px-2 py-1 fs-7 d-inline-block mb-1"><i class="bi bi-lightning-charge-fill me-1"></i>Terganggu Tugas Insidentil</span>';
                 } elseif ($row->kategori_kendala === 'kepanitiaan') {
-                    return '<span class="badge bg-info text-dark px-2 py-1 fs-7"><i class="bi bi-people-fill me-1"></i>Beban Tugas Kepanitiaan</span>';
+                    $html .= '<span class="badge bg-info text-dark px-2 py-1 fs-7 d-inline-block mb-1"><i class="bi bi-people-fill me-1"></i>Beban Tugas Kepanitiaan</span>';
+                } else {
+                    $html .= '<span class="badge bg-secondary px-2 py-1 fs-7 d-inline-block mb-1"><i class="bi bi-person-x-fill me-1"></i>Keterlambatan Murni Staff</span>';
                 }
-                return '<span class="badge bg-secondary px-2 py-1 fs-7"><i class="bi bi-person-x-fill me-1"></i>Keterlambatan Murni Staff</span>';
+
+                if (!empty($row->estimasi_unlock_reason) || !empty($row->estimasi_unlock_approved_at)) {
+                    $html .= '<div class="mt-1"><span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.7rem;"><i class="bi bi-send-check me-1"></i>Pengajuan Waktu Tambahan</span></div>';
+                }
+
+                return $html;
             })
             ->addColumn('rincian_bentrokan', function ($row) {
                 $html = '';
+
+                // 1. Staff Submitted Reason from Extension Request
+                if (!empty($row->estimasi_unlock_reason)) {
+                    $rReason = $row->estimasi_unlock_reason;
+                    $tujuanPimpinan = null;
+                    if (preg_match('/^\[Tujuan:\s*([^\]]+)\]\s*(.*)$/s', $rReason, $mMatches)) {
+                        $tujuanPimpinan = $mMatches[1];
+                        $rReason = $mMatches[2];
+                    }
+
+                    $html .= '<div class="p-2.5 p-2 bg-light rounded border border-danger-subtle mb-2 shadow-2xs">';
+                    if ($tujuanPimpinan) {
+                        $html .= '<div class="mb-1"><span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.72rem;"><i class="bi bi-person-badge-fill me-1"></i>Tujuan: ' . e($tujuanPimpinan) . '</span></div>';
+                    }
+                    $html .= '<div class="fw-bold text-danger small mb-1" style="font-size: 0.75rem;"><i class="bi bi-chat-square-quote-fill me-1"></i>Alasan Pengajuan Tambahan Waktu:</div>';
+                    $html .= '<div class="text-dark fw-medium small" style="font-size: 0.82rem; line-height: 1.4;">' . nl2br(e($rReason)) . '</div>';
+                    $html .= '</div>';
+                }
+
+                // 2. Overlapping Tasks
                 $insCount = $row->overlapping_insidentil ? $row->overlapping_insidentil->count() : 0;
                 $panCount = $row->overlapping_kepanitiaan ? $row->overlapping_kepanitiaan->count() : 0;
 
-                if ($insCount === 0 && $panCount === 0) {
-                    return '<span class="text-muted small"><em>Tidak ada tugas panitia/insidentil yang bersamaan.</em></span>';
-                }
-
                 if ($insCount > 0) {
-                    $html .= '<div class="small fw-bold text-danger mb-1"><i class="bi bi-lightning-charge me-1"></i>Tugas Insidentil (' . $insCount . '):</div>';
+                    $html .= '<div class="small fw-bold text-danger mb-1"><i class="bi bi-lightning-charge me-1"></i>Tugas Insidentil Bersamaan (' . $insCount . '):</div>';
                     $html .= '<ul class="ps-3 mb-2 small text-dark" style="margin-bottom: 0;">';
                     foreach ($row->overlapping_insidentil as $ins) {
                         $html .= '<li>' . e($ins->uraian_tugas) . ' <span class="text-muted">(' . ($ins->status ?? '-') . ')</span></li>';
@@ -358,12 +426,16 @@ class AnalisisKeterlambatanController extends Controller
                 }
 
                 if ($panCount > 0) {
-                    $html .= '<div class="small fw-bold text-info mb-1"><i class="bi bi-people me-1"></i>Kegiatan Kepanitiaan (' . $panCount . '):</div>';
+                    $html .= '<div class="small fw-bold text-info mb-1"><i class="bi bi-people me-1"></i>Kegiatan Kepanitiaan Bersamaan (' . $panCount . '):</div>';
                     $html .= '<ul class="ps-3 mb-0 small text-dark">';
                     foreach ($row->overlapping_kepanitiaan as $pan) {
                         $html .= '<li>' . e($pan->nama_kegiatan ?? $pan->uraian_tugas) . ' <span class="text-muted">(' . ($pan->status ?? '-') . ')</span></li>';
                     }
                     $html .= '</ul>';
+                }
+
+                if (empty($html)) {
+                    $html = '<span class="text-muted small"><em>Tidak ada kendala/bentrokan tercatat.</em></span>';
                 }
 
                 return $html;
@@ -570,11 +642,27 @@ class AnalisisKeterlambatanController extends Controller
 
         foreach ($items as $task) {
             $isLate = false;
-            $estimasiSelesai = $task->estimasi_tanggal_selesai;
+            $estimasiTglAwal = $task->estimasi_tanggal_selesai_awal ?? $task->estimasi_tanggal_selesai;
+            $estimasiJamAwal = $task->estimasi_jam_selesai_awal ?? $task->estimasi_jam_selesai ?? '23:59:59';
+            $now = Carbon::now();
 
-            if (!empty($task->tanggal_selesai) && !empty($estimasiSelesai) && $task->tanggal_selesai > $estimasiSelesai) {
-                $isLate = true;
-            } elseif (($task->status !== 'Selesai') && !empty($estimasiSelesai) && $estimasiSelesai < $today) {
+            $hasSubmittedReason = !empty($task->estimasi_unlock_reason) || !empty($task->estimasi_unlock_requested_at) || !empty($task->estimasi_unlock_approved_at);
+
+            if (!empty($estimasiTglAwal)) {
+                $estEndDateTime = Carbon::parse($estimasiTglAwal . ' ' . $estimasiJamAwal);
+                if (!empty($task->tanggal_selesai)) {
+                    $actEndDateTime = Carbon::parse($task->tanggal_selesai . ' ' . ($task->waktu_selesai ?: '23:59:59'));
+                    if ($actEndDateTime->gt($estEndDateTime)) {
+                        $isLate = true;
+                    }
+                } elseif ($task->status !== 'Selesai') {
+                    if ($now->gt($estEndDateTime)) {
+                        $isLate = true;
+                    }
+                }
+            }
+
+            if ($hasSubmittedReason) {
                 $isLate = true;
             }
 
@@ -621,6 +709,15 @@ class AnalisisKeterlambatanController extends Controller
 
             $hasIns = $overlappingInsidentil->count() > 0;
             $hasPan = $overlappingKepanitiaan->count() > 0;
+            $reasonRaw = $task->estimasi_unlock_reason ?? '';
+            $reasonLower = strtolower($reasonRaw);
+
+            if ($hasIns || str_contains($reasonLower, 'insidentil')) {
+                $hasIns = true;
+            }
+            if ($hasPan || str_contains($reasonLower, 'panitia') || str_contains($reasonLower, 'kepanitiaan')) {
+                $hasPan = true;
+            }
 
             $diagLabel = 'Keterlambatan Murni Staff';
             $rekomendasi = 'Pendampingan & monitoring manajemen waktu rutin.';
@@ -640,23 +737,39 @@ class AnalisisKeterlambatanController extends Controller
             }
 
             $bentrokanText = [];
-            if ($hasIns) {
+            if (!empty($task->estimasi_unlock_reason)) {
+                $rReason = $task->estimasi_unlock_reason;
+                $tujuanPimpinan = null;
+                if (preg_match('/^\[Tujuan:\s*([^\]]+)\]\s*(.*)$/s', $rReason, $mMatches)) {
+                    $tujuanPimpinan = $mMatches[1];
+                    $rReason = $mMatches[2];
+                }
+                $bentrokanText[] = '[Alasan Pengajuan Waktu]: ' . ($tujuanPimpinan ? "(Tujuan: $tujuanPimpinan) " : "") . $rReason;
+            }
+            if ($hasIns && $overlappingInsidentil->isNotEmpty()) {
                 $insList = $overlappingInsidentil->pluck('uraian_tugas')->implode(', ');
                 $bentrokanText[] = 'Insidentil: ' . $insList;
             }
-            if ($hasPan) {
+            if ($hasPan && $overlappingKepanitiaan->isNotEmpty()) {
                 $panList = $overlappingKepanitiaan->pluck('nama_kegiatan')->implode(', ');
                 $bentrokanText[] = 'Kepanitiaan: ' . ($panList ?: 'Kegiatan Panitia');
             }
             $bentrokanStr = !empty($bentrokanText) ? implode("\n", $bentrokanText) : 'Tidak Ada Bentrokan';
 
-            $delayDays = max(1, (int) Carbon::parse($estimasiSelesai)->diffInDays(Carbon::parse($endDate)));
+            $estDateObj = Carbon::parse($estimasiTglAwal . ' ' . $estimasiJamAwal);
+            $actualEndObj = !empty($task->tanggal_selesai)
+                ? Carbon::parse($task->tanggal_selesai . ' ' . ($task->waktu_selesai ?: '23:59:59'))
+                : $now;
+
+            $diffHours = $estDateObj->diffInHours($actualEndObj, false);
+            $diffDays = $estDateObj->diffInDays($actualEndObj, false);
+            $delayStr = ($diffDays >= 1) ? ($diffDays . ' Hari') : (($diffHours >= 1) ? ($diffHours . ' Jam') : (max(1, $estDateObj->diffInMinutes($actualEndObj, false)) . ' Menit'));
 
             $sheet->setCellValue('A' . $rowNum, $no++);
             $sheet->setCellValue('B' . $rowNum, ($task->user ? $task->user->name : '-') . "\n(" . ($task->user ? ($task->user->jabatan ?? '-') : '-') . ')');
             $sheet->setCellValue('C' . $rowNum, $task->uraian_tugas);
             $sheet->setCellValue('D' . $rowNum, 'Est: ' . ($task->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) : '-') . "\nReal: " . ($task->tanggal_selesai ? date('d/m/Y', strtotime($task->tanggal_selesai)) : 'Belum Selesai'));
-            $sheet->setCellValue('E' . $rowNum, $delayDays . ' Hari');
+            $sheet->setCellValue('E' . $rowNum, $delayStr);
             $sheet->setCellValue('F' . $rowNum, $diagLabel);
             $sheet->setCellValue('G' . $rowNum, $bentrokanStr);
             $sheet->setCellValue('H' . $rowNum, $rekomendasi);
@@ -741,11 +854,27 @@ class AnalisisKeterlambatanController extends Controller
 
         foreach ($allTasks as $task) {
             $isLate = false;
-            $estimasiSelesai = $task->estimasi_tanggal_selesai;
+            $estimasiTglAwal = $task->estimasi_tanggal_selesai_awal ?? $task->estimasi_tanggal_selesai;
+            $estimasiJamAwal = $task->estimasi_jam_selesai_awal ?? $task->estimasi_jam_selesai ?? '23:59:59';
+            $now = Carbon::now();
 
-            if (!empty($task->tanggal_selesai) && !empty($estimasiSelesai) && $task->tanggal_selesai > $estimasiSelesai) {
-                $isLate = true;
-            } elseif (($task->status !== 'Selesai') && !empty($estimasiSelesai) && $estimasiSelesai < $today) {
+            $hasSubmittedReason = !empty($task->estimasi_unlock_reason) || !empty($task->estimasi_unlock_requested_at) || !empty($task->estimasi_unlock_approved_at);
+
+            if (!empty($estimasiTglAwal)) {
+                $estEndDateTime = Carbon::parse($estimasiTglAwal . ' ' . $estimasiJamAwal);
+                if (!empty($task->tanggal_selesai)) {
+                    $actEndDateTime = Carbon::parse($task->tanggal_selesai . ' ' . ($task->waktu_selesai ?: '23:59:59'));
+                    if ($actEndDateTime->gt($estEndDateTime)) {
+                        $isLate = true;
+                    }
+                } elseif ($task->status !== 'Selesai') {
+                    if ($now->gt($estEndDateTime)) {
+                        $isLate = true;
+                    }
+                }
+            }
+
+            if ($hasSubmittedReason) {
                 $isLate = true;
             }
 
@@ -792,6 +921,15 @@ class AnalisisKeterlambatanController extends Controller
 
             $hasIns = $overlappingInsidentil->count() > 0;
             $hasPan = $overlappingKepanitiaan->count() > 0;
+            $reasonRaw = $task->estimasi_unlock_reason ?? '';
+            $reasonLower = strtolower($reasonRaw);
+
+            if ($hasIns || str_contains($reasonLower, 'insidentil')) {
+                $hasIns = true;
+            }
+            if ($hasPan || str_contains($reasonLower, 'panitia') || str_contains($reasonLower, 'kepanitiaan')) {
+                $hasPan = true;
+            }
 
             if ($hasIns && $hasPan) {
                 $task->kategori_kendala = 'beban_ganda';
@@ -805,7 +943,15 @@ class AnalisisKeterlambatanController extends Controller
 
             $task->overlapping_insidentil = $overlappingInsidentil;
             $task->overlapping_kepanitiaan = $overlappingKepanitiaan;
-            $task->delay_days = max(1, (int) Carbon::parse($estimasiSelesai)->diffInDays(Carbon::parse($endDate)));
+
+            $estDateObj = Carbon::parse($estimasiTglAwal . ' ' . $estimasiJamAwal);
+            $actualEndObj = !empty($task->tanggal_selesai)
+                ? Carbon::parse($task->tanggal_selesai . ' ' . ($task->waktu_selesai ?: '23:59:59'))
+                : $now;
+
+            $diffMinsTotal = (int) max(1, $estDateObj->diffInMinutes($actualEndObj, false));
+            $task->delay_text = $diffMinsTotal . ' Menit';
+            $task->delay_days = $diffMinsTotal;
 
             $lateTasks->push($task);
         }

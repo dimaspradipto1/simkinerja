@@ -655,16 +655,20 @@ class KepanitiaanController extends Controller
         ]);
 
         $updateData = [
-            'estimasi_tanggal_selesai'    => $request->input('estimasi_tanggal_selesai'),
-            'estimasi_jam_selesai'        => $request->input('estimasi_jam_selesai'),
-            'estimasi_unlock_requested_at' => null, // Reset request flag
+            'estimasi_tanggal_selesai'     => $request->input('estimasi_tanggal_selesai'),
+            'estimasi_jam_selesai'         => $request->input('estimasi_jam_selesai'),
+            'estimasi_unlock_requested_at'  => null, // Reset request flag
+            'estimasi_unlock_approved_at'   => now(),
         ];
+
+        if (empty($kepanitiaan->estimasi_tanggal_selesai_awal)) {
+            $updateData['estimasi_tanggal_selesai_awal'] = $kepanitiaan->estimasi_tanggal_selesai;
+            $updateData['estimasi_jam_selesai_awal']     = $kepanitiaan->estimasi_jam_selesai;
+        }
 
         if ($request->filled('catatan_pimpinan')) {
             $existing = $kepanitiaan->estimasi_unlock_reason ? $kepanitiaan->estimasi_unlock_reason . " | " : "";
             $updateData['estimasi_unlock_reason'] = $existing . "[Disetujui oleh " . $authUser->name . "]: " . $request->input('catatan_pimpinan');
-        } else {
-            $updateData['estimasi_unlock_reason'] = null; // Clear so staff can work normally
         }
 
         $kepanitiaan->update($updateData);

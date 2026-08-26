@@ -285,22 +285,20 @@
             </div>
         </div>
         <div class="card-body p-3">
-            <div class="table-responsive">
-                <table id="analisis-table" class="table table-hover align-middle w-100" style="font-size: 0.85rem;">
-                    <thead class="table-light border-top">
-                        <tr>
-                            <th style="width: 4%;">NO</th>
-                            <th style="width: 16%;">STAFF & JABATAN</th>
-                            <th style="width: 22%;">TUGAS UTAMA (TERLAMBAT)</th>
-                            <th style="width: 14%;">DIAGNOSTIK KENDALA</th>
-                            <th style="width: 21%;">PEKERJAAN BENTROK (OVERLAP)</th>
-                            <th style="width: 16%;">REKOMENDASI EVALUASI</th>
-                            <th style="width: 7%; text-align:center;">AKSI</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <table id="analisis-table" class="table table-hover align-middle w-100" style="font-size: 0.85rem;">
+                <thead class="table-light border-top">
+                    <tr>
+                        <th style="width: 4%;">NO</th>
+                        <th style="width: 15%;">STAFF & JABATAN</th>
+                        <th style="width: 20%;">TUGAS (TERLAMBAT)</th>
+                        <th style="width: 15%;">DIAGNOSTIK KENDALA</th>
+                        <th style="width: 23%;">ALASAN PENGAJUAN & BENTROKAN</th>
+                        <th style="width: 16%;">REKOMENDASI EVALUASI</th>
+                        <th style="width: 7%; text-align:center;">AKSI</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 </section>
@@ -455,6 +453,9 @@ $(document).ready(function() {
     let table = $('#analisis-table').DataTable({
         processing: true,
         serverSide: true,
+        scrollX: true,
+        scrollCollapse: true,
+        autoWidth: false,
         ajax: {
             url: "{{ route('analisis-keterlambatan.data') }}",
             data: function(d) {

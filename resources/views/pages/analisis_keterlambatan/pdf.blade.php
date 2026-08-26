@@ -179,7 +179,25 @@
                         @endif
                     </td>
                     <td class="text-left" style="font-size: 6.5pt; line-height: 1.3;">
-                        @if($insCount === 0 && $panCount === 0)
+                        @if(!empty($item->estimasi_unlock_reason))
+                            @php
+                                $rReason = $item->estimasi_unlock_reason;
+                                $tujuanPimpinan = null;
+                                if (preg_match('/^\[Tujuan:\s*([^\]]+)\]\s*(.*)$/s', $rReason, $mMatches)) {
+                                    $tujuanPimpinan = $mMatches[1];
+                                    $rReason = $mMatches[2];
+                                }
+                            @endphp
+                            <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 3px; padding: 4px; margin-bottom: 4px;">
+                                @if($tujuanPimpinan)
+                                    <div style="color: #1e40af; font-weight: bold; margin-bottom: 2px;">Tujuan: {{ $tujuanPimpinan }}</div>
+                                @endif
+                                <div style="color: #991b1b; font-weight: bold;">Alasan Pengajuan Tambahan Waktu:</div>
+                                <div style="color: #1f2937;">{!! nl2br(e($rReason)) !!}</div>
+                            </div>
+                        @endif
+
+                        @if($insCount === 0 && $panCount === 0 && empty($item->estimasi_unlock_reason))
                             <span style="color: #777777;">- Tidak Ada Bentrokan -</span>
                         @endif
 
