@@ -14,6 +14,7 @@ class RencanaKerja extends Model
     protected $fillable = [
         'user_id',
         'periode_akademik_id',
+        'kategori',
         'uraian_tugas',
         'hari',
         'estimasi_jam_mulai',

@@ -71,6 +71,7 @@ class RencanaKerjaController extends Controller
                 ->filterColumn('task_details', function ($query, $keyword) {
                     $query->where(function ($q) use ($keyword) {
                         $q->where('uraian_tugas', 'like', "%{$keyword}%")
+                          ->orWhere('kategori', 'like', "%{$keyword}%")
                           ->orWhereHas('user', function ($u) use ($keyword) {
                               $u->where('name', 'like', "%{$keyword}%")
                                 ->orWhere('jabatan', 'like', "%{$keyword}%");
@@ -97,8 +98,12 @@ class RencanaKerjaController extends Controller
                     $html .= '  </div>';
                     $html .= '</div>';
 
-                    // 2. Metadata Chips (Periode, Hari, Pegawai)
+                    // 2. Metadata Chips (Kategori, Periode, Hari, Pegawai)
                     $chips = [];
+                    if ($row->kategori) {
+                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-tag-fill me-1"></i>' . e($row->kategori) . '</span>';
+                    }
+
                     if ($row->periodeAkademik) {
                         $chips[] = '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-mortarboard-fill me-1"></i>' . e($row->periodeAkademik->nama_periode) . '</span>';
                     }

@@ -41,7 +41,7 @@
                         <input type="hidden" name="user_id" value="{{ auth()->id() }}">
                         @endif
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="periode_akademik_id" class="form-label fw-semibold">Periode Akademik <span class="text-danger">*</span></label>
                             <select class="form-select @error('periode_akademik_id') is-invalid @enderror" id="periode_akademik_id" name="periode_akademik_id" required>
                                 <option value="" disabled {{ old('periode_akademik_id') ? '' : 'selected' }}>-- Pilih Periode Akademik --</option>
@@ -56,7 +56,20 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label for="kategori" class="form-label fw-semibold">Kategori <span class="text-danger">*</span></label>
+                            <select class="form-select @error('kategori') is-invalid @enderror" id="kategori" name="kategori" required>
+                                <option value="" disabled {{ old('kategori') ? '' : 'selected' }}>-- Pilih Kategori --</option>
+                                <option value="Rencana Kerja" {{ old('kategori', 'Rencana Kerja') == 'Rencana Kerja' ? 'selected' : '' }}>Rencana Kerja</option>
+                                <option value="Kepanitiaan" {{ old('kategori') == 'Kepanitiaan' ? 'selected' : '' }}>Kepanitiaan</option>
+                                <option value="Insidentil" {{ old('kategori') == 'Insidentil' ? 'selected' : '' }}>Insidentil</option>
+                            </select>
+                            @error('kategori')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4">
                             <label for="hari" class="form-label fw-semibold">Hari Pelaksanaan</label>
                             <select class="form-select @error('hari') is-invalid @enderror" id="hari" name="hari">
                                 <option value="" {{ old('hari') ? '' : 'selected' }}>-- Pilih Hari --</option>

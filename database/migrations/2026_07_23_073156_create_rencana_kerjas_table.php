@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('periode_akademik_id')->constrained()->cascadeOnDelete();
+            $table->string('kategori')->nullable();
             $table->text('uraian_tugas');
             $table->string('hari')->nullable();
             $table->time('estimasi_jam_mulai')->nullable();
