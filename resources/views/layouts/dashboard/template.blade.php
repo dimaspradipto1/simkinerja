@@ -76,10 +76,27 @@
             margin-right: 0;
         }
 
-        /* Ensure table header & cell text wraps nicely and aligns 100% symmetrically */
+        /* Table cell styling */
         .table th, .table td {
             vertical-align: middle !important;
             box-sizing: border-box;
+        }
+
+        /* Task Dropdown/Collapse Toggle Animation & Button Styling */
+        .transition-transform {
+            transition: transform 0.2s ease-in-out;
+        }
+        .btn-task-toggle[aria-expanded="true"] .toggle-icon {
+            transform: rotate(180deg);
+        }
+        .btn-task-toggle[aria-expanded="true"] {
+            background-color: #15432d !important;
+            color: #ffffff !important;
+            border-color: #15432d !important;
+        }
+        .btn-task-toggle[aria-expanded="true"]:hover {
+            background-color: #0f3121 !important;
+            color: #ffffff !important;
         }
 
         /* Mobile specific horizontal scroll polish */

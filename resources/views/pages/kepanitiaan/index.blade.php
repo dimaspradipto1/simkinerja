@@ -79,6 +79,21 @@
         padding-left: 4px !important;
         padding-right: 0 !important;
     }
+    .transition-transform {
+        transition: transform 0.2s ease-in-out;
+    }
+    .btn-task-toggle[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+    .btn-task-toggle[aria-expanded="true"] {
+        background-color: #15432d !important;
+        color: #ffffff !important;
+        border-color: #15432d !important;
+    }
+    .btn-task-toggle[aria-expanded="true"]:hover {
+        background-color: #0f3121 !important;
+        color: #ffffff !important;
+    }
     @media (max-width: 767.98px) {
         .card-header-green {
             padding: 12px 14px;
@@ -284,6 +299,9 @@
                     <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
                         <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-danger text-white fw-bold text-nowrap d-none">
                             <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="selected-count">0</span>)
+                        </button>
+                        <button type="button" id="btn-toggle-all-cards" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" title="Buka atau tutup semua rincian">
+                            <i class="bi bi-arrows-expand me-1"></i> <span id="toggle-all-text">Buka Semua</span>
                         </button>
                         <button type="button" id="btn-voice-kepanitiaan" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
                             <i class="bi bi-volume-up-fill me-1"></i> Suara
@@ -826,6 +844,46 @@
 
         updateBulkDeleteButton();
         setTimeout(initTinyMCEEditors, 150);
+    });
+
+    // Re-init TinyMCE when a task collapse is shown to ensure correct rendering dimensions
+    $(document).on('shown.bs.collapse', function (e) {
+        if (typeof tinymce !== 'undefined') {
+            $(e.target).find('.tinymce-editor').each(function() {
+                let id = $(this).attr('id');
+                if (id) {
+                    tinymce.remove('#' + id);
+                    tinymce.init({
+                        selector: '#' + id,
+                        height: 150,
+                        menubar: false,
+                        plugins: 'lists link table',
+                        toolbar: 'undo redo | bold italic underline | bullist numlist | removeformat',
+                        content_style: 'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 13px; }',
+                        setup: function (editor) {
+                            editor.on('change blur', function () {
+                                editor.save();
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    // Toggle All Task Details (Buka Semua / Tutup Semua)
+    let allKepanitiaanCardsExpanded = false;
+    $('#btn-toggle-all-cards').on('click', function() {
+        allKepanitiaanCardsExpanded = !allKepanitiaanCardsExpanded;
+        if (allKepanitiaanCardsExpanded) {
+            $('.collapse[id^="collapseKepanitiaan_"]').collapse('show');
+            $('#toggle-all-text').text('Tutup Semua');
+            $(this).find('i').removeClass('bi-arrows-expand').addClass('bi-arrows-collapse');
+        } else {
+            $('.collapse[id^="collapseKepanitiaan_"]').collapse('hide');
+            $('#toggle-all-text').text('Buka Semua');
+            $(this).find('i').removeClass('bi-arrows-collapse').addClass('bi-arrows-expand');
+        }
     });
 
         let currentQuickTagId = null;

@@ -49,9 +49,24 @@ class RencanaKerjaController extends Controller
 
             $totalCount = (clone $query)->count();
             $selesaiCount = (clone $query)->where('status', 'Selesai')->count();
-            $prosesCount = (clone $query)->whereIn('status', ['Proses', 'Berjalan'])->count();
-            $belumCount = (clone $query)->where('status', 'Belum Dimulai')->count();
+            $prosesCount = (clone $query)->whereIn('status', ['Proses', 'Berjalan', 'Di-pause'])->count();
+            $belumCount = (clone $query)->where(function($q) {
+                $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+            })->count();
             $percent = $totalCount > 0 ? round(($selesaiCount / $totalCount) * 100) : 0;
+
+            if ($request->filled('status')) {
+                $statusFilter = $request->status;
+                if ($statusFilter === 'Selesai') {
+                    $query->where('status', 'Selesai');
+                } elseif ($statusFilter === 'Proses') {
+                    $query->whereIn('status', ['Proses', 'Berjalan', 'Di-pause']);
+                } elseif ($statusFilter === 'Belum Dimulai') {
+                    $query->where(function($q) {
+                        $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+                    });
+                }
+            }
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -87,17 +102,32 @@ class RencanaKerjaController extends Controller
                     
                     // 1. Task Title & Action Buttons Bar (Placed below title so buttons are never cut off)
                     $actionBtns = $this->renderActionButtons($row, $authUser, 'rencana-kerja', 'deleteRencanaKerja');
+                    $collapseId = 'collapseTask_' . $row->id;
 
                     $html .= '<div class="p-2 px-3 bg-light rounded border mb-1 shadow-2xs d-flex flex-column gap-2">';
-                    $html .= '  <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break" style="font-size: 0.98rem;">';
-                    $html .= '      <i class="bi bi-card-checklist text-success fs-5"></i>';
-                    $html .= '      <span>' . e($row->uraian_tugas) . '</span>';
+                    $html .= '  <div class="d-flex align-items-center justify-content-between gap-2">';
+                    $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.98rem; cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
+                    $html .= '          <i class="bi bi-card-checklist text-success fs-5"></i>';
+                    $html .= '          <span>' . e($row->uraian_tugas) . '</span>';
+                    $html .= '      </div>';
                     $html .= '  </div>';
-                    $html .= '  <div class="pt-2 border-top d-flex flex-wrap align-items-center justify-content-start gap-2">';
-                    $html .= '      <span class="text-secondary small fw-semibold me-1"><i class="bi bi-gear-fill me-1"></i>Aksi & Status:</span>';
-                    $html .=        $actionBtns;
+                    $html .= '  <div class="pt-2 border-top d-flex flex-wrap align-items-center justify-content-between gap-2">';
+                    $html .= '      <div class="d-flex flex-wrap align-items-center justify-content-start gap-2">';
+                    $html .= '          <span class="text-secondary small fw-semibold me-1"><i class="bi bi-gear-fill me-1"></i>Aksi & Status:</span>';
+                    $html .=            $actionBtns;
+                    $html .= '      </div>';
+                    $html .= '      <div>';
+                    $html .= '          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-2xs btn-task-toggle" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-size: 0.8rem; height: 32px; padding: 0 10px; font-weight: 500;" title="Buka / Tutup Rincian">';
+                    $html .= '              <span class="toggle-text">Rincian</span>';
+                    $html .= '              <i class="bi bi-chevron-down toggle-icon transition-transform"></i>';
+                    $html .= '          </button>';
+                    $html .= '      </div>';
                     $html .= '  </div>';
                     $html .= '</div>';
+
+                    // Collapsible Content Container (Dropdown section)
+                    $html .= '<div class="collapse" id="' . $collapseId . '">';
+                    $html .= '  <div class="d-flex flex-column gap-2 pt-1">';
 
                     // 2. Metadata Chips (Kategori, Periode, Hari, Pegawai)
                     $chips = [];
@@ -320,6 +350,9 @@ class RencanaKerjaController extends Controller
                     $html .= '</div>'; // end col-12
                     $html .= '</div>'; // end row
                     $html .= '</form>';
+
+                    $html .= '  </div>'; // end collapse inner d-flex
+                    $html .= '</div>'; // end collapse
 
                     $html .= '</div>';
                     return $html;

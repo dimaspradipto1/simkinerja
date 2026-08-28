@@ -58,6 +58,35 @@
         padding: 10px 4px !important;
         border-bottom: 1px solid #edf2f7;
     }
+    .transition-transform {
+        transition: transform 0.2s ease-in-out;
+    }
+    .btn-task-toggle[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+    .btn-task-toggle[aria-expanded="true"] {
+        background-color: #15432d !important;
+        color: #ffffff !important;
+        border-color: #15432d !important;
+    }
+    .btn-task-toggle[aria-expanded="true"]:hover {
+        background-color: #0f3121 !important;
+        color: #ffffff !important;
+    }
+    .btn-filter-pill {
+        transition: all 0.2s ease-in-out;
+        font-size: 0.8rem !important;
+        padding: 5px 14px !important;
+        border-radius: 20px !important;
+    }
+    .btn-filter-pill.active {
+        background-color: #15432d !important;
+        color: #ffffff !important;
+        border-color: #15432d !important;
+    }
+    .btn-filter-pill:hover:not(.active) {
+        background-color: #f1f5f9;
+    }
     @media (max-width: 767.98px) {
         .card-header-green {
             padding: 12px 14px;
@@ -265,6 +294,18 @@
                         <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-danger text-white fw-bold text-nowrap d-none">
                             <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="selected-count">0</span>)
                         </button>
+                        <div class="d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-2xs">
+                            <label for="filter-status" class="small fw-bold text-secondary mb-0 px-1 d-none d-lg-inline" style="font-size: 0.78rem;"><i class="bi bi-funnel-fill text-success me-1"></i>Status:</label>
+                            <select id="filter-status" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark py-0" style="font-size: 0.82rem; height: 28px; width: auto; cursor: pointer;">
+                                <option value="">Semua Status</option>
+                                <option value="Selesai">✅ Selesai</option>
+                                <option value="Proses">⏳ Proses / Berjalan</option>
+                                <option value="Belum Dimulai">⚪ Belum Dimulai</option>
+                            </select>
+                        </div>
+                        <button type="button" id="btn-toggle-all-cards" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" title="Buka atau tutup semua rincian">
+                            <i class="bi bi-arrows-expand me-1"></i> <span id="toggle-all-text">Buka Semua</span>
+                        </button>
                         <button type="button" id="btn-voice-rencanakerja" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
                             <i class="bi bi-volume-up-fill me-1"></i> Suara
                         </button>
@@ -277,6 +318,24 @@
                     </div>
                 </div>
                 <div class="card-body p-3">
+                    <!-- Quick Status Filter Pills -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+                        <div class="d-flex flex-wrap align-items-center gap-2" id="filter-status-pills">
+                            <button type="button" class="btn btn-sm btn-filter-pill active fw-semibold shadow-2xs" data-status="">
+                                <i class="bi bi-grid-fill me-1"></i> Semua (<span id="count-status-all">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-success" data-status="Selesai">
+                                <i class="bi bi-check-circle-fill me-1 text-success"></i> Selesai (<span id="count-status-selesai">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-warning" data-status="Proses">
+                                <i class="bi bi-hourglass-split me-1 text-warning"></i> Proses / Berjalan (<span id="count-status-proses">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-secondary" data-status="Belum Dimulai">
+                                <i class="bi bi-dash-circle me-1 text-secondary"></i> Belum Dimulai (<span id="count-status-belum">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover w-100" id="rencanakerja-table">
                             <thead>
@@ -708,6 +767,7 @@
                     if ($('#filter-jabatan').length) {
                         d.jabatan = $('#filter-jabatan').val();
                     }
+                    d.status = $('#filter-status').val();
                 }
             },
             columns: [
@@ -718,7 +778,7 @@
             language: {
                 search: "Cari Tugas:",
                 lengthMenu: "Tampilkan _MENU_ data",
-                zeroRecords: "Belum ada rencana kerja / checklist tugas untuk jabatan ini",
+                zeroRecords: "Belum ada rencana kerja / checklist tugas untuk filter ini",
                 info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ tugas",
                 infoEmpty: "Tidak ada data"
             }
@@ -727,7 +787,28 @@
         table.on('xhr.dt', function(e, settings, json, xhr) {
             if (json && json.overall_rekap) {
                 window.latestOverallRekap = json.overall_rekap;
+                $('#count-status-all').text(json.overall_rekap.total || 0);
+                $('#count-status-selesai').text(json.overall_rekap.selesai || 0);
+                $('#count-status-proses').text(json.overall_rekap.proses || 0);
+                $('#count-status-belum').text(json.overall_rekap.belum || 0);
             }
+        });
+
+        // Filter Status Dropdown Change
+        $('#filter-status').on('change', function() {
+            var val = $(this).val();
+            $('.btn-filter-pill').removeClass('active');
+            $('.btn-filter-pill[data-status="' + val + '"]').addClass('active');
+            table.ajax.reload();
+        });
+
+        // Filter Status Pills Click
+        $('.btn-filter-pill').on('click', function() {
+            var status = $(this).data('status');
+            $('.btn-filter-pill').removeClass('active');
+            $(this).addClass('active');
+            $('#filter-status').val(status);
+            table.ajax.reload();
         });
 
         if ($('#filter-jabatan').length) {
@@ -828,6 +909,46 @@
 
         updateBulkDeleteButton();
         setTimeout(initTinyMCEEditors, 150);
+    });
+
+    // Re-init TinyMCE when a task collapse is shown to ensure correct rendering dimensions
+    $(document).on('shown.bs.collapse', function (e) {
+        if (typeof tinymce !== 'undefined') {
+            $(e.target).find('.tinymce-editor').each(function() {
+                let id = $(this).attr('id');
+                if (id) {
+                    tinymce.remove('#' + id);
+                    tinymce.init({
+                        selector: '#' + id,
+                        height: 150,
+                        menubar: false,
+                        plugins: 'lists link table',
+                        toolbar: 'undo redo | bold italic underline | bullist numlist | removeformat',
+                        content_style: 'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 13px; }',
+                        setup: function (editor) {
+                            editor.on('change blur', function () {
+                                editor.save();
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    // Toggle All Task Details (Buka Semua / Tutup Semua)
+    let allTaskCardsExpanded = false;
+    $('#btn-toggle-all-cards').on('click', function() {
+        allTaskCardsExpanded = !allTaskCardsExpanded;
+        if (allTaskCardsExpanded) {
+            $('.collapse[id^="collapseTask_"]').collapse('show');
+            $('#toggle-all-text').text('Tutup Semua');
+            $(this).find('i').removeClass('bi-arrows-expand').addClass('bi-arrows-collapse');
+        } else {
+            $('.collapse[id^="collapseTask_"]').collapse('hide');
+            $('#toggle-all-text').text('Buka Semua');
+            $(this).find('i').removeClass('bi-arrows-collapse').addClass('bi-arrows-expand');
+        }
     });
 
         // Quick Tag Modal Handlers
