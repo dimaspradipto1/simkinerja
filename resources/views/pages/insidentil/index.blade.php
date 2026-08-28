@@ -314,6 +314,7 @@ $(document).ready(function() {
     let table = $('#insidentil-table').DataTable({
         processing: true,
         serverSide: true,
+        stateSave: true,
         ajax: {
             url: "{{ route('insidentil.index') }}",
             data: function(d) {

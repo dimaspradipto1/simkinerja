@@ -759,6 +759,7 @@
         var table = $('#rencanakerja-table').DataTable({
             processing: true,
             serverSide: true,
+            stateSave: true,
             ordering: false,
             autoWidth: false,
             ajax: {

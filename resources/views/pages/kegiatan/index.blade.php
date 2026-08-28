@@ -235,6 +235,7 @@ $(document).ready(function() {
     let table = $('#kegiatan-table').DataTable({
         processing: true,
         serverSide: true,
+        stateSave: true,
         ajax: {
             url: "{{ route('kegiatan.index') }}",
             data: function(d) {
