@@ -212,6 +212,12 @@ class DashboardController extends Controller
                         'route' => route('absensi-esq-ketiga.index'),
                         'records' => \App\Models\AbsensiEsqKetiga::with('user')->orderBy('id', 'desc')->get(),
                     ],
+                    [
+                        'id' => 'esq_4',
+                        'title' => 'Hari Ke-4',
+                        'route' => route('absensi-esq-keempat.index'),
+                        'records' => \App\Models\AbsensiEsqKeempat::with('user')->orderBy('id', 'desc')->get(),
+                    ],
                 ],
             ],
             'milad' => [
@@ -292,7 +298,8 @@ class DashboardController extends Controller
             'esq' => match($day) {
                 1 => \App\Models\AbsensiEsqPertama::class,
                 2 => \App\Models\AbsensiEsqKedua::class,
-                default => \App\Models\AbsensiEsqKetiga::class,
+                3 => \App\Models\AbsensiEsqKetiga::class,
+                default => \App\Models\AbsensiEsqKeempat::class,
             },
             'milad' => match($day) {
                 1 => \App\Models\AbsensiMiladPertama::class,

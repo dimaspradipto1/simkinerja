@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AbsensiEsqKedua;
 use App\Models\AbsensiEsqKetiga;
+use App\Models\AbsensiEsqKeempat;
 use App\Models\AbsensiEsqPertama;
 use App\Models\AbsensiKuliahUmumKedua;
 use App\Models\AbsensiKuliahUmumKetiga;
@@ -35,6 +36,7 @@ class RekapitulasiAbsensiController extends Controller
             'esq' => match ($day) {
                 2 => AbsensiEsqKedua::class,
                 3 => AbsensiEsqKetiga::class,
+                4 => AbsensiEsqKeempat::class,
                 default => AbsensiEsqPertama::class,
             },
             'milad' => match ($day) {
@@ -123,20 +125,24 @@ class RekapitulasiAbsensiController extends Controller
         $day = (int) $request->query('day', 1);
 
         if ($day === 0) {
-            // Mode 3 Hari Sekaligus
+            // Mode Rekap Semua Hari Sekaligus
             $m1 = $this->getAttendanceModel($kepanitiaan, 1);
             $m2 = $this->getAttendanceModel($kepanitiaan, 2);
             $m3 = $this->getAttendanceModel($kepanitiaan, 3);
+            $m4 = $kepanitiaan === 'esq' ? $this->getAttendanceModel($kepanitiaan, 4) : null;
 
             $att1 = $m1::all()->keyBy('user_id');
             $att2 = $m2::all()->keyBy('user_id');
             $att3 = $m3::all()->keyBy('user_id');
+            $att4 = $m4 ? $m4::all()->keyBy('user_id') : collect();
 
-            $allAttendedIds = array_unique(array_merge(
+            $mergedIds = array_merge(
                 $att1->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray(),
                 $att2->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray(),
-                $att3->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray()
-            ));
+                $att3->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray(),
+                $att4->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray()
+            );
+            $allAttendedIds = array_unique($mergedIds);
 
             $usersQuery = $this->getBaseUsersQuery()->whereIn('id', $allAttendedIds);
 
@@ -163,31 +169,39 @@ class RekapitulasiAbsensiController extends Controller
                           ->orWhere('jabatan', 'like', "%{$keyword}%");
                     });
                 })
-                ->addColumn('absen_datang', function ($user) use ($att1, $att2, $att3) {
+                ->addColumn('absen_datang', function ($user) use ($att1, $att2, $att3, $att4, $kepanitiaan) {
                     $d1 = $att1->get($user->id);
                     $d2 = $att2->get($user->id);
                     $d3 = $att3->get($user->id);
+                    $d4 = $att4->get($user->id);
 
                     $h1 = $d1 && $d1->hadir_datang ? $this->formatStatusBadge($d1->hadir_datang, $d1->waktu_datang, 'H1: ') : '<span class="badge bg-light text-muted border">H1: -</span>';
                     $h2 = $d2 && $d2->hadir_datang ? $this->formatStatusBadge($d2->hadir_datang, $d2->waktu_datang, 'H2: ') : '<span class="badge bg-light text-muted border">H2: -</span>';
                     $h3 = $d3 && $d3->hadir_datang ? $this->formatStatusBadge($d3->hadir_datang, $d3->waktu_datang, 'H3: ') : '<span class="badge bg-light text-muted border">H3: -</span>';
+                    $h4 = ($kepanitiaan === 'esq') ? ($d4 && $d4->hadir_datang ? $this->formatStatusBadge($d4->hadir_datang, $d4->waktu_datang, 'H4: ') : '<span class="badge bg-light text-muted border">H4: -</span>') : '';
 
-                    return '<div class="d-flex flex-wrap gap-1">' . $h1 . $h2 . $h3 . '</div>';
+                    return '<div class="d-flex flex-wrap gap-1">' . $h1 . $h2 . $h3 . $h4 . '</div>';
                 })
-                ->addColumn('absen_pulang', function ($user) use ($att1, $att2, $att3) {
+                ->addColumn('absen_pulang', function ($user) use ($att1, $att2, $att3, $att4, $kepanitiaan) {
                     $d1 = $att1->get($user->id);
                     $d2 = $att2->get($user->id);
                     $d3 = $att3->get($user->id);
+                    $d4 = $att4->get($user->id);
 
                     $h1 = $d1 && $d1->hadir_pulang ? $this->formatStatusBadge($d1->hadir_pulang, $d1->waktu_pulang, 'H1: ') : '<span class="badge bg-light text-muted border">H1: -</span>';
                     $h2 = $d2 && $d2->hadir_pulang ? $this->formatStatusBadge($d2->hadir_pulang, $d2->waktu_pulang, 'H2: ') : '<span class="badge bg-light text-muted border">H2: -</span>';
                     $h3 = $d3 && $d3->hadir_pulang ? $this->formatStatusBadge($d3->hadir_pulang, $d3->waktu_pulang, 'H3: ') : '<span class="badge bg-light text-muted border">H3: -</span>';
+                    $h4 = ($kepanitiaan === 'esq') ? ($d4 && $d4->hadir_pulang ? $this->formatStatusBadge($d4->hadir_pulang, $d4->waktu_pulang, 'H4: ') : '<span class="badge bg-light text-muted border">H4: -</span>') : '';
 
-                    return '<div class="d-flex flex-wrap gap-1">' . $h1 . $h2 . $h3 . '</div>';
+                    return '<div class="d-flex flex-wrap gap-1">' . $h1 . $h2 . $h3 . $h4 . '</div>';
                 })
-                ->addColumn('bukti_izin', function ($user) use ($att1, $att2, $att3) {
+                ->addColumn('bukti_izin', function ($user) use ($att1, $att2, $att3, $att4, $kepanitiaan) {
                     $links = [];
-                    foreach ([1 => $att1, 2 => $att2, 3 => $att3] as $dNum => $attSet) {
+                    $attSets = [1 => $att1, 2 => $att2, 3 => $att3];
+                    if ($kepanitiaan === 'esq') {
+                        $attSets[4] = $att4;
+                    }
+                    foreach ($attSets as $dNum => $attSet) {
                         $att = $attSet->get($user->id);
                         if ($att && !empty($att->bukti_izin)) {
                             $links[] = '<a href="' . Storage::url($att->bukti_izin) . '" target="_blank" class="badge bg-primary-subtle text-primary border text-decoration-none">H' . $dNum . ' Bukti</a>';
@@ -401,28 +415,33 @@ class RekapitulasiAbsensiController extends Controller
         $targetUserIds = $baseUsersQuery->pluck('id')->toArray();
 
         if ($day === 0) {
-            // Stats Akumulasi 3 Hari
+            // Stats Akumulasi Seluruh Hari
             $m1 = $this->getAttendanceModel($kepanitiaan, 1);
             $m2 = $this->getAttendanceModel($kepanitiaan, 2);
             $m3 = $this->getAttendanceModel($kepanitiaan, 3);
+            $m4 = $kepanitiaan === 'esq' ? $this->getAttendanceModel($kepanitiaan, 4) : null;
 
             $att1 = $m1::whereIn('user_id', $targetUserIds)->get();
             $att2 = $m2::whereIn('user_id', $targetUserIds)->get();
             $att3 = $m3::whereIn('user_id', $targetUserIds)->get();
+            $att4 = $m4 ? $m4::whereIn('user_id', $targetUserIds)->get() : collect();
 
-            $sudahDatangTotal = $att1->whereNotNull('hadir_datang')->count() + $att2->whereNotNull('hadir_datang')->count() + $att3->whereNotNull('hadir_datang')->count();
-            $sudahPulangTotal = $att1->whereNotNull('hadir_pulang')->count() + $att2->whereNotNull('hadir_pulang')->count() + $att3->whereNotNull('hadir_pulang')->count();
+            $sudahDatangTotal = $att1->whereNotNull('hadir_datang')->count() + $att2->whereNotNull('hadir_datang')->count() + $att3->whereNotNull('hadir_datang')->count() + $att4->whereNotNull('hadir_datang')->count();
+            $sudahPulangTotal = $att1->whereNotNull('hadir_pulang')->count() + $att2->whereNotNull('hadir_pulang')->count() + $att3->whereNotNull('hadir_pulang')->count() + $att4->whereNotNull('hadir_pulang')->count();
 
-            $allAttendedIds = array_unique(array_merge(
+            $mergedPluck = array_merge(
                 $att1->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->pluck('user_id')->toArray(),
                 $att2->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->pluck('user_id')->toArray(),
-                $att3->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->pluck('user_id')->toArray()
-            ));
+                $att3->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->pluck('user_id')->toArray(),
+                $att4->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->pluck('user_id')->toArray()
+            );
+            $allAttendedIds = array_unique($mergedPluck);
 
             $sudahAbsen = count($allAttendedIds);
             $belumAbsen = max(0, $totalPegawai - $sudahAbsen);
 
-            $totalTargetPresensi = $totalPegawai * 3;
+            $totalDaysCount = ($kepanitiaan === 'esq') ? 4 : ($kepanitiaan === 'milad' ? 2 : ($kepanitiaan === 'kuliah_umum' ? 1 : 3));
+            $totalTargetPresensi = $totalPegawai * $totalDaysCount;
             $belumDatangTotal = max(0, $totalTargetPresensi - $sudahDatangTotal);
             $belumPulangTotal = max(0, $totalTargetPresensi - $sudahPulangTotal);
 

@@ -23,6 +23,7 @@ use App\Http\Controllers\AbsensiPkkmbKetigaController;
 use App\Http\Controllers\AbsensiEsqPertamaController;
 use App\Http\Controllers\AbsensiEsqKeduaController;
 use App\Http\Controllers\AbsensiEsqKetigaController;
+use App\Http\Controllers\AbsensiEsqKeempatController;
 use App\Http\Controllers\AbsensiMiladPertamaController;
 use App\Http\Controllers\AbsensiMiladKeduaController;
 use App\Http\Controllers\AbsensiKuliahUmumPertamaController;
@@ -188,6 +189,11 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('absensi-esq-ketiga/scan', [AbsensiEsqKetigaController::class, 'scan'])->name('absensi-esq-ketiga.scan');
     Route::get('absensi-esq-ketiga/scan-proses', [AbsensiEsqKetigaController::class, 'scanProses'])->name('absensi-esq-ketiga.scan-proses');
     Route::resource('absensi-esq-ketiga', AbsensiEsqKetigaController::class);
+
+    Route::get('absensi-esq-keempat/export-excel', [AbsensiEsqKeempatController::class, 'exportExcel'])->name('absensi-esq-keempat.export-excel');
+    Route::get('absensi-esq-keempat/scan', [AbsensiEsqKeempatController::class, 'scan'])->name('absensi-esq-keempat.scan');
+    Route::get('absensi-esq-keempat/scan-proses', [AbsensiEsqKeempatController::class, 'scanProses'])->name('absensi-esq-keempat.scan-proses');
+    Route::resource('absensi-esq-keempat', AbsensiEsqKeempatController::class);
 
     Route::get('absensi-milad-pertama/export-excel', [AbsensiMiladPertamaController::class, 'exportExcel'])->name('absensi-milad-pertama.export-excel');
     Route::get('absensi-milad-pertama/scan', [AbsensiMiladPertamaController::class, 'scan'])->name('absensi-milad-pertama.scan');

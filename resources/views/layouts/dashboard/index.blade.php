@@ -417,6 +417,7 @@
                     <a href="{{ route('absensi-esq-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
                     <a href="{{ route('absensi-esq-kedua.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
                     <a href="{{ route('absensi-esq-ketiga.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
+                    <a href="{{ route('absensi-esq-keempat.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Keempat</a>
                 </div>
             </div>
 
@@ -1016,7 +1017,7 @@
             // Update Day Pills based on kepanitiaan
             let daySelector = $('#attendance-day-selector');
             daySelector.empty();
-            let totalDays = (currentKepanitiaan === 'milad') ? 2 : (currentKepanitiaan === 'kuliah_umum' ? 1 : 3);
+            let totalDays = (currentKepanitiaan === 'milad') ? 2 : (currentKepanitiaan === 'kuliah_umum' ? 1 : (currentKepanitiaan === 'esq' ? 4 : 3));
 
             for (let d = 1; d <= totalDays; d++) {
                 let label = (currentKepanitiaan === 'kuliah_umum') ? 'Sesi ' + d : 'H-' + d;

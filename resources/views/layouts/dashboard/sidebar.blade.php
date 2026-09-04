@@ -45,13 +45,13 @@
               </li>
 
               <li class="nav-item">
-                  <a class="{{ request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                  <a class="{{ request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*') || request()->routeIs('absensi-esq-keempat.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       data-bs-target="#absensi-esq-nav" data-bs-toggle="collapse" href="#">
                       <i class="bi bi-calendar-check-fill"></i><span>Kepanitiaan ESQ</span><i
                           class="bi bi-chevron-down ms-auto"></i>
                   </a>
                   <ul id="absensi-esq-nav"
-                      class="nav-content collapse {{ request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*') ? 'show' : '' }}"
+                      class="nav-content collapse {{ request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*') || request()->routeIs('absensi-esq-keempat.*') ? 'show' : '' }}"
                       data-bs-parent="#sidebar-nav">
                       <li>
                           <a href="{{ route('absensi-esq-pertama.index') }}"
@@ -69,6 +69,12 @@
                           <a href="{{ route('absensi-esq-ketiga.index') }}"
                               class="{{ request()->routeIs('absensi-esq-ketiga.*') ? 'active' : '' }}">
                               <i class="bi bi-circle"></i><span>Absensi Hari Ketiga</span>
+                          </a>
+                      </li>
+                      <li>
+                          <a href="{{ route('absensi-esq-keempat.index') }}"
+                              class="{{ request()->routeIs('absensi-esq-keempat.*') ? 'active' : '' }}">
+                              <i class="bi bi-circle"></i><span>Absensi Hari Keempat</span>
                           </a>
                       </li>
                   </ul>

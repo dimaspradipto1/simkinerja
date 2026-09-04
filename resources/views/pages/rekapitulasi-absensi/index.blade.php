@@ -208,9 +208,14 @@
                                 <i class="bi bi-calendar-event me-1"></i> Hari Ke-3 (H-3)
                             </button>
                         </div>
+                        <div class="col-6 col-md-auto {{ $kepanitiaan === 'esq' ? '' : 'd-none' }}" id="col-day-4">
+                            <button type="button" class="btn btn-sm w-100 {{ $day == 4 ? 'btn-success shadow-sm' : 'btn-outline-success' }} rounded-pill fw-semibold day-btn" data-day="4" id="btn-day-4">
+                                <i class="bi bi-calendar-event me-1"></i> Hari Ke-4 (H-4)
+                            </button>
+                        </div>
                         <div class="col-6 col-md-auto">
                             <button type="button" class="btn btn-sm w-100 {{ $day == 0 ? 'btn-success shadow-sm' : 'btn-outline-success' }} rounded-pill fw-semibold day-btn" data-day="0" id="btn-day-all">
-                                <i class="bi bi-calendar-week-fill me-1"></i> Rekap 3 Hari
+                                <i class="bi bi-calendar-week-fill me-1"></i> <span id="label-rekap-all">Rekap Semua Hari</span>
                             </button>
                         </div>
                     </div>
@@ -513,6 +518,18 @@ $(document).ready(function() {
         $('.kepanitiaan-btn').removeClass('btn-primary shadow-sm').addClass('btn-outline-primary');
         $(this).removeClass('btn-outline-primary').addClass('btn-primary shadow-sm');
         currentKepanitiaan = $(this).data('kepanitiaan');
+
+        if (currentKepanitiaan === 'esq') {
+            $('#col-day-4').removeClass('d-none');
+        } else {
+            $('#col-day-4').addClass('d-none');
+            if (currentDay === 4) {
+                currentDay = 1;
+                $('.day-btn').removeClass('btn-success shadow-sm').addClass('btn-outline-success');
+                $('#btn-day-1').removeClass('btn-outline-success').addClass('btn-success shadow-sm');
+            }
+        }
+
         loadStats();
         tableSudah.ajax.reload();
         tableBelum.ajax.reload();
