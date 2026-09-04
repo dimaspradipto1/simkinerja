@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\AbsensiPkkmbKedua;
+use App\Models\AbsensiSetting;
 use App\Models\User;
 use App\DataTables\AbsensiPkkmbKeduaDataTable;
 use Illuminate\Http\Request;
@@ -41,6 +42,11 @@ class AbsensiPkkmbKeduaController extends Controller
     public function create()
     {
         $authUser = auth()->user();
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !AbsensiSetting::isActive('absensi-pkkmb-kedua')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-pkkmb-kedua.index');
+        }
+
         if ($authUser->isAdmin() || $authUser->isSuperAdmin()) {
             $users = User::orderBy('name', 'asc')->get();
         } else {
@@ -55,6 +61,11 @@ class AbsensiPkkmbKeduaController extends Controller
     public function store(Request $request)
     {
         $authUser = auth()->user();
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !AbsensiSetting::isActive('absensi-pkkmb-kedua')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-pkkmb-kedua.index');
+        }
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'hadir_datang' => 'nullable|string',
@@ -192,6 +203,11 @@ class AbsensiPkkmbKeduaController extends Controller
      */
     public function scanProses(Request $request)
     {
+        if (!AbsensiSetting::isActive('absensi-pkkmb-kedua')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-pkkmb-kedua.index');
+        }
+
         $authUser = auth()->user();
         if (!$authUser) {
             abort(401, 'Silakan login terlebih dahulu.');
@@ -240,6 +256,11 @@ class AbsensiPkkmbKeduaController extends Controller
      */
     public function scan()
     {
+        if (!AbsensiSetting::isActive('absensi-pkkmb-kedua')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-pkkmb-kedua.index');
+        }
+
         return view('pages.absensi-pkkmb-kedua.scan');
     }
 

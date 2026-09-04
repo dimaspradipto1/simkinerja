@@ -14,33 +14,67 @@
 <section class="section">
     <div class="row">
         <div class="col-lg-12">
-            <!-- Scan Absensi Mandiri Green Gradient Banner -->
+            @php
+                $isSessionActive = \App\Models\AbsensiSetting::isActive('absensi-esq-keempat');
+            @endphp
+
+            <!-- Scan Absensi Mandiri Banner -->
             @unless(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-            <div class="card border-0 mb-4 text-white shadow-sm absensi-mobile-banner" style="background: linear-gradient(135deg, #198754 0%, #a3cfbb 100%); border-radius: 0.75rem;">
-                <div class="card-body p-4 d-flex flex-column gap-3 justify-content-center">
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4" style="width: 48px; height: 48px; min-width: 48px; background-color: rgba(255, 255, 255, 0.2);">
-                            <i class="bi bi-qr-code"></i>
+                @if($isSessionActive)
+                <div class="card border-0 mb-4 text-white shadow-sm absensi-mobile-banner" style="background: linear-gradient(135deg, #198754 0%, #a3cfbb 100%); border-radius: 0.75rem;">
+                    <div class="card-body p-4 d-flex flex-column gap-3 justify-content-center">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4" style="width: 48px; height: 48px; min-width: 48px; background-color: rgba(255, 255, 255, 0.2);">
+                                <i class="bi bi-qr-code"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold m-0 fs-5 mb-1">Scan Absensi Mandiri</h5>
+                                <p class="m-0 bg-opacity-75 small">Silahkan scan QR Panitia untuk mencatat kehadiran Anda.</p>
+                            </div>
                         </div>
                         <div>
-                            <h5 class="fw-bold m-0 fs-5 mb-1">Scan Absensi Mandiri</h5>
-                            <p class="m-0 bg-opacity-75 small">Silahkan scan QR Panitia untuk mencatat kehadiran Anda.</p>
+                            <a href="{{ route('absensi-esq-keempat.scan') }}?start=1" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
+                                <i class="bi bi-qr-code-scan"></i> Scan QR Kehadiran (Sesi Aktif)
+                            </a>
                         </div>
                     </div>
-                    <div>
-                        <a href="{{ route('absensi-esq-keempat.scan') }}?start=1" class="btn btn-light rounded-pill px-4 py-2 font-semibold shadow-sm d-inline-flex align-items-center gap-2" style="color: #198754; font-weight: 600;">
-                            <i class="bi bi-qr-code-scan"></i> Scan QR Kehadiran (Sesi Aktif)
-                        </a>
+                </div>
+                @else
+                <div class="card border-0 mb-4 text-white shadow-sm absensi-mobile-banner" style="background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%); border-radius: 0.75rem;">
+                    <div class="card-body p-4 d-flex flex-column gap-2 justify-content-center">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4" style="width: 48px; height: 48px; min-width: 48px; background-color: rgba(255, 255, 255, 0.2);">
+                                <i class="bi bi-lock-fill"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold m-0 fs-5 mb-1">Sesi Absensi Sedang Ditutup</h5>
+                                <p class="m-0 bg-opacity-75 small">Sesi absensi hari ini sedang dinonaktifkan oleh panitia. Presensi mandiri via scan QR sementara tidak dapat digunakan.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+                @endif
             @endunless
 
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="card-title m-0 p-0 fs-5 font-semibold text-primary">List Absensi Hari IV</h5>
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="card-title m-0 p-0 fs-5 font-semibold text-primary">List Absensi Hari IV</h5>
+                        <span class="badge {{ $isSessionActive ? 'bg-success' : 'bg-secondary' }} rounded-pill px-2 py-1 small">
+                            <i class="bi {{ $isSessionActive ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }} me-1"></i>
+                            {{ $isSessionActive ? 'Sesi Aktif' : 'Sesi Tutup' }}
+                        </span>
+                    </div>
                     @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <!-- Quick Toggle Button for Admin -->
+                        <form action="{{ route('pengaturan-absensi.toggle', 'absensi-esq-keempat') }}" method="POST" class="d-inline m-0">
+                            @csrf
+                            <button type="submit" class="btn {{ $isSessionActive ? 'btn-outline-danger' : 'btn-outline-success' }} rounded btn-sm d-inline-flex align-items-center gap-1 font-medium" title="Ubah status aktif/tutup sesi">
+                                <i class="bi {{ $isSessionActive ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
+                                {{ $isSessionActive ? 'Tutup Sesi' : 'Buka Sesi' }}
+                            </button>
+                        </form>
                         <!-- Premium QR Absensi Button -->
                         <button type="button" class="btn btn-outline-dark rounded btn-sm d-inline-flex align-items-center gap-1 font-medium" data-bs-toggle="modal" data-bs-target="#qrModal">
                             <i class="bi bi-qr-code"></i> QR Absensi

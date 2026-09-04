@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DataTables\AbsensiEsqPertamaDataTable;
 use App\Models\AbsensiEsqPertama;
+use App\Models\AbsensiSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -33,6 +34,11 @@ class AbsensiEsqPertamaController extends Controller
     public function create()
     {
         $authUser = auth()->user();
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !AbsensiSetting::isActive('absensi-esq-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-esq-pertama.index');
+        }
+
         if ($authUser->isAdmin() || $authUser->isSuperAdmin()) {
             $users = User::orderBy('name', 'asc')->get();
         } else {
@@ -46,7 +52,13 @@ class AbsensiEsqPertamaController extends Controller
      */
     public function store(Request $request)
     {
-        $authUser = auth()->user();        $validated = $request->validate([
+        $authUser = auth()->user();
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !AbsensiSetting::isActive('absensi-esq-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-esq-pertama.index');
+        }
+
+        $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'hadir_datang' => 'nullable|string',
             'waktu_datang' => 'nullable',
@@ -297,6 +309,11 @@ class AbsensiEsqPertamaController extends Controller
      */
     public function scanProses(Request $request)
     {
+        if (!AbsensiSetting::isActive('absensi-esq-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-esq-pertama.index');
+        }
+
         $authUser = auth()->user();
         if (!$authUser) {
             abort(401, 'Silakan login terlebih dahulu.');
@@ -345,6 +362,11 @@ class AbsensiEsqPertamaController extends Controller
      */
     public function scan()
     {
+        if (!AbsensiSetting::isActive('absensi-esq-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-esq-pertama.index');
+        }
+
         return view('pages.absensi-esq-pertama.scan');
     }
 }

@@ -29,6 +29,7 @@ use App\Http\Controllers\AbsensiMiladKeduaController;
 use App\Http\Controllers\AbsensiKuliahUmumPertamaController;
 use App\Http\Controllers\RekapitulasiAbsensiController;
 use App\Http\Controllers\ScanAbsensiController;
+use App\Http\Controllers\AbsensiSettingController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -215,4 +216,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('rekapitulasi-absensi/data-sudah', [RekapitulasiAbsensiController::class, 'getDataSudah'])->name('rekapitulasi-absensi.data-sudah');
     Route::get('rekapitulasi-absensi/data-belum', [RekapitulasiAbsensiController::class, 'getDataBelum'])->name('rekapitulasi-absensi.data-belum');
     Route::get('rekapitulasi-absensi/stats', [RekapitulasiAbsensiController::class, 'getStats'])->name('rekapitulasi-absensi.stats');
+
+    // Pengaturan Status Sesi Absensi (is_active)
+    Route::get('pengaturan-absensi', [AbsensiSettingController::class, 'index'])->name('pengaturan-absensi.index');
+    Route::post('pengaturan-absensi/{slug}/toggle', [AbsensiSettingController::class, 'toggle'])->name('pengaturan-absensi.toggle');
 });

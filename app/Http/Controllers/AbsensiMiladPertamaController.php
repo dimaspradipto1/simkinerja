@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DataTables\AbsensiMiladPertamaDataTable;
 use App\Models\AbsensiMiladPertama;
+use App\Models\AbsensiSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -33,6 +34,11 @@ class AbsensiMiladPertamaController extends Controller
     public function create()
     {
         $authUser = auth()->user();
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !AbsensiSetting::isActive('absensi-milad-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-milad-pertama.index');
+        }
+
         if ($authUser->isAdmin() || $authUser->isSuperAdmin()) {
             $users = User::orderBy('name', 'asc')->get();
         } else {
@@ -47,6 +53,11 @@ class AbsensiMiladPertamaController extends Controller
     public function store(Request $request)
     {
         $authUser = auth()->user();
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !AbsensiSetting::isActive('absensi-milad-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-milad-pertama.index');
+        }
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'hadir_datang' => 'nullable|string',
@@ -298,6 +309,11 @@ class AbsensiMiladPertamaController extends Controller
      */
     public function scanProses(Request $request)
     {
+        if (!AbsensiSetting::isActive('absensi-milad-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-milad-pertama.index');
+        }
+
         $authUser = auth()->user();
         if (!$authUser) {
             abort(401, 'Silakan login terlebih dahulu.');
@@ -346,6 +362,11 @@ class AbsensiMiladPertamaController extends Controller
      */
     public function scan()
     {
+        if (!AbsensiSetting::isActive('absensi-milad-pertama')) {
+            Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
+            return redirect()->route('absensi-milad-pertama.index');
+        }
+
         return view('pages.absensi-milad-pertama.scan');
     }
 }
