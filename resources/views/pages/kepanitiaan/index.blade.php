@@ -53,10 +53,30 @@
     #kepanitiaan-table > thead {
         display: none;
     }
+    #kepanitiaan-table {
+        margin-bottom: 24px !important;
+    }
     #kepanitiaan-table > tbody > tr > td {
         vertical-align: top !important;
-        padding: 10px 4px !important;
+        padding: 10px 4px 16px 4px !important;
         border-bottom: 1px solid #edf2f7;
+    }
+    #kepanitiaan-table > tbody > tr:last-child > td {
+        padding-bottom: 28px !important;
+        border-bottom: none !important;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 24px !important;
+        margin-bottom: 14px !important;
+        padding-top: 8px !important;
+    }
+    .dataTables_wrapper .dataTables_info {
+        margin-top: 24px !important;
+        margin-bottom: 14px !important;
+        padding-top: 8px !important;
+    }
+    .task-card-item {
+        margin-bottom: 14px !important;
     }
     #kepanitiaan-table > tbody > tr > td:nth-child(1),
     #kepanitiaan-table > thead > tr > th:nth-child(1) {
@@ -122,12 +142,13 @@
         gap: 4px;
     }
     .owner-actions-group .btn {
-        height: 32px;
-        width: 32px;
-        padding: 0;
+        height: 38px;
+        padding: 6px 12px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        font-size: 0.84rem;
+        border-radius: 8px;
     }
 
     @media (max-width: 767.98px) {

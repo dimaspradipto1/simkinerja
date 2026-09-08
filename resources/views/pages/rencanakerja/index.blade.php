@@ -53,10 +53,30 @@
     #rencanakerja-table > thead {
         display: none;
     }
+    #rencanakerja-table {
+        margin-bottom: 24px !important;
+    }
     #rencanakerja-table > tbody > tr > td {
         vertical-align: top !important;
-        padding: 10px 4px !important;
+        padding: 10px 4px 16px 4px !important;
         border-bottom: 1px solid #edf2f7;
+    }
+    #rencanakerja-table > tbody > tr:last-child > td {
+        padding-bottom: 28px !important;
+        border-bottom: none !important;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 24px !important;
+        margin-bottom: 14px !important;
+        padding-top: 8px !important;
+    }
+    .dataTables_wrapper .dataTables_info {
+        margin-top: 24px !important;
+        margin-bottom: 14px !important;
+        padding-top: 8px !important;
+    }
+    .task-card-item {
+        margin-bottom: 14px !important;
     }
     .transition-transform {
         transition: transform 0.2s ease-in-out;

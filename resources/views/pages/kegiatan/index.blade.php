@@ -31,10 +31,27 @@
     #kegiatan-table > thead {
         display: none;
     }
+    #kegiatan-table {
+        margin-bottom: 24px !important;
+    }
     #kegiatan-table > tbody > tr > td {
         vertical-align: top !important;
-        padding: 10px 4px !important;
+        padding: 10px 4px 16px 4px !important;
         border-bottom: 1px solid #edf2f7;
+    }
+    #kegiatan-table > tbody > tr:last-child > td {
+        padding-bottom: 28px !important;
+        border-bottom: none !important;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 24px !important;
+        margin-bottom: 14px !important;
+        padding-top: 8px !important;
+    }
+    .dataTables_wrapper .dataTables_info {
+        margin-top: 24px !important;
+        margin-bottom: 14px !important;
+        padding-top: 8px !important;
     }
     #kegiatan-table > tbody > tr > td:nth-child(1),
     #kegiatan-table > thead > tr > th:nth-child(1) {
