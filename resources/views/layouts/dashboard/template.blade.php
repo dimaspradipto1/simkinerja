@@ -329,6 +329,89 @@
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             modal.show();
         };
+
+        // Global Barcode Absensi Modal Handler
+        let activeBarcodeSession = 'datang';
+        let currentBarcodeSlug = '';
+        let currentBarcodeUrl = '';
+        let barcodeCountdown = 60;
+        let barcodeTimer = null;
+
+        function refreshBarcodeQr() {
+            if (!currentBarcodeSlug) return;
+            const timestamp = Math.floor(Date.now() / 60000);
+            const scanUrl = "{{ url('') }}/" + currentBarcodeSlug + "/scan-proses?session=" + activeBarcodeSession + "&t=" + timestamp;
+            const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(scanUrl);
+            $('#barcode-qr-img').attr('src', qrApi);
+        }
+
+        function startBarcodeTimer() {
+            clearInterval(barcodeTimer);
+            barcodeCountdown = 60;
+            $('#barcode-countdown').text(barcodeCountdown);
+            $('#barcode-qr-progress').css('width', '100%');
+
+            barcodeTimer = setInterval(function() {
+                barcodeCountdown--;
+                $('#barcode-countdown').text(barcodeCountdown);
+                const percent = (barcodeCountdown / 60) * 100;
+                $('#barcode-qr-progress').css('width', percent + '%');
+
+                if (barcodeCountdown <= 0) {
+                    barcodeCountdown = 60;
+                    refreshBarcodeQr();
+                }
+            }, 1000);
+        }
+
+        window.openBarcodeModal = function(el) {
+            const btn = $(el);
+            currentBarcodeSlug = btn.data('slug') || '';
+            const sessionTitle = btn.data('title') || 'Barcode Absensi';
+            currentBarcodeUrl = btn.data('url') || ("{{ url('') }}/" + currentBarcodeSlug);
+
+            $('#modalBarcodeAbsensiLabel').text(sessionTitle);
+            $('#btn-visit-absensi').attr('href', currentBarcodeUrl);
+
+            activeBarcodeSession = 'datang';
+            $('#btn-barcode-datang').removeClass('btn-outline-success').addClass('btn-success');
+            $('#btn-barcode-pulang').removeClass('btn-primary').addClass('btn-outline-primary');
+            $('#barcode-session-indicator').text('Sesi: Waktu Datang');
+
+            refreshBarcodeQr();
+            startBarcodeTimer();
+
+            const modalEl = document.getElementById('modalBarcodeAbsensi');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        };
+
+        $(document).on('click', '.btn-barcode-absensi', function(e) {
+            e.preventDefault();
+            window.openBarcodeModal(this);
+        });
+
+        $(document).on('click', '#btn-barcode-datang', function() {
+            activeBarcodeSession = 'datang';
+            $(this).removeClass('btn-outline-success').addClass('btn-success');
+            $('#btn-barcode-pulang').removeClass('btn-primary').addClass('btn-outline-primary');
+            $('#barcode-session-indicator').text('Sesi: Waktu Datang');
+            refreshBarcodeQr();
+        });
+
+        $(document).on('click', '#btn-barcode-pulang', function() {
+            activeBarcodeSession = 'pulang';
+            $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+            $('#btn-barcode-datang').removeClass('btn-success').addClass('btn-outline-success');
+            $('#barcode-session-indicator').text('Sesi: Waktu Pulang');
+            refreshBarcodeQr();
+        });
+
+        $(document).on('hidden.bs.modal', '#modalBarcodeAbsensi', function() {
+            clearInterval(barcodeTimer);
+        });
     </script>
 
     <!-- Modal Persetujuan Perpanjangan Waktu (Khusus Pimpinan / Admin) -->
@@ -379,6 +462,58 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Barcode Absensi Universal -->
+    <div class="modal fade" id="modalBarcodeAbsensi" tabindex="-1" aria-labelledby="modalBarcodeAbsensiLabel" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+                <div class="modal-header border-0 pb-0 justify-content-between position-relative pt-4 px-4">
+                    <div class="text-center w-100">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 mb-2 fw-semibold" style="font-size: 0.8rem;">
+                            <i class="bi bi-qr-code-scan me-1"></i> Absensi Digital Kepanitiaan
+                        </span>
+                        <h5 class="modal-title font-bold text-center w-100 fw-bold text-dark fs-5" id="modalBarcodeAbsensiLabel">
+                            Barcode Absensi
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1" id="barcode-session-indicator">Sesi: Waktu Datang</p>
+                    </div>
+                    <button type="button" class="btn-close position-absolute end-0 top-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center px-4 pb-4 pt-3">
+                    <!-- Session Toggle Buttons -->
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        <button type="button" id="btn-barcode-datang" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 fw-bold shadow-sm">
+                            <i class="bi bi-sun-fill"></i> Waktu Datang
+                        </button>
+                        <button type="button" id="btn-barcode-pulang" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 fw-bold shadow-sm">
+                            <i class="bi bi-moon-stars-fill"></i> Waktu Pulang
+                        </button>
+                    </div>
+
+                    <!-- QR Code Display Box -->
+                    <div class="p-3 border rounded-3 shadow-sm bg-white mb-3 mx-auto" style="max-width: 300px;">
+                        <img id="barcode-qr-img" src="" alt="Barcode Absensi" style="width: 100%; max-width: 270px; height: auto; aspect-ratio: 1 / 1; object-fit: contain; display: block; margin: 0 auto;">
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-2" style="height: 6px; width: 100%; max-width: 280px; margin: 0 auto; background-color: #e9ecef; border-radius: 1rem;">
+                        <div id="barcode-qr-progress" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%; border-radius: 1rem; transition: width 1s linear;"></div>
+                    </div>
+
+                    <!-- Countdown Text -->
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-lightning-fill text-warning"></i> Kode dinamis &mdash; berganti dalam <span id="barcode-countdown" class="fw-bold text-dark">60</span> detik
+                    </p>
+
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="#" id="btn-visit-absensi" target="_blank" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1 px-3 py-2 fw-semibold rounded-pill">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Buka Halaman Absensi
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

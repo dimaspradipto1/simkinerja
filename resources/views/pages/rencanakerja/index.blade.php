@@ -139,6 +139,25 @@
             border-collapse: separate !important;
             border-spacing: 0 10px !important;
         }
+        .card-body {
+            padding: 8px !important;
+        }
+        .table-responsive {
+            overflow-x: hidden !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            width: 100% !important;
+        }
+        #rencanakerja-table {
+            width: 100% !important;
+            display: block !important;
+            border-collapse: separate !important;
+            border: none !important;
+        }
+        #rencanakerja-table thead {
+            display: none !important;
+        }
         #rencanakerja-table tbody {
             display: block !important;
             width: 100% !important;
@@ -146,12 +165,11 @@
         #rencanakerja-table tbody tr {
             display: block !important;
             width: 100% !important;
-            background: #ffffff;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 8px !important;
-            padding: 12px !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
             margin-bottom: 10px !important;
+            box-shadow: none !important;
             box-sizing: border-box !important;
         }
         #rencanakerja-table tbody tr td {
@@ -159,21 +177,25 @@
             width: 100% !important;
             box-sizing: border-box !important;
             border: none !important;
-            padding: 4px 0 !important;
+            padding: 0 !important;
         }
-        #rencanakerja-table tbody tr td:first-child {
-            display: none !important; /* Hide floating number column on mobile for clean card layout */
+        #rencanakerja-table tbody tr td:first-child,
+        #rencanakerja-table tbody tr td:nth-child(2) {
+            display: none !important;
         }
         #rencanakerja-table tbody tr td:last-child {
-            margin-top: 8px;
-            padding-top: 8px !important;
-            border-top: 1px dashed #cbd5e1 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-top: none !important;
             width: 100% !important;
         }
         .action-buttons-wrap {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
             justify-content: flex-start !important;
+            gap: 6px !important;
             width: 100% !important;
-            gap: 8px !important;
         }
         .action-buttons-wrap .btn {
             font-size: 0.8rem !important;

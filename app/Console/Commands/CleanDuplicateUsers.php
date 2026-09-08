@@ -8,23 +8,10 @@ use App\Models\User;
 
 class CleanDuplicateUsers extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'users:clean-duplicates {--dry-run : Only show what would be done without deleting}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Clean duplicate users and retain only active user with attendance records';
+    protected $description = 'Clean duplicate users (exact and normalized title variants) and merge/retain only active user';
 
-    /**
-     * Attendance tables to check for user_id.
-     */
     protected array $attendanceTables = [
         'absensi_pkkmb_pertamas',
         'absensi_pkkmb_keduas',
@@ -41,9 +28,6 @@ class CleanDuplicateUsers extends Command
         'absensi_kuliah_umum_ketigas',
     ];
 
-    /**
-     * Other related tables.
-     */
     protected array $relatedTables = [
         'kegiatans' => 'user_id',
         'kegiatan_user' => 'user_id',
@@ -55,38 +39,39 @@ class CleanDuplicateUsers extends Command
         'insidentil_user' => 'user_id',
     ];
 
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         $dryRun = $this->option('dry-run');
 
-        $this->info("Scanning duplicate names in users table...");
+        $this->info("Scanning normalized duplicate names in users table...");
 
-        $duplicateNames = DB::table('users')
-            ->select('name', DB::raw('COUNT(*) as total'))
-            ->groupBy('name')
-            ->having('total', '>', 1)
-            ->pluck('name');
+        $users = User::all();
 
-        if ($duplicateNames->isEmpty()) {
-            $this->info("No duplicate names found!");
+        $grouped = [];
+        foreach ($users as $u) {
+            $norm = $this->normalizeName($u->name);
+            $grouped[$norm][] = $u;
+        }
+
+        $duplicateGroups = array_filter($grouped, function ($list, $key) {
+            return count($list) > 1 && strlen($key) > 3;
+        }, ARRAY_FILTER_USE_BOTH);
+
+        if (empty($duplicateGroups)) {
+            $this->info("No duplicate users found!");
             return 0;
         }
 
-        $this->warn("Found " . $duplicateNames->count() . " names with duplicates.");
+        $this->warn("Found " . count($duplicateGroups) . " duplicate user groups.");
 
         $deletedCount = 0;
 
-        foreach ($duplicateNames as $name) {
+        foreach ($duplicateGroups as $cleanKey => $userList) {
             $this->line("--------------------------------------------------");
-            $this->info("Checking: {$name}");
-
-            $users = User::where('name', $name)->orderBy('id', 'asc')->get();
+            $this->info("Duplicate Group [{$cleanKey}]:");
 
             $userStats = [];
-            foreach ($users as $u) {
+            foreach ($userList as $u) {
                 $absensiTotal = 0;
                 foreach ($this->attendanceTables as $tbl) {
                     if (DB::getSchemaBuilder()->hasTable($tbl)) {
@@ -103,16 +88,17 @@ class CleanDuplicateUsers extends Command
 
                 $userStats[] = [
                     'user' => $u,
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
                     'absensi_count' => $absensiTotal,
                     'kegiatan_count' => $kegiatanTotal,
-                    'email' => $u->email,
-                    'id' => $u->id,
                 ];
 
-                $this->line("  ID: {$u->id} | Email: {$u->email} | Absensi: {$absensiTotal} | Kegiatan: {$kegiatanTotal}");
+                $this->line("  ID: {$u->id} | Name: {$u->name} | Email: {$u->email} | Absensi: {$absensiTotal} | Kegiatan: {$kegiatanTotal}");
             }
 
-            // Tentukan user yang dipertahankan (prioritaskan yang ada data absensi terbanyak, lalu kegiatan terbanyak, lalu ID terkecil)
+            // Urutkan: yang absensi terbanyak, lalu kegiatan terbanyak, lalu ID terkecil
             usort($userStats, function ($a, $b) {
                 if ($a['absensi_count'] !== $b['absensi_count']) {
                     return $b['absensi_count'] <=> $a['absensi_count'];
@@ -124,18 +110,17 @@ class CleanDuplicateUsers extends Command
             });
 
             $kept = $userStats[0];
-            $this->info("  -> Dipertahankan: ID {$kept['id']} ({$kept['email']}) [Absensi: {$kept['absensi_count']}]");
+            $this->info("  -> Dipertahankan: ID {$kept['id']} ({$kept['name']}) [Absensi: {$kept['absensi_count']}]");
 
-            // User-user duplikat lainnya
+            // Proses user-user duplikat
             for ($i = 1; $i < count($userStats); $i++) {
                 $dup = $userStats[$i];
-                $this->warn("  -> Akan dihapus: ID {$dup['id']} ({$dup['email']}) [Absensi: {$dup['absensi_count']}]");
+                $this->warn("  -> Akan dihapus: ID {$dup['id']} ({$dup['name']}) [Absensi: {$dup['absensi_count']}]");
 
                 if (!$dryRun) {
-                    // Jika user duplikat memiliki relasi kegiatan, relasikan/migrasikan ke kept user ID dulu
+                    // Migrasikan relasi kegiatan
                     foreach ($this->relatedTables as $tbl => $col) {
                         if (DB::getSchemaBuilder()->hasTable($tbl)) {
-                            // Untuk pivot table seperti kegiatan_user, hindari duplikasi primary key
                             if (str_contains($tbl, '_user')) {
                                 DB::table($tbl)->where($col, $dup['id'])->delete();
                             } else {
@@ -144,17 +129,25 @@ class CleanDuplicateUsers extends Command
                         }
                     }
 
-                    // Hapus jika ada absensi di user duplikat (atau jika memang 0)
+                    // Migrasikan data absensi jika user duplikat punya absensi yang belum ada di kept user
                     foreach ($this->attendanceTables as $tbl) {
                         if (DB::getSchemaBuilder()->hasTable($tbl)) {
-                            DB::table($tbl)->where('user_id', $dup['id'])->delete();
+                            $dupAbsensi = DB::table($tbl)->where('user_id', $dup['id'])->get();
+                            foreach ($dupAbsensi as $rec) {
+                                $existsInKept = DB::table($tbl)->where('user_id', $kept['id'])->exists();
+                                if (!$existsInKept) {
+                                    DB::table($tbl)->where('id', $rec->id)->update(['user_id' => $kept['id']]);
+                                } else {
+                                    DB::table($tbl)->where('id', $rec->id)->delete();
+                                }
+                            }
                         }
                     }
 
                     // Hapus user duplikat
                     DB::table('users')->where('id', $dup['id'])->delete();
                     $deletedCount++;
-                    $this->info("  [DELETED] User ID {$dup['id']} berhasil dihapus.");
+                    $this->info("  [DELETED] User ID {$dup['id']} ({$dup['name']}) berhasil dihapus.");
                 }
             }
         }
@@ -163,9 +156,19 @@ class CleanDuplicateUsers extends Command
         if ($dryRun) {
             $this->warn("Dry-run selesai. Tidak ada data yang dihapus.");
         } else {
-            $this->info("Pembersihan selesai! Total {$deletedCount} user duplikat telah dihapus.");
+            $this->info("Pembersihan selesai! Total {$deletedCount} akun duplikat berhasil dihapus.");
         }
 
         return 0;
+    }
+
+    private function normalizeName(string $name): string
+    {
+        $name = mb_strtolower($name);
+        $name = preg_replace('/(prof\.|dr\.|drs\.|dra\.|ir\.)/i', '', $name);
+        $name = preg_replace('/,\s*.*$/', '', $name);
+        $name = preg_replace('/\b(s\.kom|s\.t\.|st|s\.e\.|se|m\.m\.|mm|m\.kom|m\.kes|s\.kes|skl|m\.km|s\.m\.|sm|s\.ak|s\.pd|m\.pd|s\.si|m\.si|a\.md|amd|ak\.)\b/i', '', $name);
+        $name = preg_replace('/[^a-z]/', '', $name);
+        return trim($name);
     }
 }

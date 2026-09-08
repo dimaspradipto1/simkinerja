@@ -94,6 +94,42 @@
         background-color: #0f3121 !important;
         color: #ffffff !important;
     }
+    .task-action-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+    .task-action-label {
+        font-size: 0.78rem;
+        flex-shrink: 0;
+    }
+    .action-buttons-wrap {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+    .badge-status-group,
+    .timer-status-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .owner-actions-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .owner-actions-group .btn {
+        height: 32px;
+        width: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     @media (max-width: 767.98px) {
         .card-header-green {
             padding: 12px 14px;
@@ -139,11 +175,24 @@
             padding: 6px 12px !important;
         }
 
+        .card-body {
+            padding: 8px !important;
+        }
+        .table-responsive {
+            overflow-x: hidden !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            width: 100% !important;
+        }
         #kepanitiaan-table {
             width: 100% !important;
             display: block !important;
             border-collapse: separate !important;
-            border-spacing: 0 10px !important;
+            border: none !important;
+        }
+        #kepanitiaan-table thead {
+            display: none !important;
         }
         #kepanitiaan-table tbody {
             display: block !important;
@@ -152,12 +201,11 @@
         #kepanitiaan-table tbody tr {
             display: block !important;
             width: 100% !important;
-            background: #ffffff;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 8px !important;
-            padding: 12px !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
             margin-bottom: 10px !important;
+            box-shadow: none !important;
             box-sizing: border-box !important;
         }
         #kepanitiaan-table tbody tr td {
@@ -165,24 +213,84 @@
             width: 100% !important;
             box-sizing: border-box !important;
             border: none !important;
-            padding: 4px 0 !important;
+            padding: 0 !important;
         }
-        #kepanitiaan-table tbody tr td:first-child {
+        #kepanitiaan-table tbody tr td:first-child,
+        #kepanitiaan-table tbody tr td:nth-child(2) {
             display: none !important;
         }
         #kepanitiaan-table tbody tr td:last-child {
-            margin-top: 8px;
-            padding-top: 8px !important;
-            border-top: 1px dashed #cbd5e1 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-top: none !important;
             width: 100% !important;
+        }
+        .task-action-container {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 6px !important;
+            width: 100% !important;
+        }
+        .task-action-label {
+            font-size: 0.8rem !important;
+            margin-bottom: 2px !important;
+            width: 100% !important;
+            font-weight: 700 !important;
         }
         .action-buttons-wrap {
-            justify-content: flex-start !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
             width: 100% !important;
-            gap: 8px !important;
+            gap: 6px !important;
         }
-        .action-buttons-wrap .btn {
+        .action-buttons-wrap .badge-status-group,
+        .action-buttons-wrap .timer-status-group {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 6px !important;
+            width: 100% !important;
+        }
+        .action-buttons-wrap .badge-status-group .badge,
+        .action-buttons-wrap .timer-status-group .btn {
+            flex: 1 1 0 !important;
+            justify-content: center !important;
+            text-align: center !important;
             font-size: 0.8rem !important;
+            height: auto !important;
+            min-height: 36px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            padding: 6px 8px !important;
+        }
+        .action-buttons-wrap .btn-mobile-stack {
+            width: 100% !important;
+            justify-content: center !important;
+            text-align: center !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            font-size: 0.84rem !important;
+            height: auto !important;
+            min-height: 38px !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+        }
+        .action-buttons-wrap .owner-actions-group {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 6px !important;
+            width: 100% !important;
+        }
+        .action-buttons-wrap .owner-actions-group .btn {
+            flex: 1 1 0 !important;
+            width: auto !important;
+            height: 36px !important;
+            font-size: 0.82rem !important;
+            padding: 4px 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         .inline-upload-left {
             border-right: none !important;
@@ -484,6 +592,7 @@
         </div>
     </div>
 </div>
+
 @include('partials.milestone-scripts')
 @endsection
 
@@ -1227,134 +1336,5 @@
             }
         });
     };
-
-    // Barcode Absensi Modal Handler
-    let activeBarcodeSession = 'datang';
-    let currentBarcodeSlug = '';
-    let currentBarcodeUrl = '';
-    let barcodeCountdown = 60;
-    let barcodeTimer = null;
-
-    function refreshBarcodeQr() {
-        if (!currentBarcodeSlug) return;
-        const timestamp = Math.floor(Date.now() / 60000);
-        const scanUrl = "{{ url('') }}/" + currentBarcodeSlug + "/scan-proses?session=" + activeBarcodeSession + "&t=" + timestamp;
-        const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(scanUrl);
-        $('#barcode-qr-img').attr('src', qrApi);
-    }
-
-    function startBarcodeTimer() {
-        clearInterval(barcodeTimer);
-        barcodeCountdown = 60;
-        $('#barcode-countdown').text(barcodeCountdown);
-        $('#barcode-qr-progress').css('width', '100%');
-
-        barcodeTimer = setInterval(function() {
-            barcodeCountdown--;
-            $('#barcode-countdown').text(barcodeCountdown);
-            const percent = (barcodeCountdown / 60) * 100;
-            $('#barcode-qr-progress').css('width', percent + '%');
-
-            if (barcodeCountdown <= 0) {
-                barcodeCountdown = 60;
-                refreshBarcodeQr();
-            }
-        }, 1000);
-    }
-
-    $(document).on('click', '.btn-barcode-absensi', function(e) {
-        e.preventDefault();
-        currentBarcodeSlug = $(this).data('slug');
-        const sessionTitle = $(this).data('title') || 'Barcode Absensi';
-        currentBarcodeUrl = $(this).data('url') || ("{{ url('') }}/" + currentBarcodeSlug);
-
-        $('#modalBarcodeAbsensiLabel').text(sessionTitle);
-        $('#btn-visit-absensi').attr('href', currentBarcodeUrl);
-
-        activeBarcodeSession = 'datang';
-        $('#btn-barcode-datang').removeClass('btn-outline-success').addClass('btn-success');
-        $('#btn-barcode-pulang').removeClass('btn-primary').addClass('btn-outline-primary');
-        $('#barcode-session-indicator').text('Sesi: Waktu Datang');
-
-        refreshBarcodeQr();
-        startBarcodeTimer();
-
-        var qrModal = new bootstrap.Modal(document.getElementById('modalBarcodeAbsensi'));
-        qrModal.show();
-    });
-
-    $('#btn-barcode-datang').on('click', function() {
-        activeBarcodeSession = 'datang';
-        $(this).removeClass('btn-outline-success').addClass('btn-success');
-        $('#btn-barcode-pulang').removeClass('btn-primary').addClass('btn-outline-primary');
-        $('#barcode-session-indicator').text('Sesi: Waktu Datang');
-        refreshBarcodeQr();
-    });
-
-    $('#btn-barcode-pulang').on('click', function() {
-        activeBarcodeSession = 'pulang';
-        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-        $('#btn-barcode-datang').removeClass('btn-success').addClass('btn-outline-success');
-        $('#barcode-session-indicator').text('Sesi: Waktu Pulang');
-        refreshBarcodeQr();
-    });
-
-    $('#modalBarcodeAbsensi').on('hidden.bs.modal', function() {
-        clearInterval(barcodeTimer);
-    });
 </script>
 @endpush
-
-<!-- Modal Barcode Absensi Kepanitiaan -->
-<div class="modal fade" id="modalBarcodeAbsensi" tabindex="-1" aria-labelledby="modalBarcodeAbsensiLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
-            <div class="modal-header border-0 pb-0 justify-content-between position-relative pt-4 px-4">
-                <div class="text-center w-100">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 mb-2 fw-semibold" style="font-size: 0.8rem;">
-                        <i class="bi bi-qr-code-scan me-1"></i> Absensi Digital Kepanitiaan
-                    </span>
-                    <h5 class="modal-title font-bold text-center w-100 fw-bold text-dark fs-5" id="modalBarcodeAbsensiLabel">
-                        Barcode Absensi
-                    </h5>
-                    <p class="text-muted small mb-0 mt-1" id="barcode-session-indicator">Sesi: Waktu Datang</p>
-                </div>
-                <button type="button" class="btn-close position-absolute end-0 top-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center px-4 pb-4 pt-3">
-                <!-- Session Toggle Buttons -->
-                <div class="d-flex justify-content-center gap-2 mb-3">
-                    <button type="button" id="btn-barcode-datang" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 fw-bold shadow-sm">
-                        <i class="bi bi-sun-fill"></i> Waktu Datang
-                    </button>
-                    <button type="button" id="btn-barcode-pulang" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 fw-bold shadow-sm">
-                        <i class="bi bi-moon-stars-fill"></i> Waktu Pulang
-                    </button>
-                </div>
-
-                <!-- QR Code Display Box -->
-                <div class="p-3 border rounded-3 shadow-sm bg-white mb-3 mx-auto" style="max-width: 300px;">
-                    <img id="barcode-qr-img" src="" alt="Barcode Absensi" style="width: 100%; max-width: 270px; height: auto; aspect-ratio: 1 / 1; object-fit: contain; display: block; margin: 0 auto;">
-                </div>
-
-                <!-- Progress Bar -->
-                <div class="progress mb-2" style="height: 6px; width: 100%; max-width: 280px; margin: 0 auto; background-color: #e9ecef; border-radius: 1rem;">
-                    <div id="barcode-qr-progress" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%; border-radius: 1rem; transition: width 1s linear;"></div>
-                </div>
-
-                <!-- Countdown Text -->
-                <p class="text-muted small mb-3">
-                    <i class="bi bi-lightning-fill text-warning"></i> Kode dinamis &mdash; berganti dalam <span id="barcode-countdown" class="fw-bold text-dark">60</span> detik
-                </p>
-
-                <div class="d-flex justify-content-center gap-2">
-                    <a href="#" id="btn-visit-absensi" target="_blank" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1 px-3 py-2 fw-semibold rounded-pill">
-                        <i class="bi bi-box-arrow-up-right me-1"></i> Buka Halaman Absensi
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@include('partials.milestone-scripts')

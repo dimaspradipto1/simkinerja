@@ -514,10 +514,41 @@ class RencanaKerjaController extends Controller
             }
         }
 
+        $isOwner = $authUser && ($row->user_id === $authUser->id);
+        $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
+        $isTaggedOnly = !$isOwner && !$isLeader;
+
+        $absensiInfo = $this->resolveAbsensiSession($row);
+        $absensiUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.index') ? route($absensiInfo['slug'] . '.index') : url($absensiInfo['slug'])) : '';
+        $scanUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.scan') ? route($absensiInfo['slug'] . '.scan') . '?start=1' : url($absensiInfo['slug'] . '/scan?start=1')) : '';
+
+        // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
+        if ($isTaggedOnly) {
+            if ($status === 'Selesai' || $waktuSelesai) {
+                $btn .= '<span class="badge bg-success text-white px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</span>';
+            } elseif ($status === 'Berjalan' || $status === 'Proses') {
+                $btn .= '<span class="badge bg-primary text-white px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-play-circle-fill me-1"></i> Berjalan</span>';
+            } elseif ($status === 'Di-pause') {
+                $btn .= '<span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-pause-circle-fill me-1"></i> Di-pause</span>';
+            } else {
+                $btn .= '<span class="badge bg-secondary text-white px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-hourglass me-1"></i> Belum Dimulai</span>';
+            }
+
+            $btn .= '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.78rem;" title="Anda ditugaskan sebagai Rekan Kerja pada tugas ini"><i class="bi bi-person-check-fill me-1"></i> Rekan Kerja</span>';
+
+            // Tombol Scan Barcode & Tampilkan Barcode Absensi jika ada sesi absensi
+            if ($absensiInfo) {
+                $btn .= '<a href="' . $scanUrl . '" class="btn btn-sm btn-primary text-white fw-bold text-nowrap px-3 me-1 d-inline-flex align-items-center gap-1 shadow-sm" style="background-color: #0d6efd; border-color: #0d6efd; height: 32px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
+                $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm btn-barcode-absensi" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; height: 32px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+            }
+
+            $btn .= '</div>';
+            return $btn;
+        }
+
         if ($status === 'Selesai' || $waktuSelesai) {
             $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; height: 32px; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
         } elseif ($isExpired) {
-            $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
             if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
                 if ($isLeader) {
                     $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($row->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . route($routePrefix . '.approve-extension', $row->id) . '" onclick="window.openApproveExtensionModal(this)" style="height: 32px;" title="Permohonan perpanjangan waktu diajukan pegawai. Klik untuk setujui & beri waktu baru"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
@@ -538,14 +569,13 @@ class RencanaKerjaController extends Controller
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.stopTimer(' . $row->id . ')" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-2 me-1 btn-stop-timer" style="background-color: #8b0000; border-color: #8b0000; height: 32px; cursor: pointer;" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
         }
 
-        $canEditDelete = false;
-        if ($authUser) {
-            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit()) {
-                $canEditDelete = true;
-            } elseif ($row->user_id === $authUser->id) {
-                $canEditDelete = true;
-            }
+        // Barcode Absensi Button untuk Pemilik Tugas / Pimpinan jika ada sesi absensi
+        if ($absensiInfo) {
+            $btn .= '<a href="' . $scanUrl . '" class="btn btn-sm btn-primary text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm" style="background-color: #0d6efd; border-color: #0d6efd; height: 32px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
+            $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm btn-barcode-absensi" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; height: 32px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
         }
+
+        $canEditDelete = $isLeader || $isOwner;
 
         if ($canEditDelete) {
             $editUrl = route($routePrefix . '.edit', $row->id);
@@ -555,6 +585,65 @@ class RencanaKerjaController extends Controller
         }
         $btn .= '</div>';
         return $btn;
+    }
+
+    /**
+     * Helper to resolve attendance session from task data (url_external or keywords in uraian_tugas).
+     */
+    private function resolveAbsensiSession($row): ?array
+    {
+        $defaults = \App\Models\AbsensiSetting::defaults();
+
+        // 1. Cek dari url_external
+        if (!empty($row->url_external)) {
+            foreach ($defaults as $slug => $cfg) {
+                if (str_contains($row->url_external, $slug)) {
+                    return $cfg;
+                }
+            }
+        }
+
+        // 2. Deteksi cerdas dari uraian_tugas jika memuat nama kegiatan kepanitiaan
+        $text = strtolower($row->uraian_tugas ?? '');
+
+        // PKKMB
+        if (str_contains($text, 'pkkmb')) {
+            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga') || str_contains($text, '3 hari')) {
+                return $defaults['absensi-pkkmb-ketiga'] ?? $defaults['absensi-pkkmb-pertama'];
+            } elseif (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                return $defaults['absensi-pkkmb-kedua'] ?? $defaults['absensi-pkkmb-pertama'];
+            }
+            return $defaults['absensi-pkkmb-pertama'];
+        }
+
+        // MILAD
+        if (str_contains($text, 'milad')) {
+            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                return $defaults['absensi-milad-kedua'] ?? $defaults['absensi-milad-pertama'];
+            }
+            return $defaults['absensi-milad-pertama'];
+        }
+
+        // ESQ
+        if (str_contains($text, 'esq')) {
+            if (str_contains($text, 'hari 4') || str_contains($text, 'hari ke-4') || str_contains($text, 'hari keempat')) {
+                return $defaults['absensi-esq-keempat'] ?? $defaults['absensi-esq-pertama'];
+            }
+            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga')) {
+                return $defaults['absensi-esq-ketiga'] ?? $defaults['absensi-esq-pertama'];
+            }
+            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                return $defaults['absensi-esq-kedua'] ?? $defaults['absensi-esq-pertama'];
+            }
+            return $defaults['absensi-esq-pertama'];
+        }
+
+        // Kuliah Umum
+        if (str_contains($text, 'kuliah umum')) {
+            return $defaults['absensi-kuliah-umum-pertama'];
+        }
+
+        return null;
     }
 
     /**
