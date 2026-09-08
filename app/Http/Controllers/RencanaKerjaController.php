@@ -144,12 +144,12 @@ class RencanaKerjaController extends Controller
                         $html .= '<div class="d-flex flex-wrap align-items-center gap-2 mb-1">' . implode('', $chips) . '</div>';
                     }
 
-                    // 2.5 Special Card for Tagged Users (Rekan Kerja)
+                    // 2.5 Special Card for Tagged Users (Rekan Kerja) - Kartu Tersendiri
                     if ($row->taggedUsers->count() > 0) {
-                        $html .= '<div class="mt-2 p-2 px-3 bg-white rounded border shadow-sm d-flex flex-column gap-1" style="border-left: 4px solid #0284c7 !important; word-break: break-word;">';
-                        $html .= '<span class="text-secondary small fw-bold mb-1"><i class="bi bi-people-fill text-info me-1"></i>Rekan Kerja:</span>';
-                        $html .= '<div class="d-flex flex-column gap-1 ps-2">';
-                        
+                        $html .= '<div class="mt-1 p-2 px-3 bg-white rounded border shadow-sm d-flex flex-column gap-1" style="border-left: 4px solid #0284c7 !important; word-break: break-word; overflow-wrap: break-word;">';
+                        $html .= '<span class="text-secondary small fw-bold mb-1 d-inline-flex align-items-center"><i class="bi bi-people-fill text-info me-2" style="margin-right: 8px !important;"></i>Rekan Kerja:</span>';
+                        $html .= '<div class="d-flex flex-column gap-1 ps-1 ps-sm-2">';
+
                         $sortedUsers = $row->taggedUsers->sortByDesc(function ($u) {
                             $name = $u->name;
                             if (preg_match('/^Prof\./i', $name)) return 100;
@@ -164,11 +164,23 @@ class RencanaKerjaController extends Controller
 
                         $idx = 1;
                         foreach ($sortedUsers as $tu) {
-                            $html .= '<div class="fw-semibold text-dark" style="font-size: 0.85rem;">' . $idx . '. ' . e($tu->name) . ' <span class="text-muted fw-normal" style="font-size: 0.78rem;">(' . e($tu->jabatan ?? '-') . ')</span></div>';
+                            $html .= '<div class="fw-semibold text-dark text-break" style="font-size: 0.83rem; line-height: 1.35;">' . $idx . '. ' . e($tu->name) . ' <span class="text-muted fw-normal d-block d-sm-inline" style="font-size: 0.76rem;">(' . e($tu->jabatan ?? '-') . ')</span></div>';
                             $idx++;
                         }
                         $html .= '</div>';
                         $html .= '</div>';
+                    }
+
+                    // 2.6 Card Status Kehadiran Absensi (Khusus Pengguna yang Sedang Login)
+                    $absensiInfo = $this->resolveAbsensiSession($row);
+                    if ($absensiInfo) {
+                        $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug']);
+                        $myAtt = null;
+                        if ($modelClass && class_exists($modelClass)) {
+                            $myAtt = $modelClass::where('user_id', auth()->id())->first();
+                        }
+
+                        $html .= \App\Models\AbsensiSetting::renderAttendanceTable($absensiInfo, $myAtt);
                     }
 
                     // 3. Time Details Card Box (Kiri: Estimasi & Mulai | Kanan: Selesai & Durasi)

@@ -28,32 +28,32 @@
         max-width: 100% !important;
         min-width: 0 !important;
     }
-    #kegiatan-table thead {
+    #kegiatan-table > thead {
         display: none;
     }
-    #kegiatan-table tbody tr td {
+    #kegiatan-table > tbody > tr > td {
         vertical-align: top !important;
         padding: 10px 4px !important;
         border-bottom: 1px solid #edf2f7;
     }
-    #kegiatan-table tbody tr td:nth-child(1),
-    #kegiatan-table thead th:nth-child(1) {
+    #kegiatan-table > tbody > tr > td:nth-child(1),
+    #kegiatan-table > thead > tr > th:nth-child(1) {
         width: 22px !important;
         max-width: 22px !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
         text-align: center !important;
     }
-    #kegiatan-table tbody tr td:nth-child(2),
-    #kegiatan-table thead th:nth-child(2) {
+    #kegiatan-table > tbody > tr > td:nth-child(2),
+    #kegiatan-table > thead > tr > th:nth-child(2) {
         width: 25px !important;
         max-width: 25px !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
         text-align: center !important;
     }
-    #kegiatan-table tbody tr td:nth-child(3),
-    #kegiatan-table thead th:nth-child(3) {
+    #kegiatan-table > tbody > tr > td:nth-child(3),
+    #kegiatan-table > thead > tr > th:nth-child(3) {
         padding-left: 4px !important;
         padding-right: 0 !important;
     }
@@ -65,20 +65,20 @@
             display: block !important;
             table-layout: fixed !important;
         }
-        #kegiatan-table tbody,
-        #kegiatan-table tbody tr,
-        #kegiatan-table tbody tr td {
+        #kegiatan-table > tbody,
+        #kegiatan-table > tbody > tr,
+        #kegiatan-table > tbody > tr > td {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
             min-width: 0 !important;
             box-sizing: border-box !important;
         }
-        #kegiatan-table tbody tr td:nth-child(1),
-        #kegiatan-table tbody tr td:nth-child(2) {
+        #kegiatan-table > tbody > tr > td:nth-child(1),
+        #kegiatan-table > tbody > tr > td:nth-child(2) {
             display: none !important;
         }
-        #kegiatan-table tbody tr td:nth-child(3) {
+        #kegiatan-table > tbody > tr > td:nth-child(3) {
             padding: 0 !important;
         }
     }

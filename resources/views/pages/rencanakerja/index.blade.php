@@ -50,10 +50,10 @@
         overflow-x: hidden !important;
         width: 100% !important;
     }
-    #rencanakerja-table thead {
+    #rencanakerja-table > thead {
         display: none;
     }
-    #rencanakerja-table tbody tr td {
+    #rencanakerja-table > tbody > tr > td {
         vertical-align: top !important;
         padding: 10px 4px !important;
         border-bottom: 1px solid #edf2f7;
@@ -153,16 +153,16 @@
             border: none !important;
             table-layout: fixed !important;
         }
-        #rencanakerja-table thead {
+        #rencanakerja-table > thead {
             display: none !important;
         }
-        #rencanakerja-table tbody {
+        #rencanakerja-table > tbody {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
             min-width: 0 !important;
         }
-        #rencanakerja-table tbody tr {
+        #rencanakerja-table > tbody > tr {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
@@ -174,7 +174,7 @@
             box-shadow: none !important;
             box-sizing: border-box !important;
         }
-        #rencanakerja-table tbody tr td {
+        #rencanakerja-table > tbody > tr > td {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
@@ -183,11 +183,11 @@
             border: none !important;
             padding: 0 !important;
         }
-        #rencanakerja-table tbody tr td:first-child,
-        #rencanakerja-table tbody tr td:nth-child(2) {
+        #rencanakerja-table > tbody > tr > td:first-child,
+        #rencanakerja-table > tbody > tr > td:nth-child(2) {
             display: none !important;
         }
-        #rencanakerja-table tbody tr td:last-child {
+        #rencanakerja-table > tbody > tr > td:last-child {
             margin: 0 !important;
             padding: 0 !important;
             border-top: none !important;

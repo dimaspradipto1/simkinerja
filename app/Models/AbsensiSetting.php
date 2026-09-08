@@ -201,4 +201,129 @@ class AbsensiSetting
     {
         Cache::forget('absensi_settings_statuses');
     }
+
+    /**
+     * Get the Eloquent model class for a specific attendance slug.
+     */
+    public static function getModelClass(?string $slug): ?string
+    {
+        if (!$slug) return null;
+
+        $map = [
+            'absensi-pkkmb-pertama' => \App\Models\AbsensiPkkmbPertama::class,
+            'absensi-pkkmb-kedua' => \App\Models\AbsensiPkkmbKedua::class,
+            'absensi-pkkmb-ketiga' => \App\Models\AbsensiPkkmbKetiga::class,
+            'absensi-esq-pertama' => \App\Models\AbsensiEsqPertama::class,
+            'absensi-esq-kedua' => \App\Models\AbsensiEsqKedua::class,
+            'absensi-esq-ketiga' => \App\Models\AbsensiEsqKetiga::class,
+            'absensi-esq-keempat' => \App\Models\AbsensiEsqKeempat::class,
+            'absensi-milad-pertama' => \App\Models\AbsensiMiladPertama::class,
+            'absensi-milad-kedua' => \App\Models\AbsensiMiladKedua::class,
+            'absensi-milad-ketiga' => \App\Models\AbsensiMiladKetiga::class,
+            'absensi-kuliah-umum-pertama' => \App\Models\AbsensiKuliahUmumPertama::class,
+            'absensi-kuliah-umum-kedua' => \App\Models\AbsensiKuliahUmumKedua::class,
+            'absensi-kuliah-umum-ketiga' => \App\Models\AbsensiKuliahUmumKetiga::class,
+        ];
+
+        return $map[$slug] ?? null;
+    }
+
+    /**
+     * Render HTML attendance badges for an attendance record.
+     */
+    public static function renderAttendanceBadges($att): string
+    {
+        if (!$att) {
+            return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="font-size: 0.73rem; font-weight: 500;"><i class="bi bi-dash-circle me-1"></i>Belum Absen</span>';
+        }
+
+        $badges = [];
+
+        // Datang
+        $hadirDatang = $att->hadir_datang;
+        $waktuDatang = $att->waktu_datang ? substr($att->waktu_datang, 0, 5) : '';
+        if ($hadirDatang === 'Hadir') {
+            $badges[] = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.73rem; font-weight: 600;" title="Absensi Datang tercatat"><i class="bi bi-box-arrow-in-right me-1"></i>Datang: ' . ($waktuDatang ? $waktuDatang . ' WIB' : 'Hadir') . '</span>';
+        } elseif ($hadirDatang === 'Izin') {
+            $badges[] = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1" style="font-size: 0.73rem; font-weight: 600;"><i class="bi bi-info-circle me-1"></i>Izin Datang</span>';
+        } elseif ($hadirDatang === 'Sakit') {
+            $badges[] = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size: 0.73rem; font-weight: 600;"><i class="bi bi-heart-pulse me-1"></i>Sakit</span>';
+        } elseif ($hadirDatang === 'Alpha') {
+            $badges[] = '<span class="badge bg-danger text-white px-2 py-1" style="font-size: 0.73rem; font-weight: 600;"><i class="bi bi-x-circle me-1"></i>Alpha</span>';
+        } else {
+            $badges[] = '<span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.73rem;"><i class="bi bi-clock me-1"></i>Belum Datang</span>';
+        }
+
+        // Pulang
+        $hadirPulang = $att->hadir_pulang;
+        $waktuPulang = $att->waktu_pulang ? substr($att->waktu_pulang, 0, 5) : '';
+        if ($hadirPulang === 'Hadir') {
+            $badges[] = '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.73rem; font-weight: 600;" title="Absensi Pulang tercatat"><i class="bi bi-box-arrow-right me-1"></i>Pulang: ' . ($waktuPulang ? $waktuPulang . ' WIB' : 'Hadir') . '</span>';
+        } elseif ($hadirPulang === 'Izin') {
+            $badges[] = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1" style="font-size: 0.73rem; font-weight: 600;"><i class="bi bi-info-circle me-1"></i>Izin Pulang</span>';
+        } elseif ($hadirDatang === 'Hadir' && empty($hadirPulang)) {
+            $badges[] = '<span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.73rem;"><i class="bi bi-clock me-1"></i>Belum Pulang</span>';
+        }
+
+        return implode(' ', $badges);
+    }
+
+    /**
+     * Render HTML attendance table card for the logged-in user.
+     */
+    public static function renderAttendanceTable(?array $absensiInfo, $myAtt): string
+    {
+        if (!$absensiInfo) return '';
+
+        $datangStatus = $myAtt && $myAtt->hadir_datang ? '<span class="badge bg-success text-white px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600;">' . e($myAtt->hadir_datang) . '</span>' : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5" style="font-size: 0.72rem;">Belum Absen</span>';
+        $datangWaktu = $myAtt && $myAtt->waktu_datang ? '<span class="fw-bold text-dark" style="font-size: 0.82rem;">' . substr($myAtt->waktu_datang, 0, 5) . ' <small class="text-muted fw-normal">WIB</small></span>' : '<span class="text-muted">-</span>';
+        $datangCatatan = $myAtt && $myAtt->catatan_hadir_datang ? '<span class="text-secondary small">' . e($myAtt->catatan_hadir_datang) . '</span>' : '<span class="text-muted">-</span>';
+
+        $pulangStatus = $myAtt && $myAtt->hadir_pulang ? '<span class="badge bg-primary text-white px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600;">' . e($myAtt->hadir_pulang) . '</span>' : ($myAtt && $myAtt->hadir_datang ? '<span class="badge bg-light text-muted border px-2 py-0.5" style="font-size: 0.72rem;">Belum Pulang</span>' : '<span class="text-muted">-</span>');
+        $pulangWaktu = $myAtt && $myAtt->waktu_pulang ? '<span class="fw-bold text-dark" style="font-size: 0.82rem;">' . substr($myAtt->waktu_pulang, 0, 5) . ' <small class="text-muted fw-normal">WIB</small></span>' : '<span class="text-muted">-</span>';
+        $pulangCatatan = $myAtt && $myAtt->catatan_hadir_pulang ? '<span class="text-secondary small">' . e($myAtt->catatan_hadir_pulang) . '</span>' : '<span class="text-muted">-</span>';
+
+        $buktiIzin = '<span class="badge bg-secondary text-white px-2 py-0.5" style="font-size: 0.72rem;">Tidak ada</span>';
+        if ($myAtt && !empty($myAtt->bukti_izin)) {
+            $buktiIzin = '<a href="' . asset('storage/' . $myAtt->bukti_izin) . '" target="_blank" class="badge bg-primary text-white text-decoration-none px-2 py-0.5" style="font-size: 0.72rem;"><i class="bi bi-file-earmark me-0.5"></i>Lihat</a>';
+        }
+
+        $thStyle = 'background-color: #f1f5f9 !important; color: #1e293b !important; font-weight: 700 !important; font-size: 0.73rem !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; padding: 9px 10px !important; border: 1px solid #cbd5e1 !important; text-align: center !important; vertical-align: middle !important; white-space: nowrap !important; display: table-cell !important;';
+        $tdStyle = 'padding: 9px 8px !important; border: 1px solid #e2e8f0 !important; text-align: center !important; vertical-align: middle !important; background-color: #ffffff !important; display: table-cell !important;';
+
+        $html = '<div class="mt-2 p-3 bg-white rounded border shadow-sm d-flex flex-column gap-2" style="border-left: 4px solid #198754 !important; word-break: break-word; overflow-wrap: break-word;">';
+        $html .= '  <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 border-bottom pb-2">';
+        $html .= '    <span class="text-dark small fw-bold d-inline-flex align-items-center"><i class="bi bi-card-checklist text-success fs-6 me-2" style="margin-right: 8px !important;"></i>Status Kehadiran Absensi: <span class="text-success fw-bold ms-1">' . e($absensiInfo['nama']) . '</span></span>';
+        $html .= '  </div>';
+
+        $html .= '  <div class="table-responsive" style="overflow-x: auto !important; -webkit-overflow-scrolling: touch;">';
+        $html .= '    <table class="table table-sm table-bordered align-middle text-center mb-0 table-attendance-status" style="width: 100% !important; min-width: 650px !important; border-collapse: collapse !important; display: table !important; margin: 0 !important;">';
+        $html .= '      <thead style="display: table-header-group !important;">';
+        $html .= '        <tr style="display: table-row !important;">';
+        $html .= '          <th style="' . $thStyle . ' min-width: 110px;"><i class="bi bi-box-arrow-in-right text-success me-2" style="margin-right: 6px !important;"></i>HADIR DATANG</th>';
+        $html .= '          <th style="' . $thStyle . ' min-width: 95px;"><i class="bi bi-clock text-success me-2" style="margin-right: 6px !important;"></i>WAKTU DATANG</th>';
+        $html .= '          <th style="' . $thStyle . ' min-width: 120px;"><i class="bi bi-chat-left-text text-muted me-2" style="margin-right: 6px !important;"></i>CATATAN DATANG</th>';
+        $html .= '          <th style="' . $thStyle . ' min-width: 110px;"><i class="bi bi-box-arrow-right text-primary me-2" style="margin-right: 6px !important;"></i>HADIR PULANG</th>';
+        $html .= '          <th style="' . $thStyle . ' min-width: 95px;"><i class="bi bi-clock text-primary me-2" style="margin-right: 6px !important;"></i>WAKTU PULANG</th>';
+        $html .= '          <th style="' . $thStyle . ' min-width: 120px;"><i class="bi bi-chat-left-text text-muted me-2" style="margin-right: 6px !important;"></i>CATATAN PULANG</th>';
+        $html .= '          <th style="' . $thStyle . ' min-width: 90px;"><i class="bi bi-paperclip text-secondary me-2" style="margin-right: 6px !important;"></i>BUKTI IZIN</th>';
+        $html .= '        </tr>';
+        $html .= '      </thead>';
+        $html .= '      <tbody style="display: table-row-group !important;">';
+        $html .= '        <tr style="display: table-row !important;">';
+        $html .= '          <td style="' . $tdStyle . '">' . $datangStatus . '</td>';
+        $html .= '          <td style="' . $tdStyle . '">' . $datangWaktu . '</td>';
+        $html .= '          <td style="' . $tdStyle . '">' . $datangCatatan . '</td>';
+        $html .= '          <td style="' . $tdStyle . '">' . $pulangStatus . '</td>';
+        $html .= '          <td style="' . $tdStyle . '">' . $pulangWaktu . '</td>';
+        $html .= '          <td style="' . $tdStyle . '">' . $pulangCatatan . '</td>';
+        $html .= '          <td style="' . $tdStyle . '">' . $buktiIzin . '</td>';
+        $html .= '        </tr>';
+        $html .= '      </tbody>';
+        $html .= '    </table>';
+        $html .= '  </div>';
+        $html .= '</div>';
+
+        return $html;
+    }
 }

@@ -50,32 +50,32 @@
         overflow-x: hidden !important;
         width: 100% !important;
     }
-    #kepanitiaan-table thead {
+    #kepanitiaan-table > thead {
         display: none;
     }
-    #kepanitiaan-table tbody tr td {
+    #kepanitiaan-table > tbody > tr > td {
         vertical-align: top !important;
         padding: 10px 4px !important;
         border-bottom: 1px solid #edf2f7;
     }
-    #kepanitiaan-table tbody tr td:nth-child(1),
-    #kepanitiaan-table thead th:nth-child(1) {
+    #kepanitiaan-table > tbody > tr > td:nth-child(1),
+    #kepanitiaan-table > thead > tr > th:nth-child(1) {
         width: 22px !important;
         max-width: 22px !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
         text-align: center !important;
     }
-    #kepanitiaan-table tbody tr td:nth-child(2),
-    #kepanitiaan-table thead th:nth-child(2) {
+    #kepanitiaan-table > tbody > tr > td:nth-child(2),
+    #kepanitiaan-table > thead > tr > th:nth-child(2) {
         width: 25px !important;
         max-width: 25px !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
         text-align: center !important;
     }
-    #kepanitiaan-table tbody tr td:nth-child(3),
-    #kepanitiaan-table thead th:nth-child(3) {
+    #kepanitiaan-table > tbody > tr > td:nth-child(3),
+    #kepanitiaan-table > thead > tr > th:nth-child(3) {
         padding-left: 4px !important;
         padding-right: 0 !important;
     }
@@ -196,16 +196,16 @@
             border: none !important;
             table-layout: fixed !important;
         }
-        #kepanitiaan-table thead {
+        #kepanitiaan-table > thead {
             display: none !important;
         }
-        #kepanitiaan-table tbody {
+        #kepanitiaan-table > tbody {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
             min-width: 0 !important;
         }
-        #kepanitiaan-table tbody tr {
+        #kepanitiaan-table > tbody > tr {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
@@ -217,7 +217,7 @@
             box-shadow: none !important;
             box-sizing: border-box !important;
         }
-        #kepanitiaan-table tbody tr td {
+        #kepanitiaan-table > tbody > tr > td {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
@@ -226,11 +226,11 @@
             border: none !important;
             padding: 0 !important;
         }
-        #kepanitiaan-table tbody tr td:first-child,
-        #kepanitiaan-table tbody tr td:nth-child(2) {
+        #kepanitiaan-table > tbody > tr > td:first-child,
+        #kepanitiaan-table > tbody > tr > td:nth-child(2) {
             display: none !important;
         }
-        #kepanitiaan-table tbody tr td:last-child {
+        #kepanitiaan-table > tbody > tr > td:last-child {
             margin: 0 !important;
             padding: 0 !important;
             border-top: none !important;
