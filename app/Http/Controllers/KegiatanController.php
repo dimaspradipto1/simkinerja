@@ -306,10 +306,9 @@ class KegiatanController extends Controller
 
             $btn .= '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.78rem;" title="Anda ditugaskan sebagai Rekan Kerja pada tugas ini"><i class="bi bi-person-check-fill me-1"></i> Rekan Kerja</span>';
 
-            // Tombol Scan Barcode & Tampilkan Barcode Absensi
+            // Tombol Scan Barcode Khusus Rekan Kerja yang Di-tag (Hanya Scan Barcode, Barcode Absensi disembunyikan)
             if ($absensiInfo) {
                 $btn .= '<a href="' . $scanUrl . '" class="btn btn-sm btn-primary text-white fw-bold text-nowrap px-3 me-1 d-inline-flex align-items-center gap-1 shadow-sm" style="background-color: #0d6efd; border-color: #0d6efd; height: 32px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
-                $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm btn-barcode-absensi" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; height: 32px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
             }
 
             $btn .= '</div>';

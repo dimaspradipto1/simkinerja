@@ -80,18 +80,18 @@
     <!-- Section: Permohonan Perpanjangan Waktu Masuk -->
     <div class="row mb-3">
         <div class="col-lg-12">
-            <div class="alert alert-warning border border-warning shadow-sm p-3 rounded-3 mb-0">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom border-warning-subtle">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-danger fs-6 px-2 py-1"><i class="bi bi-bell-fill me-1"></i> {{ $pendingRequests->count() }} Permohonan Perpanjangan Waktu Masuk</span>
-                        <span class="text-dark small fw-semibold">Tugas insidentil di bawah ini telah melewati estimasi dan membutuhkan persetujuan batas waktu baru:</span>
+            <div class="alert alert-warning border border-warning shadow-sm p-2 p-sm-3 rounded-3 mb-0" style="word-break: break-word; overflow: hidden; max-width: 100%;">
+                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-2 pb-2 border-bottom border-warning-subtle">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-1 gap-md-2 w-100" style="max-width: 100%;">
+                        <span class="badge bg-danger px-2 py-1 align-self-start text-wrap d-inline-block" style="font-size: 0.78rem !important; max-width: 100% !important; word-break: break-word !important; overflow-wrap: anywhere !important; line-height: 1.35 !important; white-space: normal !important; box-sizing: border-box !important;"><i class="bi bi-bell-fill me-1"></i> {{ $pendingRequests->count() }} Permohonan Perpanjangan Waktu Masuk</span>
+                        <span class="text-dark small fw-semibold" style="line-height: 1.4;">Tugas insidentil di bawah ini telah melewati estimasi dan membutuhkan persetujuan batas waktu baru:</span>
                     </div>
                 </div>
                 <div class="d-flex flex-column gap-2">
                     @foreach($pendingRequests as $pr)
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 bg-white p-2 px-3 rounded border border-warning shadow-2xs">
-                        <div class="d-flex flex-column">
-                            <div class="fw-bold text-dark small">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 bg-white p-2 px-3 rounded border border-warning shadow-2xs">
+                        <div class="d-flex flex-column flex-grow-1 w-100">
+                            <div class="fw-bold text-dark small text-break">
                                 <i class="bi bi-person-fill text-primary me-1"></i>{{ $pr->user->name ?? '-' }} <span class="text-muted fw-normal">({{ $pr->user->jabatan ?? '-' }})</span> &mdash; <span class="text-success fw-bold">{{ $pr->uraian_tugas }}</span>
                             </div>
                             @php
@@ -107,17 +107,17 @@
                                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-person-badge-fill me-1"></i>Tujuan: {{ $tujuanPimpinan }}</span>
                                 @endif
                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-exclamation-circle me-1"></i>Kendala:</span>
-                                <span class="text-dark fw-medium">{{ $rReason }}</span>
+                                <span class="text-dark fw-medium text-break">{{ $rReason }}</span>
                                 <span class="text-muted ms-1">&bull; <i class="bi bi-clock me-1"></i>Diajukan: {{ \Carbon\Carbon::parse($pr->estimasi_unlock_requested_at)->diffForHumans() }}</span>
                             </div>
                         </div>
-                        <div>
+                        <div class="w-100 w-md-auto mt-1 mt-md-0 d-flex justify-content-start justify-content-md-end flex-shrink-0">
                             @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit()))
-                            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" data-id="{{ $pr->id }}" data-uraian="{{ e($pr->uraian_tugas) }}" data-pegawai="{{ e($pr->user->name ?? '-') }}" data-reason="{{ e($pr->estimasi_unlock_reason) }}" data-tgl-selesai="{{ e($pr->estimasi_tanggal_selesai ?? date('Y-m-d')) }}" data-jam-selesai="{{ e($pr->estimasi_jam_selesai ? substr($pr->estimasi_jam_selesai, 0, 5) : '23:59') }}" data-route="{{ route('insidentil.approve-extension', $pr->id) }}" onclick="window.openApproveExtensionModal(this)">
+                            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold w-100 w-md-auto text-nowrap" data-id="{{ $pr->id }}" data-uraian="{{ e($pr->uraian_tugas) }}" data-pegawai="{{ e($pr->user->name ?? '-') }}" data-reason="{{ e($pr->estimasi_unlock_reason) }}" data-tgl-selesai="{{ e($pr->estimasi_tanggal_selesai ?? date('Y-m-d')) }}" data-jam-selesai="{{ e($pr->estimasi_jam_selesai ? substr($pr->estimasi_jam_selesai, 0, 5) : '23:59') }}" data-route="{{ route('insidentil.approve-extension', $pr->id) }}" onclick="window.openApproveExtensionModal(this)">
                                 <i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu
                             </button>
                             @else
-                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>
+                            <span class="badge bg-warning text-dark py-2 px-3 w-100 w-md-auto text-center" style="font-size: 0.8rem;"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>
                             @endif
                         </div>
                     </div>

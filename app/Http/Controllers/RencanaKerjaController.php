@@ -100,28 +100,21 @@ class RencanaKerjaController extends Controller
                 ->addColumn('task_details', function ($row) use ($authUser) {
                     $html = '<div class="d-flex flex-column gap-2 py-1 w-100" style="max-width: 100%; box-sizing: border-box;">';
                     
-                    // 1. Task Title & Action Buttons Bar (Placed below title so buttons are never cut off)
-                    $actionBtns = $this->renderActionButtons($row, $authUser, 'rencana-kerja', 'deleteRencanaKerja');
+                    // 1. Task Title & Action Buttons Bar (Responsive Mobile Optimized)
                     $collapseId = 'collapseTask_' . $row->id;
+                    $actionBtns = $this->renderActionButtons($row, $authUser, 'rencana-kerja', 'deleteRencanaKerja', $collapseId);
 
-                    $html .= '<div class="p-2 px-3 bg-light rounded border mb-1 shadow-2xs d-flex flex-column gap-2">';
-                    $html .= '  <div class="d-flex align-items-center justify-content-between gap-2">';
-                    $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.98rem; cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
-                    $html .= '          <i class="bi bi-card-checklist text-success fs-5"></i>';
-                    $html .= '          <span>' . e($row->uraian_tugas) . '</span>';
+                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-2 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">';
+                    $html .= '  <div class="d-flex align-items-center justify-content-between gap-2" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
+                    $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.95rem;">';
+                    $html .= '          <i class="bi bi-card-checklist text-success fs-5 flex-shrink-0"></i>';
+                    $html .= '          <span class="text-break">' . e($row->uraian_tugas) . '</span>';
                     $html .= '      </div>';
+                    $html .= '      <i class="bi bi-chevron-down text-secondary fs-6 transition-transform toggle-icon flex-shrink-0"></i>';
                     $html .= '  </div>';
-                    $html .= '  <div class="pt-2 border-top d-flex flex-wrap align-items-center justify-content-between gap-2">';
-                    $html .= '      <div class="d-flex flex-wrap align-items-center justify-content-start gap-2">';
-                    $html .= '          <span class="text-secondary small fw-semibold me-1"><i class="bi bi-gear-fill me-1"></i>Aksi & Status:</span>';
-                    $html .=            $actionBtns;
-                    $html .= '      </div>';
-                    $html .= '      <div>';
-                    $html .= '          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-2xs btn-task-toggle" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-size: 0.8rem; height: 32px; padding: 0 10px; font-weight: 500;" title="Buka / Tutup Rincian">';
-                    $html .= '              <span class="toggle-text">Rincian</span>';
-                    $html .= '              <i class="bi bi-chevron-down toggle-icon transition-transform"></i>';
-                    $html .= '          </button>';
-                    $html .= '      </div>';
+                    $html .= '  <div class="pt-2 border-top task-action-container">';
+                    $html .= '      <span class="text-secondary small fw-semibold task-action-label"><i class="bi bi-gear-fill me-1"></i>Aksi & Status:</span>';
+                    $html .=        $actionBtns;
                     $html .= '  </div>';
                     $html .= '</div>';
 
@@ -483,9 +476,9 @@ class RencanaKerjaController extends Controller
     /**
      * Helper to render action buttons for task row (at top header and action column).
      */
-    private function renderActionButtons($row, $authUser, $routePrefix = 'rencana-kerja', $deleteJsFunc = 'deleteRencanaKerja')
+    private function renderActionButtons($row, $authUser, $routePrefix = 'rencana-kerja', $deleteJsFunc = 'deleteRencanaKerja', $collapseId = null)
     {
-        $btn = '<div class="d-inline-flex gap-1 flex-wrap flex-sm-nowrap align-items-center justify-content-end action-buttons-wrap">';
+        $btn = '<div class="action-buttons-wrap">';
 
         $waktuMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
         $waktuSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
@@ -524,65 +517,79 @@ class RencanaKerjaController extends Controller
 
         // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
         if ($isTaggedOnly) {
+            $btn .= '<div class="badge-status-group d-flex gap-2 w-100">';
             if ($status === 'Selesai' || $waktuSelesai) {
-                $btn .= '<span class="badge bg-success text-white px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</span>';
+                $btn .= '<span class="badge bg-success text-white py-2 px-3 d-flex align-items-center justify-content-center flex-fill" style="font-size: 0.82rem; border-radius: 8px; min-height: 40px;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</span>';
             } elseif ($status === 'Berjalan' || $status === 'Proses') {
-                $btn .= '<span class="badge bg-primary text-white px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-play-circle-fill me-1"></i> Berjalan</span>';
+                $btn .= '<span class="badge bg-primary text-white py-2 px-3 d-flex align-items-center justify-content-center flex-fill" style="font-size: 0.82rem; border-radius: 8px; min-height: 40px;"><i class="bi bi-play-circle-fill me-1"></i> Berjalan</span>';
             } elseif ($status === 'Di-pause') {
-                $btn .= '<span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-pause-circle-fill me-1"></i> Di-pause</span>';
+                $btn .= '<span class="badge bg-warning text-dark py-2 px-3 d-flex align-items-center justify-content-center flex-fill" style="font-size: 0.82rem; border-radius: 8px; min-height: 40px;"><i class="bi bi-pause-circle-fill me-1"></i> Di-pause</span>';
             } else {
-                $btn .= '<span class="badge bg-secondary text-white px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;"><i class="bi bi-hourglass me-1"></i> Belum Dimulai</span>';
+                $btn .= '<span class="badge bg-secondary text-white py-2 px-3 d-flex align-items-center justify-content-center flex-fill" style="font-size: 0.82rem; border-radius: 8px; min-height: 40px;"><i class="bi bi-hourglass me-1"></i> Belum Dimulai</span>';
             }
 
-            $btn .= '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.78rem;" title="Anda ditugaskan sebagai Rekan Kerja pada tugas ini"><i class="bi bi-person-check-fill me-1"></i> Rekan Kerja</span>';
+            $btn .= '<span class="badge bg-info-subtle text-info border border-info-subtle py-2 px-3 d-flex align-items-center justify-content-center flex-fill" style="font-size: 0.82rem; border-radius: 8px; min-height: 40px;" title="Anda ditugaskan sebagai Rekan Kerja pada tugas ini"><i class="bi bi-person-check-fill me-1"></i> Rekan Kerja</span>';
+            $btn .= '</div>';
 
-            // Tombol Scan Barcode & Tampilkan Barcode Absensi jika ada sesi absensi
+            // Tombol Scan Barcode Khusus Rekan Kerja yang Di-tag (Hanya Scan Barcode, Barcode Absensi disembunyikan)
             if ($absensiInfo) {
-                $btn .= '<a href="' . $scanUrl . '" class="btn btn-sm btn-primary text-white fw-bold text-nowrap px-3 me-1 d-inline-flex align-items-center gap-1 shadow-sm" style="background-color: #0d6efd; border-color: #0d6efd; height: 32px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
-                $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm btn-barcode-absensi" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; height: 32px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+                $btn .= '<a href="' . $scanUrl . '" class="btn btn-primary text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack w-100" style="background-color: #0d6efd; border-color: #0d6efd; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
+            }
+
+            if ($collapseId) {
+                $btn .= '<button type="button" class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 shadow-2xs btn-task-toggle btn-mobile-stack w-100" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-weight: 600; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;" title="Buka / Tutup Rincian"><span class="toggle-text">Rincian</span><i class="bi bi-chevron-down toggle-icon transition-transform"></i></button>';
             }
 
             $btn .= '</div>';
             return $btn;
         }
 
+        $btn .= '<div class="timer-status-group d-flex gap-2 w-100">';
         if ($status === 'Selesai' || $waktuSelesai) {
-            $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; height: 32px; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
+            $btn .= '<button type="button" class="btn text-white fw-bold disabled flex-fill" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
         } elseif ($isExpired) {
             if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
                 if ($isLeader) {
-                    $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($row->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . route($routePrefix . '.approve-extension', $row->id) . '" onclick="window.openApproveExtensionModal(this)" style="height: 32px;" title="Permohonan perpanjangan waktu diajukan pegawai. Klik untuk setujui & beri waktu baru"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
+                    $btn .= '<button type="button" class="btn btn-warning text-dark fw-bold flex-fill" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($row->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . route($routePrefix . '.approve-extension', $row->id) . '" onclick="window.openApproveExtensionModal(this)" style="padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Permohonan perpanjangan waktu diajukan pegawai. Klik untuk setujui & beri waktu baru"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
                 } else {
-                    $btn .= '<span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;" title="Permohonan perpanjangan waktu sedang menunggu persetujuan pimpinan"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>';
+                    $btn .= '<span class="badge bg-warning text-dark py-2 px-3 d-flex align-items-center justify-content-center flex-fill" style="font-size: 0.82rem; border-radius: 6px;" title="Permohonan perpanjangan waktu sedang menunggu persetujuan pimpinan"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>';
                 }
             } else {
-                $btn .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-2 me-1 btn-request-extension" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-route="' . route($routePrefix . '.request-unlock-estimasi', $row->id) . '" onclick="window.openExtensionModal(this)" style="height: 32px;" title="Tugas gagal karena melewati estimasi waktu. Klik untuk minta perpanjangan waktu ke pimpinan"><i class="bi bi-clock-history me-1"></i> Tugas Gagal - Minta Perpanjangan Waktu</button>';
+                $btn .= '<button type="button" class="btn btn-danger text-white fw-bold btn-request-extension flex-fill" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-route="' . route($routePrefix . '.request-unlock-estimasi', $row->id) . '" onclick="window.openExtensionModal(this)" style="padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Tugas gagal karena melewati estimasi waktu. Klik untuk minta perpanjangan waktu ke pimpinan"><i class="bi bi-clock-history me-1"></i> Tugas Gagal - Minta Perpanjangan Waktu</button>';
             }
         } elseif (!$waktuMulai && $status !== 'Di-pause') {
-            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 btn-start-timer" style="background-color: #15432d; border-color: #15432d; height: 32px; min-width: 85px; cursor: pointer;"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
+            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn text-white fw-bold btn-start-timer flex-fill" style="background-color: #15432d; border-color: #15432d; cursor: pointer; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
         } else {
             if ($status === 'Di-pause') {
-                $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-sm btn-success text-white fw-bold text-nowrap px-2 me-1 btn-resume-timer" style="height: 32px; cursor: pointer;" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
+                $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-success text-white fw-bold btn-resume-timer flex-fill" style="cursor: pointer; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
             } else {
-                $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.pauseTaskTimer(' . $row->id . ', \'' . $routePrefix . '\')" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1 btn-pause-timer" style="height: 32px; cursor: pointer;" title="Jeda Pekerjaan"><i class="bi bi-pause-fill me-1"></i> Pause</button>';
+                $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.pauseTaskTimer(' . $row->id . ', \'' . $routePrefix . '\')" class="btn btn-warning text-dark fw-bold btn-pause-timer flex-fill" style="cursor: pointer; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Jeda Pekerjaan"><i class="bi bi-pause-fill me-1"></i> Pause</button>';
             }
-            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.stopTimer(' . $row->id . ')" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-2 me-1 btn-stop-timer" style="background-color: #8b0000; border-color: #8b0000; height: 32px; cursor: pointer;" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
+            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.stopTimer(' . $row->id . ')" class="btn btn-danger text-white fw-bold btn-stop-timer flex-fill" style="background-color: #8b0000; border-color: #8b0000; cursor: pointer; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
         }
+        $btn .= '</div>';
 
-        // Barcode Absensi Button untuk Pemilik Tugas / Pimpinan jika ada sesi absensi
+        // Barcode Absensi Button untuk Pemilik Tugas / Pimpinan
         if ($absensiInfo) {
-            $btn .= '<a href="' . $scanUrl . '" class="btn btn-sm btn-primary text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm" style="background-color: #0d6efd; border-color: #0d6efd; height: 32px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
-            $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm btn-barcode-absensi" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; height: 32px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+            $btn .= '<a href="' . $scanUrl . '" class="btn btn-primary text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack w-100" style="background-color: #0d6efd; border-color: #0d6efd; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
+            $btn .= '<button type="button" class="btn text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack w-100" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
         }
 
         $canEditDelete = $isLeader || $isOwner;
 
         if ($canEditDelete) {
             $editUrl = route($routePrefix . '.edit', $row->id);
-            $btn .= '<button type="button" class="btn btn-sm btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center me-1" style="height: 32px; width: 32px; padding: 0;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i></button>';
-            $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center me-1" style="height: 32px; width: 32px; padding: 0;" title="Edit Tugas"><i class="bi bi-pencil"></i></a>';
-            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.' . $deleteJsFunc . '(' . $row->id . ')" class="btn btn-sm btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center" style="height: 32px; width: 32px; padding: 0;" title="Hapus Tugas"><i class="bi bi-trash"></i></button>';
+            $btn .= '<div class="owner-actions-group d-flex gap-2 w-100">';
+            $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag flex-fill d-inline-flex align-items-center justify-content-center gap-1" style="padding: 8px 12px; font-size: 0.84rem; border-radius: 8px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span>Tag</span></button>';
+            $btn .= '<a href="' . $editUrl . '" class="btn btn-outline-secondary flex-fill d-inline-flex align-items-center justify-content-center gap-1" style="padding: 8px 12px; font-size: 0.84rem; border-radius: 8px;" title="Edit Tugas"><i class="bi bi-pencil"></i> <span>Edit</span></a>';
+            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.' . $deleteJsFunc . '(' . $row->id . ')" class="btn btn-outline-danger btn-delete-timer flex-fill d-inline-flex align-items-center justify-content-center gap-1" style="padding: 8px 12px; font-size: 0.84rem; border-radius: 8px;" title="Hapus Tugas"><i class="bi bi-trash"></i> <span>Hapus</span></button>';
+            $btn .= '</div>';
         }
+
+        if ($collapseId) {
+            $btn .= '<button type="button" class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 shadow-2xs btn-task-toggle btn-mobile-stack w-100" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-weight: 600; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;" title="Buka / Tutup Rincian"><span class="toggle-text">Rincian</span><i class="bi bi-chevron-down toggle-icon transition-transform"></i></button>';
+        }
+
         $btn .= '</div>';
         return $btn;
     }
