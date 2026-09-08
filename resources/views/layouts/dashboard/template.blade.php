@@ -174,6 +174,32 @@
                 justify-content: center !important;
             }
         }
+
+        /* Modal QR Camera Scanner Styling */
+        #modal-scanner-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: #000;
+        }
+        #modal-reader {
+            width: 100% !important;
+            height: 100% !important;
+            border: none !important;
+        }
+        #modal-reader video {
+            object-fit: cover !important;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 1rem !important;
+        }
+        #modal-reader img[alt="Info icon"] { 
+            display: none !important; 
+        }
     </style>
 </head>
 
@@ -210,6 +236,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     @php
         $authUserForModal = Auth::user();
@@ -423,6 +450,171 @@
         $(document).on('hidden.bs.modal', '#modalBarcodeAbsensi', function() {
             clearInterval(barcodeTimer);
         });
+
+        // Global Scan Barcode Modal Handler (Kamera Scanner Langsung dalam Modal)
+        let modalHtml5QrCode = null;
+        let isModalScanning = false;
+
+        window.openScanBarcodeModal = function(el) {
+            const btn = $(el);
+            const title = btn.data('title') || 'Scan Barcode Kehadiran';
+            const slug = btn.data('slug') || '';
+
+            $('#modalScanBarcodeAbsensiLabel').text('Scan Kehadiran: ' + title);
+            $('#modal-scan-loading').addClass('d-none').removeClass('d-flex');
+
+            const modalEl = document.getElementById('modalScanBarcodeAbsensi');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        };
+
+        $(document).on('click', '.btn-scan-barcode-modal', function(e) {
+            e.preventDefault();
+            window.openScanBarcodeModal(this);
+        });
+
+        $(document).on('shown.bs.modal', '#modalScanBarcodeAbsensi', function() {
+            startModalScanner();
+        });
+
+        $(document).on('hidden.bs.modal', '#modalScanBarcodeAbsensi', function() {
+            stopModalScanner();
+        });
+
+        function startModalScanner() {
+            if (!window.isSecureContext) {
+                Swal.fire({
+                    title: 'Koneksi Tidak Aman!',
+                    html: 'Akses kamera browser memerlukan koneksi <strong>HTTPS</strong> atau <code>localhost</code>.<br><br>Anda mengakses melalui:<br><code>' + window.location.protocol + '//' + window.location.host + '</code>',
+                    icon: 'error',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            if (typeof Html5Qrcode === 'undefined') {
+                Swal.fire('Error', 'Library scanner kamera belum termuat.', 'error');
+                return;
+            }
+
+            $('#modal-scanner-wrapper').show();
+            $('#modal-scan-loading').addClass('d-none').removeClass('d-flex');
+
+            try {
+                if (!modalHtml5QrCode) {
+                    modalHtml5QrCode = new Html5Qrcode("modal-reader");
+                }
+
+                const config = {
+                    fps: 15,
+                    qrbox: { width: 220, height: 220 }
+                };
+
+                modalHtml5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    onModalScanSuccess
+                ).then(() => {
+                    isModalScanning = true;
+                }).catch((err) => {
+                    console.error("Camera access failed", err);
+                    let errorMsg = 'Gagal mengakses kamera. Pastikan izin kamera telah diberikan di browser Anda.';
+                    const errName = err && err.name;
+                    if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+                        errorMsg = 'Izin kamera ditolak. Aktifkan izin kamera untuk situs ini melalui pengaturan browser Anda.';
+                    } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+                        errorMsg = 'Kamera tidak ditemukan pada perangkat ini.';
+                    } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+                        errorMsg = 'Kamera sedang digunakan oleh aplikasi lain.';
+                    }
+                    Swal.fire({
+                        title: 'Kamera Tidak Tersedia',
+                        text: errorMsg,
+                        icon: 'warning',
+                        confirmButtonColor: '#3085d6'
+                    });
+                });
+            } catch (ex) {
+                console.error("Scanner init exception", ex);
+            }
+        }
+
+        function stopModalScanner() {
+            if (modalHtml5QrCode && isModalScanning) {
+                modalHtml5QrCode.stop().then(() => {
+                    isModalScanning = false;
+                }).catch((err) => {
+                    console.warn("Error stopping scanner", err);
+                    isModalScanning = false;
+                });
+            }
+        }
+
+        function onModalScanSuccess(decodedText) {
+            stopModalScanner();
+            $('#modal-scan-loading').removeClass('d-none').addClass('d-flex');
+
+            // Kirim request AJAX ke decodedText (URL endpoint scan-proses)
+            $.ajax({
+                url: decodedText,
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                success: function(response) {
+                    const modalEl = document.getElementById('modalScanBarcodeAbsensi');
+                    if (modalEl) {
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                    }
+
+                    Swal.fire({
+                        title: response.success ? 'Berhasil!' : 'Pemberitahuan',
+                        text: response.message || 'Absensi berhasil diproses!',
+                        icon: response.success ? 'success' : 'info',
+                        confirmButtonColor: '#198754'
+                    }).then(() => {
+                        if (window.LaravelDataTables && window.LaravelDataTables["rencanakerja-table"]) {
+                            window.LaravelDataTables["rencanakerja-table"].ajax.reload(null, false);
+                        } else if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
+                            window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
+                        } else {
+                            window.location.reload();
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    let errMessage = null;
+                    try {
+                        const res = xhr.responseJSON;
+                        if (res && res.message) {
+                            errMessage = res.message;
+                        }
+                    } catch (e) {}
+
+                    if (errMessage) {
+                        const modalEl = document.getElementById('modalScanBarcodeAbsensi');
+                        if (modalEl) {
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
+                        Swal.fire({
+                            title: 'Perhatian',
+                            text: errMessage,
+                            icon: 'warning',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    } else {
+                        // Fallback redirect jika browser mengizinkan
+                        window.location.href = decodedText;
+                    }
+                }
+            });
+        }
     </script>
 
     <!-- Modal Persetujuan Perpanjangan Waktu (Khusus Pimpinan / Admin) -->
@@ -522,6 +714,52 @@
                         <a href="#" id="btn-visit-absensi" target="_blank" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1 px-3 py-2 fw-semibold rounded-pill">
                             <i class="bi bi-box-arrow-up-right me-1"></i> Buka Halaman Absensi
                         </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Scan Barcode Universal (Kamera Scanner Langsung dalam Modal) -->
+    <div class="modal fade" id="modalScanBarcodeAbsensi" tabindex="-1" aria-labelledby="modalScanBarcodeAbsensiLabel" aria-hidden="true" style="z-index: 1065;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden;">
+                <div class="modal-header border-0 pb-0 justify-content-between position-relative pt-4 px-4">
+                    <div class="text-center w-100">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 mb-2 fw-semibold" style="font-size: 0.8rem;">
+                            <i class="bi bi-camera-fill me-1"></i> Scanner Kamera
+                        </span>
+                        <h5 class="modal-title font-bold text-center w-100 fw-bold text-dark fs-5" id="modalScanBarcodeAbsensiLabel">
+                            Scan Barcode Kehadiran
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">Arahkan kamera smartphone ke QR Code panitia</p>
+                    </div>
+                    <button type="button" class="btn-close position-absolute end-0 top-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center px-4 pb-4 pt-3">
+                    <!-- Scanner Container -->
+                    <div id="modal-scanner-wrapper" class="position-relative overflow-hidden border border-2 border-success rounded-3 mx-auto shadow-sm mb-3" style="max-width: 320px; aspect-ratio: 1; background: #000;">
+                        <div id="modal-reader" style="width: 100%; height: 100%;"></div>
+                        <div class="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center" style="pointer-events: none;">
+                            <div class="position-relative" style="width: 220px; height: 220px; border: 2px dashed rgba(255,255,255,0.7); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);">
+                                <div class="position-absolute border-top border-start border-4 border-success" style="width: 24px; height: 24px; top: -2px; left: -2px; border-top-left-radius: 8px;"></div>
+                                <div class="position-absolute border-top border-end border-4 border-success" style="width: 24px; height: 24px; top: -2px; right: -2px; border-top-right-radius: 8px;"></div>
+                                <div class="position-absolute border-bottom border-start border-4 border-success" style="width: 24px; height: 24px; bottom: -2px; left: -2px; border-bottom-left-radius: 8px;"></div>
+                                <div class="position-absolute border-bottom border-end border-4 border-success" style="width: 24px; height: 24px; bottom: -2px; right: -2px; border-bottom-right-radius: 8px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    <div id="modal-scan-loading" class="alert alert-success py-2 small d-none align-items-center justify-content-center gap-2 mb-3">
+                        <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                        <span class="fw-semibold">QR Code terdeteksi! Menyimpan absensi...</span>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm px-4 py-2 rounded-pill fw-semibold" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i> Tutup Kamera
+                        </button>
                     </div>
                 </div>
             </div>

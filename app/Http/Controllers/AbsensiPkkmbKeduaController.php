@@ -204,7 +204,12 @@ class AbsensiPkkmbKeduaController extends Controller
      */
     public function scanProses(Request $request)
     {
+        $isAjax = $request->ajax() || $request->wantsJson();
+
         if (!AbsensiSetting::isActive('absensi-pkkmb-kedua')) {
+            if ($isAjax) {
+                return response()->json(['success' => false, 'message' => 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.'], 400);
+            }
             Alert::warning('Pemberitahuan', 'Sesi absensi ini sedang dinonaktifkan / ditutup oleh panitia.');
             return redirect()->route('absensi-pkkmb-kedua.index');
         }
@@ -216,6 +221,9 @@ class AbsensiPkkmbKeduaController extends Controller
 
         $session = $request->query('session');
         if (!in_array($session, ['datang', 'pulang'])) {
+            if ($isAjax) {
+                return response()->json(['success' => false, 'message' => 'Sesi absensi tidak valid.'], 400);
+            }
             Alert::error('Gagal', 'Sesi absensi tidak valid.');
             return redirect()->route('absensi-pkkmb-kedua.index');
         }
@@ -230,6 +238,9 @@ class AbsensiPkkmbKeduaController extends Controller
 
         if ($session === 'datang') {
             if ($absensi->hadir_datang === 'Hadir') {
+                if ($isAjax) {
+                    return response()->json(['success' => false, 'message' => 'Anda sudah melakukan absensi datang sebelumnya.']);
+                }
                 Alert::warning('Info', 'Anda sudah melakukan absensi datang sebelumnya.');
                 return redirect()->route('absensi-pkkmb-kedua.index');
             }
@@ -238,6 +249,9 @@ class AbsensiPkkmbKeduaController extends Controller
             $msg = 'Absensi Datang berhasil dicatat otomatis pada pukul ' . $currentTime . ' WIB.';
         } else {
             if ($absensi->hadir_pulang === 'Hadir') {
+                if ($isAjax) {
+                    return response()->json(['success' => false, 'message' => 'Anda sudah melakukan absensi pulang sebelumnya.']);
+                }
                 Alert::warning('Info', 'Anda sudah melakukan absensi pulang sebelumnya.');
                 return redirect()->route('absensi-pkkmb-kedua.index');
             }
@@ -247,6 +261,10 @@ class AbsensiPkkmbKeduaController extends Controller
         }
 
         $absensi->save();
+
+        if ($isAjax) {
+            return response()->json(['success' => true, 'message' => $msg]);
+        }
 
         Alert::success('Berhasil', $msg);
         return redirect()->route('absensi-pkkmb-kedua.index');

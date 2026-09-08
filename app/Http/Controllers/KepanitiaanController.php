@@ -477,7 +477,7 @@ class KepanitiaanController extends Controller
 
             // Tombol Scan Barcode Khusus Rekan Kerja yang Di-tag (Hanya Scan Barcode, Barcode Absensi disembunyikan)
             if ($absensiInfo) {
-                $btn .= '<a href="' . $scanUrl . '" class="btn btn-primary text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack w-100" style="background-color: #0d6efd; border-color: #0d6efd; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
+                $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack w-100" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
             }
 
             if ($collapseId) {
@@ -515,7 +515,7 @@ class KepanitiaanController extends Controller
 
         // Barcode Absensi Button untuk Pemilik Tugas / Pimpinan
         if ($absensiInfo) {
-            $btn .= '<a href="' . $scanUrl . '" class="btn btn-primary text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack w-100" style="background-color: #0d6efd; border-color: #0d6efd; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</a>';
+            $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack w-100" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
             $btn .= '<button type="button" class="btn text-white fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack w-100" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 10px 14px; font-size: 0.85rem; border-radius: 8px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
         }
 
