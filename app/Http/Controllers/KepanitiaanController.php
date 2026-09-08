@@ -482,6 +482,13 @@ class KepanitiaanController extends Controller
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.stopTimer(' . $row->id . ')" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-2 me-1 btn-stop-timer" style="background-color: #8b0000; border-color: #8b0000; height: 32px; cursor: pointer;" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
         }
 
+        // Barcode Absensi Button
+        $absensiInfo = $this->resolveAbsensiSession($row);
+        if ($absensiInfo) {
+            $absensiUrl = \Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.index') ? route($absensiInfo['slug'] . '.index') : url($absensiInfo['slug']);
+            $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-2 me-1 d-inline-flex align-items-center gap-1 shadow-sm btn-barcode-absensi" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" style="background-color: #0f172a; border-color: #0f172a; height: 32px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+        }
+
         $canEditDelete = false;
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit()) {
@@ -502,6 +509,65 @@ class KepanitiaanController extends Controller
     }
 
     /**
+     * Helper to resolve attendance session from task data (url_external or keywords in uraian_tugas).
+     */
+    private function resolveAbsensiSession($row): ?array
+    {
+        $defaults = \App\Models\AbsensiSetting::defaults();
+
+        // 1. Cek dari url_external
+        if (!empty($row->url_external)) {
+            foreach ($defaults as $slug => $cfg) {
+                if (str_contains($row->url_external, $slug)) {
+                    return $cfg;
+                }
+            }
+        }
+
+        // 2. Deteksi cerdas dari uraian_tugas jika memuat nama kegiatan kepanitiaan
+        $text = strtolower($row->uraian_tugas ?? '');
+
+        // PKKMB
+        if (str_contains($text, 'pkkmb')) {
+            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga') || str_contains($text, '3 hari')) {
+                return $defaults['absensi-pkkmb-ketiga'] ?? $defaults['absensi-pkkmb-pertama'];
+            } elseif (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                return $defaults['absensi-pkkmb-kedua'] ?? $defaults['absensi-pkkmb-pertama'];
+            }
+            return $defaults['absensi-pkkmb-pertama'];
+        }
+
+        // MILAD
+        if (str_contains($text, 'milad')) {
+            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                return $defaults['absensi-milad-kedua'] ?? $defaults['absensi-milad-pertama'];
+            }
+            return $defaults['absensi-milad-pertama'];
+        }
+
+        // ESQ
+        if (str_contains($text, 'esq')) {
+            if (str_contains($text, 'hari 4') || str_contains($text, 'hari ke-4') || str_contains($text, 'hari keempat')) {
+                return $defaults['absensi-esq-keempat'] ?? $defaults['absensi-esq-pertama'];
+            }
+            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga')) {
+                return $defaults['absensi-esq-ketiga'] ?? $defaults['absensi-esq-pertama'];
+            }
+            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                return $defaults['absensi-esq-kedua'] ?? $defaults['absensi-esq-pertama'];
+            }
+            return $defaults['absensi-esq-pertama'];
+        }
+
+        // Kuliah Umum
+        if (str_contains($text, 'kuliah umum')) {
+            return $defaults['absensi-kuliah-umum-pertama'];
+        }
+
+        return null;
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
@@ -510,8 +576,9 @@ class KepanitiaanController extends Controller
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
+        $absensiSessions = \App\Models\AbsensiSetting::getAllGrouped();
 
-        return view('pages.kepanitiaan.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId'));
+        return view('pages.kepanitiaan.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId', 'absensiSessions'));
     }
 
     /**
@@ -521,6 +588,10 @@ class KepanitiaanController extends Controller
     {
         $validated = $request->validated();
         $validated['user_id'] = $validated['user_id'] ?? Auth::id();
+
+        if ($request->filled('jenis_absensi') && empty($validated['url_external'])) {
+            $validated['url_external'] = url($request->input('jenis_absensi'));
+        }
 
         if ($request->hasFile('file')) {
             $validated['file'] = $request->file('file')->store('kepanitiaan', 'public');
