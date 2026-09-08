@@ -36,6 +36,23 @@
             </div>
             @endunless
 
+            @if(isset($orphanedCount) && $orphanedCount > 0 && auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+            <div class="alert alert-warning border-warning d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 mb-4 shadow-sm rounded" role="alert">
+                <div class="d-flex align-items-start gap-3 mb-2 mb-md-0">
+                    <div class="rounded-circle bg-warning bg-opacity-25 d-flex align-items-center justify-content-center text-warning p-2" style="width: 42px; height: 42px; min-width: 42px;">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">Perhatian: Ditemukan {{ $orphanedCount }} data absensi dengan relasi pengguna terputus!</div>
+                        <div class="small text-muted">Akun pengguna untuk data tersebut tidak ditemukan di tabel database (User ID lama). Anda dapat mengklik tombol <strong>Edit (<i class="bi bi-pencil-square"></i>)</strong> pada baris terkait untuk menghubungkan ke pengguna aktif, atau klik tombol bersihkan di samping untuk menghapus seluruh data terputus.</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm text-nowrap ms-md-3 d-inline-flex align-items-center gap-1" onclick="cleanupOrphaned()">
+                    <i class="bi bi-trash"></i> Bersihkan Data Terputus
+                </button>
+            </div>
+            @endif
+
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h5 class="card-title m-0 p-0 fs-5 font-semibold text-primary">List Absensi Hari II</h5>
@@ -193,7 +210,6 @@
                 startTimer();
             });
 
-            // Tab session selection handlers for pulang
             $('#btn-session-pulang').on('click', function() {
                 if (activeSession === 'pulang') return;
                 activeSession = 'pulang';
@@ -265,7 +281,48 @@
                                 title: 'Gagal!',
                                 text: xhr.responseJSON?.message || 'Terjadi kesalahan saat menghapus data.',
                                 icon: 'error'
-                             });
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function cleanupOrphaned() {
+            Swal.fire({
+                title: 'Bersihkan Data Terputus?',
+                text: 'Semua data absensi yang akun penggunanya sudah tidak ada di database akan dihapus secara permanen.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmColor: '#dc3545',
+                cancelColor: '#6c757d',
+                confirmButtonText: 'Ya, Bersihkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('absensi-pkkmb-kedua.cleanup-orphaned') }}",
+                        type: 'POST',
+                        data: {
+                            "_token": "{{ csrf_token() }}"
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire('Gagal!', response.message || 'Gagal membersihkan data.', 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Gagal!', xhr.responseJSON?.message || 'Terjadi kesalahan.', 'error');
                         }
                     });
                 }

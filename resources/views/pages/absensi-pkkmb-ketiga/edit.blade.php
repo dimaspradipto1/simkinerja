@@ -19,6 +19,16 @@
                 <div class="card-body">
                     <h5 class="card-title fw-bold text-primary mb-4">Form Edit Absensi PKKMB Hari Ketiga</h5>
 
+                    @if(!$absensi->user)
+                    <div class="alert alert-warning border-warning d-flex align-items-center p-3 mb-4 shadow-sm rounded" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-3 text-warning me-3"></i>
+                        <div>
+                            <div class="fw-bold text-dark">Peringatan: Relasi Pengguna Terputus!</div>
+                            <div class="small text-muted">Data absensi ini terdaftar dengan <strong>User ID: {{ $absensi->user_id }}</strong>, namun akun pengguna tersebut tidak ditemukan di database (kemungkinan telah dihapus atau di-reset). Silakan pilih Pengguna aktif di bawah ini untuk menghubungkan kembali data absensi ini.</div>
+                        </div>
+                    </div>
+                    @endif
+
                     <form action="{{ route('absensi-pkkmb-ketiga.update', $absensi->id) }}" method="POST" enctype="multipart/form-data" class="row g-4">
                         @csrf
                         @method('PUT')
@@ -27,7 +37,11 @@
                         <div class="col-md-12">
                             <label for="user_id" class="form-label fw-semibold">Nama Pengguna <span class="text-danger">*</span></label>
                             <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id" required>
-                                <option value="" disabled>-- Pilih Nama Pengguna --</option>
+                                @if(!$absensi->user)
+                                    <option value="" selected disabled>⚠️ User Tidak Ditemukan (ID Lama: {{ $absensi->user_id }}) — Silakan Pilih Pengguna Baru</option>
+                                @else
+                                    <option value="" disabled>-- Pilih Nama Pengguna --</option>
+                                @endif
                                 @foreach($users as $u)
                                     <option value="{{ $u->id }}" {{ old('user_id', $absensi->user_id) == $u->id ? 'selected' : '' }}>
                                         {{ $u->name }} ({{ $u->jabatan ?? '-' }})

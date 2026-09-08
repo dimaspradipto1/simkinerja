@@ -25,7 +25,8 @@ class AbsensiPkkmbPertamaController extends Controller
      */
     public function index(AbsensiPkkmbPertamaDataTable $dataTable)
     {
-        return $dataTable->render('pages.absensi-pkkmb-pertama.index');
+        $orphanedCount = AbsensiPkkmbPertama::whereDoesntHave('user')->count();
+        return $dataTable->render('pages.absensi-pkkmb-pertama.index', compact('orphanedCount'));
     }
 
     /**
@@ -251,7 +252,7 @@ class AbsensiPkkmbPertamaController extends Controller
             $buktiIzin = $item->bukti_izin ? asset('storage/' . $item->bukti_izin) : 'Tidak Ada';
 
             $sheet->setCellValue('A' . $rowNum, $no++);
-            $sheet->setCellValue('B' . $rowNum, $item->user ? $item->user->name : '-');
+            $sheet->setCellValue('B' . $rowNum, $item->user ? $item->user->name : 'User Tidak Ditemukan (ID: ' . $item->user_id . ')');
             $sheet->setCellValue('C' . $rowNum, $item->hadir_datang ?? '-');
             $sheet->setCellValue('D' . $rowNum, $waktuDatang);
             $sheet->setCellValue('E' . $rowNum, $item->catatan_hadir_datang ?? '-');
@@ -368,5 +369,19 @@ class AbsensiPkkmbPertamaController extends Controller
         }
 
         return view('pages.absensi-pkkmb-pertama.scan');
+    }
+
+    /**
+     * Clean up orphaned attendance records where the user no longer exists.
+     */
+    public function cleanupOrphaned()
+    {
+        $this->checkAdmin();
+        $count = AbsensiPkkmbPertama::whereDoesntHave('user')->count();
+        AbsensiPkkmbPertama::whereDoesntHave('user')->delete();
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil membersihkan {$count} data absensi yang relasi penggunanya terputus."
+        ]);
     }
 }

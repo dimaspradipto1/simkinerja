@@ -23,20 +23,26 @@ class AbsensiPkkmbKetigaDataTable extends DataTable
         return (new EloquentDataTable($query))
             ->addIndexColumn()
             ->addColumn('user_name', function ($row) {
-                return $row->user ? $row->user->name : '-';
+                if ($row->user) {
+                    return '<span class="fw-medium text-dark">' . e($row->user->name) . '</span>';
+                }
+                return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" title="User ID: ' . $row->user_id . ' tidak ditemukan di database (relasi terputus)"><i class="bi bi-person-x-fill me-1"></i> User #' . $row->user_id . ' (Tidak Ditemukan)</span>';
             })
             ->filterColumn('user_name', function ($query, $keyword) {
-                $query->whereHas('user', function ($q) use ($keyword) {
-                    $q->where('name', 'like', "%{$keyword}%")
-                      ->orWhere('nidn', 'like', "%{$keyword}%")
-                      ->orWhere('email', 'like', "%{$keyword}%");
+                $table = $query->getModel()->getTable();
+                $query->where(function ($sub) use ($keyword, $table) {
+                    $sub->whereHas('user', function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%")
+                          ->orWhere('nidn', 'like', "%{$keyword}%")
+                          ->orWhere('email', 'like', "%{$keyword}%");
+                    })
+                    ->orWhere($table . '.user_id', 'like', "%{$keyword}%");
                 });
             })
             ->orderColumn('user_name', function ($query, $order) {
-                $query->orderBy(
-                    User::select('name')
-                        ->whereColumn('users.id', $query->getModel()->getTable() . '.user_id'),
-                    $order
+                $table = $query->getModel()->getTable();
+                $query->orderByRaw(
+                    "COALESCE((SELECT name FROM users WHERE users.id = {$table}.user_id), CONCAT('ZZZ_', {$table}.user_id)) {$order}"
                 );
             })
             ->addColumn('waktu_datang_formatted', function ($row) {
@@ -72,7 +78,7 @@ class AbsensiPkkmbKetigaDataTable extends DataTable
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['bukti_izin_badge', 'action']);
+            ->rawColumns(['user_name', 'bukti_izin_badge', 'action']);
     }
 
     /**

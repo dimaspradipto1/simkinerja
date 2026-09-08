@@ -33,7 +33,8 @@ class AbsensiPkkmbKeduaController extends Controller
      */
     public function index(AbsensiPkkmbKeduaDataTable $dataTable)
     {
-        return $dataTable->render('pages.absensi-pkkmb-kedua.index');
+        $orphanedCount = AbsensiPkkmbKedua::whereDoesntHave('user')->count();
+        return $dataTable->render('pages.absensi-pkkmb-kedua.index', compact('orphanedCount'));
     }
 
     /**
@@ -327,7 +328,7 @@ class AbsensiPkkmbKeduaController extends Controller
         $index = 1;
         foreach ($data as $row) {
             $sheet->setCellValue('A' . $rowNum, $index++);
-            $sheet->setCellValue('B' . $rowNum, $row->user ? $row->user->name : '-');
+            $sheet->setCellValue('B' . $rowNum, $row->user ? $row->user->name : 'User Tidak Ditemukan (ID: ' . $row->user_id . ')');
             $sheet->setCellValue('C' . $rowNum, $row->hadir_datang ?? '-');
             $sheet->setCellValue('D' . $rowNum, $row->waktu_datang ? substr($row->waktu_datang, 0, 5) : '-');
             $sheet->setCellValue('E' . $rowNum, $row->catatan_hadir_datang ?? '-');
@@ -379,6 +380,20 @@ class AbsensiPkkmbKeduaController extends Controller
             $writer->save('php://output');
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * Clean up orphaned attendance records where the user no longer exists.
+     */
+    public function cleanupOrphaned()
+    {
+        $this->checkAdmin();
+        $count = AbsensiPkkmbKedua::whereDoesntHave('user')->count();
+        AbsensiPkkmbKedua::whereDoesntHave('user')->delete();
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil membersihkan {$count} data absensi yang relasi penggunanya terputus."
         ]);
     }
 }

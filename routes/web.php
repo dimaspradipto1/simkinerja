@@ -164,16 +164,19 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('absensi-pkkmb-pertama/export-excel', [AbsensiPkkmbPertamaController::class, 'exportExcel'])->name('absensi-pkkmb-pertama.export-excel');
     Route::get('absensi-pkkmb-pertama/scan', [AbsensiPkkmbPertamaController::class, 'scan'])->name('absensi-pkkmb-pertama.scan');
     Route::get('absensi-pkkmb-pertama/scan-proses', [AbsensiPkkmbPertamaController::class, 'scanProses'])->name('absensi-pkkmb-pertama.scan-proses');
+    Route::post('absensi-pkkmb-pertama/cleanup-orphaned', [AbsensiPkkmbPertamaController::class, 'cleanupOrphaned'])->name('absensi-pkkmb-pertama.cleanup-orphaned');
     Route::resource('absensi-pkkmb-pertama', AbsensiPkkmbPertamaController::class);
 
     Route::get('absensi-pkkmb-kedua/export-excel', [AbsensiPkkmbKeduaController::class, 'exportExcel'])->name('absensi-pkkmb-kedua.export-excel');
     Route::get('absensi-pkkmb-kedua/scan', [AbsensiPkkmbKeduaController::class, 'scan'])->name('absensi-pkkmb-kedua.scan');
     Route::get('absensi-pkkmb-kedua/scan-proses', [AbsensiPkkmbKeduaController::class, 'scanProses'])->name('absensi-pkkmb-kedua.scan-proses');
+    Route::post('absensi-pkkmb-kedua/cleanup-orphaned', [AbsensiPkkmbKeduaController::class, 'cleanupOrphaned'])->name('absensi-pkkmb-kedua.cleanup-orphaned');
     Route::resource('absensi-pkkmb-kedua', AbsensiPkkmbKeduaController::class);
 
     Route::get('absensi-pkkmb-ketiga/export-excel', [AbsensiPkkmbKetigaController::class, 'exportExcel'])->name('absensi-pkkmb-ketiga.export-excel');
     Route::get('absensi-pkkmb-ketiga/scan', [AbsensiPkkmbKetigaController::class, 'scan'])->name('absensi-pkkmb-ketiga.scan');
     Route::get('absensi-pkkmb-ketiga/scan-proses', [AbsensiPkkmbKetigaController::class, 'scanProses'])->name('absensi-pkkmb-ketiga.scan-proses');
+    Route::post('absensi-pkkmb-ketiga/cleanup-orphaned', [AbsensiPkkmbKetigaController::class, 'cleanupOrphaned'])->name('absensi-pkkmb-ketiga.cleanup-orphaned');
     Route::resource('absensi-pkkmb-ketiga', AbsensiPkkmbKetigaController::class);
 
     Route::get('absensi-esq-pertama/export-excel', [AbsensiEsqPertamaController::class, 'exportExcel'])->name('absensi-esq-pertama.export-excel');
