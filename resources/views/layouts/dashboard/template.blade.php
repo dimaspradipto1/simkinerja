@@ -101,9 +101,17 @@
 
         /* Mobile specific horizontal scroll polish */
         @media (max-width: 991.98px) {
-            .table-responsive table,
-            table.dataTable {
+            .table-responsive table:not(#kepanitiaan-table):not(#kegiatan-table):not(#rencanakerja-table):not(#rencana-kerja-table),
+            table.dataTable:not(#kepanitiaan-table):not(#kegiatan-table):not(#rencanakerja-table):not(#rencana-kerja-table) {
                 min-width: 750px !important;
+            }
+            #kepanitiaan-table,
+            #kegiatan-table,
+            #rencanakerja-table,
+            #rencana-kerja-table {
+                min-width: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
             }
             .dataTables_scrollBody {
                 overflow-x: auto !important;
@@ -122,41 +130,44 @@
             max-width: none;
         }
 
-        /* Mobile Edge-to-Edge Fullwidth Layout */
+        /* Mobile Spacing & Layout Polish */
         @media (max-width: 767.98px) {
             #main.main {
-                padding: 10px 0 !important;
+                padding: 12px 10px !important;
             }
             .pagetitle {
-                padding: 0 6px !important;
-                margin-bottom: 10px !important;
+                padding: 0 4px !important;
+                margin-bottom: 12px !important;
             }
             .section {
                 padding: 0 !important;
             }
             .card {
-                border-radius: 0 !important;
+                border-radius: 12px !important;
                 margin-left: 0 !important;
                 margin-right: 0 !important;
-                box-shadow: none !important;
+                margin-bottom: 14px !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
                 width: 100% !important;
+                max-width: 100% !important;
+                overflow: hidden !important;
             }
             .card-body {
-                padding: 10px 6px !important;
-            }
-            .card-header-green {
-                border-radius: 0 !important;
                 padding: 12px 10px !important;
             }
+            .card-header-green {
+                border-radius: 12px 12px 0 0 !important;
+                padding: 12px 14px !important;
+            }
             .absensi-mobile-banner {
-                width: 100vw !important;
-                max-width: 100vw !important;
-                margin-left: calc(50% - 50vw) !important;
-                margin-right: calc(50% - 50vw) !important;
-                border-radius: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                border-radius: 12px !important;
             }
             .absensi-mobile-banner .card-body {
-                padding: 16px 12px !important;
+                padding: 14px 12px !important;
             }
             .absensi-mobile-banner .btn {
                 width: 100% !important;

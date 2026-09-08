@@ -25,6 +25,8 @@
     .table-responsive, .dataTables_wrapper, #kegiatan-table {
         overflow-x: hidden !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
     }
     #kegiatan-table thead {
         display: none;
@@ -54,6 +56,31 @@
     #kegiatan-table thead th:nth-child(3) {
         padding-left: 4px !important;
         padding-right: 0 !important;
+    }
+    @media (max-width: 767.98px) {
+        .card-body {
+            padding: 12px 10px !important;
+        }
+        #kegiatan-table {
+            display: block !important;
+            table-layout: fixed !important;
+        }
+        #kegiatan-table tbody,
+        #kegiatan-table tbody tr,
+        #kegiatan-table tbody tr td {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+        }
+        #kegiatan-table tbody tr td:nth-child(1),
+        #kegiatan-table tbody tr td:nth-child(2) {
+            display: none !important;
+        }
+        #kegiatan-table tbody tr td:nth-child(3) {
+            padding: 0 !important;
+        }
     }
 </style>
 

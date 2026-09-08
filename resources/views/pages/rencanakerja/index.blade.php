@@ -148,12 +148,26 @@
             margin: 0 !important;
             border: none !important;
             width: 100% !important;
+        .card-body {
+            padding: 12px 10px !important;
+        }
+        .table-responsive {
+            overflow-x: hidden !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
         }
         #rencanakerja-table {
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             display: block !important;
             border-collapse: separate !important;
             border: none !important;
+            table-layout: fixed !important;
         }
         #rencanakerja-table thead {
             display: none !important;
@@ -161,20 +175,26 @@
         #rencanakerja-table tbody {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
         }
         #rencanakerja-table tbody tr {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             background: transparent !important;
             border: none !important;
             padding: 0 !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 12px !important;
             box-shadow: none !important;
             box-sizing: border-box !important;
         }
         #rencanakerja-table tbody tr td {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             box-sizing: border-box !important;
             border: none !important;
             padding: 0 !important;
@@ -188,17 +208,23 @@
             padding: 0 !important;
             border-top: none !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
         }
         .action-buttons-wrap {
             display: flex !important;
             flex-wrap: wrap !important;
             align-items: center !important;
             justify-content: flex-start !important;
-            gap: 6px !important;
+            gap: 8px !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
         }
         .action-buttons-wrap .btn {
-            font-size: 0.8rem !important;
+            font-size: 0.82rem !important;
         }
         .inline-upload-left {
             border-right: none !important;

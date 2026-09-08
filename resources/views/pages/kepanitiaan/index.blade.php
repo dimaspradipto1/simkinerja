@@ -176,7 +176,7 @@
         }
 
         .card-body {
-            padding: 8px !important;
+            padding: 12px 10px !important;
         }
         .table-responsive {
             overflow-x: hidden !important;
@@ -184,12 +184,17 @@
             margin: 0 !important;
             border: none !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
         }
         #kepanitiaan-table {
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             display: block !important;
             border-collapse: separate !important;
             border: none !important;
+            table-layout: fixed !important;
         }
         #kepanitiaan-table thead {
             display: none !important;
@@ -197,20 +202,26 @@
         #kepanitiaan-table tbody {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
         }
         #kepanitiaan-table tbody tr {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             background: transparent !important;
             border: none !important;
             padding: 0 !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 12px !important;
             box-shadow: none !important;
             box-sizing: border-box !important;
         }
         #kepanitiaan-table tbody tr td {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             box-sizing: border-box !important;
             border: none !important;
             padding: 0 !important;
@@ -224,73 +235,111 @@
             padding: 0 !important;
             border-top: none !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+        }
+        .task-card-item {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+            padding: 14px 12px !important;
+            margin: 0 0 12px 0 !important;
+            border-radius: 10px !important;
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+            overflow: hidden !important;
         }
         .task-action-container {
             display: flex !important;
             flex-direction: column !important;
             align-items: stretch !important;
-            gap: 6px !important;
+            gap: 8px !important;
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
         }
         .task-action-label {
-            font-size: 0.8rem !important;
+            font-size: 0.82rem !important;
+            font-weight: 700 !important;
+            color: #475569 !important;
             margin-bottom: 2px !important;
             width: 100% !important;
-            font-weight: 700 !important;
         }
         .action-buttons-wrap {
             display: flex !important;
             flex-direction: column !important;
             align-items: stretch !important;
             width: 100% !important;
-            gap: 6px !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+            gap: 8px !important;
         }
         .action-buttons-wrap .badge-status-group,
         .action-buttons-wrap .timer-status-group {
             display: flex !important;
             flex-direction: row !important;
-            gap: 6px !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
             width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
         .action-buttons-wrap .badge-status-group .badge,
         .action-buttons-wrap .timer-status-group .btn {
             flex: 1 1 0 !important;
+            min-width: 0 !important;
             justify-content: center !important;
             text-align: center !important;
-            font-size: 0.8rem !important;
-            height: auto !important;
-            min-height: 36px !important;
+            font-size: 0.82rem !important;
+            min-height: 40px !important;
             display: inline-flex !important;
             align-items: center !important;
-            padding: 6px 8px !important;
+            padding: 8px 10px !important;
+            border-radius: 8px !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
         }
         .action-buttons-wrap .btn-mobile-stack {
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
             justify-content: center !important;
             text-align: center !important;
-            display: inline-flex !important;
+            display: flex !important;
             align-items: center !important;
-            font-size: 0.84rem !important;
-            height: auto !important;
-            min-height: 38px !important;
-            padding: 8px 12px !important;
-            border-radius: 6px !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+            min-height: 42px !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
         }
         .action-buttons-wrap .owner-actions-group {
             display: flex !important;
             flex-direction: row !important;
-            gap: 6px !important;
+            gap: 8px !important;
             width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
         .action-buttons-wrap .owner-actions-group .btn {
             flex: 1 1 0 !important;
+            min-width: 0 !important;
             width: auto !important;
-            height: 36px !important;
+            height: 40px !important;
+            min-height: 40px !important;
             font-size: 0.82rem !important;
-            padding: 4px 8px !important;
+            padding: 6px 10px !important;
+            border-radius: 8px !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
+            box-sizing: border-box !important;
         }
         .inline-upload-left {
             border-right: none !important;
