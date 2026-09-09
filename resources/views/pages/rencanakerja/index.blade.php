@@ -315,7 +315,7 @@
         .action-buttons-wrap .owner-actions-group {
             display: flex !important;
             flex-direction: row !important;
-            gap: 8px !important;
+            gap: 6px !important;
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
@@ -326,13 +326,19 @@
             width: auto !important;
             height: 40px !important;
             min-height: 40px !important;
-            font-size: 0.82rem !important;
-            padding: 6px 10px !important;
+            padding: 6px 2px !important;
             border-radius: 8px !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
             box-sizing: border-box !important;
+        }
+        .action-buttons-wrap .owner-actions-group .btn span {
+            display: none !important;
+        }
+        .action-buttons-wrap .owner-actions-group .btn i {
+            margin: 0 !important;
+            font-size: 1.15rem !important;
         }
         .inline-upload-left {
             border-right: none !important;
@@ -484,9 +490,6 @@
                         Rencana Kerja &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}</span>
                     </div>
                     <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
-                        <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-danger text-white fw-bold text-nowrap d-none">
-                            <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="selected-count">0</span>)
-                        </button>
                         <div class="filter-status-wrapper d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-2xs">
                             <label for="filter-status" class="small fw-bold text-secondary mb-0 px-1 d-none d-lg-inline" style="font-size: 0.78rem;"><i class="bi bi-funnel-fill text-success me-1"></i>Status:</label>
                             <select id="filter-status" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark py-0" style="font-size: 0.82rem; height: 28px; width: auto; cursor: pointer;">
@@ -529,12 +532,30 @@
                         </div>
                     </div>
 
+                    <!-- Toolbar Pilih Semua (Select All) & Hapus Terpilih -->
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 px-3 mb-3 rounded-3 border border-light-subtle shadow-2xs" id="selectAllToolbarRencanaKerja" style="background: #f8fafc; border-left: 4px solid #15432d !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="checkbox" id="check-all" class="form-check-input my-0" style="cursor: pointer; width: 19px; height: 19px;" title="Pilih Semua">
+                            <label for="check-all" class="form-check-label fw-bold text-dark user-select-none mb-0 cursor-pointer" style="cursor: pointer; font-size: 0.88rem;">
+                                Pilih Semua (Select All)
+                            </label>
+                            <span id="selected-badge" class="badge bg-primary-subtle text-primary border border-primary-subtle d-none ms-1" style="font-size: 0.78rem;">
+                                <span id="selected-count">0</span> tugas dipilih
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 d-none shadow-xs" style="border-radius: 6px; font-size: 0.82rem; padding: 6px 14px;">
+                                <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span class="selected-count-num">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover w-100" id="rencanakerja-table">
                             <thead>
                                 <tr>
                                     <th width="3%" class="text-center align-middle">
-                                        <input type="checkbox" id="check-all" class="form-check-input" style="cursor: pointer; width: 18px; height: 18px;" title="Pilih Semua">
+                                        <input type="checkbox" class="form-check-input" style="cursor: pointer; width: 18px; height: 18px;" title="Pilih Semua">
                                     </th>
                                     <th width="4%">No</th>
                                     <th>Uraian Tugas & Aksi</th>
@@ -975,6 +996,9 @@
                 zeroRecords: "Belum ada rencana kerja / checklist tugas untuk filter ini",
                 info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ tugas",
                 infoEmpty: "Tidak ada data"
+            },
+            initComplete: function() {
+                $('#selectAllToolbarRencanaKerja').insertBefore('#rencanakerja-table');
             }
         });
 
@@ -1025,10 +1049,13 @@
         function updateBulkDeleteButton() {
             let count = selectedIds.size;
             $('#selected-count').text(count);
+            $('.selected-count-num').text(count);
             if (count > 0) {
                 $('#btn-bulk-delete').removeClass('d-none');
+                $('#selected-badge').removeClass('d-none');
             } else {
                 $('#btn-bulk-delete').addClass('d-none');
+                $('#selected-badge').addClass('d-none');
             }
         }
 
@@ -1100,6 +1127,10 @@
 
         $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
         $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+
+        if ($('#selectAllToolbarRencanaKerja').length && $('#rencanakerja-table').length) {
+            $('#selectAllToolbarRencanaKerja').insertBefore('#rencanakerja-table');
+        }
 
         updateBulkDeleteButton();
         setTimeout(initTinyMCEEditors, 150);

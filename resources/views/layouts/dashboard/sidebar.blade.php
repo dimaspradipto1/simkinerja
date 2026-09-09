@@ -34,12 +34,10 @@
                           data-bs-parent="#sidebar-nav">
                           @foreach($activeSessions as $activeSess)
                               @php
-                                  $targetUrl = !empty($activeSess->legacy_slug) && Route::has($activeSess->legacy_slug . '.index')
-                                      ? route($activeSess->legacy_slug . '.index')
-                                      : route('presensi.scan-proses', ['token' => $activeSess->token]);
+                                  $targetUrl = route('presensi.sesi.show', $activeSess->id);
                               @endphp
                               <li>
-                                  <a href="{{ $targetUrl }}" class="d-flex align-items-center justify-content-between pe-3">
+                                  <a href="{{ $targetUrl }}" class="d-flex align-items-center justify-content-between pe-3 {{ request()->routeIs('presensi.sesi.show') && request()->route('id') == $activeSess->id ? 'active' : '' }}">
                                       <div class="submenu-item-wrapper text-truncate" style="max-width: 190px;" title="{{ $activeSess->nama_sesi }}">
                                           <i class="bi bi-circle-fill text-success" style="font-size: 6px;"></i>
                                           <span class="submenu-item-text">{{ $activeSess->nama_sesi }}</span>

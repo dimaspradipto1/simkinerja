@@ -106,7 +106,8 @@ class AbsensiSetting
                 return $dbSessions->map(function ($s) {
                     $kategori = 'Kepanitiaan';
                     if ($s->kepanitiaan && !empty($s->kepanitiaan->uraian_tugas)) {
-                        $kategori = $s->kepanitiaan->uraian_tugas;
+                        $firstLine = trim(explode("\n", (string)$s->kepanitiaan->uraian_tugas)[0]);
+                        $kategori = \Illuminate\Support\Str::limit($firstLine, 45);
                     } elseif (!empty($s->legacy_slug)) {
                         if (str_contains($s->legacy_slug, 'pkkmb')) $kategori = 'PKKMB';
                         elseif (str_contains($s->legacy_slug, 'esq')) $kategori = 'ESQ';

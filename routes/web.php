@@ -231,6 +231,10 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     // Universal Presensi Kepanitiaan (Dynamic Attendance Engine)
     Route::get('presensi/scan-proses/{token}', [\App\Http\Controllers\UniversalPresensiController::class, 'scanProses'])->name('presensi.scan-proses');
+    Route::get('presensi/sesi/{id}', [\App\Http\Controllers\UniversalPresensiController::class, 'showSesi'])->name('presensi.sesi.show');
+    Route::get('presensi/sesi/{id}/data', [\App\Http\Controllers\UniversalPresensiController::class, 'getSesiData'])->name('presensi.sesi.data');
+    Route::post('presensi/sesi/{id}/manual', [\App\Http\Controllers\UniversalPresensiController::class, 'storeManualPresensi'])->name('presensi.sesi.manual');
+    Route::delete('presensi/presensi/{id}', [\App\Http\Controllers\UniversalPresensiController::class, 'destroyPresensi'])->name('presensi.presensi.destroy');
     Route::get('kepanitiaan/{id}/sesi', [\App\Http\Controllers\UniversalPresensiController::class, 'getSesiByKepanitiaan'])->name('presensi.sesi.list');
     Route::post('presensi/sesi/{id}/toggle', [\App\Http\Controllers\UniversalPresensiController::class, 'toggleStatus'])->name('presensi.sesi.toggle');
     Route::post('kepanitiaan/{id}/sesi', [\App\Http\Controllers\UniversalPresensiController::class, 'storeSesi'])->name('presensi.sesi.store');

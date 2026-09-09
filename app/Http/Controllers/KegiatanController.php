@@ -490,6 +490,25 @@ class KegiatanController extends Controller
                 $record->taggedUsers()->sync($request->input('tagged_users'));
                 $record->syncToKegiatan();
             }
+
+            // Simpan sesi presensi baru jika diisi dari form
+            if ($request->filled('nama_sesi_presensi')) {
+                $sesiNames = (array) $request->input('nama_sesi_presensi');
+                $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+                foreach ($sesiNames as $idx => $sName) {
+                    $trimmed = trim((string)$sName);
+                    if (!empty($trimmed)) {
+                        \App\Models\KepanitiaanSesiAbsensi::create([
+                            'kepanitiaan_id' => $record->id,
+                            'nama_sesi' => $trimmed,
+                            'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($record->tanggal_mulai ?: date('Y-m-d')),
+                            'token' => \Illuminate\Support\Str::random(24),
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+            }
+
             Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Rencana Kerja Kepanitiaan.')
                 ->toToast()
                 ->autoClose(4000)
@@ -583,6 +602,34 @@ class KegiatanController extends Controller
         }
 
         $kegiatan->update($validated);
+
+        // Jika kegiatan bertipe Kepanitiaan dan ada input sesi presensi baru
+        if (trim($kegiatan->kategori) === 'Kepanitiaan' && $request->filled('nama_sesi_presensi')) {
+            $kepanitiaanId = null;
+            if ($kegiatan->source_type === \App\Models\Kepanitiaan::class && $kegiatan->source_id) {
+                $kepanitiaanId = $kegiatan->source_id;
+            } else {
+                $kp = \App\Models\Kepanitiaan::where('uraian_tugas', $kegiatan->uraian_tugas)->first();
+                if ($kp) $kepanitiaanId = $kp->id;
+            }
+
+            if ($kepanitiaanId) {
+                $sesiNames = (array) $request->input('nama_sesi_presensi');
+                $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+                foreach ($sesiNames as $idx => $sName) {
+                    $trimmed = trim((string)$sName);
+                    if (!empty($trimmed)) {
+                        \App\Models\KepanitiaanSesiAbsensi::create([
+                            'kepanitiaan_id' => $kepanitiaanId,
+                            'nama_sesi' => $trimmed,
+                            'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kegiatan->tanggal_mulai ?: date('Y-m-d')),
+                            'token' => \Illuminate\Support\Str::random(24),
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+            }
+        }
 
         $kegiatan->taggedUsers()->sync($request->input('tagged_users', []));
 

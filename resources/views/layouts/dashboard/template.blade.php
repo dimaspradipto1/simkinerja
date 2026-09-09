@@ -167,6 +167,13 @@
             .section {
                 padding: 0 !important;
             }
+            .owner-actions-group .btn span {
+                display: none !important;
+            }
+            .owner-actions-group .btn i {
+                margin: 0 !important;
+                font-size: 1.1rem !important;
+            }
             .card {
                 border-radius: 12px !important;
                 margin-left: 0 !important;
@@ -878,16 +885,16 @@
                 <tr id="row-manage-sesi-${s.id}">
                     <td class="text-center fw-semibold text-muted" style="vertical-align: middle;">${idx + 1}</td>
                     <td style="vertical-align: middle;">
-                        <div class="fw-bold text-dark">${s.nama_sesi}</div>
+                        <a href="${s.detail_url}" class="fw-bold text-primary text-decoration-none d-block">${s.nama_sesi}</a>
                         <div class="small text-muted font-monospace" style="font-size: 0.76rem;"><i class="bi bi-key me-1"></i>Token: ${s.token}</div>
                     </td>
                     <td class="text-center" style="vertical-align: middle;">
                         <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.78rem;">${s.tanggal || '-'}</span>
                     </td>
                     <td class="text-center" style="vertical-align: middle;">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold" style="font-size: 0.8rem;">
+                        <a href="${s.detail_url}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold text-decoration-none" title="Buka Data Absensi">
                             <i class="bi bi-people-fill me-1"></i>${s.total_presensi} Hadir
-                        </span>
+                        </a>
                     </td>
                     <td class="text-center" style="vertical-align: middle;">
                         <div class="d-flex align-items-center justify-content-center gap-2">
@@ -903,6 +910,9 @@
                     </td>
                     <td class="text-center" style="vertical-align: middle;">
                         <div class="btn-group btn-group-sm">
+                            <a href="${s.detail_url}" class="btn btn-outline-primary" title="Buka Data Absensi Lengkap">
+                                <i class="bi bi-card-checklist me-1"></i>Data Absensi
+                            </a>
                             <a href="${s.export_url}" class="btn btn-outline-success" title="Download Rekap Presensi Excel" target="_blank">
                                 <i class="bi bi-file-earmark-excel"></i>
                             </a>
