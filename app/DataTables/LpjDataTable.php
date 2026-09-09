@@ -47,20 +47,8 @@ class LpjDataTable extends DataTable
                 }
                 return $html;
             })
-            ->editColumn('jenis_kegiatan', function ($row) {
-                $badgeClass = 'bg-primary-subtle text-primary border-primary-subtle';
-                $jk = strtolower($row->jenis_kegiatan);
-                if (str_contains($jk, 'kepanitiaan')) {
-                    $badgeClass = 'bg-info-subtle text-info border-info-subtle';
-                } elseif (str_contains($jk, 'rencana')) {
-                    $badgeClass = 'bg-success-subtle text-success border-success-subtle';
-                } elseif (str_contains($jk, 'insidentil')) {
-                    $badgeClass = 'bg-warning-subtle text-warning-emphasis border-warning-subtle';
-                } elseif (str_contains($jk, 'kegiatan')) {
-                    $badgeClass = 'bg-purple-subtle text-purple border-purple-subtle';
-                }
-
-                return '<span class="badge ' . $badgeClass . ' border fw-medium px-2 py-1" style="font-size: 0.75rem;">' . e($row->jenis_kegiatan) . '</span>';
+            ->editColumn('nama_kepanitiaan', function ($row) {
+                return '<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-medium px-2 py-1" style="font-size: 0.78rem;"><i class="bi bi-people me-1"></i>' . e($row->nama_kepanitiaan) . '</span>';
             })
             ->editColumn('tanggal_kegiatan', function ($row) {
                 if (!$row->tanggal_kegiatan) {
@@ -107,7 +95,7 @@ class LpjDataTable extends DataTable
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['pengunggah', 'nama_lpj', 'jenis_kegiatan', 'tanggal_kegiatan', 'berkas', 'action'])
+            ->rawColumns(['pengunggah', 'nama_lpj', 'nama_kepanitiaan', 'tanggal_kegiatan', 'berkas', 'action'])
             ->setRowId('id');
     }
 
@@ -171,7 +159,7 @@ class LpjDataTable extends DataTable
                 ->addClass('text-center align-middle'),
             Column::make('nama_lpj')->title('Nama / Judul LPJ')->addClass('align-middle'),
             Column::computed('pengunggah')->title('Pengunggah')->addClass('align-middle text-nowrap'),
-            Column::make('jenis_kegiatan')->title('Jenis Kegiatan')->addClass('align-middle text-center text-nowrap'),
+            Column::make('nama_kepanitiaan')->title('Nama Kepanitiaan')->addClass('align-middle text-nowrap'),
             Column::make('tanggal_kegiatan')->title('Tanggal')->addClass('align-middle text-nowrap'),
             Column::computed('berkas')->title('Berkas / Link')->orderable(false)->searchable(false)->addClass('align-middle text-nowrap'),
             Column::computed('action')

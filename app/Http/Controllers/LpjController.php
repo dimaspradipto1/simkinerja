@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DataTables\LpjDataTable;
 use App\Http\Requests\LpjRequest;
+use App\Models\Kepanitiaan;
 use App\Models\Lpj;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,17 +24,24 @@ class LpjController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $jenisKegiatanOptions = [
-            'Rencana Kerja Utama',
-            'Rencana Kerja Kepanitiaan',
-            'Rencana Kerja Insidentil',
-            'Kegiatan',
-            'Lainnya',
-        ];
+        $kepanitiaans = Kepanitiaan::query()
+            ->orderBy('uraian_tugas', 'asc')
+            ->get();
 
-        return view('pages.lpj.create', compact('jenisKegiatanOptions'));
+        $prefillKepanitiaanId = $request->query('kepanitiaan_id');
+        $prefillKepanitiaan = $request->query('kepanitiaan');
+        $prefillNamaLpj = $request->query('nama_lpj');
+        $prefillTanggal = $request->query('tanggal');
+
+        return view('pages.lpj.create', compact(
+            'kepanitiaans',
+            'prefillKepanitiaanId',
+            'prefillKepanitiaan',
+            'prefillNamaLpj',
+            'prefillTanggal'
+        ));
     }
 
     /**
@@ -66,7 +74,7 @@ class LpjController extends Controller
      */
     public function show(string $id)
     {
-        $lpj = Lpj::with('user')->findOrFail($id);
+        $lpj = Lpj::with(['user', 'kepanitiaan'])->findOrFail($id);
         return view('pages.lpj.show', compact('lpj'));
     }
 
@@ -83,15 +91,11 @@ class LpjController extends Controller
             return redirect()->route('lpj.index');
         }
 
-        $jenisKegiatanOptions = [
-            'Rencana Kerja Utama',
-            'Rencana Kerja Kepanitiaan',
-            'Rencana Kerja Insidentil',
-            'Kegiatan',
-            'Lainnya',
-        ];
+        $kepanitiaans = Kepanitiaan::query()
+            ->orderBy('uraian_tugas', 'asc')
+            ->get();
 
-        return view('pages.lpj.edit', compact('lpj', 'jenisKegiatanOptions'));
+        return view('pages.lpj.edit', compact('lpj', 'kepanitiaans'));
     }
 
     /**

@@ -28,12 +28,13 @@
                         </div>
                     </div>
 
-                    <form action="{{ route('lpj.update', $lpj->id) }}" method="POST" enctype="multipart/form-data" class="row g-3">
+                    <form action="{{ route('lpj.update', $lpj->id) }}" method="POST" enctype="multipart/form-data" class="row g-3" id="lpjEditForm">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="kepanitiaan_id" id="kepanitiaan_id" value="{{ old('kepanitiaan_id', $lpj->kepanitiaan_id) }}">
 
                         <!-- Nama / Judul LPJ -->
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <label for="nama_lpj" class="form-label fw-semibold">Nama / Judul LPJ <span class="text-danger">*</span></label>
                             <input type="text" 
                                    class="form-control @error('nama_lpj') is-invalid @enderror" 
@@ -46,17 +47,44 @@
                             @enderror
                         </div>
 
-                        <!-- Jenis Kegiatan -->
-                        <div class="col-md-4">
-                            <label for="jenis_kegiatan" class="form-label fw-semibold">Jenis Kegiatan <span class="text-danger">*</span></label>
-                            <select class="form-select @error('jenis_kegiatan') is-invalid @enderror" id="jenis_kegiatan" name="jenis_kegiatan" required>
-                                <option value="" disabled>-- Pilih Jenis Kegiatan --</option>
-                                @foreach($jenisKegiatanOptions as $opt)
-                                    <option value="{{ $opt }}" {{ old('jenis_kegiatan', $lpj->jenis_kegiatan) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                        <!-- Nama Kepanitiaan -->
+                        <div class="col-md-5">
+                            <label for="kepanitiaan_selector" class="form-label fw-semibold">Nama Kepanitiaan <span class="text-danger">*</span></label>
+                            <select class="form-select @error('nama_kepanitiaan') is-invalid @enderror" id="kepanitiaan_selector">
+                                <option value="" disabled>-- Pilih Nama Kepanitiaan --</option>
+                                @php
+                                    $currentVal = old('nama_kepanitiaan', $lpj->nama_kepanitiaan);
+                                    $isMatched = false;
+                                @endphp
+                                @foreach($kepanitiaans as $kp)
+                                    @php
+                                        $selected = false;
+                                        if ($currentVal == $kp->uraian_tugas || old('kepanitiaan_id', $lpj->kepanitiaan_id) == $kp->id) {
+                                            $selected = true;
+                                            $isMatched = true;
+                                        }
+                                    @endphp
+                                    <option value="{{ $kp->uraian_tugas }}" 
+                                            data-id="{{ $kp->id }}" 
+                                            data-tanggal="{{ $kp->tanggal_selesai ?: $kp->tanggal_mulai }}"
+                                            {{ $selected ? 'selected' : '' }}>
+                                        {{ $kp->uraian_tugas }}
+                                    </option>
                                 @endforeach
+                                <option value="__CUSTOM__" {{ ($currentVal && !$isMatched) ? 'selected' : '' }}>-- Ketik Kepanitiaan Lainnya --</option>
                             </select>
-                            @error('jenis_kegiatan')
-                                <div class="invalid-feedback">{{ $message }}</div>
+
+                            <input type="text" 
+                                   class="form-control mt-2 @error('nama_kepanitiaan') is-invalid @enderror" 
+                                   id="nama_kepanitiaan" 
+                                   name="nama_kepanitiaan" 
+                                   value="{{ old('nama_kepanitiaan', $lpj->nama_kepanitiaan) }}" 
+                                   placeholder="Ketik nama kepanitiaan..."
+                                   style="{{ ($currentVal && !$isMatched) ? '' : 'display: none;' }}"
+                                   required>
+
+                            @error('nama_kepanitiaan')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -73,14 +101,14 @@
                             @enderror
                         </div>
 
-                        <!-- Upload Berkas File LPJ -->
+                        <!-- Upload Berkas File LPJ (PDF / Word) -->
                         <div class="col-md-4">
-                            <label for="file_lpj" class="form-label fw-semibold">Ganti Berkas File</label>
+                            <label for="file_lpj" class="form-label fw-semibold">Ganti Berkas File (PDF / Word)</label>
                             <input type="file" 
                                    class="form-control @error('file_lpj') is-invalid @enderror" 
                                    id="file_lpj" 
                                    name="file_lpj" 
-                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg">
+                                   accept=".pdf,.doc,.docx">
                             <div class="mt-1">
                                 @if($lpj->file_lpj)
                                     <div class="d-flex align-items-center gap-1.5 small text-success mt-1">
@@ -88,9 +116,9 @@
                                         <span>Berkas saat ini:</span>
                                         <a href="{{ route('lpj.download', $lpj->id) }}" class="fw-semibold text-primary text-decoration-underline" target="_blank">Unduh Berkas</a>
                                     </div>
-                                    <small class="text-muted d-block" style="font-size: 0.73rem;">Pilih file baru jika ingin mengganti berkas saat ini.</small>
+                                    <small class="text-muted d-block" style="font-size: 0.73rem;">Pilih file PDF/Word baru jika ingin memperbarui berkas tanpa batasan ukuran file.</small>
                                 @else
-                                    <small class="text-muted d-block" style="font-size: 0.75rem;">Belum ada berkas file diunggah.</small>
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">Mendukung dokumen PDF atau Word (.pdf, .doc, .docx) tanpa batasan ukuran file.</small>
                                 @endif
                             </div>
                             @error('file_lpj')
@@ -145,3 +173,37 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selector = document.getElementById('kepanitiaan_selector');
+    const inputNama = document.getElementById('nama_kepanitiaan');
+    const inputId = document.getElementById('kepanitiaan_id');
+
+    selector.addEventListener('change', function() {
+        const val = this.value;
+        const selectedOpt = this.options[this.selectedIndex];
+
+        if (val === '__CUSTOM__') {
+            inputNama.style.display = 'block';
+            inputNama.value = '';
+            inputNama.focus();
+            inputId.value = '';
+        } else if (val) {
+            inputNama.style.display = 'none';
+            inputNama.value = val;
+            inputId.value = selectedOpt.getAttribute('data-id') || '';
+        } else {
+            inputNama.style.display = 'none';
+            inputNama.value = '';
+            inputId.value = '';
+        }
+    });
+
+    if (selector.value && selector.value !== '__CUSTOM__') {
+        inputNama.value = selector.value;
+    }
+});
+</script>
+@endpush

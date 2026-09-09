@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('nama_lpj');
-            $table->string('jenis_kegiatan');
+            $table->foreignId('kepanitiaan_id')->nullable()->constrained('kepanitiaans')->nullOnDelete();
+            $table->string('nama_kepanitiaan');
             $table->date('tanggal_kegiatan')->nullable();
             $table->text('keterangan')->nullable();
             $table->string('file_lpj')->nullable();

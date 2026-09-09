@@ -13,8 +13,9 @@ class Lpj extends Model
 
     protected $fillable = [
         'user_id',
+        'kepanitiaan_id',
         'nama_lpj',
-        'jenis_kegiatan',
+        'nama_kepanitiaan',
         'tanggal_kegiatan',
         'keterangan',
         'file_lpj',
@@ -28,6 +29,11 @@ class Lpj extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function kepanitiaan()
+    {
+        return $this->belongsTo(Kepanitiaan::class, 'kepanitiaan_id');
     }
 
     public function getFileUrlAttribute()

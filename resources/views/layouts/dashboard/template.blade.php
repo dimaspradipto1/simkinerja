@@ -439,8 +439,21 @@
 
         window.openBarcodeModal = function(el) {
             const btn = $(el);
-            currentBarcodeSlug = btn.data('slug') || '';
             const sessionTitle = btn.data('title') || 'Barcode Absensi';
+            const isActive = btn.attr('data-active');
+
+            if (isActive === '0') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesi Absensi Ditutup',
+                    html: `Sesi presensi <strong>${sessionTitle}</strong> saat ini sedang <strong>Nonaktif (Tutup)</strong>.<br><small class="text-muted">Administrator dapat mengaktifkan sesi ini melalui menu <strong>Pengaturan &gt; Status Absensi</strong>.</small>`,
+                    confirmButtonText: 'Tutup',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
+
+            currentBarcodeSlug = btn.data('slug') || '';
             currentBarcodeUrl = btn.data('url') || ("{{ url('') }}/" + currentBarcodeSlug);
 
             $('#modalBarcodeAbsensiLabel').text(sessionTitle);
@@ -494,6 +507,18 @@
             const btn = $(el);
             const title = btn.data('title') || 'Scan Barcode Kehadiran';
             const slug = btn.data('slug') || '';
+            const isActive = btn.attr('data-active');
+
+            if (isActive === '0') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesi Absensi Ditutup',
+                    html: `Sesi presensi <strong>${title}</strong> saat ini sedang <strong>Nonaktif (Tutup)</strong>.<br><small class="text-muted">Administrator dapat mengaktifkan sesi ini melalui menu <strong>Pengaturan &gt; Status Absensi</strong>.</small>`,
+                    confirmButtonText: 'Tutup',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
 
             $('#modalScanBarcodeAbsensiLabel').text('Scan Kehadiran: ' + title);
             $('#modal-scan-loading').addClass('d-none').removeClass('d-flex');
@@ -683,23 +708,50 @@
 
             let html = '';
             sessions.forEach(function(sess) {
-                const iconClass = type === 'scan' ? 'bi-qr-code-scan text-primary' : 'bi-qr-code text-dark';
+                const isActive = (sess.is_active === true || sess.is_active === 1 || sess.is_active === "1" || sess.is_active === "true");
+                const iconClass = type === 'scan' 
+                    ? (isActive ? 'bi-qr-code-scan text-primary' : 'bi-lock-fill text-muted') 
+                    : (isActive ? 'bi-qr-code text-dark' : 'bi-lock-fill text-muted');
                 const actionLabel = type === 'scan' ? 'Buka Scanner Kamera' : 'Buka QR Barcode';
-                
+
+                const statusBadge = isActive 
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-check-circle-fill me-1"></i>Aktif</span>'
+                    : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-lock-fill me-1"></i>Nonaktif (Tutup)</span>';
+
+                const subtext = isActive
+                    ? `<span class="text-muted small" style="font-size: 0.78rem;"><i class="bi bi-arrow-right-short"></i> ${actionLabel}</span>`
+                    : `<span class="text-danger small" style="font-size: 0.75rem;"><i class="bi bi-exclamation-circle me-1"></i>Sesi sedang dinonaktifkan oleh Admin</span>`;
+
+                const cardStyle = isActive 
+                    ? 'cursor: pointer; background-color: #ffffff;' 
+                    : 'cursor: not-allowed; background-color: #f8fafc; border-style: dashed !important; opacity: 0.85;';
+
+                const rightIcon = isActive 
+                    ? '<i class="bi bi-chevron-right text-primary fs-5"></i>' 
+                    : '<i class="bi bi-lock-fill text-muted fs-5"></i>';
+
                 html += `
-                <div class="card p-3 shadow-2xs rounded-3 session-choice-item mb-2" style="cursor: pointer; background-color: #ffffff;" 
-                     data-slug="${sess.slug}" data-title="${sess.nama}" data-url="${sess.url}" data-type="${type}">
+                <div class="card p-3 shadow-2xs rounded-3 session-choice-item mb-2 border" 
+                     style="${cardStyle}" 
+                     data-slug="${sess.slug}" 
+                     data-title="${sess.nama}" 
+                     data-url="${sess.url}" 
+                     data-type="${type}"
+                     data-active="${isActive ? '1' : '0'}">
                     <div class="d-flex align-items-center justify-content-between gap-2">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle p-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                            <div class="rounded-circle p-2 ${isActive ? 'bg-light' : 'bg-secondary-subtle'} border d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
                                 <i class="bi ${iconClass} fs-5"></i>
                             </div>
                             <div>
-                                <div class="fw-bold text-dark" style="font-size: 0.92rem;">${sess.nama}</div>
-                                <div class="text-muted small" style="font-size: 0.78rem;"><i class="bi bi-arrow-right-short"></i> ${actionLabel}</div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-0.5">
+                                    <span class="fw-bold text-dark" style="font-size: 0.92rem;">${sess.nama}</span>
+                                    ${statusBadge}
+                                </div>
+                                <div>${subtext}</div>
                             </div>
                         </div>
-                        <i class="bi bi-chevron-right text-secondary fs-5"></i>
+                        ${rightIcon}
                     </div>
                 </div>
                 `;
@@ -715,8 +767,21 @@
         };
 
         $(document).on('click', '.session-choice-item', function() {
-            const slug = $(this).data('slug');
+            const isActive = $(this).attr('data-active') === '1';
             const title = $(this).data('title');
+
+            if (!isActive) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesi Absensi Ditutup',
+                    html: `Sesi presensi <strong>${title}</strong> saat ini sedang <strong>Nonaktif (Tutup)</strong>.<br><small class="text-muted">Administrator dapat mengaktifkan sesi ini melalui menu <strong>Pengaturan &gt; Status Absensi</strong>.</small>`,
+                    confirmButtonText: 'Tutup',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
+
+            const slug = $(this).data('slug');
             const url = $(this).data('url');
             const type = $(this).data('type');
 

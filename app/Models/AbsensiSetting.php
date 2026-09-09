@@ -162,9 +162,7 @@ class AbsensiSetting
      */
     public static function getAllStatuses(): array
     {
-        return Cache::remember('absensi_settings_statuses', 3600, function () {
-            return self::all()->pluck('is_active', 'slug')->toArray();
-        });
+        return self::all()->pluck('is_active', 'slug')->toArray();
     }
 
     /**
@@ -288,12 +286,17 @@ class AbsensiSetting
             $buktiIzin = '<a href="' . asset('storage/' . $myAtt->bukti_izin) . '" target="_blank" class="badge bg-primary text-white text-decoration-none px-2 py-0.5" style="font-size: 0.72rem;"><i class="bi bi-file-earmark me-0.5"></i>Lihat</a>';
         }
 
+        $isActive = !empty($absensiInfo['is_active']);
+        $statusBadge = $isActive 
+            ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-check-circle-fill me-1"></i>Sesi Aktif</span>'
+            : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-lock-fill me-1"></i>Nonaktif (Tutup)</span>';
+
         $thStyle = 'background-color: #f1f5f9 !important; color: #1e293b !important; font-weight: 700 !important; font-size: 0.73rem !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; padding: 9px 10px !important; border: 1px solid #cbd5e1 !important; text-align: center !important; vertical-align: middle !important; white-space: nowrap !important; display: table-cell !important;';
         $tdStyle = 'padding: 9px 8px !important; border: 1px solid #e2e8f0 !important; text-align: center !important; vertical-align: middle !important; background-color: #ffffff !important; display: table-cell !important;';
 
         $html = '<div class="mt-2 p-3 bg-white rounded border shadow-sm d-flex flex-column gap-2" style="border-left: 4px solid #198754 !important; word-break: break-word; overflow-wrap: break-word;">';
-        $html .= '  <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 border-bottom pb-2">';
-        $html .= '    <span class="text-dark small fw-bold d-inline-flex align-items-center"><i class="bi bi-card-checklist text-success fs-6 me-2" style="margin-right: 8px !important;"></i>Status Kehadiran Absensi: <span class="text-success fw-bold ms-1">' . e($absensiInfo['nama']) . '</span></span>';
+        $html .= '  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2">';
+        $html .= '    <span class="text-dark small fw-bold d-inline-flex align-items-center flex-wrap gap-1.5"><i class="bi bi-card-checklist text-success fs-6 me-1" style="margin-right: 6px !important;"></i>Status Kehadiran Absensi: <span class="text-success fw-bold">' . e($absensiInfo['nama']) . '</span> ' . $statusBadge . '</span>';
         $html .= '  </div>';
 
         $html .= '  <div class="table-responsive" style="overflow-x: auto !important; -webkit-overflow-scrolling: touch;">';

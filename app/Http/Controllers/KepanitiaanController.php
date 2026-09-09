@@ -525,6 +525,7 @@ class KepanitiaanController extends Controller
                         $sessionsPayload[] = [
                             'slug' => $sess['slug'],
                             'nama' => $sess['nama'],
+                            'is_active' => (bool)($sess['is_active'] ?? true),
                             'url'  => \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']),
                         ];
                     }
@@ -532,6 +533,16 @@ class KepanitiaanController extends Controller
                     $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack" onclick="window.openMultiSessionPicker(this, \'scan\')" data-sessions="' . $sessionsJson . '" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Pilih Sesi Scan Barcode"><i class="bi bi-qr-code-scan"></i> Scan Barcode (' . count($absensiSessions) . ') <i class="bi bi-chevron-down ms-1" style="font-size: 0.72rem;"></i></button>';
                 }
             }
+
+            // Tombol Submit LPJ Khusus Rekan Kerja yang Di-tag
+            $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
+            $lpjUrlTagged = route('lpj.create', [
+                'kepanitiaan_id' => $row->id,
+                'kepanitiaan' => $row->uraian_tugas,
+                'nama_lpj' => 'LPJ ' . $firstLineTitle,
+                'tanggal' => $row->tanggal_selesai ?: ($row->tanggal_mulai ?: date('Y-m-d')),
+            ]);
+            $btn .= '<a href="' . $lpjUrlTagged . '" class="btn btn-outline-success d-inline-flex align-items-center justify-content-center gap-1 btn-mobile-stack" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span>Submit LPJ</span></a>';
 
             if ($collapseId) {
                 $btn .= '<button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 shadow-2xs btn-task-toggle btn-mobile-stack" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-weight: 600; border-radius: 8px; padding: 8px 14px; font-size: 0.84rem; min-height: 38px;" title="Buka / Tutup Rincian"><span class="toggle-text">Rincian</span><i class="bi bi-chevron-down toggle-icon transition-transform"></i></button>';
@@ -569,6 +580,7 @@ class KepanitiaanController extends Controller
                     $sessionsPayload[] = [
                         'slug' => $sess['slug'],
                         'nama' => $sess['nama'],
+                        'is_active' => (bool)($sess['is_active'] ?? true),
                         'url'  => \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']),
                     ];
                 }
@@ -582,8 +594,17 @@ class KepanitiaanController extends Controller
 
         if ($canEditDelete) {
             $editUrl = route($routePrefix . '.edit', $row->id);
+            $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
+            $lpjUrl = route('lpj.create', [
+                'kepanitiaan_id' => $row->id,
+                'kepanitiaan' => $row->uraian_tugas,
+                'nama_lpj' => 'LPJ ' . $firstLineTitle,
+                'tanggal' => $row->tanggal_selesai ?: ($row->tanggal_mulai ?: date('Y-m-d')),
+            ]);
+
             $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-1">';
             $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span>Tag</span></button>';
+            $btn .= '<a href="' . $lpjUrl . '" class="btn btn-outline-success btn-create-lpj d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span>Submit LPJ</span></a>';
             $btn .= '<a href="' . $editUrl . '" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Edit Tugas"><i class="bi bi-pencil"></i> <span>Edit</span></a>';
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.' . $deleteJsFunc . '(' . $row->id . ')" class="btn btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Hapus Tugas"><i class="bi bi-trash"></i> <span>Hapus</span></button>';
             $btn .= '</div>';
@@ -605,12 +626,14 @@ class KepanitiaanController extends Controller
     private function resolveAbsensiSessions($row): array
     {
         $defaults = \App\Models\AbsensiSetting::defaults();
+        $statuses = \App\Models\AbsensiSetting::getAllStatuses();
         $matched = [];
 
         // 1. Cek semua slug yang cocok dari url_external
         if (!empty($row->url_external)) {
             foreach ($defaults as $slug => $cfg) {
                 if (str_contains($row->url_external, $slug)) {
+                    $cfg['is_active'] = (bool)($statuses[$slug] ?? ($cfg['is_active'] ?? true));
                     $matched[$slug] = $cfg;
                 }
             }
@@ -657,6 +680,11 @@ class KepanitiaanController extends Controller
             if (str_contains($text, 'kuliah umum')) {
                 $matched['absensi-kuliah-umum-pertama'] = $defaults['absensi-kuliah-umum-pertama'];
             }
+
+            foreach ($matched as $slug => &$cfg) {
+                $cfg['is_active'] = (bool)($statuses[$slug] ?? ($cfg['is_active'] ?? true));
+            }
+            unset($cfg);
         }
 
         return array_values($matched);

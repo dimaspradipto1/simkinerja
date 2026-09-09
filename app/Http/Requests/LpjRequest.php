@@ -24,10 +24,11 @@ class LpjRequest extends FormRequest
     {
         return [
             'nama_lpj' => 'required|string|max:255',
-            'jenis_kegiatan' => 'required|string|max:255',
+            'kepanitiaan_id' => 'nullable|integer|exists:kepanitiaans,id',
+            'nama_kepanitiaan' => 'required|string|max:255',
             'tanggal_kegiatan' => 'nullable|date',
             'keterangan' => 'nullable|string',
-            'file_lpj' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,zip,rar,png,jpg,jpeg|max:20480',
+            'file_lpj' => 'nullable|file|mimes:pdf,doc,docx',
             'link_lpj' => 'nullable|url|max:500',
         ];
     }
@@ -41,7 +42,8 @@ class LpjRequest extends FormRequest
     {
         return [
             'nama_lpj' => 'Nama / Judul LPJ',
-            'jenis_kegiatan' => 'Jenis Kegiatan',
+            'kepanitiaan_id' => 'Kepanitiaan',
+            'nama_kepanitiaan' => 'Nama Kepanitiaan',
             'tanggal_kegiatan' => 'Tanggal Kegiatan',
             'keterangan' => 'Keterangan / Deskripsi',
             'file_lpj' => 'Berkas File LPJ',
@@ -58,11 +60,10 @@ class LpjRequest extends FormRequest
     {
         return [
             'nama_lpj.required' => 'Nama / Judul LPJ wajib diisi.',
-            'jenis_kegiatan.required' => 'Jenis kegiatan wajib dipilih.',
+            'nama_kepanitiaan.required' => 'Nama kepanitiaan wajib dipilih atau diisi.',
             'tanggal_kegiatan.date' => 'Format tanggal kegiatan tidak valid.',
             'file_lpj.file' => 'Berkas LPJ harus berupa file yang valid.',
-            'file_lpj.mimes' => 'Format berkas LPJ harus berupa PDF, Word, Excel, ZIP, RAR, atau gambar.',
-            'file_lpj.max' => 'Ukuran berkas LPJ maksimal 20 MB.',
+            'file_lpj.mimes' => 'Format berkas LPJ harus berupa PDF atau Word (.pdf, .doc, .docx).',
             'link_lpj.url' => 'Format tautan (link) LPJ harus berupa URL yang valid (contoh: https://drive.google.com/...).',
         ];
     }

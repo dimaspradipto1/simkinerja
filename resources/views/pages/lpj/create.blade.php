@@ -24,21 +24,22 @@
                         </div>
                         <div>
                             <h5 class="card-title p-0 m-0 fw-bold text-dark fs-6">Form Tambah Laporan Pertanggungjawaban (LPJ)</h5>
-                            <small class="text-muted">Isi formulir berikut untuk mengarsipkan berkas dan tautan LPJ</small>
+                            <small class="text-muted">Isi formulir berikut untuk mengarsipkan berkas dan tautan LPJ kepanitiaan</small>
                         </div>
                     </div>
 
-                    <form action="{{ route('lpj.store') }}" method="POST" enctype="multipart/form-data" class="row g-3">
+                    <form action="{{ route('lpj.store') }}" method="POST" enctype="multipart/form-data" class="row g-3" id="lpjForm">
                         @csrf
+                        <input type="hidden" name="kepanitiaan_id" id="kepanitiaan_id" value="{{ old('kepanitiaan_id', $prefillKepanitiaanId ?? '') }}">
 
                         <!-- Nama / Judul LPJ -->
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <label for="nama_lpj" class="form-label fw-semibold">Nama / Judul LPJ <span class="text-danger">*</span></label>
                             <input type="text" 
                                    class="form-control @error('nama_lpj') is-invalid @enderror" 
                                    id="nama_lpj" 
                                    name="nama_lpj" 
-                                   value="{{ old('nama_lpj') }}" 
+                                   value="{{ old('nama_lpj', $prefillNamaLpj ?? '') }}" 
                                    placeholder="Contoh: LPJ Kegiatan Workshop Digitalisasi Kampus 2026" 
                                    required>
                             @error('nama_lpj')
@@ -46,42 +47,69 @@
                             @enderror
                         </div>
 
-                        <!-- Jenis Kegiatan -->
-                        <div class="col-md-4">
-                            <label for="jenis_kegiatan" class="form-label fw-semibold">Jenis Kegiatan <span class="text-danger">*</span></label>
-                            <select class="form-select @error('jenis_kegiatan') is-invalid @enderror" id="jenis_kegiatan" name="jenis_kegiatan" required>
-                                <option value="" disabled {{ old('jenis_kegiatan') ? '' : 'selected' }}>-- Pilih Jenis Kegiatan --</option>
-                                @foreach($jenisKegiatanOptions as $opt)
-                                    <option value="{{ $opt }}" {{ old('jenis_kegiatan') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                        <!-- Nama Kepanitiaan -->
+                        <div class="col-md-5">
+                            <label for="kepanitiaan_selector" class="form-label fw-semibold">Nama Kepanitiaan <span class="text-danger">*</span></label>
+                            <select class="form-select @error('nama_kepanitiaan') is-invalid @enderror" id="kepanitiaan_selector">
+                                <option value="" {{ (!old('nama_kepanitiaan') && empty($prefillKepanitiaan)) ? 'selected' : '' }}>-- Pilih Nama Kepanitiaan --</option>
+                                @php
+                                    $currentVal = old('nama_kepanitiaan', $prefillKepanitiaan ?? '');
+                                    $isMatched = false;
+                                @endphp
+                                @foreach($kepanitiaans as $kp)
+                                    @php
+                                        $selected = false;
+                                        if (($currentVal == $kp->uraian_tugas) || (!empty($prefillKepanitiaanId) && $prefillKepanitiaanId == $kp->id)) {
+                                            $selected = true;
+                                            $isMatched = true;
+                                        }
+                                    @endphp
+                                    <option value="{{ $kp->uraian_tugas }}" 
+                                            data-id="{{ $kp->id }}" 
+                                            data-tanggal="{{ $kp->tanggal_selesai ?: $kp->tanggal_mulai }}"
+                                            {{ $selected ? 'selected' : '' }}>
+                                        {{ $kp->uraian_tugas }}
+                                    </option>
                                 @endforeach
+                                <option value="__CUSTOM__" {{ ($currentVal && !$isMatched) ? 'selected' : '' }}>-- Ketik Kepanitiaan Lainnya --</option>
                             </select>
-                            @error('jenis_kegiatan')
-                                <div class="invalid-feedback">{{ $message }}</div>
+
+                            <input type="text" 
+                                   class="form-control mt-2 @error('nama_kepanitiaan') is-invalid @enderror" 
+                                   id="nama_kepanitiaan" 
+                                   name="nama_kepanitiaan" 
+                                   value="{{ old('nama_kepanitiaan', $prefillKepanitiaan ?? '') }}" 
+                                   placeholder="Ketik nama kepanitiaan..."
+                                   style="{{ ($currentVal && !$isMatched) ? '' : 'display: none;' }}"
+                                   required>
+
+                            @error('nama_kepanitiaan')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <!-- Tanggal Kegiatan -->
+                        <!-- Tanggal Pelaksanaan -->
                         <div class="col-md-4">
                             <label for="tanggal_kegiatan" class="form-label fw-semibold">Tanggal Pelaksanaan</label>
                             <input type="date" 
                                    class="form-control @error('tanggal_kegiatan') is-invalid @enderror" 
                                    id="tanggal_kegiatan" 
                                    name="tanggal_kegiatan" 
-                                   value="{{ old('tanggal_kegiatan') }}">
+                                   value="{{ old('tanggal_kegiatan', $prefillTanggal ?? '') }}">
                             @error('tanggal_kegiatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <!-- Upload Berkas File LPJ -->
+                        <!-- Upload Berkas File LPJ (PDF / Word, Bebas Ukuran) -->
                         <div class="col-md-4">
-                            <label for="file_lpj" class="form-label fw-semibold">Unggah Berkas File (PDF / Word / ZIP)</label>
+                            <label for="file_lpj" class="form-label fw-semibold">Unggah Berkas File (PDF / Word)</label>
                             <input type="file" 
                                    class="form-control @error('file_lpj') is-invalid @enderror" 
                                    id="file_lpj" 
                                    name="file_lpj" 
-                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg">
-                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Maksimal 20 MB (.pdf, .docx, .zip, dll)</small>
+                                   accept=".pdf,.doc,.docx">
+                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Mendukung dokumen PDF atau Word (.pdf, .doc, .docx) tanpa batasan ukuran file</small>
                             @error('file_lpj')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -105,7 +133,7 @@
                             @enderror
                         </div>
 
-                        <!-- Keterangan / Catatan -->
+                        <!-- Keterangan / Ringkasan LPJ -->
                         <div class="col-md-12">
                             <label for="keterangan" class="form-label fw-semibold">Keterangan / Ringkasan LPJ</label>
                             <textarea class="form-control @error('keterangan') is-invalid @enderror" 
@@ -134,3 +162,51 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selector = document.getElementById('kepanitiaan_selector');
+    const inputNama = document.getElementById('nama_kepanitiaan');
+    const inputId = document.getElementById('kepanitiaan_id');
+    const inputTanggal = document.getElementById('tanggal_kegiatan');
+    const inputJudul = document.getElementById('nama_lpj');
+
+    selector.addEventListener('change', function() {
+        const val = this.value;
+        const selectedOpt = this.options[this.selectedIndex];
+
+        if (val === '__CUSTOM__') {
+            inputNama.style.display = 'block';
+            inputNama.value = '';
+            inputNama.focus();
+            inputId.value = '';
+        } else if (val) {
+            inputNama.style.display = 'none';
+            inputNama.value = val;
+            inputId.value = selectedOpt.getAttribute('data-id') || '';
+
+            // Jika tanggal kegiatan belum diisi, otomatis isi dari kepanitiaan
+            const tgl = selectedOpt.getAttribute('data-tanggal');
+            if (tgl && !inputTanggal.value) {
+                inputTanggal.value = tgl;
+            }
+
+            // Jika judul LPJ masih kosong, buat otomatis default
+            if (!inputJudul.value) {
+                inputJudul.value = 'LPJ ' + val;
+            }
+        } else {
+            inputNama.style.display = 'none';
+            inputNama.value = '';
+            inputId.value = '';
+        }
+    });
+
+    // Inisialisasi awal saat halaman termuat
+    if (selector.value && selector.value !== '__CUSTOM__') {
+        inputNama.value = selector.value;
+    }
+});
+</script>
+@endpush

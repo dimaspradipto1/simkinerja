@@ -22,7 +22,7 @@
                         <div>
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1" style="font-size: 0.8rem;">
-                                    {{ $lpj->jenis_kegiatan }}
+                                    <i class="bi bi-people me-1"></i> {{ $lpj->nama_kepanitiaan }}
                                 </span>
                                 @if($lpj->tanggal_kegiatan)
                                     <span class="text-muted small">
