@@ -1404,6 +1404,9 @@
                     }
                 });
             }
+        });
+    };
+
     // Auto-refresh tabel kepanitiaan setiap 30 detik agar perubahan auto-stop selesai langsung tampil
     setInterval(function() {
         if ($.fn.DataTable.isDataTable('#kepanitiaan-table')) {
