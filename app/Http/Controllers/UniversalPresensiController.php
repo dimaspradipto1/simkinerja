@@ -441,9 +441,9 @@ class UniversalPresensiController extends Controller
                 if (!$p->created_at) {
                     return '<span class="text-muted">-</span>';
                 }
-                $tgl = $p->created_at->format('d/m/Y');
                 $hari = $p->created_at->translatedFormat('l');
-                return '<div class="fw-bold text-dark text-nowrap"><i class="bi bi-calendar3 text-primary me-1"></i>' . $tgl . '</div><small class="text-muted text-nowrap">' . $hari . '</small>';
+                $tgl = $p->created_at->format('d/m/Y');
+                return '<div class="fw-bold text-dark text-nowrap">' . $hari . '</div><small class="text-muted text-nowrap"><i class="bi bi-calendar3 text-primary me-1"></i>' . $tgl . '</small>';
             })
             ->filterColumn('user_info', function ($query, $keyword) {
                 $query->whereHas('user', function ($q) use ($keyword) {
@@ -456,13 +456,10 @@ class UniversalPresensiController extends Controller
                 $u = $p->user;
                 if (!$u) return '<span class="text-muted fst-italic">Pengguna tidak ditemukan</span>';
                 
-                $initial = strtoupper(substr($u->name, 0, 1));
-                $html = '<div class="d-flex align-items-center gap-2">';
-                $html .= '<div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-size: 0.85rem;">' . $initial . '</div>';
-                $html .= '<div>';
+                $html = '<div>';
                 $html .= '<div class="fw-bold text-dark" style="font-size: 0.9rem;">' . e($u->name) . '</div>';
                 $html .= '<small class="text-muted" style="font-size: 0.76rem;">' . e($u->jabatan ?? '-') . ' &bull; ' . e($u->unit ?? '-') . '</small>';
-                $html .= '</div></div>';
+                $html .= '</div>';
                 return $html;
             })
             ->addColumn('status_datang', function ($p) {
