@@ -11,7 +11,7 @@
               </a>
           </li><!-- End Dashboard Nav -->
 
-          @if (!Auth::check() || Auth::user()->canAccessAbsensi())
+          @if (Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin()))
               @php
                   // Ambil hanya sesi yang AKTIF (sesi yang dikunci tidak perlu ditampilkan sama sekali)
                   $activeSessions = \App\Models\KepanitiaanSesiAbsensi::where('is_active', true)

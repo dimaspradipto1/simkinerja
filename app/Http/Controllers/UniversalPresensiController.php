@@ -91,6 +91,10 @@ class UniversalPresensiController extends Controller
             'user_id' => $authUser->id,
         ]);
 
+        $targetRedirect = ($authUser->isAdmin() || $authUser->isSuperAdmin())
+            ? route('presensi.sesi.show', $sesi->id)
+            : route('kepanitiaan.index');
+
         if ($sessionType === 'datang') {
             if (!empty($presensi->hadir_datang) && (string)$presensi->hadir_datang === 'Hadir') {
                 $msg = 'Anda sudah melakukan absensi datang sebelumnya pada jam ' . ($presensi->waktu_datang ?? '-') . ' WIB.';
@@ -98,7 +102,7 @@ class UniversalPresensiController extends Controller
                     return response()->json(['success' => false, 'message' => $msg]);
                 }
                 Alert::warning('Info', $msg);
-                return redirect()->route('presensi.sesi.show', $sesi->id);
+                return redirect($targetRedirect);
             }
 
             $presensi->hadir_datang = 'Hadir';
@@ -111,7 +115,7 @@ class UniversalPresensiController extends Controller
                     return response()->json(['success' => false, 'message' => $msg]);
                 }
                 Alert::warning('Info', $msg);
-                return redirect()->route('presensi.sesi.show', $sesi->id);
+                return redirect($targetRedirect);
             }
 
             $presensi->hadir_pulang = 'Hadir';
@@ -132,7 +136,7 @@ class UniversalPresensiController extends Controller
         }
 
         Alert::success('Berhasil', $msg);
-        return redirect()->route('presensi.sesi.show', $sesi->id);
+        return redirect($targetRedirect);
     }
 
     /**
@@ -286,6 +290,11 @@ class UniversalPresensiController extends Controller
      */
     public function exportExcel($sesiId)
     {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+            abort(403, 'Akses ditolak. Hanya administrator yang dapat mengunduh rekap presensi.');
+        }
+
         $sesi = KepanitiaanSesiAbsensi::with(['kepanitiaan', 'presensis.user'])->findOrFail($sesiId);
         $presensis = $sesi->presensis()->with('user')->get();
 
@@ -379,6 +388,12 @@ class UniversalPresensiController extends Controller
      */
     public function showSesi($id)
     {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+            Alert::error('Akses Ditolak', 'Hanya administrator yang dapat mengakses data absensi.');
+            return redirect()->route('dashboard');
+        }
+
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
 
         $totalPresensi = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)->count();
@@ -411,6 +426,11 @@ class UniversalPresensiController extends Controller
      */
     public function getSesiData($id)
     {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
+
         $query = KepanitiaanPresensi::with('user')
             ->where('kepanitiaan_sesi_absensi_id', $id)
             ->latest();
@@ -504,6 +524,11 @@ class UniversalPresensiController extends Controller
      */
     public function storeManualPresensi(Request $request, $id)
     {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'hadir_datang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha',
@@ -545,6 +570,11 @@ class UniversalPresensiController extends Controller
      */
     public function destroyPresensi($id)
     {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
         $presensi = KepanitiaanPresensi::findOrFail($id);
         if ($presensi->bukti_izin && Storage::disk('public')->exists($presensi->bukti_izin)) {
             Storage::disk('public')->delete($presensi->bukti_izin);
