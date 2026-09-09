@@ -408,7 +408,7 @@ class UniversalPresensiController extends Controller
             })->count();
 
         $users = User::orderBy('name', 'asc')->get();
-        $allSesis = KepanitiaanSesiAbsensi::where('is_active', true)->orderBy('nama_sesi', 'asc')->get();
+        $allSesis = KepanitiaanSesiAbsensi::orderBy('tanggal', 'desc')->orderBy('id', 'asc')->get();
 
         return view('pages.presensi.show', compact(
             'sesi',
