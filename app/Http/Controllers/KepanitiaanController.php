@@ -109,7 +109,7 @@ class KepanitiaanController extends Controller
                     $collapseId = 'collapseKepanitiaan_' . $row->id;
                     $actionBtns = $this->renderActionButtons($row, $authUser, 'kepanitiaan', 'deleteKepanitiaan', $collapseId);
 
-                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">';
+                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;">';
                     $html .= '  <div class="d-flex align-items-center justify-content-between gap-2 pb-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
                     $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.95rem;">';
                     $html .= '          <i class="bi bi-card-checklist text-primary fs-5 flex-shrink-0"></i>';
@@ -518,14 +518,16 @@ class KepanitiaanController extends Controller
                     $sess = $absensiSessions[0];
                     $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
                 } else {
-                    $btn .= '<div class="dropdown d-inline-block btn-mobile-stack">';
-                    $btn .= '  <button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-qr-code-scan"></i> Scan Barcode (' . count($absensiSessions) . ')</button>';
-                    $btn .= '  <ul class="dropdown-menu shadow-sm" style="z-index: 1055;">';
+                    $sessionsPayload = [];
                     foreach ($absensiSessions as $sess) {
-                        $btn .= '<li><a class="dropdown-item py-2 btn-scan-barcode-modal d-flex align-items-center gap-2" href="#" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this); return false;"><i class="bi bi-qr-code-scan text-primary"></i> <span>' . e($sess['nama']) . '</span></a></li>';
+                        $sessionsPayload[] = [
+                            'slug' => $sess['slug'],
+                            'nama' => $sess['nama'],
+                            'url'  => \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']),
+                        ];
                     }
-                    $btn .= '  </ul>';
-                    $btn .= '</div>';
+                    $sessionsJson = htmlspecialchars(json_encode($sessionsPayload), ENT_QUOTES, 'UTF-8');
+                    $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack" onclick="window.openMultiSessionPicker(this, \'scan\')" data-sessions="' . $sessionsJson . '" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Pilih Sesi Scan Barcode"><i class="bi bi-qr-code-scan"></i> Scan Barcode (' . count($absensiSessions) . ') <i class="bi bi-chevron-down ms-1" style="font-size: 0.72rem;"></i></button>';
                 }
             }
 
@@ -560,26 +562,17 @@ class KepanitiaanController extends Controller
                 $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
                 $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka Barcode Absensi ' . e($sess['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
             } else {
-                // Multi Scan Barcode Dropdown
-                $btn .= '<div class="dropdown d-inline-block btn-mobile-stack">';
-                $btn .= '  <button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-qr-code-scan"></i> Scan Barcode (' . count($absensiSessions) . ')</button>';
-                $btn .= '  <ul class="dropdown-menu shadow-sm" style="z-index: 1055;">';
+                $sessionsPayload = [];
                 foreach ($absensiSessions as $sess) {
-                    $btn .= '<li><a class="dropdown-item py-2 btn-scan-barcode-modal d-flex align-items-center gap-2" href="#" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this); return false;"><i class="bi bi-qr-code-scan text-primary"></i> <span>' . e($sess['nama']) . '</span></a></li>';
+                    $sessionsPayload[] = [
+                        'slug' => $sess['slug'],
+                        'nama' => $sess['nama'],
+                        'url'  => \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']),
+                    ];
                 }
-                $btn .= '  </ul>';
-                $btn .= '</div>';
-
-                // Multi Barcode Absensi Dropdown
-                $btn .= '<div class="dropdown d-inline-block btn-mobile-stack">';
-                $btn .= '  <button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-qr-code"></i> Barcode Absensi (' . count($absensiSessions) . ')</button>';
-                $btn .= '  <ul class="dropdown-menu shadow-sm" style="z-index: 1055;">';
-                foreach ($absensiSessions as $sess) {
-                    $sessUrl = \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']);
-                    $btn .= '<li><a class="dropdown-item py-2 btn-barcode-absensi d-flex align-items-center gap-2" href="#" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" data-url="' . $sessUrl . '" onclick="window.openBarcodeModal(this); return false;"><i class="bi bi-qr-code text-dark"></i> <span>' . e($sess['nama']) . '</span></a></li>';
-                }
-                $btn .= '  </ul>';
-                $btn .= '</div>';
+                $sessionsJson = htmlspecialchars(json_encode($sessionsPayload), ENT_QUOTES, 'UTF-8');
+                $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack" onclick="window.openMultiSessionPicker(this, \'scan\')" data-sessions="' . $sessionsJson . '" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Pilih Sesi Scan Barcode"><i class="bi bi-qr-code-scan"></i> Scan Barcode (' . count($absensiSessions) . ') <i class="bi bi-chevron-down ms-1" style="font-size: 0.72rem;"></i></button>';
+                $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-mobile-stack" onclick="window.openMultiSessionPicker(this, \'barcode\')" data-sessions="' . $sessionsJson . '" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Pilih Sesi Barcode Absensi"><i class="bi bi-qr-code"></i> Barcode Absensi (' . count($absensiSessions) . ') <i class="bi bi-chevron-down ms-1" style="font-size: 0.72rem;"></i></button>';
             }
         }
 

@@ -200,6 +200,16 @@
         #modal-reader img[alt="Info icon"] { 
             display: none !important; 
         }
+        .session-choice-item {
+            transition: all 0.18s ease-in-out;
+            border: 1px solid #e2e8f0;
+        }
+        .session-choice-item:hover {
+            border-color: #0d6efd !important;
+            background-color: #f0f7ff !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.12) !important;
+        }
     </style>
 </head>
 
@@ -615,6 +625,98 @@
                 }
             });
         }
+
+        // Multi Session Picker Modal Handler (Untuk Tugas dengan Banyak Sesi Absensi)
+        window.openMultiSessionPicker = function(el, type) {
+            const btn = $(el);
+            let sessions = btn.attr('data-sessions');
+            if (typeof sessions === 'string') {
+                try {
+                    sessions = JSON.parse(sessions);
+                } catch(e) {
+                    console.error("Invalid sessions JSON", e);
+                    sessions = [];
+                }
+            }
+
+            if (!sessions || !Array.isArray(sessions) || sessions.length === 0) {
+                Swal.fire('Informasi', 'Tidak ada data sesi absensi yang terhubung.', 'info');
+                return;
+            }
+
+            if (type === 'scan') {
+                $('#modalPilihSesiHeader').css('background-color', '#0d6efd');
+                $('#modalPilihSesiIcon').attr('class', 'bi bi-qr-code-scan fs-4 text-white');
+                $('#modalPilihSesiAbsensiLabel').text('Pilih Sesi Scan Barcode');
+                $('#modalPilihSesiSublabel').text('Pilih sesi untuk membuka scanner kamera');
+            } else {
+                $('#modalPilihSesiHeader').css('background-color', '#0f172a');
+                $('#modalPilihSesiIcon').attr('class', 'bi bi-qr-code fs-4 text-white');
+                $('#modalPilihSesiAbsensiLabel').text('Pilih Sesi Barcode Absensi');
+                $('#modalPilihSesiSublabel').text('Pilih sesi untuk menampilkan barcode kehadiran');
+            }
+
+            let html = '';
+            sessions.forEach(function(sess) {
+                const iconClass = type === 'scan' ? 'bi-qr-code-scan text-primary' : 'bi-qr-code text-dark';
+                const actionLabel = type === 'scan' ? 'Buka Scanner Kamera' : 'Buka QR Barcode';
+                
+                html += `
+                <div class="card p-3 shadow-2xs rounded-3 session-choice-item mb-2" style="cursor: pointer; background-color: #ffffff;" 
+                     data-slug="${sess.slug}" data-title="${sess.nama}" data-url="${sess.url}" data-type="${type}">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle p-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                                <i class="bi ${iconClass} fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 0.92rem;">${sess.nama}</div>
+                                <div class="text-muted small" style="font-size: 0.78rem;"><i class="bi bi-arrow-right-short"></i> ${actionLabel}</div>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right text-secondary fs-5"></i>
+                    </div>
+                </div>
+                `;
+            });
+
+            $('#modalPilihSesiContainer').html(html);
+
+            const modalEl = document.getElementById('modalPilihSesiAbsensi');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        };
+
+        $(document).on('click', '.session-choice-item', function() {
+            const slug = $(this).data('slug');
+            const title = $(this).data('title');
+            const url = $(this).data('url');
+            const type = $(this).data('type');
+
+            const pickerModalEl = document.getElementById('modalPilihSesiAbsensi');
+            if (pickerModalEl) {
+                const pickerModal = bootstrap.Modal.getInstance(pickerModalEl);
+                if (pickerModal) pickerModal.hide();
+            }
+
+            setTimeout(function() {
+                if (type === 'scan') {
+                    const dummyBtn = $('<button>')
+                        .data('slug', slug)
+                        .data('title', title)
+                        .data('url', url);
+                    window.openScanBarcodeModal(dummyBtn);
+                } else {
+                    const dummyBtn = $('<button>')
+                        .data('slug', slug)
+                        .data('title', title)
+                        .data('url', url);
+                    window.openBarcodeModal(dummyBtn);
+                }
+            }, 300);
+        });
     </script>
 
     <!-- Modal Persetujuan Perpanjangan Waktu (Khusus Pimpinan / Admin) -->
@@ -665,6 +767,29 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Pemilihan Sesi Absensi (Untuk Multi-Select Absensi) -->
+    <div class="modal fade" id="modalPilihSesiAbsensi" tabindex="-1" aria-labelledby="modalPilihSesiAbsensiLabel" aria-hidden="true" style="z-index: 1055;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header text-white border-0 py-3 px-4" id="modalPilihSesiHeader" style="background-color: #0f172a;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i id="modalPilihSesiIcon" class="bi bi-qr-code fs-4 text-white"></i>
+                        <div>
+                            <h5 class="modal-title fw-bold fs-6 mb-0 text-white" id="modalPilihSesiAbsensiLabel">Pilih Sesi Absensi</h5>
+                            <small class="text-white-50" id="modalPilihSesiSublabel" style="font-size: 0.78rem;">Pilih sesi yang ingin Anda buka</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-sm-4" style="background-color: #f8fafc;">
+                    <div id="modalPilihSesiContainer" class="d-flex flex-column gap-1">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
