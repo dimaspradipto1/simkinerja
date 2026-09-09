@@ -308,9 +308,21 @@ class KepanitiaanController extends Controller
                     $html .= '<input type="file" name="file" class="form-control form-control-sm bg-white input-file-inline">';
                     $html .= '</div>';
 
+                    $externalOnly = '';
+                    if (!empty($row->url_external)) {
+                        $parts = explode(',', $row->url_external);
+                        $nonAbsensi = array_filter($parts, function($p) {
+                            foreach (\App\Models\AbsensiSetting::defaults() as $s => $c) {
+                                if (str_contains($p, $s)) return false;
+                            }
+                            return true;
+                        });
+                        $externalOnly = implode(',', $nonAbsensi);
+                    }
+
                     $html .= '<div class="col-12 col-md-6 inline-upload-right">';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold d-block"><i class="bi bi-link-45deg me-1"></i>Tautan Google Drive / External:</label>';
-                    $html .= '<input type="url" name="url_external" class="form-control form-control-sm bg-white input-url-inline" placeholder="https://drive.google.com/..." value="' . e($row->url_external ?? '') . '">';
+                    $html .= '<input type="url" name="url_external" class="form-control form-control-sm bg-white input-url-inline" placeholder="https://drive.google.com/..." value="' . e($externalOnly) . '">';
                     $html .= '</div>';
 
                     $html .= '<div class="col-12 mt-3 text-start">';
@@ -329,9 +341,19 @@ class KepanitiaanController extends Controller
                         $html .= '<a href="' . $fileUrl . '" target="_blank" class="btn btn-sm btn-outline-success text-nowrap fw-semibold px-3 d-inline-flex align-items-center" style="font-size: 0.8rem; height: 30px;"><i class="bi bi-file-earmark-check-fill me-1"></i> Unduh / Lihat Berkas</a>';
                     }
 
-                    if ($row->url_external) {
-                        $hasResult = true;
-                        $html .= '<a href="' . e($row->url_external) . '" target="_blank" class="btn btn-sm btn-outline-primary text-nowrap fw-semibold px-3 d-inline-flex align-items-center" style="font-size: 0.8rem; height: 30px;"><i class="bi bi-box-arrow-up-right me-1"></i> Buka Link Eksternal</a>';
+                    if (!empty($row->url_external)) {
+                        $parts = array_filter(array_map('trim', explode(',', $row->url_external)));
+                        foreach ($parts as $u) {
+                            $hasResult = true;
+                            $linkTitle = 'Buka Link Eksternal';
+                            foreach (\App\Models\AbsensiSetting::defaults() as $s => $cfg) {
+                                if (str_contains($u, $s)) {
+                                    $linkTitle = 'Buka ' . $cfg['nama'];
+                                    break;
+                                }
+                            }
+                            $html .= '<a href="' . e($u) . '" target="_blank" class="btn btn-sm btn-outline-primary text-nowrap fw-semibold px-3 d-inline-flex align-items-center me-1 mb-1" style="font-size: 0.8rem; height: 30px;"><i class="bi bi-box-arrow-up-right me-1"></i> ' . e($linkTitle) . '</a>';
+                        }
                     }
                     $html .= '</div>';
 
@@ -472,9 +494,7 @@ class KepanitiaanController extends Controller
         $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
         $isTaggedOnly = !$isOwner && !$isLeader;
 
-        $absensiInfo = $this->resolveAbsensiSession($row);
-        $absensiUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.index') ? route($absensiInfo['slug'] . '.index') : url($absensiInfo['slug'])) : '';
-        $scanUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.scan') ? route($absensiInfo['slug'] . '.scan') . '?start=1' : url($absensiInfo['slug'] . '/scan?start=1')) : '';
+        $absensiSessions = $this->resolveAbsensiSessions($row);
 
         // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
         if ($isTaggedOnly) {
@@ -493,8 +513,20 @@ class KepanitiaanController extends Controller
             $btn .= '</div>';
 
             // Tombol Scan Barcode Khusus Rekan Kerja yang Di-tag (Hanya Scan Barcode, Barcode Absensi disembunyikan)
-            if ($absensiInfo) {
-                $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
+            if (!empty($absensiSessions)) {
+                if (count($absensiSessions) === 1) {
+                    $sess = $absensiSessions[0];
+                    $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
+                } else {
+                    $btn .= '<div class="dropdown d-inline-block btn-mobile-stack">';
+                    $btn .= '  <button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-qr-code-scan"></i> Scan Barcode (' . count($absensiSessions) . ')</button>';
+                    $btn .= '  <ul class="dropdown-menu shadow-sm" style="z-index: 1055;">';
+                    foreach ($absensiSessions as $sess) {
+                        $btn .= '<li><a class="dropdown-item py-2 btn-scan-barcode-modal d-flex align-items-center gap-2" href="#" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this); return false;"><i class="bi bi-qr-code-scan text-primary"></i> <span>' . e($sess['nama']) . '</span></a></li>';
+                    }
+                    $btn .= '  </ul>';
+                    $btn .= '</div>';
+                }
             }
 
             if ($collapseId) {
@@ -521,9 +553,34 @@ class KepanitiaanController extends Controller
         $btn .= '</div>';
 
         // Barcode Absensi Button untuk Pemilik Tugas / Pimpinan
-        if ($absensiInfo) {
-            $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
-            $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+        if (!empty($absensiSessions)) {
+            if (count($absensiSessions) === 1) {
+                $sess = $absensiSessions[0];
+                $absensiUrl = \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']);
+                $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
+                $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka Barcode Absensi ' . e($sess['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+            } else {
+                // Multi Scan Barcode Dropdown
+                $btn .= '<div class="dropdown d-inline-block btn-mobile-stack">';
+                $btn .= '  <button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-qr-code-scan"></i> Scan Barcode (' . count($absensiSessions) . ')</button>';
+                $btn .= '  <ul class="dropdown-menu shadow-sm" style="z-index: 1055;">';
+                foreach ($absensiSessions as $sess) {
+                    $btn .= '<li><a class="dropdown-item py-2 btn-scan-barcode-modal d-flex align-items-center gap-2" href="#" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this); return false;"><i class="bi bi-qr-code-scan text-primary"></i> <span>' . e($sess['nama']) . '</span></a></li>';
+                }
+                $btn .= '  </ul>';
+                $btn .= '</div>';
+
+                // Multi Barcode Absensi Dropdown
+                $btn .= '<div class="dropdown d-inline-block btn-mobile-stack">';
+                $btn .= '  <button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-qr-code"></i> Barcode Absensi (' . count($absensiSessions) . ')</button>';
+                $btn .= '  <ul class="dropdown-menu shadow-sm" style="z-index: 1055;">';
+                foreach ($absensiSessions as $sess) {
+                    $sessUrl = \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']);
+                    $btn .= '<li><a class="dropdown-item py-2 btn-barcode-absensi d-flex align-items-center gap-2" href="#" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" data-url="' . $sessUrl . '" onclick="window.openBarcodeModal(this); return false;"><i class="bi bi-qr-code text-dark"></i> <span>' . e($sess['nama']) . '</span></a></li>';
+                }
+                $btn .= '  </ul>';
+                $btn .= '</div>';
+            }
         }
 
         $canEditDelete = $isLeader || $isOwner;
@@ -546,62 +603,77 @@ class KepanitiaanController extends Controller
     }
 
     /**
-     * Helper to resolve attendance session from task data (url_external or keywords in uraian_tugas).
+     * Helper to resolve attendance sessions from task data (url_external or keywords in uraian_tugas).
+     * Returns an array of attendance session configs.
+     * @return array<int, array>
      */
-    private function resolveAbsensiSession($row): ?array
+    private function resolveAbsensiSessions($row): array
     {
         $defaults = \App\Models\AbsensiSetting::defaults();
+        $matched = [];
 
-        // 1. Cek dari url_external
+        // 1. Cek semua slug yang cocok dari url_external
         if (!empty($row->url_external)) {
             foreach ($defaults as $slug => $cfg) {
                 if (str_contains($row->url_external, $slug)) {
-                    return $cfg;
+                    $matched[$slug] = $cfg;
                 }
             }
         }
 
-        // 2. Deteksi cerdas dari uraian_tugas jika memuat nama kegiatan kepanitiaan
-        $text = strtolower($row->uraian_tugas ?? '');
+        // 2. Deteksi cerdas dari uraian_tugas jika belum ada yang cocok dari url_external
+        if (empty($matched)) {
+            $text = strtolower($row->uraian_tugas ?? '');
 
-        // PKKMB
-        if (str_contains($text, 'pkkmb')) {
-            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga') || str_contains($text, '3 hari')) {
-                return $defaults['absensi-pkkmb-ketiga'] ?? $defaults['absensi-pkkmb-pertama'];
-            } elseif (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
-                return $defaults['absensi-pkkmb-kedua'] ?? $defaults['absensi-pkkmb-pertama'];
+            // PKKMB
+            if (str_contains($text, 'pkkmb')) {
+                if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga') || str_contains($text, '3 hari')) {
+                    $matched['absensi-pkkmb-ketiga'] = $defaults['absensi-pkkmb-ketiga'] ?? $defaults['absensi-pkkmb-pertama'];
+                } elseif (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                    $matched['absensi-pkkmb-kedua'] = $defaults['absensi-pkkmb-kedua'] ?? $defaults['absensi-pkkmb-pertama'];
+                } else {
+                    $matched['absensi-pkkmb-pertama'] = $defaults['absensi-pkkmb-pertama'];
+                }
             }
-            return $defaults['absensi-pkkmb-pertama'];
+
+            // MILAD
+            if (str_contains($text, 'milad')) {
+                if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                    $matched['absensi-milad-kedua'] = $defaults['absensi-milad-kedua'] ?? $defaults['absensi-milad-pertama'];
+                } else {
+                    $matched['absensi-milad-pertama'] = $defaults['absensi-milad-pertama'];
+                }
+            }
+
+            // ESQ
+            if (str_contains($text, 'esq')) {
+                if (str_contains($text, 'hari 4') || str_contains($text, 'hari ke-4') || str_contains($text, 'hari keempat')) {
+                    $matched['absensi-esq-keempat'] = $defaults['absensi-esq-keempat'] ?? $defaults['absensi-esq-pertama'];
+                } elseif (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga')) {
+                    $matched['absensi-esq-ketiga'] = $defaults['absensi-esq-ketiga'] ?? $defaults['absensi-esq-pertama'];
+                } elseif (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
+                    $matched['absensi-esq-kedua'] = $defaults['absensi-esq-kedua'] ?? $defaults['absensi-esq-pertama'];
+                } else {
+                    $matched['absensi-esq-pertama'] = $defaults['absensi-esq-pertama'];
+                }
+            }
+
+            // Kuliah Umum
+            if (str_contains($text, 'kuliah umum')) {
+                $matched['absensi-kuliah-umum-pertama'] = $defaults['absensi-kuliah-umum-pertama'];
+            }
         }
 
-        // MILAD
-        if (str_contains($text, 'milad')) {
-            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
-                return $defaults['absensi-milad-kedua'] ?? $defaults['absensi-milad-pertama'];
-            }
-            return $defaults['absensi-milad-pertama'];
-        }
+        return array_values($matched);
+    }
 
-        // ESQ
-        if (str_contains($text, 'esq')) {
-            if (str_contains($text, 'hari 4') || str_contains($text, 'hari ke-4') || str_contains($text, 'hari keempat')) {
-                return $defaults['absensi-esq-keempat'] ?? $defaults['absensi-esq-pertama'];
-            }
-            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga')) {
-                return $defaults['absensi-esq-ketiga'] ?? $defaults['absensi-esq-pertama'];
-            }
-            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
-                return $defaults['absensi-esq-kedua'] ?? $defaults['absensi-esq-pertama'];
-            }
-            return $defaults['absensi-esq-pertama'];
-        }
-
-        // Kuliah Umum
-        if (str_contains($text, 'kuliah umum')) {
-            return $defaults['absensi-kuliah-umum-pertama'];
-        }
-
-        return null;
+    /**
+     * Backward-compatible helper to resolve single attendance session.
+     */
+    private function resolveAbsensiSession($row): ?array
+    {
+        $sessions = $this->resolveAbsensiSessions($row);
+        return !empty($sessions) ? $sessions[0] : null;
     }
 
     /**
@@ -626,8 +698,27 @@ class KepanitiaanController extends Controller
         $validated = $request->validated();
         $validated['user_id'] = $validated['user_id'] ?? Auth::id();
 
-        if ($request->filled('jenis_absensi') && empty($validated['url_external'])) {
-            $validated['url_external'] = url($request->input('jenis_absensi'));
+        if ($request->has('jenis_absensi') || $request->filled('url_external')) {
+            $jenisAbsensi = array_filter((array) $request->input('jenis_absensi', []));
+            $urls = array_map(function ($slug) {
+                return url($slug);
+            }, $jenisAbsensi);
+
+            $manualUrl = $request->input('url_external');
+            if (!empty($manualUrl)) {
+                $parts = array_filter(array_map('trim', explode(',', $manualUrl)));
+                foreach ($parts as $p) {
+                    if (!in_array($p, $urls)) {
+                        $urls[] = $p;
+                    }
+                }
+            }
+
+            if (!empty($urls)) {
+                $validated['url_external'] = implode(',', array_unique($urls));
+            } else {
+                $validated['url_external'] = null;
+            }
         }
 
         if ($request->hasFile('file')) {
@@ -710,6 +801,25 @@ class KepanitiaanController extends Controller
             // Pimpinan menyimpan perubahan pada tugas yang punya permintaan tertunda -> tandai selesai.
             $validated['estimasi_unlock_reason'] = null;
             $validated['estimasi_unlock_requested_at'] = null;
+        }
+
+        if ($request->has('jenis_absensi')) {
+            $jenisAbsensi = array_filter((array) $request->input('jenis_absensi'));
+            $urls = array_map(function ($slug) {
+                return url($slug);
+            }, $jenisAbsensi);
+
+            $manualUrl = $request->input('url_external');
+            if (!empty($manualUrl)) {
+                $parts = array_filter(array_map('trim', explode(',', $manualUrl)));
+                foreach ($parts as $p) {
+                    if (!in_array($p, $urls)) {
+                        $urls[] = $p;
+                    }
+                }
+            }
+
+            $validated['url_external'] = !empty($urls) ? implode(',', array_unique($urls)) : null;
         }
 
         if ($request->hasFile('file')) {
@@ -1029,7 +1139,18 @@ class KepanitiaanController extends Controller
         }
 
         if ($request->has('url_external')) {
-            $updateData['url_external'] = $request->input('url_external');
+            $newManualUrl = trim((string) $request->input('url_external'));
+            $existingUrls = !empty($kepanitiaan->url_external) ? explode(',', $kepanitiaan->url_external) : [];
+            $absensiUrls = array_filter($existingUrls, function($p) {
+                foreach (\App\Models\AbsensiSetting::defaults() as $s => $c) {
+                    if (str_contains($p, $s)) return true;
+                }
+                return false;
+            });
+            if (!empty($newManualUrl)) {
+                $absensiUrls[] = $newManualUrl;
+            }
+            $updateData['url_external'] = !empty($absensiUrls) ? implode(',', array_unique($absensiUrls)) : null;
         }
 
         if ($request->has('hasil_kerja')) {

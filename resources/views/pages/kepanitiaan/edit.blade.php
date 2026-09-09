@@ -73,25 +73,28 @@
                                 <label for="jenis_absensi" class="form-label fw-bold text-primary d-flex align-items-center gap-2 mb-1">
                                     <i class="bi bi-qr-code-scan text-primary fs-5"></i> Jenis Absensi Kepanitiaan
                                 </label>
-                                <div class="text-muted small mb-2">Pilih jenis absensi yang terhubung dengan kegiatan kepanitiaan ini agar tombol <strong>Barcode Absensi</strong> otomatis tampil pada daftar tugas.</div>
+                                <div class="text-muted small mb-2">Pilih satu atau beberapa jenis absensi yang terhubung dengan kegiatan kepanitiaan ini agar tombol <strong>Barcode Absensi</strong> otomatis tampil pada daftar tugas.</div>
                                 @php
-                                    $currentSlug = '';
+                                    $currentSlugs = [];
                                     if (!empty($kepanitiaan->url_external)) {
                                         foreach (\App\Models\AbsensiSetting::defaults() as $s => $c) {
                                             if (str_contains($kepanitiaan->url_external, $s)) {
-                                                $currentSlug = $s;
-                                                break;
+                                                $currentSlugs[] = $s;
                                             }
                                         }
                                     }
                                 @endphp
-                                <select class="form-select @error('jenis_absensi') is-invalid @enderror" id="jenis_absensi" name="jenis_absensi">
-                                    <option value="">-- Pilih Jenis Absensi (Opsional) --</option>
+                                <select class="form-select @error('jenis_absensi') is-invalid @enderror" id="jenis_absensi" name="jenis_absensi[]" multiple="multiple">
                                     @if(isset($absensiSessions) && $absensiSessions->count() > 0)
                                         @foreach($absensiSessions as $kategoriAbsensi => $sessions)
                                             <optgroup label="Sesi Absensi {{ $kategoriAbsensi }}">
                                                 @foreach($sessions as $sess)
-                                                    <option value="{{ $sess->slug }}" {{ old('jenis_absensi', $currentSlug) == $sess->slug ? 'selected' : '' }}>
+                                                    @php
+                                                        $isSelected = old('jenis_absensi') !== null
+                                                            ? (is_array(old('jenis_absensi')) && in_array($sess->slug, old('jenis_absensi')))
+                                                            : in_array($sess->slug, $currentSlugs);
+                                                    @endphp
+                                                    <option value="{{ $sess->slug }}" {{ $isSelected ? 'selected' : '' }}>
                                                         {{ $sess->nama }}
                                                     </option>
                                                 @endforeach
@@ -99,22 +102,40 @@
                                         @endforeach
                                     @else
                                         <optgroup label="PKKMB">
-                                            <option value="absensi-pkkmb-pertama" {{ old('jenis_absensi', $currentSlug) == 'absensi-pkkmb-pertama' ? 'selected' : '' }}>Absensi PKKMB Hari Pertama</option>
-                                            <option value="absensi-pkkmb-kedua" {{ old('jenis_absensi', $currentSlug) == 'absensi-pkkmb-kedua' ? 'selected' : '' }}>Absensi PKKMB Hari Kedua</option>
-                                            <option value="absensi-pkkmb-ketiga" {{ old('jenis_absensi', $currentSlug) == 'absensi-pkkmb-ketiga' ? 'selected' : '' }}>Absensi PKKMB Hari Ketiga</option>
+                                            @php
+                                                $checkPkkmb1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-pertama', old('jenis_absensi'))) : in_array('absensi-pkkmb-pertama', $currentSlugs);
+                                                $checkPkkmb2 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-kedua', old('jenis_absensi'))) : in_array('absensi-pkkmb-kedua', $currentSlugs);
+                                                $checkPkkmb3 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-ketiga', old('jenis_absensi'))) : in_array('absensi-pkkmb-ketiga', $currentSlugs);
+                                            @endphp
+                                            <option value="absensi-pkkmb-pertama" {{ $checkPkkmb1 ? 'selected' : '' }}>Absensi PKKMB Hari Pertama</option>
+                                            <option value="absensi-pkkmb-kedua" {{ $checkPkkmb2 ? 'selected' : '' }}>Absensi PKKMB Hari Kedua</option>
+                                            <option value="absensi-pkkmb-ketiga" {{ $checkPkkmb3 ? 'selected' : '' }}>Absensi PKKMB Hari Ketiga</option>
                                         </optgroup>
                                         <optgroup label="ESQ">
-                                            <option value="absensi-esq-pertama" {{ old('jenis_absensi', $currentSlug) == 'absensi-esq-pertama' ? 'selected' : '' }}>Absensi ESQ Hari Pertama</option>
-                                            <option value="absensi-esq-kedua" {{ old('jenis_absensi', $currentSlug) == 'absensi-esq-kedua' ? 'selected' : '' }}>Absensi ESQ Hari Kedua</option>
-                                            <option value="absensi-esq-ketiga" {{ old('jenis_absensi', $currentSlug) == 'absensi-esq-ketiga' ? 'selected' : '' }}>Absensi ESQ Hari Ketiga</option>
-                                            <option value="absensi-esq-keempat" {{ old('jenis_absensi', $currentSlug) == 'absensi-esq-keempat' ? 'selected' : '' }}>Absensi ESQ Hari Keempat</option>
+                                            @php
+                                                $checkEsq1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-pertama', old('jenis_absensi'))) : in_array('absensi-esq-pertama', $currentSlugs);
+                                                $checkEsq2 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-kedua', old('jenis_absensi'))) : in_array('absensi-esq-kedua', $currentSlugs);
+                                                $checkEsq3 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-ketiga', old('jenis_absensi'))) : in_array('absensi-esq-ketiga', $currentSlugs);
+                                                $checkEsq4 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-keempat', old('jenis_absensi'))) : in_array('absensi-esq-keempat', $currentSlugs);
+                                            @endphp
+                                            <option value="absensi-esq-pertama" {{ $checkEsq1 ? 'selected' : '' }}>Absensi ESQ Hari Pertama</option>
+                                            <option value="absensi-esq-kedua" {{ $checkEsq2 ? 'selected' : '' }}>Absensi ESQ Hari Kedua</option>
+                                            <option value="absensi-esq-ketiga" {{ $checkEsq3 ? 'selected' : '' }}>Absensi ESQ Hari Ketiga</option>
+                                            <option value="absensi-esq-keempat" {{ $checkEsq4 ? 'selected' : '' }}>Absensi ESQ Hari Keempat</option>
                                         </optgroup>
                                         <optgroup label="MILAD UIS">
-                                            <option value="absensi-milad-pertama" {{ old('jenis_absensi', $currentSlug) == 'absensi-milad-pertama' ? 'selected' : '' }}>Absensi MILAD Hari Pertama</option>
-                                            <option value="absensi-milad-kedua" {{ old('jenis_absensi', $currentSlug) == 'absensi-milad-kedua' ? 'selected' : '' }}>Absensi MILAD Hari Kedua</option>
+                                            @php
+                                                $checkMilad1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-milad-pertama', old('jenis_absensi'))) : in_array('absensi-milad-pertama', $currentSlugs);
+                                                $checkMilad2 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-milad-kedua', old('jenis_absensi'))) : in_array('absensi-milad-kedua', $currentSlugs);
+                                            @endphp
+                                            <option value="absensi-milad-pertama" {{ $checkMilad1 ? 'selected' : '' }}>Absensi MILAD Hari Pertama</option>
+                                            <option value="absensi-milad-kedua" {{ $checkMilad2 ? 'selected' : '' }}>Absensi MILAD Hari Kedua</option>
                                         </optgroup>
                                         <optgroup label="Kuliah Umum">
-                                            <option value="absensi-kuliah-umum-pertama" {{ old('jenis_absensi', $currentSlug) == 'absensi-kuliah-umum-pertama' ? 'selected' : '' }}>Absensi Kuliah Umum Hari Pertama</option>
+                                            @php
+                                                $checkKu1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-kuliah-umum-pertama', old('jenis_absensi'))) : in_array('absensi-kuliah-umum-pertama', $currentSlugs);
+                                            @endphp
+                                            <option value="absensi-kuliah-umum-pertama" {{ $checkKu1 ? 'selected' : '' }}>Absensi Kuliah Umum Hari Pertama</option>
                                         </optgroup>
                                     @endif
                                 </select>
@@ -252,7 +273,20 @@
 
                         <div class="col-md-6">
                             <label for="url_external" class="form-label">Link Eksternal</label>
-                            <input type="url" class="form-control @error('url_external') is-invalid @enderror" id="url_external" name="url_external" value="{{ old('url_external', $kepanitiaan->url_external) }}" placeholder="https://">
+                            @php
+                                $externalOnly = '';
+                                if (!empty($kepanitiaan->url_external)) {
+                                    $parts = explode(',', $kepanitiaan->url_external);
+                                    $nonAbsensi = array_filter($parts, function($p) {
+                                        foreach (\App\Models\AbsensiSetting::defaults() as $s => $c) {
+                                            if (str_contains($p, $s)) return false;
+                                        }
+                                        return true;
+                                    });
+                                    $externalOnly = implode(',', $nonAbsensi);
+                                }
+                            @endphp
+                            <input type="url" class="form-control @error('url_external') is-invalid @enderror" id="url_external" name="url_external" value="{{ old('url_external', $externalOnly) }}" placeholder="https://">
                             @error('url_external')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -324,6 +358,12 @@
             theme: 'bootstrap-5',
             placeholder: "Cari & pilih rekan kerja...",
             allowClear: true
+        });
+        $('#jenis_absensi').select2({
+            theme: 'bootstrap-5',
+            placeholder: "Pilih satu atau beberapa jenis absensi...",
+            allowClear: true,
+            width: '100%'
         });
     });
 </script>

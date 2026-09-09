@@ -75,14 +75,13 @@
                                 <label for="jenis_absensi" class="form-label fw-bold text-primary d-flex align-items-center gap-2 mb-1">
                                     <i class="bi bi-qr-code-scan text-primary fs-5"></i> Jenis Absensi Kepanitiaan
                                 </label>
-                                <div class="text-muted small mb-2">Pilih jenis absensi yang terhubung dengan kegiatan kepanitiaan ini agar tombol <strong>Barcode Absensi</strong> otomatis tampil pada daftar tugas.</div>
-                                <select class="form-select @error('jenis_absensi') is-invalid @enderror" id="jenis_absensi" name="jenis_absensi">
-                                    <option value="">-- Pilih Jenis Absensi (Opsional) --</option>
+                                <div class="text-muted small mb-2">Pilih satu atau beberapa jenis absensi yang terhubung dengan kegiatan kepanitiaan ini agar tombol <strong>Barcode Absensi</strong> otomatis tampil pada daftar tugas.</div>
+                                <select class="form-select @error('jenis_absensi') is-invalid @enderror" id="jenis_absensi" name="jenis_absensi[]" multiple="multiple">
                                     @if(isset($absensiSessions) && $absensiSessions->count() > 0)
                                         @foreach($absensiSessions as $kategoriAbsensi => $sessions)
                                             <optgroup label="Sesi Absensi {{ $kategoriAbsensi }}">
                                                 @foreach($sessions as $sess)
-                                                    <option value="{{ $sess->slug }}" {{ old('jenis_absensi') == $sess->slug ? 'selected' : '' }}>
+                                                    <option value="{{ $sess->slug }}" {{ (is_array(old('jenis_absensi')) && in_array($sess->slug, old('jenis_absensi'))) ? 'selected' : (old('jenis_absensi') == $sess->slug ? 'selected' : '') }}>
                                                         {{ $sess->nama }}
                                                     </option>
                                                 @endforeach
@@ -90,22 +89,22 @@
                                         @endforeach
                                     @else
                                         <optgroup label="PKKMB">
-                                            <option value="absensi-pkkmb-pertama" {{ old('jenis_absensi') == 'absensi-pkkmb-pertama' ? 'selected' : '' }}>Absensi PKKMB Hari Pertama</option>
-                                            <option value="absensi-pkkmb-kedua" {{ old('jenis_absensi') == 'absensi-pkkmb-kedua' ? 'selected' : '' }}>Absensi PKKMB Hari Kedua</option>
-                                            <option value="absensi-pkkmb-ketiga" {{ old('jenis_absensi') == 'absensi-pkkmb-ketiga' ? 'selected' : '' }}>Absensi PKKMB Hari Ketiga</option>
+                                            <option value="absensi-pkkmb-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi PKKMB Hari Pertama</option>
+                                            <option value="absensi-pkkmb-kedua" {{ (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-kedua', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi PKKMB Hari Kedua</option>
+                                            <option value="absensi-pkkmb-ketiga" {{ (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-ketiga', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi PKKMB Hari Ketiga</option>
                                         </optgroup>
                                         <optgroup label="ESQ">
-                                            <option value="absensi-esq-pertama" {{ old('jenis_absensi') == 'absensi-esq-pertama' ? 'selected' : '' }}>Absensi ESQ Hari Pertama</option>
-                                            <option value="absensi-esq-kedua" {{ old('jenis_absensi') == 'absensi-esq-kedua' ? 'selected' : '' }}>Absensi ESQ Hari Kedua</option>
-                                            <option value="absensi-esq-ketiga" {{ old('jenis_absensi') == 'absensi-esq-ketiga' ? 'selected' : '' }}>Absensi ESQ Hari Ketiga</option>
-                                            <option value="absensi-esq-keempat" {{ old('jenis_absensi') == 'absensi-esq-keempat' ? 'selected' : '' }}>Absensi ESQ Hari Keempat</option>
+                                            <option value="absensi-esq-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Pertama</option>
+                                            <option value="absensi-esq-kedua" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-kedua', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Kedua</option>
+                                            <option value="absensi-esq-ketiga" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-ketiga', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Ketiga</option>
+                                            <option value="absensi-esq-keempat" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-keempat', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Keempat</option>
                                         </optgroup>
                                         <optgroup label="MILAD UIS">
-                                            <option value="absensi-milad-pertama" {{ old('jenis_absensi') == 'absensi-milad-pertama' ? 'selected' : '' }}>Absensi MILAD Hari Pertama</option>
-                                            <option value="absensi-milad-kedua" {{ old('jenis_absensi') == 'absensi-milad-kedua' ? 'selected' : '' }}>Absensi MILAD Hari Kedua</option>
+                                            <option value="absensi-milad-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-milad-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi MILAD Hari Pertama</option>
+                                            <option value="absensi-milad-kedua" {{ (is_array(old('jenis_absensi')) && in_array('absensi-milad-kedua', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi MILAD Hari Kedua</option>
                                         </optgroup>
                                         <optgroup label="Kuliah Umum">
-                                            <option value="absensi-kuliah-umum-pertama" {{ old('jenis_absensi') == 'absensi-kuliah-umum-pertama' ? 'selected' : '' }}>Absensi Kuliah Umum Hari Pertama</option>
+                                            <option value="absensi-kuliah-umum-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-kuliah-umum-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi Kuliah Umum Hari Pertama</option>
                                         </optgroup>
                                     @endif
                                 </select>
@@ -198,6 +197,12 @@
             theme: 'bootstrap-5',
             placeholder: "Cari & pilih rekan kerja...",
             allowClear: true
+        });
+        $('#jenis_absensi').select2({
+            theme: 'bootstrap-5',
+            placeholder: "Pilih satu atau beberapa jenis absensi...",
+            allowClear: true,
+            width: '100%'
         });
     });
 </script>
