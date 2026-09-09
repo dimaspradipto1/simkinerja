@@ -58,6 +58,31 @@
             margin-bottom: 0;
         }
 
+        /* Pending Extension Alert Styling */
+        .btn-approve-ext {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 8px 18px !important;
+            font-size: 0.83rem !important;
+            white-space: nowrap !important;
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.22) !important;
+            transition: all 0.2s ease-in-out !important;
+            width: auto;
+        }
+        .btn-approve-ext:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+            color: #ffffff !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35) !important;
+        }
+        @media (max-width: 991.98px) {
+            .btn-approve-ext {
+                width: 100% !important;
+            }
+        }
+
         .dataTables_scrollHeadInner,
         .dataTables_scrollHeadInner > table,
         .dataTables_scrollBody > table {

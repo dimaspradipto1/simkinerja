@@ -233,6 +233,14 @@
                       <span>Analisis Keterlambatan</span>
                   </a>
               </li>
+
+              <li class="nav-item">
+                  <a class="{{ request()->routeIs('lpj.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                      href="{{ route('lpj.index') }}">
+                      <i class="bi bi-file-earmark-text-fill"></i>
+                      <span>Laporan Pertanggungjawaban (LPJ)</span>
+                  </a>
+              </li>
           @endif
 
           @if (Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin()))

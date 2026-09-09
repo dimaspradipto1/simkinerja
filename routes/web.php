@@ -30,6 +30,7 @@ use App\Http\Controllers\AbsensiKuliahUmumPertamaController;
 use App\Http\Controllers\RekapitulasiAbsensiController;
 use App\Http\Controllers\ScanAbsensiController;
 use App\Http\Controllers\AbsensiSettingController;
+use App\Http\Controllers\LpjController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -142,6 +143,10 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('analisis-keterlambatan/export-pdf', [AnalisisKeterlambatanController::class, 'exportPdf'])->name('analisis-keterlambatan.export-pdf');
     Route::post('analisis-keterlambatan/{id}/saran-pimpinan', [AnalisisKeterlambatanController::class, 'updateSaranPimpinan'])->name('analisis-keterlambatan.update-saran');
     Route::resource('analisis-keterlambatan', AnalisisKeterlambatanController::class)->only(['index']);
+
+    // LPJ (Laporan Pertanggungjawaban) Routes
+    Route::get('lpj/{lpj}/download', [LpjController::class, 'download'])->name('lpj.download');
+    Route::resource('lpj', LpjController::class);
 
     // Milestone Routes
     Route::post('milestone', [MilestoneController::class, 'store'])->name('milestone.store');
