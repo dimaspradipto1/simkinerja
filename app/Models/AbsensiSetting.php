@@ -96,12 +96,40 @@ class AbsensiSetting
     }
 
     /**
-     * Retrieve all attendance session settings as objects.
+     * Retrieve all attendance session settings as objects from database.
      */
     public static function all(): Collection
     {
-        $filePath = self::getFilePath();
+        try {
+            $dbSessions = \App\Models\KepanitiaanSesiAbsensi::with('kepanitiaan')->get();
+            if ($dbSessions->isNotEmpty()) {
+                return $dbSessions->map(function ($s) {
+                    $kategori = 'Kepanitiaan';
+                    if ($s->kepanitiaan && !empty($s->kepanitiaan->uraian_tugas)) {
+                        $kategori = $s->kepanitiaan->uraian_tugas;
+                    } elseif (!empty($s->legacy_slug)) {
+                        if (str_contains($s->legacy_slug, 'pkkmb')) $kategori = 'PKKMB';
+                        elseif (str_contains($s->legacy_slug, 'esq')) $kategori = 'ESQ';
+                        elseif (str_contains($s->legacy_slug, 'milad')) $kategori = 'MILAD';
+                        elseif (str_contains($s->legacy_slug, 'kuliah-umum')) $kategori = 'Kuliah Umum';
+                    }
 
+                    return (object) [
+                        'id' => $s->id,
+                        'token' => $s->token,
+                        'slug' => $s->legacy_slug ?: ('sesi-' . $s->id),
+                        'kategori' => $kategori,
+                        'nama' => $s->nama_sesi,
+                        'is_active' => (bool) $s->is_active,
+                        'keterangan' => 'Tanggal: ' . ($s->tanggal ? date('d/m/Y', strtotime($s->tanggal)) : '-') . ' | Token: ' . $s->token,
+                    ];
+                });
+            }
+        } catch (\Exception $e) {
+            // fallback
+        }
+
+        $filePath = self::getFilePath();
         if (!File::exists($filePath)) {
             $defaults = self::defaults();
             File::ensureDirectoryExists(dirname($filePath));
@@ -116,21 +144,10 @@ class AbsensiSetting
             }
         }
 
-        // Merge any new defaults if missing
-        $defaults = self::defaults();
-        $updated = false;
-        foreach ($defaults as $key => $val) {
-            if (!isset($data[$key])) {
-                $data[$key] = $val;
-                $updated = true;
-            }
-        }
-        if ($updated) {
-            File::put($filePath, json_encode($data, JSON_PRETTY_PRINT));
-        }
-
         return collect($data)->map(function ($item) {
             return (object) [
+                'id' => null,
+                'token' => null,
                 'slug' => $item['slug'],
                 'kategori' => $item['kategori'],
                 'nama' => $item['nama'],
@@ -153,8 +170,43 @@ class AbsensiSetting
      */
     public static function isActive(string $slug): bool
     {
+        $session = \App\Models\KepanitiaanSesiAbsensi::where('legacy_slug', $slug)
+            ->orWhere('token', $slug)
+            ->first();
+
+        if ($session) {
+            return (bool) $session->is_active;
+        }
+
         $statuses = self::getAllStatuses();
         return $statuses[$slug] ?? true;
+    }
+
+    /**
+     * Set active status directly.
+     */
+    public static function setStatus(string $slug, bool $isActive): void
+    {
+        $session = \App\Models\KepanitiaanSesiAbsensi::where('legacy_slug', $slug)
+            ->orWhere('token', $slug)
+            ->first();
+
+        if ($session) {
+            $session->is_active = $isActive;
+            $session->save();
+        }
+
+        $filePath = self::getFilePath();
+        if (File::exists($filePath)) {
+            $content = File::get($filePath);
+            $data = json_decode($content, true) ?: [];
+            if (isset($data[$slug])) {
+                $data[$slug]['is_active'] = $isActive;
+                File::put($filePath, json_encode($data, JSON_PRETTY_PRINT));
+            }
+        }
+
+        self::clearCache();
     }
 
     /**
@@ -170,6 +222,30 @@ class AbsensiSetting
      */
     public static function toggle(string $slug): object
     {
+        $session = \App\Models\KepanitiaanSesiAbsensi::where('legacy_slug', $slug)
+            ->orWhere('token', $slug)
+            ->first();
+
+        if (!$session && str_starts_with($slug, 'sesi-')) {
+            $id = (int) str_replace('sesi-', '', $slug);
+            $session = \App\Models\KepanitiaanSesiAbsensi::find($id);
+        }
+
+        if ($session) {
+            $session->is_active = !$session->is_active;
+            $session->save();
+
+            self::clearCache();
+
+            return (object) [
+                'id' => $session->id,
+                'token' => $session->token,
+                'slug' => $session->legacy_slug ?: ('sesi-' . $session->id),
+                'nama' => $session->nama_sesi,
+                'is_active' => (bool) $session->is_active,
+            ];
+        }
+
         $filePath = self::getFilePath();
         $items = self::all()->keyBy('slug')->toArray();
 

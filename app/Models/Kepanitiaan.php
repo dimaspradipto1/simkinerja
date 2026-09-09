@@ -122,4 +122,9 @@ class Kepanitiaan extends Model
     {
         return $this->morphMany(Milestone::class, 'milestonable');
     }
+
+    public function sesiAbsensis()
+    {
+        return $this->hasMany(KepanitiaanSesiAbsensi::class, 'kepanitiaan_id');
+    }
 }

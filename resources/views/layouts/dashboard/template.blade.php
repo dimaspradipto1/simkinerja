@@ -406,14 +406,23 @@
         // Global Barcode Absensi Modal Handler
         let activeBarcodeSession = 'datang';
         let currentBarcodeSlug = '';
+        let currentBarcodeToken = '';
+        let currentBarcodeScanUrl = '';
         let currentBarcodeUrl = '';
         let barcodeCountdown = 60;
         let barcodeTimer = null;
 
         function refreshBarcodeQr() {
-            if (!currentBarcodeSlug) return;
+            if (!currentBarcodeSlug && !currentBarcodeToken && !currentBarcodeScanUrl) return;
             const timestamp = Math.floor(Date.now() / 60000);
-            const scanUrl = "{{ url('') }}/" + currentBarcodeSlug + "/scan-proses?session=" + activeBarcodeSession + "&t=" + timestamp;
+            let scanUrl = '';
+            if (currentBarcodeScanUrl) {
+                scanUrl = currentBarcodeScanUrl + (currentBarcodeScanUrl.includes('?') ? '&' : '?') + "session=" + activeBarcodeSession + "&t=" + timestamp;
+            } else if (currentBarcodeToken) {
+                scanUrl = "{{ url('presensi/scan-proses') }}/" + currentBarcodeToken + "?session=" + activeBarcodeSession + "&t=" + timestamp;
+            } else {
+                scanUrl = "{{ url('') }}/" + currentBarcodeSlug + "/scan-proses?session=" + activeBarcodeSession + "&t=" + timestamp;
+            }
             const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(scanUrl);
             $('#barcode-qr-img').attr('src', qrApi);
         }
@@ -446,7 +455,7 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'Sesi Absensi Ditutup',
-                    html: `Sesi presensi <strong>${sessionTitle}</strong> saat ini sedang <strong>Nonaktif (Tutup)</strong>.<br><small class="text-muted">Administrator dapat mengaktifkan sesi ini melalui menu <strong>Pengaturan &gt; Status Absensi</strong>.</small>`,
+                    html: `Sesi presensi <strong>${sessionTitle}</strong> saat ini sedang <strong>Nonaktif (Tutup / Dikunci)</strong>.<br><small class="text-muted">Administrator atau Panitia dapat mengaktifkan sesi ini melalui menu Kelola Presensi.</small>`,
                     confirmButtonText: 'Tutup',
                     confirmButtonColor: '#0d6efd'
                 });
@@ -454,10 +463,12 @@
             }
 
             currentBarcodeSlug = btn.data('slug') || '';
-            currentBarcodeUrl = btn.data('url') || ("{{ url('') }}/" + currentBarcodeSlug);
+            currentBarcodeToken = btn.data('token') || '';
+            currentBarcodeScanUrl = btn.data('scan-url') || '';
+            currentBarcodeUrl = btn.data('url') || (currentBarcodeScanUrl || ("{{ url('') }}/" + currentBarcodeSlug));
 
             $('#modalBarcodeAbsensiLabel').text(sessionTitle);
-            $('#btn-visit-absensi').attr('href', currentBarcodeUrl);
+            $('#btn-visit-absensi').attr('href', currentBarcodeScanUrl || currentBarcodeUrl);
 
             activeBarcodeSession = 'datang';
             $('#btn-barcode-datang').removeClass('btn-outline-success').addClass('btn-success');
@@ -706,52 +717,49 @@
                 $('#modalPilihSesiSublabel').text('Pilih sesi untuk menampilkan barcode kehadiran');
             }
 
+            // Filter hanya sesi yang aktif (sesi yang dikunci tidak perlu ditampilkan)
+            const activeSessionsList = sessions.filter(function(sess) {
+                return (sess.is_active === true || sess.is_active === 1 || sess.is_active === "1" || sess.is_active === "true");
+            });
+
+            if (activeSessionsList.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sesi Ditutup',
+                    text: 'Saat ini seluruh sesi absensi terkait sedang dinonaktifkan (dikunci) oleh Administrator.',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return;
+            }
+
             let html = '';
-            sessions.forEach(function(sess) {
-                const isActive = (sess.is_active === true || sess.is_active === 1 || sess.is_active === "1" || sess.is_active === "true");
-                const iconClass = type === 'scan' 
-                    ? (isActive ? 'bi-qr-code-scan text-primary' : 'bi-lock-fill text-muted') 
-                    : (isActive ? 'bi-qr-code text-dark' : 'bi-lock-fill text-muted');
+            activeSessionsList.forEach(function(sess) {
+                const iconClass = type === 'scan' ? 'bi-qr-code-scan text-primary' : 'bi-qr-code text-dark';
                 const actionLabel = type === 'scan' ? 'Buka Scanner Kamera' : 'Buka QR Barcode';
-
-                const statusBadge = isActive 
-                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-check-circle-fill me-1"></i>Aktif</span>'
-                    : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-lock-fill me-1"></i>Nonaktif (Tutup)</span>';
-
-                const subtext = isActive
-                    ? `<span class="text-muted small" style="font-size: 0.78rem;"><i class="bi bi-arrow-right-short"></i> ${actionLabel}</span>`
-                    : `<span class="text-danger small" style="font-size: 0.75rem;"><i class="bi bi-exclamation-circle me-1"></i>Sesi sedang dinonaktifkan oleh Admin</span>`;
-
-                const cardStyle = isActive 
-                    ? 'cursor: pointer; background-color: #ffffff;' 
-                    : 'cursor: not-allowed; background-color: #f8fafc; border-style: dashed !important; opacity: 0.85;';
-
-                const rightIcon = isActive 
-                    ? '<i class="bi bi-chevron-right text-primary fs-5"></i>' 
-                    : '<i class="bi bi-lock-fill text-muted fs-5"></i>';
+                const token = sess.token || '';
+                const scanUrl = sess.scan_url || '';
 
                 html += `
                 <div class="card p-3 shadow-2xs rounded-3 session-choice-item mb-2 border" 
-                     style="${cardStyle}" 
+                     style="cursor: pointer; background-color: #ffffff;" 
                      data-slug="${sess.slug}" 
+                     data-token="${token}"
+                     data-scan-url="${scanUrl}"
                      data-title="${sess.nama}" 
                      data-url="${sess.url}" 
                      data-type="${type}"
-                     data-active="${isActive ? '1' : '0'}">
+                     data-active="1">
                     <div class="d-flex align-items-center justify-content-between gap-2">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle p-2 ${isActive ? 'bg-light' : 'bg-secondary-subtle'} border d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                            <div class="rounded-circle p-2 bg-light border d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
                                 <i class="bi ${iconClass} fs-5"></i>
                             </div>
                             <div>
-                                <div class="d-flex align-items-center gap-2 flex-wrap mb-0.5">
-                                    <span class="fw-bold text-dark" style="font-size: 0.92rem;">${sess.nama}</span>
-                                    ${statusBadge}
-                                </div>
-                                <div>${subtext}</div>
+                                <div class="fw-bold text-dark" style="font-size: 0.92rem;">${sess.nama}</div>
+                                <div class="text-muted small" style="font-size: 0.78rem;"><i class="bi bi-arrow-right-short"></i> ${actionLabel}</div>
                             </div>
                         </div>
-                        ${rightIcon}
+                        <i class="bi bi-chevron-right text-primary fs-5"></i>
                     </div>
                 </div>
                 `;
@@ -774,7 +782,7 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'Sesi Absensi Ditutup',
-                    html: `Sesi presensi <strong>${title}</strong> saat ini sedang <strong>Nonaktif (Tutup)</strong>.<br><small class="text-muted">Administrator dapat mengaktifkan sesi ini melalui menu <strong>Pengaturan &gt; Status Absensi</strong>.</small>`,
+                    html: `Sesi presensi <strong>${title}</strong> saat ini sedang <strong>Nonaktif (Tutup / Dikunci)</strong>.`,
                     confirmButtonText: 'Tutup',
                     confirmButtonColor: '#0d6efd'
                 });
@@ -782,6 +790,8 @@
             }
 
             const slug = $(this).data('slug');
+            const token = $(this).data('token');
+            const scanUrl = $(this).data('scan-url');
             const url = $(this).data('url');
             const type = $(this).data('type');
 
@@ -795,17 +805,260 @@
                 if (type === 'scan') {
                     const dummyBtn = $('<button>')
                         .data('slug', slug)
+                        .data('token', token)
+                        .data('scan-url', scanUrl)
                         .data('title', title)
                         .data('url', url);
                     window.openScanBarcodeModal(dummyBtn);
                 } else {
                     const dummyBtn = $('<button>')
                         .data('slug', slug)
+                        .data('token', token)
+                        .data('scan-url', scanUrl)
                         .data('title', title)
                         .data('url', url);
                     window.openBarcodeModal(dummyBtn);
                 }
             }, 300);
+        });
+
+        // Handler Kelola Sesi Presensi Kepanitiaan (Universal Dynamic Attendance)
+        let currentManageKepanitiaanId = null;
+
+        window.openManageSesiModal = function(kepanitiaanId, kepanitiaanTitle) {
+            currentManageKepanitiaanId = kepanitiaanId;
+            $('#modalKelolaSesiTitle').text(kepanitiaanTitle || 'Kepanitiaan');
+            $('#formTambahSesiContainer').hide();
+            $('#btnToggleTambahSesi').html('<i class="bi bi-plus-circle me-1"></i> Tambah Sesi Baru');
+            $('#input_nama_sesi').val('');
+            $('#input_tanggal_sesi').val(new Date().toISOString().split('T')[0]);
+
+            loadSesiPresensiList(kepanitiaanId);
+
+            const modalEl = document.getElementById('modalKelolaSesiPresensi');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        };
+
+        function loadSesiPresensiList(kepanitiaanId) {
+            $('#tableSesiPresensiBody').html('<tr><td colspan="6" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat daftar sesi presensi...</td></tr>');
+
+            $.ajax({
+                url: "{{ url('kepanitiaan') }}/" + kepanitiaanId + "/sesi",
+                type: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success && res.sesis) {
+                        renderSesiPresensiTable(res.sesis);
+                    } else {
+                        $('#tableSesiPresensiBody').html('<tr><td colspan="6" class="text-center py-3 text-muted">Gagal memuat sesi.</td></tr>');
+                    }
+                },
+                error: function() {
+                    $('#tableSesiPresensiBody').html('<tr><td colspan="6" class="text-center py-3 text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Terjadi kesalahan saat memuat data.</td></tr>');
+                }
+            });
+        }
+
+        function renderSesiPresensiTable(sesis) {
+            if (!sesis || sesis.length === 0) {
+                $('#tableSesiPresensiBody').html('<tr><td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-calendar-x fs-4 d-block mb-1 text-secondary"></i>Belum ada sesi presensi untuk kepanitiaan ini.<br><small class="text-primary">Klik "+ Tambah Sesi Baru" di atas untuk membuat sesi pertama.</small></td></tr>');
+                return;
+            }
+
+            let html = '';
+            sesis.forEach(function(s, idx) {
+                const badgeClass = s.is_active ? 'bg-success' : 'bg-secondary';
+                const badgeText = s.is_active ? 'Aktif' : 'Tutup (Kunci)';
+                const checked = s.is_active ? 'checked' : '';
+
+                html += `
+                <tr id="row-manage-sesi-${s.id}">
+                    <td class="text-center fw-semibold text-muted" style="vertical-align: middle;">${idx + 1}</td>
+                    <td style="vertical-align: middle;">
+                        <div class="fw-bold text-dark">${s.nama_sesi}</div>
+                        <div class="small text-muted font-monospace" style="font-size: 0.76rem;"><i class="bi bi-key me-1"></i>Token: ${s.token}</div>
+                    </td>
+                    <td class="text-center" style="vertical-align: middle;">
+                        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.78rem;">${s.tanggal || '-'}</span>
+                    </td>
+                    <td class="text-center" style="vertical-align: middle;">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold" style="font-size: 0.8rem;">
+                            <i class="bi bi-people-fill me-1"></i>${s.total_presensi} Hadir
+                        </span>
+                    </td>
+                    <td class="text-center" style="vertical-align: middle;">
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <span id="badge-manage-sesi-${s.id}" class="badge ${badgeClass} px-2 py-1" style="font-size: 0.75rem;">${badgeText}</span>
+                            <div class="form-check form-switch m-0 p-0" style="min-height: auto;">
+                                <input class="form-check-input toggle-manage-sesi ms-0" type="checkbox" role="switch"
+                                       data-id="${s.id}"
+                                       data-nama="${s.nama_sesi}"
+                                       style="width: 2.4em; height: 1.2em; cursor: pointer;"
+                                       ${checked}>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center" style="vertical-align: middle;">
+                        <div class="btn-group btn-group-sm">
+                            <a href="${s.export_url}" class="btn btn-outline-success" title="Download Rekap Presensi Excel" target="_blank">
+                                <i class="bi bi-file-earmark-excel"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-delete-sesi" data-id="${s.id}" data-nama="${s.nama_sesi}" title="Hapus Sesi">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            });
+
+            $('#tableSesiPresensiBody').html(html);
+        }
+
+        $(document).on('click', '#btnToggleTambahSesi', function() {
+            const container = $('#formTambahSesiContainer');
+            if (container.is(':visible')) {
+                container.slideUp(200);
+                $(this).html('<i class="bi bi-plus-circle me-1"></i> Tambah Sesi Baru');
+            } else {
+                container.slideDown(200);
+                $(this).html('<i class="bi bi-dash-circle me-1"></i> Batal Tambah Sesi');
+                $('#input_nama_sesi').focus();
+            }
+        });
+
+        $(document).on('submit', '#formTambahSesiPresensi', function(e) {
+            e.preventDefault();
+            if (!currentManageKepanitiaanId) return;
+
+            const submitBtn = $(this).find('button[type="submit"]');
+            submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
+
+            $.ajax({
+                url: "{{ url('kepanitiaan') }}/" + currentManageKepanitiaanId + "/sesi",
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                success: function(res) {
+                    submitBtn.prop('disabled', false).html('<i class="bi bi-save me-1"></i> Simpan Sesi');
+                    if (res.success) {
+                        $('#input_nama_sesi').val('');
+                        $('#formTambahSesiContainer').slideUp(200);
+                        $('#btnToggleTambahSesi').html('<i class="bi bi-plus-circle me-1"></i> Tambah Sesi Baru');
+                        loadSesiPresensiList(currentManageKepanitiaanId);
+                        if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
+                            window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
+                        }
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: res.message,
+                            timer: 1800,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Gagal menambahkan sesi.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    submitBtn.prop('disabled', false).html('<i class="bi bi-save me-1"></i> Simpan Sesi');
+                    let msg = 'Terjadi kesalahan validasi atau server.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Swal.fire('Gagal', msg, 'error');
+                }
+            });
+        });
+
+        $(document).on('change', '.toggle-manage-sesi', function() {
+            const sesiId = $(this).data('id');
+            const sesiNama = $(this).data('nama');
+            const isChecked = $(this).is(':checked');
+            const switchEl = $(this);
+
+            $.ajax({
+                url: "{{ url('presensi/sesi') }}/" + sesiId + "/toggle",
+                type: 'POST',
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                success: function(res) {
+                    if (res.success) {
+                        const badge = $('#badge-manage-sesi-' + sesiId);
+                        if (res.is_active) {
+                            badge.removeClass('bg-secondary').addClass('bg-success').text('Aktif');
+                        } else {
+                            badge.removeClass('bg-success').addClass('bg-secondary').text('Tutup (Kunci)');
+                        }
+                        if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
+                            window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
+                        }
+                    } else {
+                        switchEl.prop('checked', !isChecked);
+                        Swal.fire('Gagal', res.message || 'Gagal mengubah status sesi.', 'error');
+                    }
+                },
+                error: function() {
+                    switchEl.prop('checked', !isChecked);
+                    Swal.fire('Error', 'Gagal menghubungi server.', 'error');
+                }
+            });
+        });
+
+        $(document).on('click', '.btn-delete-sesi', function() {
+            const sesiId = $(this).data('id');
+            const sesiNama = $(this).data('nama');
+
+            Swal.fire({
+                title: 'Hapus Sesi Presensi?',
+                html: `Apakah Anda yakin ingin menghapus sesi <strong>${sesiNama}</strong>?<br><small class="text-danger">Seluruh data presensi pada sesi ini juga akan terhapus.</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ url('presensi/sesi') }}/" + sesiId,
+                        type: 'POST',
+                        data: {
+                            _method: 'DELETE',
+                            _token: '{{ csrf_token() }}'
+                        },
+                        dataType: 'json',
+                        success: function(res) {
+                            if (res.success) {
+                                $('#row-manage-sesi-' + sesiId).fadeOut(300, function() { $(this).remove(); });
+                                if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
+                                    window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
+                                }
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Terhapus!',
+                                    text: res.message,
+                                    timer: 1800,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire('Gagal', res.message, 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Error', 'Terjadi kesalahan saat menghapus sesi.', 'error');
+                        }
+                    });
+                }
+            });
         });
     </script>
 
@@ -976,6 +1229,80 @@
                             <i class="bi bi-x-circle me-1"></i> Tutup Kamera
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Kelola Sesi Presensi Kepanitiaan (Universal Dynamic Attendance) -->
+    <div class="modal fade" id="modalKelolaSesiPresensi" tabindex="-1" aria-labelledby="modalKelolaSesiPresensiLabel" aria-hidden="true" style="z-index: 1065;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden;">
+                <div class="modal-header bg-dark text-white py-3 px-4 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-calendar2-range fs-5 text-primary"></i>
+                        <div>
+                            <h6 class="modal-title fw-bold mb-0 text-white" id="modalKelolaSesiPresensiLabel">Kelola Sesi Presensi</h6>
+                            <small class="text-white-50" id="modalKelolaSesiTitle">Kepanitiaan</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- Action Top Bar -->
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Sesi yang <strong>Tutup (Kunci)</strong> otomatis disembunyikan dari peserta.</span>
+                        <button type="button" id="btnToggleTambahSesi" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm fw-semibold">
+                            <i class="bi bi-plus-circle me-1"></i> Tambah Sesi Baru
+                        </button>
+                    </div>
+
+                    <!-- Inline Form Tambah Sesi Baru -->
+                    <div id="formTambahSesiContainer" class="card border-0 shadow-sm rounded-3 mb-3 p-3 bg-white" style="display: none; border-left: 4px solid #0d6efd !important;">
+                        <h6 class="fw-bold text-dark mb-2 small"><i class="bi bi-calendar-plus me-1 text-primary"></i> Form Tambah Sesi Presensi Baru</h6>
+                        <form id="formTambahSesiPresensi">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-7">
+                                    <label class="form-label small fw-semibold text-secondary mb-1">Nama Sesi Presensi <span class="text-danger">*</span></label>
+                                    <input type="text" name="nama_sesi" id="input_nama_sesi" class="form-control form-control-sm" placeholder="Contoh: Absensi Hari Ke-1, Rapat Panitia..." required>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label class="form-label small fw-semibold text-secondary mb-1">Tanggal Pelaksanaan</label>
+                                    <input type="date" name="tanggal" id="input_tanggal_sesi" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold">
+                                        <i class="bi bi-save me-1"></i> Simpan
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Table Sesi Presensi Container -->
+                    <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center" style="width: 45px;">#</th>
+                                        <th>Nama Sesi & Token</th>
+                                        <th class="text-center" style="width: 110px;">Tanggal</th>
+                                        <th class="text-center" style="width: 110px;">Kehadiran</th>
+                                        <th class="text-center" style="width: 160px;">Status Sesi</th>
+                                        <th class="text-center" style="width: 90px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableSesiPresensiBody">
+                                    <!-- Loaded via AJAX -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top py-2 px-4 justify-content-between">
+                    <span class="text-muted small">QR Code dan URL dibuat secara dinamis &amp; otomatis</span>
+                    <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill fw-semibold" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>

@@ -176,10 +176,22 @@ class KepanitiaanController extends Controller
                     $absensiSessionsList = $this->resolveAbsensiSessions($row);
                     if (!empty($absensiSessionsList)) {
                         foreach ($absensiSessionsList as $absensiInfo) {
-                            $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug']);
+                            // Jika sesi dikunci / tidak aktif, tidak perlu ditampilkan sama sekali
+                            if (empty($absensiInfo['is_active'])) {
+                                continue;
+                            }
+
                             $myAtt = null;
-                            if ($modelClass && class_exists($modelClass)) {
-                                $myAtt = $modelClass::where('user_id', auth()->id())->first();
+                            if (!empty($absensiInfo['id'])) {
+                                $myAtt = \App\Models\KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $absensiInfo['id'])
+                                    ->where('user_id', auth()->id())
+                                    ->first();
+                            }
+                            if (!$myAtt) {
+                                $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug'] ?? null);
+                                if ($modelClass && class_exists($modelClass)) {
+                                    $myAtt = $modelClass::where('user_id', auth()->id())->first();
+                                }
                             }
 
                             $html .= \App\Models\AbsensiSetting::renderAttendanceTable($absensiInfo, $myAtt);
@@ -496,7 +508,10 @@ class KepanitiaanController extends Controller
         $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
         $isTaggedOnly = !$isOwner && !$isLeader;
 
-        $absensiSessions = $this->resolveAbsensiSessions($row);
+        // Hanya ambil sesi yang AKTIF (tidak dikunci oleh admin)
+        $absensiSessions = array_values(array_filter($this->resolveAbsensiSessions($row), function ($s) {
+            return !empty($s['is_active']);
+        }));
 
         // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
         if ($isTaggedOnly) {
@@ -518,15 +533,19 @@ class KepanitiaanController extends Controller
             if (!empty($absensiSessions)) {
                 if (count($absensiSessions) === 1) {
                     $sess = $absensiSessions[0];
-                    $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
+                    $scanUrl = $sess['scan_url'] ?? route('presensi.scan-proses', ['token' => $sess['token'] ?? '']);
+                    $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-token="' . e($sess['token'] ?? '') . '" data-scan-url="' . e($scanUrl) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
                 } else {
                     $sessionsPayload = [];
                     foreach ($absensiSessions as $sess) {
+                        $scanUrl = $sess['scan_url'] ?? route('presensi.scan-proses', ['token' => $sess['token'] ?? '']);
                         $sessionsPayload[] = [
                             'slug' => $sess['slug'],
+                            'token' => $sess['token'] ?? '',
                             'nama' => $sess['nama'],
+                            'scan_url' => $scanUrl,
                             'is_active' => (bool)($sess['is_active'] ?? true),
-                            'url'  => \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']),
+                            'url'  => $scanUrl,
                         ];
                     }
                     $sessionsJson = htmlspecialchars(json_encode($sessionsPayload), ENT_QUOTES, 'UTF-8');
@@ -571,17 +590,21 @@ class KepanitiaanController extends Controller
         if (!empty($absensiSessions)) {
             if (count($absensiSessions) === 1) {
                 $sess = $absensiSessions[0];
-                $absensiUrl = \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']);
-                $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
-                $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-title="' . e($sess['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka Barcode Absensi ' . e($sess['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+                $scanUrl = $sess['scan_url'] ?? route('presensi.scan-proses', ['token' => $sess['token'] ?? '']);
+                $absensiUrl = $scanUrl;
+                $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-token="' . e($sess['token'] ?? '') . '" data-scan-url="' . e($scanUrl) . '" data-title="' . e($sess['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($sess['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
+                $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack" data-slug="' . e($sess['slug']) . '" data-token="' . e($sess['token'] ?? '') . '" data-scan-url="' . e($scanUrl) . '" data-title="' . e($sess['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka Barcode Absensi ' . e($sess['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
             } else {
                 $sessionsPayload = [];
                 foreach ($absensiSessions as $sess) {
+                    $scanUrl = $sess['scan_url'] ?? route('presensi.scan-proses', ['token' => $sess['token'] ?? '']);
                     $sessionsPayload[] = [
                         'slug' => $sess['slug'],
+                        'token' => $sess['token'] ?? '',
                         'nama' => $sess['nama'],
+                        'scan_url' => $scanUrl,
                         'is_active' => (bool)($sess['is_active'] ?? true),
-                        'url'  => \Illuminate\Support\Facades\Route::has($sess['slug'] . '.index') ? route($sess['slug'] . '.index') : url($sess['slug']),
+                        'url'  => $scanUrl,
                     ];
                 }
                 $sessionsJson = htmlspecialchars(json_encode($sessionsPayload), ENT_QUOTES, 'UTF-8');
@@ -602,7 +625,9 @@ class KepanitiaanController extends Controller
                 'tanggal' => $row->tanggal_selesai ?: ($row->tanggal_mulai ?: date('Y-m-d')),
             ]);
 
+            $safeTitle = htmlspecialchars(addslashes($firstLineTitle), ENT_QUOTES, 'UTF-8');
             $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-1">';
+            $btn .= '<button type="button" class="btn btn-outline-primary btn-manage-sesi d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" onclick="window.openManageSesiModal(' . $row->id . ', \'' . $safeTitle . '\')" title="Kelola Sesi Presensi Kepanitiaan"><i class="bi bi-calendar2-check"></i> <span>Presensi</span></button>';
             $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span>Tag</span></button>';
             $btn .= '<a href="' . $lpjUrl . '" class="btn btn-outline-success btn-create-lpj d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span>Submit LPJ</span></a>';
             $btn .= '<a href="' . $editUrl . '" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Edit Tugas"><i class="bi bi-pencil"></i> <span>Edit</span></a>';
@@ -625,21 +650,51 @@ class KepanitiaanController extends Controller
      */
     private function resolveAbsensiSessions($row): array
     {
+        // 1. Cek relasi dinamis sesiAbsensis dari database terlebih dahulu
+        if ($row && method_exists($row, 'sesiAbsensis')) {
+            $dbSessions = $row->sesiAbsensis;
+            if ($dbSessions && $dbSessions->count() > 0) {
+                $matched = [];
+                foreach ($dbSessions as $s) {
+                    $matched[] = [
+                        'id' => $s->id,
+                        'token' => $s->token,
+                        'slug' => $s->legacy_slug ?: ('sesi-' . $s->id),
+                        'nama' => $s->nama_sesi,
+                        'is_active' => (bool) $s->is_active,
+                        'kategori' => 'Kepanitiaan',
+                        'scan_url' => route('presensi.scan-proses', ['token' => $s->token]),
+                        'model_type' => 'dynamic',
+                    ];
+                }
+                return array_values($matched);
+            }
+        }
+
+        // 2. Fallback untuk data lama / URL external
         $defaults = \App\Models\AbsensiSetting::defaults();
         $statuses = \App\Models\AbsensiSetting::getAllStatuses();
         $matched = [];
 
-        // 1. Cek semua slug yang cocok dari url_external
+        // Cek semua slug yang cocok dari url_external
         if (!empty($row->url_external)) {
             foreach ($defaults as $slug => $cfg) {
                 if (str_contains($row->url_external, $slug)) {
-                    $cfg['is_active'] = (bool)($statuses[$slug] ?? ($cfg['is_active'] ?? true));
+                    $dbS = \App\Models\KepanitiaanSesiAbsensi::where('legacy_slug', $slug)->first();
+                    if ($dbS) {
+                        $cfg['id'] = $dbS->id;
+                        $cfg['token'] = $dbS->token;
+                        $cfg['scan_url'] = route('presensi.scan-proses', ['token' => $dbS->token]);
+                        $cfg['is_active'] = (bool) $dbS->is_active;
+                    } else {
+                        $cfg['is_active'] = (bool)($statuses[$slug] ?? ($cfg['is_active'] ?? true));
+                    }
                     $matched[$slug] = $cfg;
                 }
             }
         }
 
-        // 2. Deteksi cerdas dari uraian_tugas jika belum ada yang cocok dari url_external
+        // Deteksi cerdas dari uraian_tugas jika belum ada yang cocok dari url_external
         if (empty($matched)) {
             $text = strtolower($row->uraian_tugas ?? '');
 
@@ -682,7 +737,15 @@ class KepanitiaanController extends Controller
             }
 
             foreach ($matched as $slug => &$cfg) {
-                $cfg['is_active'] = (bool)($statuses[$slug] ?? ($cfg['is_active'] ?? true));
+                $dbS = \App\Models\KepanitiaanSesiAbsensi::where('legacy_slug', $slug)->first();
+                if ($dbS) {
+                    $cfg['id'] = $dbS->id;
+                    $cfg['token'] = $dbS->token;
+                    $cfg['scan_url'] = route('presensi.scan-proses', ['token' => $dbS->token]);
+                    $cfg['is_active'] = (bool) $dbS->is_active;
+                } else {
+                    $cfg['is_active'] = (bool)($statuses[$slug] ?? ($cfg['is_active'] ?? true));
+                }
             }
             unset($cfg);
         }
@@ -757,6 +820,24 @@ class KepanitiaanController extends Controller
         }
 
         $kepanitiaan = Kepanitiaan::create($validated);
+
+        // Simpan sesi presensi baru jika diisi dari form
+        if ($request->filled('nama_sesi_presensi')) {
+            $sesiNames = (array) $request->input('nama_sesi_presensi');
+            $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+            foreach ($sesiNames as $idx => $sName) {
+                $trimmed = trim((string)$sName);
+                if (!empty($trimmed)) {
+                    \App\Models\KepanitiaanSesiAbsensi::create([
+                        'kepanitiaan_id' => $kepanitiaan->id,
+                        'nama_sesi' => $trimmed,
+                        'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kepanitiaan->tanggal_mulai ?: date('Y-m-d')),
+                        'token' => \Illuminate\Support\Str::random(24),
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        }
 
         if ($request->has('tagged_users')) {
             $kepanitiaan->taggedUsers()->sync($request->input('tagged_users'));
@@ -853,6 +934,24 @@ class KepanitiaanController extends Controller
         }
 
         $kepanitiaan->update($validated);
+
+        // Simpan sesi presensi baru jika ditambahkan dari form edit
+        if ($request->filled('nama_sesi_presensi')) {
+            $sesiNames = (array) $request->input('nama_sesi_presensi');
+            $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+            foreach ($sesiNames as $idx => $sName) {
+                $trimmed = trim((string)$sName);
+                if (!empty($trimmed)) {
+                    \App\Models\KepanitiaanSesiAbsensi::create([
+                        'kepanitiaan_id' => $kepanitiaan->id,
+                        'nama_sesi' => $trimmed,
+                        'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kepanitiaan->tanggal_mulai ?: date('Y-m-d')),
+                        'token' => \Illuminate\Support\Str::random(24),
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        }
 
         $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
 

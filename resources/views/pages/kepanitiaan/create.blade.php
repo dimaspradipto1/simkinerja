@@ -69,48 +69,24 @@
                             @enderror
                         </div>
 
-                        <!-- Input: Jenis Absensi Kepanitiaan -->
+                        <!-- Sesi Presensi Kepanitiaan (Dinamis & Fleksibel) -->
                         <div class="col-md-12">
                             <div class="p-3 bg-light rounded-3 border border-primary-subtle shadow-2xs">
-                                <label for="jenis_absensi" class="form-label fw-bold text-primary d-flex align-items-center gap-2 mb-1">
-                                    <i class="bi bi-qr-code-scan text-primary fs-5"></i> Jenis Absensi Kepanitiaan
-                                </label>
-                                <div class="text-muted small mb-2">Pilih satu atau beberapa jenis absensi yang terhubung dengan kegiatan kepanitiaan ini agar tombol <strong>Barcode Absensi</strong> otomatis tampil pada daftar tugas.</div>
-                                <select class="form-select @error('jenis_absensi') is-invalid @enderror" id="jenis_absensi" name="jenis_absensi[]" multiple="multiple">
-                                    @if(isset($absensiSessions) && $absensiSessions->count() > 0)
-                                        @foreach($absensiSessions as $kategoriAbsensi => $sessions)
-                                            <optgroup label="Sesi Absensi {{ $kategoriAbsensi }}">
-                                                @foreach($sessions as $sess)
-                                                    <option value="{{ $sess->slug }}" {{ (is_array(old('jenis_absensi')) && in_array($sess->slug, old('jenis_absensi'))) ? 'selected' : (old('jenis_absensi') == $sess->slug ? 'selected' : '') }}>
-                                                        {{ $sess->nama }}
-                                                    </option>
-                                                @endforeach
-                                            </optgroup>
-                                        @endforeach
-                                    @else
-                                        <optgroup label="PKKMB">
-                                            <option value="absensi-pkkmb-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi PKKMB Hari Pertama</option>
-                                            <option value="absensi-pkkmb-kedua" {{ (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-kedua', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi PKKMB Hari Kedua</option>
-                                            <option value="absensi-pkkmb-ketiga" {{ (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-ketiga', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi PKKMB Hari Ketiga</option>
-                                        </optgroup>
-                                        <optgroup label="ESQ">
-                                            <option value="absensi-esq-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Pertama</option>
-                                            <option value="absensi-esq-kedua" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-kedua', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Kedua</option>
-                                            <option value="absensi-esq-ketiga" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-ketiga', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Ketiga</option>
-                                            <option value="absensi-esq-keempat" {{ (is_array(old('jenis_absensi')) && in_array('absensi-esq-keempat', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi ESQ Hari Keempat</option>
-                                        </optgroup>
-                                        <optgroup label="MILAD UIS">
-                                            <option value="absensi-milad-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-milad-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi MILAD Hari Pertama</option>
-                                            <option value="absensi-milad-kedua" {{ (is_array(old('jenis_absensi')) && in_array('absensi-milad-kedua', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi MILAD Hari Kedua</option>
-                                        </optgroup>
-                                        <optgroup label="Kuliah Umum">
-                                            <option value="absensi-kuliah-umum-pertama" {{ (is_array(old('jenis_absensi')) && in_array('absensi-kuliah-umum-pertama', old('jenis_absensi'))) ? 'selected' : '' }}>Absensi Kuliah Umum Hari Pertama</option>
-                                        </optgroup>
-                                    @endif
-                                </select>
-                                @error('jenis_absensi')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                    <div>
+                                        <label class="form-label fw-bold text-primary d-flex align-items-center gap-2 mb-0">
+                                            <i class="bi bi-qr-code-scan text-primary fs-5"></i> Sesi Presensi Kepanitiaan (Opsional)
+                                        </label>
+                                        <div class="text-muted small">Tambahkan satu atau lebih sesi absensi (contoh: <em>Hari Ke-1</em>, <em>Hari Ke-2</em>, <em>Rapat Koordinasi</em>). Anda juga dapat menambahkannya nanti kapan saja lewat tombol <strong>Presensi</strong>.</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" id="btnTambahBarisSesi">
+                                        <i class="bi bi-plus-circle me-1"></i> Tambah Sesi
+                                    </button>
+                                </div>
+
+                                <div id="sesiPresensiContainer" class="d-flex flex-column gap-2 mt-2">
+                                    <!-- Baris sesi ditambahkan melalui tombol Tambah Sesi -->
+                                </div>
                             </div>
                         </div>
 
@@ -198,11 +174,37 @@
             placeholder: "Cari & pilih rekan kerja...",
             allowClear: true
         });
-        $('#jenis_absensi').select2({
-            theme: 'bootstrap-5',
-            placeholder: "Pilih satu atau beberapa jenis absensi...",
-            allowClear: true,
-            width: '100%'
+
+        // Dynamic Sesi Presensi Repeater
+        let sesiCount = 0;
+        function tambahBarisSesi(nama = '', tgl = '') {
+            sesiCount++;
+            const tglVal = tgl || ($('#tanggal_mulai').val() || new Date().toISOString().split('T')[0]);
+            const html = `
+            <div class="row g-2 align-items-center bg-white p-2 rounded border shadow-2xs baris-sesi-item" id="baris-sesi-${sesiCount}">
+                <div class="col-12 col-md-7">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-tag-fill"></i></span>
+                        <input type="text" name="nama_sesi_presensi[]" class="form-control" placeholder="Nama Sesi Presensi (misal: Absensi Hari Ke-${sesiCount})" value="${nama}" required>
+                    </div>
+                </div>
+                <div class="col-9 col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" name="tanggal_sesi_presensi[]" class="form-control" value="${tglVal}">
+                    </div>
+                </div>
+                <div class="col-3 col-md-1 text-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="$('#baris-sesi-${sesiCount}').remove()" title="Hapus Baris Sesi">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>`;
+            $('#sesiPresensiContainer').append(html);
+        }
+
+        $('#btnTambahBarisSesi').on('click', function() {
+            tambahBarisSesi();
         });
     });
 </script>

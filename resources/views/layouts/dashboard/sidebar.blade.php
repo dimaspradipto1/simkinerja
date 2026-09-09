@@ -13,166 +13,46 @@
 
           @if (!Auth::check() || Auth::user()->canAccessAbsensi())
               @php
-                  $absensiStatuses = \App\Models\AbsensiSetting::getAllStatuses();
+                  // Ambil hanya sesi yang AKTIF (sesi yang dikunci tidak perlu ditampilkan sama sekali)
+                  $activeSessions = \App\Models\KepanitiaanSesiAbsensi::where('is_active', true)
+                      ->with('kepanitiaan')
+                      ->orderBy('id', 'asc')
+                      ->get();
               @endphp
-              <li class="nav-heading">Absensi</li>
+              <li class="nav-heading">Presensi Kepanitiaan</li>
 
-              <li class="nav-item">
-                  <a class="{{ request()->routeIs('absensi-pkkmb-pertama.*') || request()->routeIs('absensi-pkkmb-kedua.*') || request()->routeIs('absensi-pkkmb-ketiga.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                      data-bs-target="#absensi-nav" data-bs-toggle="collapse" href="#">
-                      <i class="bi bi-calendar-check-fill"></i><span>Kepanitiaan PKKMB</span><i
-                          class="bi bi-chevron-down ms-auto"></i>
-                  </a>
-                  <ul id="absensi-nav"
-                      class="nav-content collapse {{ request()->routeIs('absensi-pkkmb-pertama.*') || request()->routeIs('absensi-pkkmb-kedua.*') || request()->routeIs('absensi-pkkmb-ketiga.*') ? 'show' : '' }}"
-                      data-bs-parent="#sidebar-nav">
-                      <li>
-                          <a href="{{ route('absensi-pkkmb-pertama.index') }}"
-                              class="{{ request()->routeIs('absensi-pkkmb-pertama.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Pertama</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-pkkmb-pertama'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-pkkmb-pertama'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                      <li>
-                          <a href="{{ route('absensi-pkkmb-kedua.index') }}"
-                              class="{{ request()->routeIs('absensi-pkkmb-kedua.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Kedua</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-pkkmb-kedua'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-pkkmb-kedua'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                      <li>
-                          <a href="{{ route('absensi-pkkmb-ketiga.index') }}"
-                              class="{{ request()->routeIs('absensi-pkkmb-ketiga.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Ketiga</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-pkkmb-ketiga'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-pkkmb-ketiga'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                  </ul>
-              </li>
-
-              <li class="nav-item">
-                  <a class="{{ request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*') || request()->routeIs('absensi-esq-keempat.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                      data-bs-target="#absensi-esq-nav" data-bs-toggle="collapse" href="#">
-                      <i class="bi bi-calendar-check-fill"></i><span>Kepanitiaan ESQ</span><i
-                          class="bi bi-chevron-down ms-auto"></i>
-                  </a>
-                  <ul id="absensi-esq-nav"
-                      class="nav-content collapse {{ request()->routeIs('absensi-esq-pertama.*') || request()->routeIs('absensi-esq-kedua.*') || request()->routeIs('absensi-esq-ketiga.*') || request()->routeIs('absensi-esq-keempat.*') ? 'show' : '' }}"
-                      data-bs-parent="#sidebar-nav">
-                      <li>
-                          <a href="{{ route('absensi-esq-pertama.index') }}"
-                              class="{{ request()->routeIs('absensi-esq-pertama.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Pertama</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-esq-pertama'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-esq-pertama'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                      <li>
-                          <a href="{{ route('absensi-esq-kedua.index') }}"
-                              class="{{ request()->routeIs('absensi-esq-kedua.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Kedua</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-esq-kedua'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-esq-kedua'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                      <li>
-                          <a href="{{ route('absensi-esq-ketiga.index') }}"
-                              class="{{ request()->routeIs('absensi-esq-ketiga.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Ketiga</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-esq-ketiga'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-esq-ketiga'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                      <li>
-                          <a href="{{ route('absensi-esq-keempat.index') }}"
-                              class="{{ request()->routeIs('absensi-esq-keempat.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Keempat</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-esq-keempat'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-esq-keempat'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                  </ul>
-              </li>
-
-              <li class="nav-item">
-                  <a class="{{ request()->routeIs('absensi-milad-pertama.*') || request()->routeIs('absensi-milad-kedua.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                      data-bs-target="#absensi-milad-nav" data-bs-toggle="collapse" href="#">
-                      <i class="bi bi-calendar-check-fill"></i><span>Kepanitiaan MILAD</span><i
-                          class="bi bi-chevron-down ms-auto"></i>
-                  </a>
-                  <ul id="absensi-milad-nav"
-                      class="nav-content collapse {{ request()->routeIs('absensi-milad-pertama.*') || request()->routeIs('absensi-milad-kedua.*') ? 'show' : '' }}"
-                      data-bs-parent="#sidebar-nav">
-                      <li>
-                          <a href="{{ route('absensi-milad-pertama.index') }}"
-                              class="{{ request()->routeIs('absensi-milad-pertama.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Pertama</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-milad-pertama'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-milad-pertama'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                      <li>
-                          <a href="{{ route('absensi-milad-kedua.index') }}"
-                              class="{{ request()->routeIs('absensi-milad-kedua.*') ? 'active' : '' }} d-flex align-items-center justify-content-between pe-3">
-                              <div class="submenu-item-wrapper">
-                                  <i class="bi bi-circle"></i>
-                                  <span class="submenu-item-text">Absensi Hari Kedua</span>
-                              </div>
-                              <span class="badge {{ ($absensiStatuses['absensi-milad-kedua'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                                  {{ ($absensiStatuses['absensi-milad-kedua'] ?? true) ? 'Aktif' : 'Tutup' }}
-                              </span>
-                          </a>
-                      </li>
-                  </ul>
-              </li>
-
-              <li class="nav-item">
-                  <a class="{{ request()->routeIs('absensi-kuliah-umum-pertama.*') ? 'nav-link' : 'nav-link collapsed' }} d-flex align-items-center justify-content-between pe-3"
-                      href="{{ route('absensi-kuliah-umum-pertama.index') }}">
-                      <div class="d-flex align-items-center gap-2">
-                          <i class="bi bi-calendar-check-fill"></i>
-                          <span>Kepanitiaan Kuliah Umum</span>
-                      </div>
-                      <span class="badge {{ ($absensiStatuses['absensi-kuliah-umum-pertama'] ?? true) ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }} rounded-pill py-0 px-2 flex-shrink-0" style="font-size: 9px;">
-                          {{ ($absensiStatuses['absensi-kuliah-umum-pertama'] ?? true) ? 'Aktif' : 'Tutup' }}
-                      </span>
-                  </a>
-              </li>
+              @if($activeSessions->isNotEmpty())
+                  <li class="nav-item">
+                      <a class="{{ request()->routeIs('presensi.*') || request()->routeIs('absensi-*') ? 'nav-link' : 'nav-link collapsed' }}"
+                          data-bs-target="#presensi-kepanitiaan-nav" data-bs-toggle="collapse" href="#">
+                          <i class="bi bi-qr-code-scan"></i><span>Sesi Presensi Aktif</span>
+                          <span class="badge bg-success rounded-pill ms-2 px-2 py-0" style="font-size: 10px;">{{ $activeSessions->count() }}</span>
+                          <i class="bi bi-chevron-down ms-auto"></i>
+                      </a>
+                      <ul id="presensi-kepanitiaan-nav"
+                          class="nav-content collapse {{ request()->routeIs('presensi.*') || request()->routeIs('absensi-*') ? 'show' : '' }}"
+                          data-bs-parent="#sidebar-nav">
+                          @foreach($activeSessions as $activeSess)
+                              @php
+                                  $targetUrl = !empty($activeSess->legacy_slug) && Route::has($activeSess->legacy_slug . '.index')
+                                      ? route($activeSess->legacy_slug . '.index')
+                                      : route('presensi.scan-proses', ['token' => $activeSess->token]);
+                              @endphp
+                              <li>
+                                  <a href="{{ $targetUrl }}" class="d-flex align-items-center justify-content-between pe-3">
+                                      <div class="submenu-item-wrapper text-truncate" style="max-width: 190px;" title="{{ $activeSess->nama_sesi }}">
+                                          <i class="bi bi-circle-fill text-success" style="font-size: 6px;"></i>
+                                          <span class="submenu-item-text">{{ $activeSess->nama_sesi }}</span>
+                                      </div>
+                                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0 px-1.5 flex-shrink-0" style="font-size: 9px;">
+                                          Buka
+                                      </span>
+                                  </a>
+                              </li>
+                          @endforeach
+                      </ul>
+                  </li>
+              @endif
 
               <li class="nav-item">
                   <a class="{{ request()->routeIs('rekapitulasi-absensi.*') ? 'nav-link' : 'nav-link collapsed' }}"

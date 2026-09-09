@@ -67,81 +67,56 @@
                             @enderror
                         </div>
 
-                        <!-- Input: Jenis Absensi Kepanitiaan -->
+                        <!-- Sesi Presensi Kepanitiaan (Dinamis & Fleksibel) -->
                         <div class="col-md-12">
                             <div class="p-3 bg-light rounded-3 border border-primary-subtle shadow-2xs">
-                                <label for="jenis_absensi" class="form-label fw-bold text-primary d-flex align-items-center gap-2 mb-1">
-                                    <i class="bi bi-qr-code-scan text-primary fs-5"></i> Jenis Absensi Kepanitiaan
-                                </label>
-                                <div class="text-muted small mb-2">Pilih satu atau beberapa jenis absensi yang terhubung dengan kegiatan kepanitiaan ini agar tombol <strong>Barcode Absensi</strong> otomatis tampil pada daftar tugas.</div>
-                                @php
-                                    $currentSlugs = [];
-                                    if (!empty($kepanitiaan->url_external)) {
-                                        foreach (\App\Models\AbsensiSetting::defaults() as $s => $c) {
-                                            if (str_contains($kepanitiaan->url_external, $s)) {
-                                                $currentSlugs[] = $s;
-                                            }
-                                        }
-                                    }
-                                @endphp
-                                <select class="form-select @error('jenis_absensi') is-invalid @enderror" id="jenis_absensi" name="jenis_absensi[]" multiple="multiple">
-                                    @if(isset($absensiSessions) && $absensiSessions->count() > 0)
-                                        @foreach($absensiSessions as $kategoriAbsensi => $sessions)
-                                            <optgroup label="Sesi Absensi {{ $kategoriAbsensi }}">
-                                                @foreach($sessions as $sess)
-                                                    @php
-                                                        $isSelected = old('jenis_absensi') !== null
-                                                            ? (is_array(old('jenis_absensi')) && in_array($sess->slug, old('jenis_absensi')))
-                                                            : in_array($sess->slug, $currentSlugs);
-                                                    @endphp
-                                                    <option value="{{ $sess->slug }}" {{ $isSelected ? 'selected' : '' }}>
-                                                        {{ $sess->nama }}
-                                                    </option>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                    <div>
+                                        <label class="form-label fw-bold text-primary d-flex align-items-center gap-2 mb-0">
+                                            <i class="bi bi-qr-code-scan text-primary fs-5"></i> Sesi Presensi Kepanitiaan
+                                        </label>
+                                        <div class="text-muted small">Kelola atau tambah sesi absensi baru untuk kegiatan kepanitiaan ini.</div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold" onclick="window.openManageSesiModal({{ $kepanitiaan->id }}, '{{ addslashes(e($kepanitiaan->uraian_tugas)) }}')">
+                                            <i class="bi bi-gear-fill me-1"></i> Buka Kelola Presensi
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" id="btnTambahBarisSesiEdit">
+                                            <i class="bi bi-plus-circle me-1"></i> Tambah Sesi
+                                        </button>
+                                    </div>
+                                </div>
+
+                                @if($kepanitiaan->sesiAbsensis && $kepanitiaan->sesiAbsensis->count() > 0)
+                                    <div class="table-responsive bg-white rounded border mb-2">
+                                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.83rem;">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Nama Sesi</th>
+                                                    <th class="text-center">Tanggal</th>
+                                                    <th class="text-center">Kehadiran</th>
+                                                    <th class="text-center">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($kepanitiaan->sesiAbsensis as $s)
+                                                    <tr>
+                                                        <td class="fw-semibold text-dark">{{ $s->nama_sesi }}</td>
+                                                        <td class="text-center">{{ $s->tanggal ? date('d/m/Y', strtotime($s->tanggal)) : '-' }}</td>
+                                                        <td class="text-center"><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ $s->presensis->count() }} Hadir</span></td>
+                                                        <td class="text-center">
+                                                            <span class="badge {{ $s->is_active ? 'bg-success' : 'bg-secondary' }}">{{ $s->is_active ? 'Aktif' : 'Tutup' }}</span>
+                                                        </td>
+                                                    </tr>
                                                 @endforeach
-                                            </optgroup>
-                                        @endforeach
-                                    @else
-                                        <optgroup label="PKKMB">
-                                            @php
-                                                $checkPkkmb1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-pertama', old('jenis_absensi'))) : in_array('absensi-pkkmb-pertama', $currentSlugs);
-                                                $checkPkkmb2 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-kedua', old('jenis_absensi'))) : in_array('absensi-pkkmb-kedua', $currentSlugs);
-                                                $checkPkkmb3 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-pkkmb-ketiga', old('jenis_absensi'))) : in_array('absensi-pkkmb-ketiga', $currentSlugs);
-                                            @endphp
-                                            <option value="absensi-pkkmb-pertama" {{ $checkPkkmb1 ? 'selected' : '' }}>Absensi PKKMB Hari Pertama</option>
-                                            <option value="absensi-pkkmb-kedua" {{ $checkPkkmb2 ? 'selected' : '' }}>Absensi PKKMB Hari Kedua</option>
-                                            <option value="absensi-pkkmb-ketiga" {{ $checkPkkmb3 ? 'selected' : '' }}>Absensi PKKMB Hari Ketiga</option>
-                                        </optgroup>
-                                        <optgroup label="ESQ">
-                                            @php
-                                                $checkEsq1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-pertama', old('jenis_absensi'))) : in_array('absensi-esq-pertama', $currentSlugs);
-                                                $checkEsq2 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-kedua', old('jenis_absensi'))) : in_array('absensi-esq-kedua', $currentSlugs);
-                                                $checkEsq3 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-ketiga', old('jenis_absensi'))) : in_array('absensi-esq-ketiga', $currentSlugs);
-                                                $checkEsq4 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-esq-keempat', old('jenis_absensi'))) : in_array('absensi-esq-keempat', $currentSlugs);
-                                            @endphp
-                                            <option value="absensi-esq-pertama" {{ $checkEsq1 ? 'selected' : '' }}>Absensi ESQ Hari Pertama</option>
-                                            <option value="absensi-esq-kedua" {{ $checkEsq2 ? 'selected' : '' }}>Absensi ESQ Hari Kedua</option>
-                                            <option value="absensi-esq-ketiga" {{ $checkEsq3 ? 'selected' : '' }}>Absensi ESQ Hari Ketiga</option>
-                                            <option value="absensi-esq-keempat" {{ $checkEsq4 ? 'selected' : '' }}>Absensi ESQ Hari Keempat</option>
-                                        </optgroup>
-                                        <optgroup label="MILAD UIS">
-                                            @php
-                                                $checkMilad1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-milad-pertama', old('jenis_absensi'))) : in_array('absensi-milad-pertama', $currentSlugs);
-                                                $checkMilad2 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-milad-kedua', old('jenis_absensi'))) : in_array('absensi-milad-kedua', $currentSlugs);
-                                            @endphp
-                                            <option value="absensi-milad-pertama" {{ $checkMilad1 ? 'selected' : '' }}>Absensi MILAD Hari Pertama</option>
-                                            <option value="absensi-milad-kedua" {{ $checkMilad2 ? 'selected' : '' }}>Absensi MILAD Hari Kedua</option>
-                                        </optgroup>
-                                        <optgroup label="Kuliah Umum">
-                                            @php
-                                                $checkKu1 = old('jenis_absensi') !== null ? (is_array(old('jenis_absensi')) && in_array('absensi-kuliah-umum-pertama', old('jenis_absensi'))) : in_array('absensi-kuliah-umum-pertama', $currentSlugs);
-                                            @endphp
-                                            <option value="absensi-kuliah-umum-pertama" {{ $checkKu1 ? 'selected' : '' }}>Absensi Kuliah Umum Hari Pertama</option>
-                                        </optgroup>
-                                    @endif
-                                </select>
-                                @error('jenis_absensi')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+
+                                <div id="sesiPresensiContainerEdit" class="d-flex flex-column gap-2 mt-2">
+                                    <!-- Baris sesi baru ditambahkan di sini -->
+                                </div>
                             </div>
                         </div>
 
@@ -359,11 +334,37 @@
             placeholder: "Cari & pilih rekan kerja...",
             allowClear: true
         });
-        $('#jenis_absensi').select2({
-            theme: 'bootstrap-5',
-            placeholder: "Pilih satu atau beberapa jenis absensi...",
-            allowClear: true,
-            width: '100%'
+
+        // Dynamic Sesi Presensi Repeater (Edit)
+        let sesiCountEdit = 0;
+        function tambahBarisSesiEdit(nama = '', tgl = '') {
+            sesiCountEdit++;
+            const tglVal = tgl || ($('#tanggal_mulai').val() || new Date().toISOString().split('T')[0]);
+            const html = `
+            <div class="row g-2 align-items-center bg-white p-2 rounded border shadow-2xs baris-sesi-item" id="baris-sesi-edit-${sesiCountEdit}">
+                <div class="col-12 col-md-7">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-tag-fill"></i></span>
+                        <input type="text" name="nama_sesi_presensi[]" class="form-control" placeholder="Nama Sesi Baru..." value="${nama}" required>
+                    </div>
+                </div>
+                <div class="col-9 col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" name="tanggal_sesi_presensi[]" class="form-control" value="${tglVal}">
+                    </div>
+                </div>
+                <div class="col-3 col-md-1 text-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="$('#baris-sesi-edit-${sesiCountEdit}').remove()" title="Hapus Baris Sesi">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>`;
+            $('#sesiPresensiContainerEdit').append(html);
+        }
+
+        $('#btnTambahBarisSesiEdit').on('click', function() {
+            tambahBarisSesiEdit();
         });
     });
 </script>
