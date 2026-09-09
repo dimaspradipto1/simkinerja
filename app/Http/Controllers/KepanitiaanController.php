@@ -173,15 +173,17 @@ class KepanitiaanController extends Controller
                     }
 
                     // 2.6 Card Status Kehadiran Absensi (Khusus Pengguna yang Sedang Login)
-                    $absensiInfo = $this->resolveAbsensiSession($row);
-                    if ($absensiInfo) {
-                        $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug']);
-                        $myAtt = null;
-                        if ($modelClass && class_exists($modelClass)) {
-                            $myAtt = $modelClass::where('user_id', auth()->id())->first();
-                        }
+                    $absensiSessionsList = $this->resolveAbsensiSessions($row);
+                    if (!empty($absensiSessionsList)) {
+                        foreach ($absensiSessionsList as $absensiInfo) {
+                            $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug']);
+                            $myAtt = null;
+                            if ($modelClass && class_exists($modelClass)) {
+                                $myAtt = $modelClass::where('user_id', auth()->id())->first();
+                            }
 
-                        $html .= \App\Models\AbsensiSetting::renderAttendanceTable($absensiInfo, $myAtt);
+                            $html .= \App\Models\AbsensiSetting::renderAttendanceTable($absensiInfo, $myAtt);
+                        }
                     }
 
                     // 3. Time Details Card Box
