@@ -22,6 +22,9 @@ class KepanitiaanController extends Controller
     {
         $authUser = Auth::user();
 
+        // Otomatis stop dan selesaikan tugas kepanitiaan yang estimasi waktunya sudah habis
+        Kepanitiaan::autoStopExpiredTasks();
+
         if ($request->ajax()) {
             $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
@@ -414,7 +417,8 @@ class KepanitiaanController extends Controller
         $periodeAkademiks = PeriodeAkademik::orderBy('nama_periode', 'desc')->get();
         $defaultPeriodeId = PeriodeAkademik::latest()->first()->id ?? null;
 
-        $pendingRequestsQuery = Kepanitiaan::whereNotNull('estimasi_unlock_requested_at');
+        $pendingRequestsQuery = Kepanitiaan::whereNotNull('estimasi_unlock_requested_at')
+            ->where('status', '!=', 'Selesai');
         if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
             if ($authUser->isPimpinanUnit()) {
                 $pendingRequestsQuery->whereHas('user', function ($q) use ($authUser) {
@@ -454,12 +458,13 @@ class KepanitiaanController extends Controller
             $waktuSelesai = true;
         }
 
-        $isExpired = false;
+        // Jika tugas belum selesai tapi waktu estimasi telah habis, otomatis tandai Selesai
         if ($status !== 'Selesai' && !empty($row->estimasi_tanggal_selesai)) {
             $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
             $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
-            if (\Carbon\Carbon::now()->gt($estimasiEnd)) {
-                $isExpired = true;
+            if (\Carbon\Carbon::now()->gte($estimasiEnd)) {
+                $status = 'Selesai';
+                $waktuSelesai = true;
             }
         }
 
@@ -503,16 +508,6 @@ class KepanitiaanController extends Controller
         $btn .= '<div class="timer-status-group d-inline-flex align-items-center gap-2">';
         if ($status === 'Selesai' || $waktuSelesai) {
             $btn .= '<button type="button" class="btn text-white fw-bold disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
-        } elseif ($isExpired) {
-            if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
-                if ($isLeader) {
-                    $btn .= '<button type="button" class="btn btn-warning text-dark fw-bold" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($row->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . route($routePrefix . '.approve-extension', $row->id) . '" onclick="window.openApproveExtensionModal(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Permohonan perpanjangan waktu diajukan pegawai. Klik untuk setujui & beri waktu baru"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
-                } else {
-                    $btn .= '<span class="badge bg-warning text-dark py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 6px; min-height: 38px;" title="Permohonan perpanjangan waktu sedang menunggu persetujuan pimpinan"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>';
-                }
-            } else {
-                $btn .= '<button type="button" class="btn btn-danger text-white fw-bold btn-request-extension" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-route="' . route($routePrefix . '.request-unlock-estimasi', $row->id) . '" onclick="window.openExtensionModal(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Tugas gagal karena melewati estimasi waktu. Klik untuk minta perpanjangan waktu ke pimpinan"><i class="bi bi-clock-history me-1"></i> Tugas Gagal - Minta Perpanjangan Waktu</button>';
-            }
         } elseif (!$waktuMulai && $status !== 'Di-pause') {
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn text-white fw-bold btn-start-timer" style="background-color: #15432d; border-color: #15432d; cursor: pointer; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
         } else {
@@ -905,11 +900,16 @@ class KepanitiaanController extends Controller
             $endTime = $kepanitiaan->estimasi_jam_selesai ?: '23:59:59';
             $estimasiEnd = \Carbon\Carbon::parse($kepanitiaan->estimasi_tanggal_selesai . ' ' . $endTime);
             if ($now->gt($estimasiEnd)) {
+                $kepanitiaan->update([
+                    'status' => 'Selesai',
+                    'waktu_selesai' => $kepanitiaan->waktu_selesai ?: $endTime,
+                    'tanggal_selesai' => $kepanitiaan->tanggal_selesai ?: $kepanitiaan->estimasi_tanggal_selesai,
+                    'last_started_at' => null,
+                ]);
                 return response()->json([
-                    'success' => false,
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
+                    'success' => true,
+                    'message' => 'Waktu estimasi tugas telah habis. Tugas otomatis dihentikan dan ditandai selesai.',
+                ]);
             }
         }
 
@@ -968,18 +968,6 @@ class KepanitiaanController extends Controller
     public function stop(Request $request, Kepanitiaan $kepanitiaan)
     {
         $now = \Carbon\Carbon::now();
-
-        if ($kepanitiaan->status !== 'Selesai' && !empty($kepanitiaan->estimasi_tanggal_selesai)) {
-            $endTime = $kepanitiaan->estimasi_jam_selesai ?: '23:59:59';
-            $estimasiEnd = \Carbon\Carbon::parse($kepanitiaan->estimasi_tanggal_selesai . ' ' . $endTime);
-            if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'success' => false,
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
-            }
-        }
 
         $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
         $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');

@@ -137,10 +137,11 @@ class MilestoneHelper
                 $html .= '</div>';
                 $html .= '</div>'; // end timer row
 
-                // Check if parent task is expired (Tugas Gagal)
+                // Check if parent task is expired (Tugas Gagal) - dikecualikan untuk Kepanitiaan karena auto-stop selesai
                 $parent = $m->milestonable;
                 $isParentExpired = false;
-                if ($parent && $parent->status !== 'Selesai' && !empty($parent->estimasi_tanggal_selesai)) {
+                $isKepanitiaan = ($parent instanceof \App\Models\Kepanitiaan) || str_contains(strtolower($milestonableType), 'kepanitiaan');
+                if (!$isKepanitiaan && $parent && $parent->status !== 'Selesai' && !empty($parent->estimasi_tanggal_selesai)) {
                     $endTime = $parent->estimasi_jam_selesai ?: '23:59:59';
                     $estimasiEnd = Carbon::parse($parent->estimasi_tanggal_selesai . ' ' . $endTime);
                     if (Carbon::now()->gt($estimasiEnd)) {

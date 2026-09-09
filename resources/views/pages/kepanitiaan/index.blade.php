@@ -1404,7 +1404,14 @@
                     }
                 });
             }
-        });
-    };
+    // Auto-refresh tabel kepanitiaan setiap 30 detik agar perubahan auto-stop selesai langsung tampil
+    setInterval(function() {
+        if ($.fn.DataTable.isDataTable('#kepanitiaan-table')) {
+            // Hindari reload jika ada modal yang sedang terbuka
+            if ($('.modal.show').length === 0) {
+                $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
+            }
+        }
+    }, 30000);
 </script>
 @endpush
