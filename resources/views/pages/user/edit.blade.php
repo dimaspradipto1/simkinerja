@@ -46,6 +46,7 @@
                                      $rolesList = [
                                          'super admin',
                                          'admin',
+                                         'tim evaluasi',
                                          'kepanitiaan',
                                          'rektor',
                                          'wakil rektor i',

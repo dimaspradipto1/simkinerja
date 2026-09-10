@@ -109,8 +109,8 @@ class LpjDataTable extends DataTable
         $query = $model->newQuery()->with('user')->orderBy('id', 'desc');
         $user = Auth::user();
 
-        // Opsi B: Jika bukan Admin / Super Admin / Pimpinan, hanya tampilkan LPJ milik pengguna sendiri
-        if ($user && !$user->isAdmin() && !$user->isSuperAdmin() && !$user->isPimpinanRektorat() && !$user->isPimpinanUnit()) {
+        // Jika bukan Admin / Super Admin / Pimpinan / Tim Evaluasi, hanya tampilkan LPJ milik pengguna sendiri
+        if ($user && !$user->isAdmin() && !$user->isSuperAdmin() && !$user->isPimpinanRektorat() && !$user->isPimpinanUnit() && !$user->isTimEvaluasi()) {
             $query->where('user_id', $user->id);
         }
 

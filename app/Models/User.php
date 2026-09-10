@@ -122,6 +122,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user has Tim Evaluasi role
+     */
+    public function isTimEvaluasi(): bool
+    {
+        return $this->hasAnyRole(['tim evaluasi', 'evaluasi', 'tim_evaluasi']);
+    }
+
+    /**
      * Check if user has Kepanitiaan role
      */
     public function isKepanitiaan(): bool

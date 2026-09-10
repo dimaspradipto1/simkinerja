@@ -23,10 +23,28 @@
                             <i class="bi bi-file-earmark-plus-fill fs-5"></i>
                         </div>
                         <div>
-                            <h5 class="card-title p-0 m-0 fw-bold text-dark fs-6">Form Tambah Laporan Pertanggungjawaban (LPJ)</h5>
+                            <h5 class="card-title p-0 m-0 fw-bold text-dark fs-6">Form Tambah LPJ</h5>
                             <small class="text-muted">Isi formulir berikut untuk mengarsipkan berkas dan tautan LPJ kepanitiaan</small>
                         </div>
                     </div>
+
+                    <!-- Banner Template LPJ Resmi -->
+                    @php
+                        $downloadUrl = !empty($templateLpj?->link_lpj) ? $templateLpj->link_lpj : (!empty($templateLpj?->file_template) ? route('lpj.template.download') : null);
+                    @endphp
+                    @if($downloadUrl)
+                    <div class="p-3 mb-4 rounded-3" style="background-color: #e3f2fd; border: 1px solid #bbdefb;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-info-circle text-primary fs-6 flex-shrink-0"></i>
+                            <span class="text-dark fw-medium" style="font-size: 0.88rem;">Gunakan template resmi berikut sebagai acuan penulisan LPJ.</span>
+                        </div>
+                        <div class="ps-4">
+                            <a href="{{ $downloadUrl }}" target="_blank" rel="noopener noreferrer" class="text-primary text-decoration-none fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.9rem;">
+                                <i class="bi bi-file-earmark-text"></i> Download Template LPJ
+                            </a>
+                        </div>
+                    </div>
+                    @endif
 
                     <form action="{{ route('lpj.store') }}" method="POST" enctype="multipart/form-data" class="row g-3" id="lpjForm">
                         @csrf

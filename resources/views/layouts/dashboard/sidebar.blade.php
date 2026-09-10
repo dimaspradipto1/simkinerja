@@ -80,7 +80,7 @@
           @endif
 
           <!-- 3. Tugas & Kinerja -->
-          @if (!Auth::check() || Auth::user()->canAccessKinerja())
+          @if (!Auth::check() || Auth::user()->canAccessKinerja() || Auth::user()->isTimEvaluasi())
               <li class="nav-heading">Tugas & Kinerja</li>
 
               <li class="nav-item">
@@ -134,12 +134,33 @@
                   </a>
               </li>
 
+              <!-- Menu Gabungan LPJ -->
               <li class="nav-item">
                   <a class="{{ request()->routeIs('lpj.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                      href="{{ route('lpj.index') }}">
+                      data-bs-target="#lpj-nav" data-bs-toggle="collapse" href="#">
                       <i class="bi bi-file-earmark-text-fill"></i>
                       <span>Laporan Pertanggungjawaban (LPJ)</span>
+                      <i class="bi bi-chevron-down ms-auto"></i>
                   </a>
+                  <ul id="lpj-nav"
+                      class="nav-content collapse {{ request()->routeIs('lpj.*') ? 'show' : '' }}"
+                      data-bs-parent="#sidebar-nav">
+                      <li>
+                          <a href="{{ route('lpj.index') }}" class="{{ request()->routeIs('lpj.index') ? 'active' : '' }}">
+                              <i class="bi bi-circle"></i><span>Daftar LPJ</span>
+                          </a>
+                      </li>
+                      <li>
+                          <a href="{{ route('lpj.create') }}" class="{{ request()->routeIs('lpj.create') ? 'active' : '' }}">
+                              <i class="bi bi-circle"></i><span>Tambah LPJ</span>
+                          </a>
+                      </li>
+                      <li>
+                          <a href="{{ route('lpj.template') }}" class="{{ request()->routeIs('lpj.template*') ? 'active' : '' }}">
+                              <i class="bi bi-circle"></i><span>Template LPJ</span>
+                          </a>
+                      </li>
+                  </ul>
               </li>
           @endif
 

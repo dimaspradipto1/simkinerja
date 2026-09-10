@@ -135,6 +135,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('analisis-keterlambatan', AnalisisKeterlambatanController::class)->only(['index']);
 
     // LPJ (Laporan Pertanggungjawaban) Routes
+    Route::get('lpj/template', [LpjController::class, 'template'])->name('lpj.template');
+    Route::post('lpj/template', [LpjController::class, 'updateTemplate'])->name('lpj.template.update');
+    Route::get('lpj/template/download', [LpjController::class, 'downloadTemplate'])->name('lpj.template.download');
     Route::get('lpj/{lpj}/download', [LpjController::class, 'download'])->name('lpj.download');
     Route::resource('lpj', LpjController::class);
 

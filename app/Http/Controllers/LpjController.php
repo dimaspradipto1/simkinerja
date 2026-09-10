@@ -6,6 +6,7 @@ use App\DataTables\LpjDataTable;
 use App\Http\Requests\LpjRequest;
 use App\Models\Kepanitiaan;
 use App\Models\Lpj;
+use App\Models\LpjTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -34,13 +35,15 @@ class LpjController extends Controller
         $prefillKepanitiaan = $request->query('kepanitiaan');
         $prefillNamaLpj = $request->query('nama_lpj');
         $prefillTanggal = $request->query('tanggal');
+        $templateLpj = LpjTemplate::first();
 
         return view('pages.lpj.create', compact(
             'kepanitiaans',
             'prefillKepanitiaanId',
             'prefillKepanitiaan',
             'prefillNamaLpj',
-            'prefillTanggal'
+            'prefillTanggal',
+            'templateLpj'
         ));
     }
 
@@ -187,6 +190,99 @@ class LpjController extends Controller
     }
 
     /**
+     * Display or manage the LPJ template.
+     */
+    public function template()
+    {
+        $templateLpj = LpjTemplate::first();
+        if (!$templateLpj) {
+            $templateLpj = LpjTemplate::create([
+                'nama_template' => 'Template Resmi Laporan Pertanggungjawaban (LPJ)',
+                'link_lpj' => 'https://docs.google.com/document/d/1official-template-lpj/edit?usp=sharing',
+                'keterangan' => 'Gunakan template dokumen resmi ini sebagai acuan penulisan LPJ kegiatan kepanitiaan.',
+            ]);
+        }
+
+        $canEdit = Auth::check() && (
+            Auth::user()->isAdmin() || 
+            Auth::user()->isSuperAdmin() || 
+            Auth::user()->isPimpinanRektorat() || 
+            Auth::user()->isTimEvaluasi()
+        );
+
+        return view('pages.lpj.template', compact('templateLpj', 'canEdit'));
+    }
+
+    /**
+     * Update the LPJ template link and file.
+     */
+    public function updateTemplate(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || (!$user->isAdmin() && !$user->isSuperAdmin() && !$user->isPimpinanRektorat() && !$user->isTimEvaluasi())) {
+            Alert::error('Akses Ditolak', 'Anda tidak memiliki izin untuk mengubah pengaturan template LPJ.');
+            return redirect()->route('lpj.template');
+        }
+
+        $request->validate([
+            'nama_template' => 'required|string|max:255',
+            'link_lpj' => 'nullable|url|max:500',
+            'file_template' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,zip,rar|max:20480',
+            'keterangan' => 'nullable|string',
+        ], [
+            'link_lpj.url' => 'Format tautan (link) LPJ harus berupa URL yang valid (contoh: https://drive.google.com/...).',
+        ]);
+
+        $templateLpj = LpjTemplate::first();
+        if (!$templateLpj) {
+            $templateLpj = new LpjTemplate();
+        }
+
+        $templateLpj->nama_template = $request->nama_template;
+        $templateLpj->link_lpj = $request->link_lpj;
+        $templateLpj->keterangan = $request->keterangan;
+        $templateLpj->updated_by = Auth::id();
+
+        if ($request->hasFile('file_template')) {
+            if ($templateLpj->file_template && Storage::disk('public')->exists($templateLpj->file_template)) {
+                Storage::disk('public')->delete($templateLpj->file_template);
+            }
+            $file = $request->file('file_template');
+            $fileName = 'template_lpj_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('lpj_templates', $fileName, 'public');
+            $templateLpj->file_template = $path;
+        }
+
+        $templateLpj->save();
+
+        Alert::success('Berhasil', 'Pengaturan template LPJ berhasil disimpan.');
+        return redirect()->route('lpj.template');
+    }
+
+    /**
+     * Download the LPJ template file or redirect to link.
+     */
+    public function downloadTemplate()
+    {
+        $templateLpj = LpjTemplate::first();
+        if (!$templateLpj) {
+            Alert::error('Gagal', 'Template LPJ belum tersedia.');
+            return back();
+        }
+
+        if ($templateLpj->file_template && Storage::disk('public')->exists($templateLpj->file_template)) {
+            return response()->download(storage_path('app/public/' . $templateLpj->file_template), basename($templateLpj->file_template));
+        }
+
+        if (!empty($templateLpj->link_lpj)) {
+            return redirect()->away($templateLpj->link_lpj);
+        }
+
+        Alert::warning('Perhatian', 'Berkas maupun tautan template LPJ belum diatur oleh admin.');
+        return back();
+    }
+
+    /**
      * Helper to check if current user can manage the given LPJ.
      */
     private function canManageLpj(Lpj $lpj): bool
@@ -200,6 +296,7 @@ class LpjController extends Controller
             $user->isSuperAdmin() ||
             $user->isPimpinanRektorat() ||
             $user->isPimpinanUnit() ||
+            $user->isTimEvaluasi() ||
             $user->id === $lpj->user_id;
     }
 }

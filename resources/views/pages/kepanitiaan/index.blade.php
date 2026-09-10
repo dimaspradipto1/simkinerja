@@ -514,17 +514,19 @@
     <!-- Section: Permohonan Perpanjangan Waktu Masuk -->
     <div class="row mb-3">
         <div class="col-12">
-            <div class="p-2.5 p-sm-3 rounded-3 shadow-xs" style="background-color: #fffdf5; border: 1px solid #fde68a; border-left: 5px solid #f59e0b; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">
+            <div class="p-3 p-sm-3.5 rounded-3 shadow-xs" style="background-color: #fffdf5; border: 1px solid #fde68a; border-left: 5px solid #f59e0b; width: 100%; max-width: 100%; box-sizing: border-box;">
                 <!-- Header Banner -->
-                <div class="d-flex align-items-center gap-2 flex-wrap mb-2 pb-2 border-bottom" style="border-color: #fef08a !important;">
-                    <span class="badge bg-danger rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.78rem;">
-                        <i class="bi bi-bell-fill me-1"></i> {{ $pendingRequests->count() }} Permohonan Masuk
-                    </span>
-                    <span class="text-dark small fw-semibold">Tugas melewati estimasi dan membutuhkan persetujuan perpanjangan waktu:</span>
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5 pb-2 border-bottom" style="border-color: #fef08a !important;">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-danger rounded-pill px-2.5 py-1 fw-bold shadow-2xs" style="font-size: 0.78rem;">
+                            <i class="bi bi-bell-fill me-1"></i> {{ $pendingRequests->count() }} Permohonan Masuk
+                        </span>
+                        <span class="text-dark small fw-semibold">Tugas melewati estimasi dan membutuhkan persetujuan perpanjangan waktu:</span>
+                    </div>
                 </div>
 
                 <!-- List of Items -->
-                <div class="d-flex flex-column gap-2">
+                <div class="d-flex flex-column gap-3">
                     @foreach($pendingRequests as $pr)
                     @php
                         $rReason = $pr->estimasi_unlock_reason;
@@ -534,37 +536,50 @@
                             $rReason = $mMatches[2];
                         }
                     @endphp
-                    <div class="p-2.5 p-sm-3 bg-white rounded-2 border shadow-2xs" style="border-color: #fed7aa !important; width: 100%; max-width: 100%; box-sizing: border-box;">
+                    <div class="p-3 bg-white rounded-3 border shadow-2xs" style="border-color: #fed7aa !important; width: 100%; max-width: 100%; box-sizing: border-box;">
                         <!-- 1. Header: Pegawai & Timestamp -->
-                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-1.5">
-                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                <i class="bi bi-person-circle text-primary fs-6"></i>
-                                <span class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $pr->user->name ?? '-' }}</span>
-                                @if(!empty($pr->user->jabatan))
-                                    <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.7rem;">{{ $pr->user->jabatan }}</span>
-                                @endif
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-2 pb-2 border-bottom border-light-subtle">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary flex-shrink-0" style="width: 34px; height: 34px; font-size: 1rem;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                        <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ $pr->user->name ?? '-' }}</span>
+                                        @if(!empty($pr->user->jabatan))
+                                            <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.68rem; padding: 2px 6px;">{{ $pr->user->jabatan }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="text-muted d-flex align-items-center gap-1 mt-0.5" style="font-size: 0.72rem;">
+                                        <i class="bi bi-clock"></i>
+                                        <span>{{ \Carbon\Carbon::parse($pr->estimasi_unlock_requested_at)->diffForHumans() }}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <span class="text-muted small" style="font-size: 0.73rem;">
-                                <i class="bi bi-clock me-1"></i>{{ \Carbon\Carbon::parse($pr->estimasi_unlock_requested_at)->diffForHumans() }}
-                            </span>
                         </div>
 
                         <!-- 2. Uraian Tugas -->
-                        <div class="mb-2" style="word-break: break-word;">
-                            <span class="badge bg-primary text-white me-1" style="font-size: 0.68rem; padding: 2px 6px;">Tugas</span>
-                            <span class="fw-bold text-dark" style="font-size: 0.86rem;">{{ $pr->uraian_tugas }}</span>
+                        <div class="mb-2.5" style="word-break: break-word;">
+                            <div class="d-flex align-items-baseline gap-1.5">
+                                <span class="badge bg-primary text-white flex-shrink-0" style="font-size: 0.68rem; padding: 3px 6px; border-radius: 4px;">Tugas</span>
+                                <span class="fw-bold text-dark" style="font-size: 0.88rem; line-height: 1.45;">{{ $pr->uraian_tugas }}</span>
+                            </div>
                         </div>
 
                         <!-- 3. Tujuan & Kendala -->
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2.5" style="font-size: 0.75rem;">
+                        <div class="d-flex flex-column gap-1.5 mb-2.5" style="font-size: 0.78rem;">
                             @if($tujuanPimpinan)
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                    <i class="bi bi-person-badge me-1"></i>Tujuan: <strong>{{ $tujuanPimpinan }}</strong>
-                                </span>
+                                <div class="d-flex align-items-center gap-2 p-1.5 px-2.5 rounded-2 bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.76rem;">
+                                    <i class="bi bi-person-badge-fill flex-shrink-0"></i>
+                                    <span class="text-truncate">Tujuan: <strong>{{ $tujuanPimpinan }}</strong></span>
+                                </div>
                             @endif
-                            <div class="d-inline-flex align-items-start gap-1 p-1 px-2 rounded bg-danger-subtle text-danger border border-danger-subtle" style="word-break: break-word; max-width: 100%;">
-                                <span class="fw-bold flex-shrink-0"><i class="bi bi-exclamation-circle-fill me-1"></i>Kendala:</span>
-                                <span class="text-dark fw-medium">{{ $rReason }}</span>
+                            <div class="d-flex align-items-start gap-2 p-1.5 px-2.5 rounded-2 bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.76rem; word-break: break-word;">
+                                <i class="bi bi-exclamation-circle-fill flex-shrink-0 mt-0.5"></i>
+                                <div>
+                                    <span class="fw-bold me-1">Kendala:</span>
+                                    <span class="text-dark fw-medium">{{ $rReason }}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -572,8 +587,8 @@
                         <div class="pt-2 border-top" style="border-color: #f1f5f9 !important;">
                             @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit()))
                             <button type="button" 
-                                    class="btn btn-warning btn-sm w-100 fw-bold d-flex align-items-center justify-content-center gap-1.5 text-dark" 
-                                    style="background-color: #ffc107; border-color: #ffc107; padding: 7px 12px; font-size: 0.83rem; border-radius: 6px;"
+                                    class="btn btn-warning btn-sm w-100 fw-bold d-flex align-items-center justify-content-center text-dark shadow-2xs" 
+                                    style="background-color: #ffc107; border-color: #ffc107; padding: 8px 14px; font-size: 0.85rem; border-radius: 7px;"
                                     data-id="{{ $pr->id }}" 
                                     data-uraian="{{ e($pr->uraian_tugas) }}" 
                                     data-pegawai="{{ e($pr->user->name ?? '-') }}" 
@@ -582,7 +597,7 @@
                                     data-jam-selesai="{{ e($pr->estimasi_jam_selesai ? substr($pr->estimasi_jam_selesai, 0, 5) : '23:59') }}" 
                                     data-route="{{ route('kepanitiaan.approve-extension', $pr->id) }}" 
                                     onclick="window.openApproveExtensionModal(this)">
-                                <i class="bi bi-clock-history"></i>
+                                <i class="bi bi-clock-history me-2 fs-6"></i>
                                 <span>Beri Perpanjangan Waktu</span>
                             </button>
                             @else
