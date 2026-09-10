@@ -76,8 +76,6 @@ class LpjDataTable extends DataTable
                 $canManage = Auth::check() && $user && (
                     $user->isAdmin() ||
                     $user->isSuperAdmin() ||
-                    $user->isPimpinanRektorat() ||
-                    $user->isPimpinanUnit() ||
                     $user->id === $row->user_id
                 );
 
@@ -109,9 +107,10 @@ class LpjDataTable extends DataTable
         $query = $model->newQuery()->with('user')->orderBy('id', 'desc');
         $user = Auth::user();
 
-        // Jika bukan Admin / Super Admin / Pimpinan / Tim Evaluasi, hanya tampilkan LPJ milik pengguna sendiri
-        if ($user && !$user->isAdmin() && !$user->isSuperAdmin() && !$user->isPimpinanRektorat() && !$user->isPimpinanUnit() && !$user->isTimEvaluasi()) {
-            $query->where('user_id', $user->id);
+        // Hanya Super Admin, Admin, dan Tim Evaluasi yang bisa melihat SEMUA jenis LPJ.
+        // Pengguna lain HANYA bisa melihat LPJ miliknya sendiri.
+        if (!$user || (!$user->isSuperAdmin() && !$user->isAdmin() && !$user->isTimEvaluasi())) {
+            $query->where('user_id', $user?->id ?? 0);
         }
 
         return $query;

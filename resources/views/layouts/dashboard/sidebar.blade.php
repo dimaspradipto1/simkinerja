@@ -155,11 +155,13 @@
                               <i class="bi bi-circle"></i><span>Tambah LPJ</span>
                           </a>
                       </li>
-                      <li>
-                          <a href="{{ route('lpj.template') }}" class="{{ request()->routeIs('lpj.template*') ? 'active' : '' }}">
-                              <i class="bi bi-circle"></i><span>Template LPJ</span>
-                          </a>
-                      </li>
+                      @if (Auth::user() && (Auth::user()->isSuperAdmin() || Auth::user()->isAdmin() || Auth::user()->isTimEvaluasi()))
+                          <li>
+                              <a href="{{ route('lpj.template') }}" class="{{ request()->routeIs('lpj.template*') ? 'active' : '' }}">
+                                  <i class="bi bi-circle"></i><span>Template LPJ</span>
+                              </a>
+                          </li>
+                      @endif
                   </ul>
               </li>
           @endif

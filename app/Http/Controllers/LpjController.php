@@ -79,7 +79,7 @@ class LpjController extends Controller
     {
         $lpj = Lpj::with(['user', 'kepanitiaan'])->findOrFail($id);
 
-        if (!$this->canManageLpj($lpj)) {
+        if (!$this->canViewLpj($lpj)) {
             Alert::error('Akses Ditolak', 'Anda tidak memiliki izin untuk melihat data LPJ ini.');
             return redirect()->route('lpj.index');
         }
@@ -176,7 +176,7 @@ class LpjController extends Controller
     {
         $lpj = Lpj::findOrFail($id);
 
-        if (!$this->canManageLpj($lpj)) {
+        if (!$this->canViewLpj($lpj)) {
             Alert::error('Akses Ditolak', 'Anda tidak memiliki izin untuk mengunduh berkas LPJ ini.');
             return redirect()->route('lpj.index');
         }
@@ -194,6 +194,12 @@ class LpjController extends Controller
      */
     public function template()
     {
+        $user = Auth::user();
+        if (!$user || (!$user->isSuperAdmin() && !$user->isAdmin() && !$user->isTimEvaluasi())) {
+            Alert::error('Akses Ditolak', 'Anda tidak memiliki izin untuk mengakses halaman Template LPJ.');
+            return redirect()->route('lpj.index');
+        }
+
         $templateLpj = LpjTemplate::first();
         if (!$templateLpj) {
             $templateLpj = LpjTemplate::create([
@@ -203,12 +209,7 @@ class LpjController extends Controller
             ]);
         }
 
-        $canEdit = Auth::check() && (
-            Auth::user()->isAdmin() || 
-            Auth::user()->isSuperAdmin() || 
-            Auth::user()->isPimpinanRektorat() || 
-            Auth::user()->isTimEvaluasi()
-        );
+        $canEdit = $user->isAdmin() || $user->isSuperAdmin() || $user->isTimEvaluasi();
 
         return view('pages.lpj.template', compact('templateLpj', 'canEdit'));
     }
@@ -219,7 +220,7 @@ class LpjController extends Controller
     public function updateTemplate(Request $request)
     {
         $user = Auth::user();
-        if (!$user || (!$user->isAdmin() && !$user->isSuperAdmin() && !$user->isPimpinanRektorat() && !$user->isTimEvaluasi())) {
+        if (!$user || (!$user->isAdmin() && !$user->isSuperAdmin() && !$user->isTimEvaluasi())) {
             Alert::error('Akses Ditolak', 'Anda tidak memiliki izin untuk mengubah pengaturan template LPJ.');
             return redirect()->route('lpj.template');
         }
@@ -283,7 +284,25 @@ class LpjController extends Controller
     }
 
     /**
-     * Helper to check if current user can manage the given LPJ.
+     * Helper to check if current user can view the given LPJ.
+     * Hanya Super Admin, Admin, Tim Evaluasi, dan pemilik LPJ yang bisa melihat.
+     */
+    private function canViewLpj(Lpj $lpj): bool
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        return $user->isSuperAdmin() ||
+            $user->isAdmin() ||
+            $user->isTimEvaluasi() ||
+            $user->id === $lpj->user_id;
+    }
+
+    /**
+     * Helper to check if current user can edit/delete the given LPJ.
+     * Hanya Super Admin, Admin, dan pemilik LPJ yang bisa mengedit/menghapus.
      */
     private function canManageLpj(Lpj $lpj): bool
     {
@@ -292,11 +311,8 @@ class LpjController extends Controller
             return false;
         }
 
-        return $user->isAdmin() ||
-            $user->isSuperAdmin() ||
-            $user->isPimpinanRektorat() ||
-            $user->isPimpinanUnit() ||
-            $user->isTimEvaluasi() ||
+        return $user->isSuperAdmin() ||
+            $user->isAdmin() ||
             $user->id === $lpj->user_id;
     }
 }
