@@ -632,6 +632,7 @@ class KegiatanController extends Controller
         }
 
         $kegiatan->taggedUsers()->sync($request->input('tagged_users', []));
+        $kegiatan->syncToSource();
 
         Alert::success('Berhasil', 'Kegiatan berhasil diperbarui')
             ->toToast()
@@ -1002,6 +1003,7 @@ class KegiatanController extends Controller
         ]);
 
         $kegiatan->taggedUsers()->sync($request->input('tagged_users', []));
+        $kegiatan->syncToSource();
 
         return response()->json([
             'success' => true,

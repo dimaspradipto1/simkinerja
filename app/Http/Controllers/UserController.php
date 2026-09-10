@@ -26,7 +26,14 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('pages.user.create');
+        $suggestedKepanitiaan = \App\Models\Kepanitiaan::whereNotNull('uraian_tugas')
+            ->pluck('uraian_tugas')
+            ->merge(['PKKMB', 'ESQ', 'MILAD', 'Kuliah Umum', 'Wisuda', 'Dies Natalis', 'Akreditasi'])
+            ->unique()
+            ->filter()
+            ->values();
+
+        return view('pages.user.create', compact('suggestedKepanitiaan'));
     }
 
     /**
@@ -43,6 +50,24 @@ class UserController extends Controller
             } else {
                 $validated['roles'] = trim((string) $validated['roles']);
             }
+        }
+
+        // Process dynamic jabatan_kepanitiaan
+        if (isset($validated['jabatan_kepanitiaan']) && is_array($validated['jabatan_kepanitiaan'])) {
+            $cleanKepanitiaan = [];
+            foreach ($validated['jabatan_kepanitiaan'] as $item) {
+                $nama = trim($item['nama'] ?? '');
+                $jabatan = trim($item['jabatan'] ?? '');
+                if (!empty($nama) && !empty($jabatan)) {
+                    $cleanKepanitiaan[] = [
+                        'nama' => $nama,
+                        'jabatan' => $jabatan,
+                    ];
+                }
+            }
+            $validated['jabatan_kepanitiaan'] = !empty($cleanKepanitiaan) ? $cleanKepanitiaan : null;
+        } else {
+            $validated['jabatan_kepanitiaan'] = null;
         }
 
         User::create($validated);
@@ -66,7 +91,14 @@ class UserController extends Controller
     public function edit(string $id)
     {
         $user = User::findOrFail($id);
-        return view('pages.user.edit', compact('user'));
+        $suggestedKepanitiaan = \App\Models\Kepanitiaan::whereNotNull('uraian_tugas')
+            ->pluck('uraian_tugas')
+            ->merge(['PKKMB', 'ESQ', 'MILAD', 'Kuliah Umum', 'Wisuda', 'Dies Natalis', 'Akreditasi'])
+            ->unique()
+            ->filter()
+            ->values();
+
+        return view('pages.user.edit', compact('user', 'suggestedKepanitiaan'));
     }
 
     /**
@@ -89,6 +121,24 @@ class UserController extends Controller
             } else {
                 $validated['roles'] = trim((string) $validated['roles']);
             }
+        }
+
+        // Process dynamic jabatan_kepanitiaan
+        if (isset($validated['jabatan_kepanitiaan']) && is_array($validated['jabatan_kepanitiaan'])) {
+            $cleanKepanitiaan = [];
+            foreach ($validated['jabatan_kepanitiaan'] as $item) {
+                $nama = trim($item['nama'] ?? '');
+                $jabatan = trim($item['jabatan'] ?? '');
+                if (!empty($nama) && !empty($jabatan)) {
+                    $cleanKepanitiaan[] = [
+                        'nama' => $nama,
+                        'jabatan' => $jabatan,
+                    ];
+                }
+            }
+            $validated['jabatan_kepanitiaan'] = !empty($cleanKepanitiaan) ? $cleanKepanitiaan : null;
+        } else {
+            $validated['jabatan_kepanitiaan'] = null;
         }
 
         $user->update($validated);
@@ -212,24 +262,20 @@ class UserController extends Controller
             'E1' => 'nup',
             'F1' => 'unit',
             'G1' => 'jabatan',
-            'H1' => 'jabatan_pkkmb',
-            'I1' => 'jabatan_esq',
-            'J1' => 'jabatan_milad',
-            'K1' => 'jabatan_kuliah_umum',
         ];
 
         foreach ($headers as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
 
-        $headerRange = 'A1:K1';
+        $headerRange = 'A1:G1';
         $sheet->getStyle($headerRange)->getFont()->setBold(true);
         $sheet->getStyle($headerRange)->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setARGB('15432D');
         $sheet->getStyle($headerRange)->getFont()->getColor()->setARGB('FFFFFF');
 
-        // Sample Data 1 (Contoh Multi-Role & Multi-Jabatan)
+        // Sample Data 1 (Contoh Multi-Role)
         $sheet->setCellValue('A2', 'Ahmad Fadillah, S.Kom., M.Kom');
         $sheet->setCellValue('B2', 'ahmad.fadillah@gmail.com');
         $sheet->setCellValue('C2', 'password123');
@@ -237,10 +283,6 @@ class UserController extends Controller
         $sheet->setCellValue('E2', '1028067804');
         $sheet->setCellValue('F2', 'LPTI');
         $sheet->setCellValue('G2', 'Staff Programmer');
-        $sheet->setCellValue('H2', 'Anggota Seksi Acara');
-        $sheet->setCellValue('I2', 'Koordinator IT');
-        $sheet->setCellValue('J2', '-');
-        $sheet->setCellValue('K2', '-');
 
         // Sample Data 2
         $sheet->setCellValue('A3', 'Siti Rahmawati, S.E., M.M');
@@ -250,10 +292,6 @@ class UserController extends Controller
         $sheet->setCellValue('E3', '-');
         $sheet->setCellValue('F3', 'BAUK');
         $sheet->setCellValue('G3', 'Staff Keuangan');
-        $sheet->setCellValue('H3', 'Bendahara Panitia');
-        $sheet->setCellValue('I3', '-');
-        $sheet->setCellValue('J3', 'Seksi Konsumsi');
-        $sheet->setCellValue('K3', '-');
 
         // Sample Data 3 (Role Kepanitiaan)
         $sheet->setCellValue('A4', 'Budi Santoso, S.Kom');
@@ -263,12 +301,8 @@ class UserController extends Controller
         $sheet->setCellValue('E4', '-');
         $sheet->setCellValue('F4', 'PANITIA');
         $sheet->setCellValue('G4', 'Staff Kepanitiaan');
-        $sheet->setCellValue('H4', 'Koordinator Absensi');
-        $sheet->setCellValue('I4', 'Anggota Seksi Acara');
-        $sheet->setCellValue('J4', '-');
-        $sheet->setCellValue('K4', '-');
 
-        foreach (range('A', 'K') as $col) {
+        foreach (range('A', 'G') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -427,6 +461,12 @@ class UserController extends Controller
                     ? Hash::make($rawPassword)
                     : Hash::make('password123');
 
+                $importedDynamicKepanitiaan = [];
+                if (!empty($jabatanPkkmb) && $jabatanPkkmb !== '-') $importedDynamicKepanitiaan[] = ['nama' => 'PKKMB', 'jabatan' => $jabatanPkkmb];
+                if (!empty($jabatanEsq) && $jabatanEsq !== '-') $importedDynamicKepanitiaan[] = ['nama' => 'ESQ', 'jabatan' => $jabatanEsq];
+                if (!empty($jabatanMilad) && $jabatanMilad !== '-') $importedDynamicKepanitiaan[] = ['nama' => 'MILAD', 'jabatan' => $jabatanMilad];
+                if (!empty($jabatanKuliahUmum) && $jabatanKuliahUmum !== '-') $importedDynamicKepanitiaan[] = ['nama' => 'Kuliah Umum', 'jabatan' => $jabatanKuliahUmum];
+
                 User::create([
                     'name' => $name,
                     'email' => $finalEmail,
@@ -435,10 +475,7 @@ class UserController extends Controller
                     'nidn' => $nidn,
                     'unit' => $unit,
                     'jabatan' => $jabatan,
-                    'jabatan_pkkmb' => $jabatanPkkmb,
-                    'jabatan_esq' => $jabatanEsq,
-                    'jabatan_milad' => $jabatanMilad,
-                    'jabatan_kuliah_umum' => $jabatanKuliahUmum,
+                    'jabatan_kepanitiaan' => !empty($importedDynamicKepanitiaan) ? $importedDynamicKepanitiaan : null,
                     'status' => $status,
                     'is_active' => $isActiveVal,
                 ]);

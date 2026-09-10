@@ -58,7 +58,7 @@
                 <div class="modal-body p-4">
                     <div class="p-3 mb-3 rounded" style="background-color: #e0f2fe; border: 1px solid #bae6fd;">
                         <p class="mb-1 text-dark" style="font-size: 0.9rem;">
-                            Format header: <strong>name, email, password, roles, nup, unit, jabatan, jabatan_pkkmb, jabatan_esq, jabatan_milad, jabatan_kuliah_umum</strong>.
+                            Format header: <strong>name, email, password, roles, nup, unit, jabatan</strong>.
                         </p>
                         <p class="mb-1 text-secondary small">
                             <i class="bi bi-check2-circle me-1 text-primary"></i> <strong>Role lebih dari satu:</strong> Pisahkan dengan koma pada kolom <code>roles</code> (contoh: <code>staff lpti, kepanitiaan</code>).

@@ -336,6 +336,7 @@ class InsidentilController extends Controller
 
         if ($request->filled('tagged_users')) {
             $insidentil->taggedUsers()->sync($request->tagged_users);
+            $insidentil->syncToKegiatan();
         }
 
         Alert::success('Berhasil', 'Data Rencana Kerja Insidentil berhasil ditambahkan.');
@@ -418,6 +419,7 @@ class InsidentilController extends Controller
 
         if ($request->has('tagged_users')) {
             $insidentil->taggedUsers()->sync($request->tagged_users ?? []);
+            $insidentil->syncToKegiatan();
         }
 
         Alert::success('Berhasil', 'Data Rencana Kerja Insidentil berhasil diperbarui.');
@@ -788,6 +790,7 @@ class InsidentilController extends Controller
         ]);
 
         $insidentil->taggedUsers()->sync($request->tagged_users ?? []);
+        $insidentil->syncToKegiatan();
 
         return response()->json(['status' => 'success', 'message' => 'Rekan kerja berhasil diperbarui.']);
     }

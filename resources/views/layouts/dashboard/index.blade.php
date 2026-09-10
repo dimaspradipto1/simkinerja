@@ -107,76 +107,165 @@
         margin: 0.35rem 0 0;
     }
     .scan-accordion {
-        margin-top: 1.5rem;
+        margin-top: 1rem;
     }
     .scan-accordion-item {
-        border: 1px solid rgba(25, 135, 84, 0.15);
+        border: 1px solid #e2e8f0;
         border-radius: 14px;
         overflow: hidden;
-        background: rgba(255,255,255,0.7);
-        margin-bottom: 0.75rem;
+        background: #ffffff;
+        margin-bottom: 0.85rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        transition: all 0.2s ease;
+    }
+    .scan-accordion-item:hover {
+        border-color: #cbd5e1;
     }
     .scan-accordion-header {
-        background: #4d74ff;
-        color: white;
-        padding: 1rem 1.1rem;
+        background: #f8fafc;
+        color: #1e293b;
+        padding: 0.95rem 1.25rem;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: space-between;
         font-weight: 700;
-        font-size: 1.05rem;
+        font-size: 1rem;
+        border-bottom: 1px solid transparent;
+        transition: all 0.2s ease;
+    }
+    .scan-accordion-header:not(.collapsed) {
+        background: #f1f5f9;
+        border-bottom-color: #e2e8f0;
+        color: #0f172a;
     }
     .scan-accordion-header .left {
         display: flex;
         align-items: center;
-        gap: 0.8rem;
+        gap: 0.75rem;
     }
-    .scan-accordion-header .check {
-        width: 22px;
-        height: 22px;
+    .scan-accordion-header .bi-chevron-toggle {
+        transition: transform 0.25s ease;
+        color: #64748b;
+    }
+    .scan-accordion-header.collapsed .bi-chevron-toggle {
+        transform: rotate(180deg);
+    }
+    .scan-accordion-header .kepanitiaan-badge {
+        width: 32px;
+        height: 32px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 6px;
-        background: rgba(255,255,255,0.18);
-        border: 1px solid rgba(255,255,255,0.4);
-        font-size: 0.8rem;
+        border-radius: 8px;
+        background: rgba(25, 135, 84, 0.12);
+        color: #198754;
+        font-size: 0.95rem;
     }
     .scan-accordion-body {
-        background: #fff;
-        padding: 0.8rem 0.8rem 0.35rem;
+        background: #ffffff;
+        padding: 0.85rem;
     }
-    .scan-session-link {
+    .scan-session-item {
         display: flex;
         align-items: center;
-        padding: 0.7rem 0.5rem;
-        color: #1f2d3d;
-        text-decoration: none;
-        border-radius: 8px;
-        font-size: 1.05rem;
-        transition: background 0.2s ease;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
     }
-    .scan-session-link:hover {
-        background: #f4f8f5;
-        color: #198754;
-        text-decoration: none;
+    .scan-session-item:last-child {
+        margin-bottom: 0;
     }
-    .scan-session-link .dot {
-        width: 12px;
-        height: 12px;
-        border: 2px solid #7d8796;
+    .scan-session-item:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+    .barcode-thumb-box {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        background: #eff6ff;
+        border: 1.5px solid #bfdbfe;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: #1d4ed8;
+    }
+    .barcode-thumb-box:hover {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        color: #1e40af;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        transform: translateY(-2px);
+    }
+    .barcode-thumb-box i {
+        font-size: 1.45rem;
+        line-height: 1;
+    }
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
+        background-color: #198754;
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
+        animation: pulse-green 2s infinite;
         display: inline-block;
-        margin-right: 0.85rem;
+        flex-shrink: 0;
     }
-    .scan-session-link.active .dot {
-        background: #4d74ff;
-        border-color: #4d74ff;
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(25, 135, 84, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
     }
-    .scan-session-link.active {
-        color: #1f2d3d;
+    .btn-session-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 1rem;
+        border-radius: 50rem;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #334155;
         font-weight: 600;
+        font-size: 0.88rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        user-select: none;
+    }
+    .btn-session-pill:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #0f172a;
+    }
+    .btn-session-pill.active {
+        background: #198754;
+        color: #ffffff;
+        border-color: #198754;
+        box-shadow: 0 3px 10px rgba(25, 135, 84, 0.25);
+    }
+    .btn-session-pill.active .badge-pill-sub {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+    }
+    .btn-session-pill.active .pulse-dot {
+        background-color: #ffffff;
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    .badge-pill-sub {
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.12rem 0.45rem;
+        border-radius: 8px;
+        background: #f1f5f9;
+        color: #64748b;
     }
     @media (max-width: 991.98px) {
         .scan-category-grid {
@@ -323,26 +412,39 @@
 </div>
 
 <!-- Welcome Banner -->
-<div class="card welcome-card mb-4 p-4 shadow-sm">
+<div class="card welcome-card mb-4 p-4 shadow-sm border-0">
     <div class="row align-items-center">
         <div class="col-lg-8 mb-3 mb-lg-0">
-            <h2 class="fw-bold fs-4 mb-2">Selamat Datang, {{ auth()->user()->name }}! 👋</h2>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge bg-white text-success fw-bold px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
+                    <i class="bi bi-shield-check me-1"></i>{{ auth()->user()->roles }}
+                </span>
+                <span class="badge bg-white bg-opacity-25 text-white fw-normal px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
+                    {{ auth()->user()->unit ?? 'Universitas Ibnu Sina' }}
+                </span>
+            </div>
+            <h2 class="fw-bold fs-4 mb-2 text-white">Selamat Datang, {{ auth()->user()->name }}! 👋</h2>
             <p class="mb-2 text-white-50" style="font-size: 0.95rem;">
                 <strong>Jabatan:</strong> {{ auth()->user()->jabatan ?? 'Pegawai' }} &nbsp;&bull;&nbsp; 
-                <strong>Unit:</strong> {{ auth()->user()->unit ?? 'Universitas Ibnu Sina' }} &nbsp;&bull;&nbsp; 
-                <strong>Role:</strong> <span class="badge bg-light text-dark fw-bold ms-1">{{ auth()->user()->roles }}</span>
+                <strong>Unit Kerja:</strong> {{ auth()->user()->unit ?? 'Universitas Ibnu Sina' }}
             </p>
-            <p class="mb-0 small text-white-50">Kelola dan pantau seluruh rencana kerja utama, kepanitiaan, insidentil, serta timer kegiatan Anda secara efisien.</p>
+            <p class="mb-0 small text-white-50">
+                @if($isAdminOrLeader)
+                    Pantau kinerja seluruh pegawai unit, kelola sesi absensi aktif kepanitiaan, dan tinjau progres tugas universitas secara terpusat.
+                @else
+                    Kelola dan pantau seluruh rencana kerja utama, kepanitiaan, insidentil, serta pencatatan absensi Anda secara efisien.
+                @endif
+            </p>
         </div>
         <div class="col-lg-4 text-lg-end d-flex flex-column align-items-lg-end gap-2 mt-3 mt-lg-0">
-            <button type="button" id="btn-voice-dashboard" class="btn btn-warning fw-bold text-dark px-3 py-2 shadow-sm btn-equal-width">
-                <i class="bi bi-volume-up-fill me-1 fs-6"></i> Dengarkan Suara
+            <button type="button" id="btn-voice-dashboard" class="btn btn-warning fw-bold text-dark px-3 py-2 shadow-sm btn-equal-width rounded-pill">
+                <i class="bi bi-volume-up-fill me-1 fs-6"></i> Ringkasan Suara
             </button>
-            <a href="{{ route('rencana-kerja.index') }}" class="btn btn-light fw-bold text-success px-3 py-2 shadow-sm btn-equal-width">
+            <a href="{{ route('rencana-kerja.index') }}" class="btn btn-light fw-bold text-success px-3 py-2 shadow-sm btn-equal-width rounded-pill">
                 <i class="bi bi-list-check me-1"></i> Rencana Kerja
             </a>
             @if(auth()->check() && (!auth()->user()->isPimpinanUnit() && !auth()->user()->isAdmin()))
-                <a href="{{ route('rencana-kerja.create') }}" class="btn btn-outline-light fw-bold px-3 py-2 btn-equal-width">
+                <a href="{{ route('rencana-kerja.create') }}" class="btn btn-outline-light fw-bold px-3 py-2 btn-equal-width rounded-pill">
                     <i class="bi bi-plus-lg me-1"></i> Tambah Tugas
                 </a>
             @endif
@@ -350,26 +452,145 @@
     </div>
 </div>
 
+<!-- KPI Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #198754 !important;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Rencana Kerja Utama</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-1">{{ $totalTugas }}</h3>
+                    <div class="small text-muted">
+                        <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>{{ $tugasSelesai }} Selesai</span>
+                        <span class="text-muted">({{ $persentaseSelesai }}%)</span>
+                    </div>
+                </div>
+                <div class="stat-icon stat-icon-green shadow-sm">
+                    <i class="bi bi-journal-check"></i>
+                </div>
+            </div>
+            <div class="progress mt-3" style="height: 5px; background-color: #f1f5f9;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ $persentaseSelesai }}%;" aria-valuenow="{{ $persentaseSelesai }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #0d6efd !important;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Tugas Kepanitiaan</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-1">{{ $totalKepanitiaan }}</h3>
+                    <div class="small text-muted">
+                        <span class="text-primary fw-bold"><i class="bi bi-check-circle-fill me-1"></i>{{ $kepanitiaanSelesai }} Selesai</span>
+                    </div>
+                </div>
+                <div class="stat-icon stat-icon-blue shadow-sm">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            @php
+                $kpPct = $totalKepanitiaan > 0 ? round(($kepanitiaanSelesai / $totalKepanitiaan) * 100) : 0;
+            @endphp
+            <div class="progress mt-3" style="height: 5px; background-color: #f1f5f9;">
+                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $kpPct }}%;" aria-valuenow="{{ $kpPct }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #ffc107 !important;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Tugas Insidentil</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-1">{{ $totalInsidentil }}</h3>
+                    <div class="small text-muted">
+                        <span class="text-warning fw-bold text-dark"><i class="bi bi-check-circle-fill me-1"></i>{{ $insidentilSelesai }} Selesai</span>
+                    </div>
+                </div>
+                <div class="stat-icon stat-icon-amber shadow-sm">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                </div>
+            </div>
+            @php
+                $insPct = $totalInsidentil > 0 ? round(($insidentilSelesai / $totalInsidentil) * 100) : 0;
+            @endphp
+            <div class="progress mt-3" style="height: 5px; background-color: #f1f5f9;">
+                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $insPct }}%;" aria-valuenow="{{ $insPct }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #6f42c1 !important;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">
+                        @if($isAdminOrLeader) Pegawai & Sesi Aktif @else Info Unit & Presensi @endif
+                    </span>
+                    <h3 class="fw-bold text-dark mt-1 mb-1">
+                        @if($isAdminOrLeader) {{ $totalPegawai }} <span class="fs-6 fw-normal text-muted">Pegawai</span> @else {{ $activeSessions->count() }} <span class="fs-6 fw-normal text-muted">Sesi Aktif</span> @endif
+                    </h3>
+                    <div class="small">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0.5 px-2">
+                            <i class="bi bi-broadcast me-1"></i>{{ $activeSessions->count() }} Sesi Aktif
+                        </span>
+                    </div>
+                </div>
+                <div class="stat-icon stat-icon-purple shadow-sm">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-3 text-muted small" style="font-size: 0.76rem;">
+                <span class="text-truncate" style="max-width: 140px;">Unit: {{ auth()->user()->unit ?? 'Universitas' }}</span>
+                <span class="text-secondary">{{ date('d M Y') }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 @unless(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-<!-- Scan Absensi Barcode Card -->
-<div class="card shadow-sm border-0 mb-4">
+<!-- Quick Scan Absensi Card for Regular Users -->
+<div class="card shadow-sm border-0 mb-4" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0 !important;">
     <div class="card-body p-4">
         <div class="row align-items-center g-3">
             <div class="col-md-8">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4" style="width: 48px; height: 48px; min-width: 48px; background-color: #198754;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4 shadow-sm" style="width: 52px; height: 52px; min-width: 52px; background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
                         <i class="bi bi-qr-code-scan"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold m-0 fs-5 mb-1 text-dark">Scan Absensi Kehadiran</h5>
-                        <p class="m-0 text-muted small">Scan QR Code untuk mencatat kehadiran Anda pada kegiatan yang sedang berlangsung.</p>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h5 class="fw-bold m-0 fs-5 text-dark">Scan Absensi Kehadiran</h5>
+                            @if($defaultSession)
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">Sesi Aktif Tersedia</span>
+                            @endif
+                        </div>
+                        <p class="m-0 text-muted small">
+                            @if($defaultSession)
+                                Sesi saat ini: <strong>{{ $defaultSession->nama_sesi }}</strong> ({{ $defaultSession->kepanitiaan->uraian_tugas ?? 'Kepanitiaan' }}). Klik scan untuk mencatat kehadiran Anda.
+                            @else
+                                Scan QR Code untuk mencatat kehadiran Anda pada sesi kegiatan yang sedang berlangsung.
+                            @endif
+                        </p>
                     </div>
                 </div>
             </div>
             <div class="col-md-4 text-md-end">
-                <a href="{{ route('scan-absensi') }}?start=1" class="btn btn-success btn-lg text-nowrap btn-equal-width">
-                    <i class="bi bi-camera-fill me-1"></i> Scan Sekarang
-                </a>
+                <button type="button" 
+                        class="btn btn-success btn-lg text-nowrap btn-equal-width rounded-pill shadow-sm btn-scan-barcode-modal d-inline-flex align-items-center justify-content-center"
+                        @if($defaultSession)
+                            data-title="{{ $defaultSession->nama_sesi }}"
+                            data-slug="{{ $defaultSession->legacy_slug ?? 'sesi-' . $defaultSession->id }}"
+                            data-token="{{ $defaultSession->token }}"
+                        @else
+                            data-title="Absensi Kehadiran"
+                        @endif
+                        data-active="1"
+                        onclick="window.openScanBarcodeModal(this)">
+                    <i class="bi bi-camera-fill me-2 fs-5"></i>
+                    <span>Scan Sekarang</span>
+                </button>
             </div>
         </div>
     </div>
@@ -377,76 +598,130 @@
 @endunless
 
 @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-<div class="card scan-menu-card mb-4 border-0">
+<!-- Admin Scan & Session Hub -->
+<div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-4">
-        <div class="d-flex align-items-center gap-3 mb-4">
-            <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 52px; height: 52px; background: linear-gradient(135deg, #198754 0%, #a3cfbb 100%);">
-                <i class="bi bi-qr-code-scan fs-4"></i>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 48px; height: 48px; background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+                    <i class="bi bi-qr-code-scan fs-5"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold m-0 text-dark">Menu Sesi & Scan Absensi Aktif</h5>
+                    <p class="m-0 text-muted small">Akses langsung barcode QR, scanner kamera modal, dan rekap kehadiran sesi aktif.</p>
+                </div>
             </div>
             <div>
-                <h5 class="fw-bold m-0 text-dark">Menu Scan Barcode</h5>
-                <p class="m-0 text-muted small">Navigasi cepat ke semua sesi absensi.</p>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.82rem;">
+                    <i class="bi bi-broadcast me-1"></i>{{ $activeSessions->count() }} Sesi Aktif di Sidebar
+                </span>
             </div>
         </div>
 
         <div class="scan-accordion">
-            <div class="scan-accordion-item">
-                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#pkkmbSessions" aria-expanded="true">
-                    <div class="left">
-                        <span class="check"><i class="bi bi-check"></i></span>
-                        <span>Kepanitiaan PKKMB</span>
+            @forelse($dynamicKepanitiaanList as $kepanitiaan)
+                @php
+                    $isExpanded = $loop->first;
+                    $collapseId = 'kepanitiaanSessions_' . $kepanitiaan->id;
+                    $activeCount = $kepanitiaan->sesiAbsensis->where('is_active', true)->count();
+                @endphp
+                <div class="scan-accordion-item">
+                    <div class="scan-accordion-header {{ $isExpanded ? '' : 'collapsed' }}" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
+                        <div class="left">
+                            <span class="kepanitiaan-badge"><i class="bi bi-check2-circle"></i></span>
+                            <div>
+                                <span class="fw-bold text-dark">{{ $kepanitiaan->uraian_tugas }}</span>
+                                <span class="badge bg-light text-secondary border rounded-pill ms-2 fw-normal" style="font-size: 0.75rem;">
+                                    {{ $activeCount }} Sesi Buka
+                                </span>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-up bi-chevron-toggle"></i>
                     </div>
-                    <i class="bi bi-chevron-up"></i>
-                </div>
-                <div id="pkkmbSessions" class="collapse show scan-accordion-body">
-                    <a href="{{ route('absensi-pkkmb-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
-                    <a href="{{ route('absensi-pkkmb-kedua.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
-                    <a href="{{ route('absensi-pkkmb-ketiga.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
-                </div>
-            </div>
+                    <div id="{{ $collapseId }}" class="collapse {{ $isExpanded ? 'show' : '' }} scan-accordion-body">
+                        @forelse($kepanitiaan->sesiAbsensis->where('is_active', true) as $sesi)
+                            @php
+                                $targetUrl = route('presensi.sesi.show', $sesi->id);
+                                $qrProcessUrl = route('presensi.scan-proses', ['token' => $sesi->token]);
+                            @endphp
+                            <div class="scan-session-item flex-column flex-md-row gap-3">
+                                <!-- Info Sesi & Barcode Thumbnail -->
+                                <div class="d-flex align-items-center gap-3">
+                                    <a href="javascript:void(0)" 
+                                       class="barcode-thumb-box shadow-sm btn-barcode-absensi"
+                                       data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
+                                       data-token="{{ $sesi->token }}"
+                                       data-scan-url="{{ $qrProcessUrl }}"
+                                       data-title="{{ $sesi->nama_sesi }}"
+                                       data-url="{{ $qrProcessUrl }}"
+                                       data-active="1"
+                                       onclick="window.openBarcodeModal(this)"
+                                       title="Klik untuk Perbesar Barcode QR">
+                                        <i class="bi bi-qr-code"></i>
+                                    </a>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="pulse-dot"></span>
+                                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">{{ $sesi->nama_sesi }}</span>
+                                        </div>
+                                        <small class="text-muted d-flex align-items-center gap-2 mt-1" style="font-size: 0.78rem;">
+                                            <span><i class="bi bi-calendar3 text-primary" style="margin-right: 5px;"></i>{{ $sesi->tanggal ? date('d M Y', strtotime($sesi->tanggal)) : 'Tanggal Berlangsung' }}</span>
+                                            <span>&bull;</span>
+                                            <span class="text-success fw-semibold"><i class="bi bi-broadcast" style="margin-right: 5px;"></i>Sesi Buka</span>
+                                        </small>
+                                    </div>
+                                </div>
 
-            <div class="scan-accordion-item">
-                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#esqSessions" aria-expanded="false">
-                    <div class="left">
-                        <span class="check"><i class="bi bi-check"></i></span>
-                        <span>Kepanitiaan ESQ</span>
-                    </div>
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <div id="esqSessions" class="collapse scan-accordion-body">
-                    <a href="{{ route('absensi-esq-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
-                    <a href="{{ route('absensi-esq-kedua.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
-                    <a href="{{ route('absensi-esq-ketiga.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Ketiga</a>
-                    <a href="{{ route('absensi-esq-keempat.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Keempat</a>
-                </div>
-            </div>
+                                <!-- Action Buttons: Barcode, Kamera Scan Modal, Rekap & Detail -->
+                                <div class="d-flex flex-wrap align-items-center gap-2 ms-md-auto">
+                                    <!-- 1. Tampilkan Barcode QR Modal -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-dark text-white rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm btn-barcode-absensi"
+                                            data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
+                                            data-token="{{ $sesi->token }}"
+                                            data-scan-url="{{ $qrProcessUrl }}"
+                                            data-title="{{ $sesi->nama_sesi }}"
+                                            data-url="{{ $qrProcessUrl }}"
+                                            data-active="1"
+                                            onclick="window.openBarcodeModal(this)"
+                                            title="Tampilkan Barcode QR untuk Peserta">
+                                        <i class="bi bi-qr-code text-warning fs-6" style="margin-right: 8px;"></i>
+                                        <span>Tampilkan Barcode</span>
+                                    </button>
 
-            <div class="scan-accordion-item">
-                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#miladSessions" aria-expanded="false">
-                    <div class="left">
-                        <span class="check"><i class="bi bi-check"></i></span>
-                        <span>Kepanitiaan MILAD</span>
-                    </div>
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <div id="miladSessions" class="collapse scan-accordion-body">
-                    <a href="{{ route('absensi-milad-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi Hari Pertama</a>
-                    <a href="{{ route('absensi-milad-kedua.index') }}?show_qr=1" class="scan-session-link"><span class="dot"></span> Absensi Hari Kedua</a>
-                </div>
-            </div>
+                                    <!-- 2. Scan Kamera Modal Langsung (Tanpa Masuk Menu) -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-success text-white rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm btn-scan-barcode-modal"
+                                            data-title="{{ $sesi->nama_sesi }}"
+                                            data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
+                                            data-token="{{ $sesi->token }}"
+                                            data-active="1"
+                                            onclick="window.openScanBarcodeModal(this)"
+                                            title="Buka Kamera Scanner Langsung">
+                                        <i class="bi bi-camera-fill text-white fs-6" style="margin-right: 8px;"></i>
+                                        <span>Scan Kamera</span>
+                                    </button>
 
-            <div class="scan-accordion-item">
-                <div class="scan-accordion-header" data-bs-toggle="collapse" data-bs-target="#kuliahUmumSessions" aria-expanded="false">
-                    <div class="left">
-                        <span class="check"><i class="bi bi-check"></i></span>
-                        <span>Kepanitiaan Kuliah Umum</span>
+                                    <!-- 3. Rekap & Detail Presensi -->
+                                    <a href="{{ $targetUrl }}" 
+                                       class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm"
+                                       title="Lihat Rekap &amp; Tabel Kehadiran Sesi">
+                                        <i class="bi bi-table text-primary fs-6" style="margin-right: 8px;"></i>
+                                        <span>Rekap &amp; Detail</span>
+                                    </a>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="p-3 text-muted text-center small">Tidak ada sesi aktif pada kepanitiaan ini.</div>
+                        @endforelse
                     </div>
-                    <i class="bi bi-chevron-down"></i>
                 </div>
-                <div id="kuliahUmumSessions" class="collapse scan-accordion-body">
-                    <a href="{{ route('absensi-kuliah-umum-pertama.index') }}?show_qr=1" class="scan-session-link active"><span class="dot"></span> Absensi</a>
+            @empty
+                <div class="alert alert-info py-3 px-4 rounded-3 border-0 d-flex align-items-center gap-2 mb-0">
+                    <i class="bi bi-info-circle fs-5 text-info"></i>
+                    <div>Saat ini tidak ada sesi presensi yang sedang aktif (buka) seperti pada sidebar. Anda dapat membuka atau mengaktifkan sesi melalui <a href="{{ route('kepanitiaan.index') }}" class="fw-bold alert-link">Rencana Kerja Kepanitiaan</a>.</div>
                 </div>
-            </div>
+            @endforelse
         </div>
     </div>
 </div>
@@ -458,66 +733,77 @@
 <div class="card shadow-sm border-0 mb-4 attendance-monitor-card" id="section-monitoring-absensi">
     <div class="card-body p-4">
         
-        <!-- Header Subtitle -->
-        <p class="text-muted small mb-3">Monitoring kehadiran pegawai real-time.</p>
-
-        <!-- Manage Dropdown & Kepanitiaan Tabs -->
+        <!-- Header Subtitle & Full Link -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <!-- Manage Dropdown -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-primary dropdown-toggle rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.9rem;">
-                        <i class="bi bi-box-arrow-up-right"></i> Manage
-                    </button>
-                    <ul class="dropdown-menu shadow-sm border-0 rounded-3">
-                        <li><h6 class="dropdown-header text-uppercase small fw-bold text-muted">Manajemen Presensi</h6></li>
-                        <li><a class="dropdown-item py-2" href="{{ route('absensi-pkkmb-pertama.index') }}"><i class="bi bi-mortarboard me-2 text-success"></i>Absensi PKKMB</a></li>
-                        <li><a class="dropdown-item py-2" href="{{ route('absensi-esq-pertama.index') }}"><i class="bi bi-heart-pulse me-2 text-primary"></i>Absensi ESQ</a></li>
-                        <li><a class="dropdown-item py-2" href="{{ route('absensi-milad-pertama.index') }}"><i class="bi bi-stars me-2 text-warning"></i>Absensi MILAD</a></li>
-                        <li><a class="dropdown-item py-2" href="{{ route('absensi-kuliah-umum-pertama.index') }}"><i class="bi bi-book me-2 text-info"></i>Absensi Kuliah Umum</a></li>
-                    </ul>
-                </div>
-
-                <!-- Kepanitiaan Switcher Tabs -->
-                <ul class="nav nav-pills gap-1 p-1 bg-light rounded-pill" id="attendanceKepanitiaanTabs" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link rounded-pill py-1 px-3 fw-bold active btn-kepanitiaan-tab" data-kepanitiaan="pkkmb" type="button">PKKMB</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link rounded-pill py-1 px-3 fw-semibold text-secondary btn-kepanitiaan-tab" data-kepanitiaan="esq" type="button">ESQ</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link rounded-pill py-1 px-3 fw-semibold text-secondary btn-kepanitiaan-tab" data-kepanitiaan="milad" type="button">MILAD</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link rounded-pill py-1 px-3 fw-semibold text-secondary btn-kepanitiaan-tab" data-kepanitiaan="kuliah_umum" type="button">Kuliah Umum</button>
-                    </li>
-                </ul>
+            <div>
+                <h5 class="fw-bold m-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-person-lines-fill text-success"></i> Monitoring Presensi Real-Time
+                </h5>
+                <p class="text-muted small mb-0 mt-1">Pantau kehadiran pegawai secara langsung pada sesi absensi yang aktif.</p>
             </div>
+            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if($defaultSession)
+                <a id="btn-export-session-excel" 
+                   href="{{ route('presensi.sesi.export', $defaultSession->id) }}" 
+                   class="btn btn-success text-white rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm" 
+                   style="font-size: 0.86rem;" 
+                   title="Export Data Presensi Sesi Ini ke Excel">
+                    <i class="bi bi-file-earmark-excel-fill fs-6" style="margin-right: 8px;"></i> <span>Export Excel</span>
+                </a>
+                <a id="btn-open-session-full" 
+                   href="{{ route('presensi.sesi.show', $defaultSession->id) }}" 
+                   class="btn btn-outline-success rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm" 
+                   style="font-size: 0.86rem;" 
+                   title="Buka Halaman Kelola &amp; Rekap Sesi Ini">
+                    <i class="bi bi-box-arrow-up-right" style="margin-right: 8px;"></i> <span>Kelola &amp; Rekap Sesi Ini</span>
+                </a>
+                @endif
+            </div>
+            @endif
         </div>
+
+        <!-- Dynamic Active Session Switcher Tabs -->
+        @if($activeSessions->count() > 0)
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 bg-light rounded-4 border">
+            <span class="text-secondary small fw-bold text-uppercase ms-2 me-1" style="font-size: 0.74rem; letter-spacing: 0.5px;">Sesi Aktif:</span>
+            @foreach($activeSessions as $sesi)
+                <button type="button" 
+                        class="btn-session-pill {{ $loop->first ? 'active' : '' }}" 
+                        data-sesi-id="{{ $sesi->id }}" 
+                        data-url="{{ route('presensi.sesi.show', $sesi->id) }}"
+                        data-export-url="{{ route('presensi.sesi.export', $sesi->id) }}"
+                        data-name="{{ $sesi->nama_sesi }}">
+                    <span class="pulse-dot"></span>
+                    <span>{{ $sesi->nama_sesi }}</span>
+                    @if($sesi->kepanitiaan)
+                        <span class="badge-pill-sub">{{ Str::limit($sesi->kepanitiaan->uraian_tugas, 24) }}</span>
+                    @endif
+                </button>
+            @endforeach
+        </div>
+        @else
+        <div class="alert alert-warning py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-6 text-warning"></i>
+            <span>Tidak ada sesi presensi yang sedang aktif. Silakan aktifkan sesi di menu Kepanitiaan agar data kehadiran muncul.</span>
+        </div>
+        @endif
 
         <!-- Pill Search Bar -->
         <div class="position-relative mb-3">
             <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-            <input type="text" id="attendance-custom-search" class="form-control rounded-pill ps-5 py-2 shadow-none" placeholder="Cari..." style="background-color: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.95rem;">
-        </div>
-
-        <!-- Day Selector Buttons (H-1, H-2, H-3) -->
-        <div class="d-flex align-items-center gap-2 mb-3" id="attendance-day-selector">
-            <button type="button" class="day-pill-btn active" data-day="1">H-1</button>
-            <button type="button" class="day-pill-btn" data-day="2">H-2</button>
-            <button type="button" class="day-pill-btn" data-day="3">H-3</button>
+            <input type="text" id="attendance-custom-search" class="form-control rounded-pill ps-5 py-2 shadow-none" placeholder="Cari nama pegawai, jabatan, atau unit kerja..." style="background-color: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.92rem;">
         </div>
 
         <!-- DataTables Container -->
         <div class="table-responsive border-0">
             <table class="table table-hover align-middle mb-0 w-100" id="dashboard-attendance-table">
                 <thead>
-                    <tr style="border-bottom: 2px solid #e2e8f0;">
-                        <th width="8%" class="ps-4 text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">NO</th>
-                        <th width="62%" class="text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">NAMA</th>
-                        <th width="15%" class="text-center text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">DATANG</th>
-                        <th width="15%" class="text-center pe-4 text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 0.5px;">PULANG</th>
+                    <tr style="border-bottom: 2px solid #e2e8f0; background-color: #f8fafc;">
+                        <th width="6%" class="ps-3 text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">NO</th>
+                        <th width="54%" class="text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">PEGAWAI / JABATAN</th>
+                        <th width="20%" class="text-center text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">DATANG</th>
+                        <th width="20%" class="text-center pe-3 text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">PULANG</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -529,10 +815,11 @@
         <!-- Legend at the Bottom -->
         <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 pt-4 mt-2 text-center" style="font-size: 0.85rem;">
             <span class="fw-bold text-secondary text-uppercase me-2" style="letter-spacing: 0.5px;">KETERANGAN:</span>
-            <span class="badge px-3 py-2 fw-bold" style="background-color: #15803d; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">H: Hadir</span>
-            <span class="badge px-3 py-2 fw-bold" style="background-color: #eab308; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">I: Izin</span>
-            <span class="badge px-3 py-2 fw-bold" style="background-color: #06b6d4; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">S: Sakit</span>
-            <span class="badge px-3 py-2 fw-bold" style="background-color: #dc2626; color: #ffffff; border-radius: 6px; font-size: 0.8rem;">A: Alpa</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #198754; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-check-circle me-1"></i>Hadir</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #ffc107; color: #212529; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-exclamation-circle me-1"></i>Izin</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #0dcaf0; color: #212529; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-heart-pulse me-1"></i>Sakit</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #dc3545; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-x-circle me-1"></i>Alpha</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #6c757d; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-dash-circle me-1"></i>Belum Absen</span>
         </div>
 
     </div>
@@ -960,8 +1247,7 @@
         // -------------------------------------------------------------
         // Real-time Kepanitiaan Attendance DataTables Initialization
         // -------------------------------------------------------------
-        let currentKepanitiaan = 'pkkmb';
-        let currentDay = 1;
+        let currentSesiId = {{ $defaultSession ? $defaultSession->id : 'null' }};
 
         let attendanceDataTable = $('#dashboard-attendance-table').DataTable({
             processing: true,
@@ -969,24 +1255,23 @@
             ajax: {
                 url: "{{ route('dashboard.attendance-data') }}",
                 data: function (d) {
-                    d.kepanitiaan = currentKepanitiaan;
-                    d.day = currentDay;
+                    d.sesi_id = currentSesiId;
                 }
             },
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-semibold ps-4' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-semibold ps-3' },
                 { data: 'name', name: 'name', className: 'text-dark' },
                 { data: 'datang', name: 'datang', orderable: false, searchable: false, className: 'text-center' },
-                { data: 'pulang', name: 'pulang', orderable: false, searchable: false, className: 'text-center pe-4' },
+                { data: 'pulang', name: 'pulang', orderable: false, searchable: false, className: 'text-center pe-3' },
             ],
             dom: 't<"d-flex flex-wrap align-items-center justify-content-between p-3 border-top gap-2"ip>',
             pageLength: 10,
             language: {
-                processing: '<div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data presensi...',
-                zeroRecords: "Data tidak ditemukan",
-                info: "Menampilkan <strong>_START_-_END_</strong> dari <strong>_TOTAL_</strong> data",
+                processing: '<div class="spinner-border spinner-border-sm text-success me-2"></div> Memuat data presensi...',
+                zeroRecords: "Data kehadiran tidak ditemukan",
+                info: "Menampilkan <strong>_START_-_END_</strong> dari <strong>_TOTAL_</strong> pegawai",
                 infoEmpty: "Menampilkan 0 data",
-                infoFiltered: "(disaring dari _MAX_ data)",
+                infoFiltered: "(disaring dari _MAX_ pegawai)",
                 paginate: {
                     previous: "<",
                     next: ">"
@@ -999,39 +1284,26 @@
             attendanceDataTable.search(this.value).draw();
         });
 
-        // Day Selector Pill Click
-        $(document).on('click', '.day-pill-btn', function () {
-            $('.day-pill-btn').removeClass('active');
+        // Dynamic Session Pill Switcher
+        $(document).on('click', '.btn-session-pill', function () {
+            $('.btn-session-pill').removeClass('active');
             $(this).addClass('active');
-            currentDay = $(this).data('day');
-            attendanceDataTable.ajax.reload();
-        });
-
-        // Kepanitiaan Tabs Switcher
-        $('.btn-kepanitiaan-tab').on('click', function () {
-            $('.btn-kepanitiaan-tab').removeClass('active fw-bold text-white bg-primary').addClass('text-secondary fw-semibold');
-            $(this).removeClass('text-secondary fw-semibold').addClass('active fw-bold text-white bg-primary');
-            currentKepanitiaan = $(this).data('kepanitiaan');
-            currentDay = 1;
-
-            // Update Day Pills based on kepanitiaan
-            let daySelector = $('#attendance-day-selector');
-            daySelector.empty();
-            let totalDays = (currentKepanitiaan === 'milad') ? 2 : (currentKepanitiaan === 'kuliah_umum' ? 1 : (currentKepanitiaan === 'esq' ? 4 : 3));
-
-            for (let d = 1; d <= totalDays; d++) {
-                let label = (currentKepanitiaan === 'kuliah_umum') ? 'Sesi ' + d : 'H-' + d;
-                let activeClass = (d === 1) ? 'active' : '';
-                daySelector.append('<button type="button" class="day-pill-btn ' + activeClass + '" data-day="' + d + '">' + label + '</button>');
+            currentSesiId = $(this).data('sesi-id');
+            let sessionUrl = $(this).data('url');
+            let exportUrl = $(this).data('export-url') || ('{{ url("presensi/sesi") }}/' + currentSesiId + '/export');
+            if (sessionUrl) {
+                $('#btn-open-session-full').attr('href', sessionUrl);
             }
-
+            if (exportUrl) {
+                $('#btn-export-session-excel').attr('href', exportUrl);
+            }
             attendanceDataTable.ajax.reload();
         });
 
         $('#btn-voice-dashboard').on('click', function() {
-            let voiceText = "Halo {{ auth()->user()->name }}. Berikut ringkasan capaian kinerja untuk unit {{ auth()->user()->unit ?? 'Universitas Ibnu Sina' }}. Total rencana kerja utama terdaftar sebanyak {{ $totalTugas }} tugas dengan tingkat capaian {{ $persentaseSelesai }} persen. Tugas kepanitiaan terdaftar sebanyak {{ $totalKepanitiaan }} tugas, dan tugas insidentil terdaftar sebanyak {{ $totalInsidentil }} tugas. ";
+            let voiceText = "Halo {{ auth()->user()->name }}. Berikut ringkasan capaian kinerja untuk unit {{ auth()->user()->unit ?? 'Universitas Ibnu Sina' }}. Total rencana kerja utama terdaftar sebanyak {{ $totalTugas }} tugas dengan tingkat capaian {{ $persentaseSelesai }} persen. Tugas kepanitiaan terdaftar sebanyak {{ $totalKepanitiaan }} tugas, dan tugas insidentil terdaftar sebanyak {{ $totalInsidentil }} tugas. Saat ini terdapat {{ $activeSessions->count() }} sesi absensi yang aktif.";
             
-            toggleSpeech(voiceText, 'btn-voice-dashboard', 'Dengarkan Suara');
+            toggleSpeech(voiceText, 'btn-voice-dashboard', 'Ringkasan Suara');
         });
 
         function toggleSpeech(text, btnId, defaultText) {

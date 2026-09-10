@@ -131,36 +131,63 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="jabatan_pkkmb" class="form-label">Jabatan Kepanitiaan PKKMB</label>
-                            <input type="text" class="form-control @error('jabatan_pkkmb') is-invalid @enderror" id="jabatan_pkkmb" name="jabatan_pkkmb" value="{{ old('jabatan_pkkmb') }}" placeholder="Masukkan Jabatan PKKMB">
-                            @error('jabatan_pkkmb')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        <!-- Dynamic Jabatan Kepanitiaan Section (Nullable) -->
+                        <div class="col-12 mt-2">
+                            <div class="card border rounded-3 shadow-none" style="background-color: #f8fafc; border-color: #e2e8f0 !important;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                        <div>
+                                            <label class="form-label fw-bold mb-0 text-dark d-flex align-items-center gap-2" style="font-size: 0.92rem;">
+                                                <i class="bi bi-people-fill text-success"></i> Jabatan Kepanitiaan <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.72rem;">Opsional / Nullable</span>
+                                            </label>
+                                            <div class="text-muted small" style="font-size: 0.8rem;">Tambahkan jabatan kepanitiaan jika pegawai terlibat dalam kepanitiaan kampus. Kosongkan jika tidak ada.</div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold d-inline-flex align-items-center" id="btn-add-kepanitiaan">
+                                            <i class="bi bi-plus-circle me-1.5"></i> Tambah Kepanitiaan
+                                        </button>
+                                    </div>
 
-                        <div class="col-md-6">
-                            <label for="jabatan_esq" class="form-label">Jabatan Kepanitiaan ESQ</label>
-                            <input type="text" class="form-control @error('jabatan_esq') is-invalid @enderror" id="jabatan_esq" name="jabatan_esq" value="{{ old('jabatan_esq') }}" placeholder="Masukkan Jabatan ESQ">
-                            @error('jabatan_esq')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                                    <datalist id="suggested-kepanitiaan-list">
+                                        @if(isset($suggestedKepanitiaan))
+                                            @foreach($suggestedKepanitiaan as $sk)
+                                                <option value="{{ $sk }}">
+                                            @endforeach
+                                        @endif
+                                    </datalist>
 
-                        <div class="col-md-6">
-                            <label for="jabatan_milad" class="form-label">Jabatan Kepanitiaan MILAD</label>
-                            <input type="text" class="form-control @error('jabatan_milad') is-invalid @enderror" id="jabatan_milad" name="jabatan_milad" value="{{ old('jabatan_milad') }}" placeholder="Masukkan Jabatan MILAD">
-                            @error('jabatan_milad')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="jabatan_kuliah_umum" class="form-label">Jabatan Kepanitiaan Kuliah Umum</label>
-                            <input type="text" class="form-control @error('jabatan_kuliah_umum') is-invalid @enderror" id="jabatan_kuliah_umum" name="jabatan_kuliah_umum" value="{{ old('jabatan_kuliah_umum') }}" placeholder="Masukkan Jabatan Kuliah Umum">
-                            @error('jabatan_kuliah_umum')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                                    <div id="kepanitiaan-container" class="d-flex flex-column gap-2 mt-2">
+                                        @php
+                                            $oldItems = old('jabatan_kepanitiaan', []);
+                                        @endphp
+                                        @if(!empty($oldItems) && is_array($oldItems))
+                                            @foreach($oldItems as $idx => $item)
+                                                <div class="kepanitiaan-row row g-2 align-items-center bg-white p-2 rounded-3 border">
+                                                    <div class="col-md-6">
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-bookmark"></i></span>
+                                                            <input type="text" name="jabatan_kepanitiaan[{{ $idx }}][nama]" class="form-control" list="suggested-kepanitiaan-list" value="{{ $item['nama'] ?? '' }}" placeholder="Nama Kepanitiaan (Contoh: PKKMB, Akreditasi, Wisuda)">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-person-badge"></i></span>
+                                                            <input type="text" name="jabatan_kepanitiaan[{{ $idx }}][jabatan]" class="form-control" value="{{ $item['jabatan'] ?? '' }}" placeholder="Jabatan (Contoh: Ketua, Sekretaris, Anggota)">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-1 text-center">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-kepanitiaan rounded-pill px-2 py-1" title="Hapus Baris">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                    <div id="empty-kepanitiaan-notice" class="text-center py-3 text-muted small border border-dashed rounded-3 bg-white mt-1 {{ !empty($oldItems) ? 'd-none' : '' }}">
+                                        <i class="bi bi-info-circle me-1 text-info"></i> Belum ada jabatan kepanitiaan yang ditambahkan. Klik <strong>+ Tambah Kepanitiaan</strong> jika pegawai ini memiliki tugas kepanitiaan.
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-md-3">
@@ -207,6 +234,43 @@
                 closeOnSelect: false
             });
         }
+
+        // Dynamic Kepanitiaan Repeater
+        let kepanitiaanIdx = $('#kepanitiaan-container .kepanitiaan-row').length;
+
+        $('#btn-add-kepanitiaan').on('click', function() {
+            $('#empty-kepanitiaan-notice').addClass('d-none');
+            const rowHtml = `
+                <div class="kepanitiaan-row row g-2 align-items-center bg-white p-2 rounded-3 border shadow-sm">
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-bookmark"></i></span>
+                            <input type="text" name="jabatan_kepanitiaan[${kepanitiaanIdx}][nama]" class="form-control" list="suggested-kepanitiaan-list" placeholder="Nama Kepanitiaan (Contoh: PKKMB, Akreditasi, Wisuda)">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-person-badge"></i></span>
+                            <input type="text" name="jabatan_kepanitiaan[${kepanitiaanIdx}][jabatan]" class="form-control" placeholder="Jabatan (Contoh: Ketua, Sekretaris, Anggota)">
+                        </div>
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-kepanitiaan rounded-pill px-2 py-1" title="Hapus Baris">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#kepanitiaan-container').append(rowHtml);
+            kepanitiaanIdx++;
+        });
+
+        $(document).on('click', '.btn-remove-kepanitiaan', function() {
+            $(this).closest('.kepanitiaan-row').remove();
+            if ($('#kepanitiaan-container .kepanitiaan-row').length === 0) {
+                $('#empty-kepanitiaan-notice').removeClass('d-none');
+            }
+        });
     });
 </script>
 @endpush

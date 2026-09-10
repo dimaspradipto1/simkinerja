@@ -34,10 +34,9 @@ class UserRequest extends FormRequest
             'nidn' => ['nullable', 'string', 'max:100'],
             'unit' => ['nullable', 'string', 'max:255'],
             'jabatan' => ['nullable', 'string', 'max:255'],
-            'jabatan_pkkmb' => ['nullable', 'string', 'max:255'],
-            'jabatan_esq' => ['nullable', 'string', 'max:255'],
-            'jabatan_milad' => ['nullable', 'string', 'max:255'],
-            'jabatan_kuliah_umum' => ['nullable', 'string', 'max:255'],
+            'jabatan_kepanitiaan' => ['nullable', 'array'],
+            'jabatan_kepanitiaan.*.nama' => ['nullable', 'string', 'max:255'],
+            'jabatan_kepanitiaan.*.jabatan' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', 'max:100'],
         ];
     }

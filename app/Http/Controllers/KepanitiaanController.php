@@ -474,7 +474,7 @@ class KepanitiaanController extends Controller
      */
     private function renderActionButtons($row, $authUser, $routePrefix = 'kepanitiaan', $deleteJsFunc = 'deleteKepanitiaan', $collapseId = null)
     {
-        $btn = '<div class="action-buttons-wrap">';
+        $btn = '<div class="action-buttons-wrap d-flex align-items-center flex-wrap gap-2">';
 
         $waktuMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
         $waktuSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
@@ -626,7 +626,7 @@ class KepanitiaanController extends Controller
             ]);
 
             $safeTitle = htmlspecialchars(addslashes($firstLineTitle), ENT_QUOTES, 'UTF-8');
-            $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-1">';
+            $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-2">';
             $btn .= '<button type="button" class="btn btn-outline-primary btn-manage-sesi d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" onclick="window.openManageSesiModal(' . $row->id . ', \'' . $safeTitle . '\')" title="Presensi Kepanitiaan"><i class="bi bi-calendar2-check"></i> <span class="d-none d-md-inline">Presensi</span></button>';
             $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span class="d-none d-md-inline">Tag</span></button>';
             $btn .= '<a href="' . $lpjUrl . '" class="btn btn-outline-success btn-create-lpj d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span class="d-none d-md-inline">Submit LPJ</span></a>';
@@ -841,6 +841,7 @@ class KepanitiaanController extends Controller
 
         if ($request->has('tagged_users')) {
             $kepanitiaan->taggedUsers()->sync($request->input('tagged_users'));
+            $kepanitiaan->syncToKegiatan();
         }
 
         Alert::success('Berhasil', 'Kepanitiaan berhasil ditambahkan')
@@ -954,6 +955,7 @@ class KepanitiaanController extends Controller
         }
 
         $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
+        $kepanitiaan->syncToKegiatan();
 
         Alert::success('Berhasil', 'Kepanitiaan berhasil diperbarui')
             ->toToast()
@@ -1401,6 +1403,7 @@ class KepanitiaanController extends Controller
         ]);
 
         $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
+        $kepanitiaan->syncToKegiatan();
 
         return response()->json([
             'success' => true,

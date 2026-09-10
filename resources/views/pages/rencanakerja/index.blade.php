@@ -3,13 +3,114 @@
 @section('content')
 <style>
     .card-header-green {
-        background-color: #15432d;
+        background: linear-gradient(135deg, #15432d 0%, #1e5a3c 100%);
         color: #ffffff;
-        padding: 10px 16px;
-        border-top-left-radius: 6px;
-        border-top-right-radius: 6px;
+        padding: 12px 20px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+    }
+    .btn-header-action {
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 13px;
+        font-size: 0.82rem;
         font-weight: 600;
-        font-size: 0.95rem;
+        border-radius: 8px;
+        transition: all 0.15s ease-in-out;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+    .btn-header-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    }
+    .btn-header-action:active {
+        transform: translateY(0);
+    }
+    .btn-light-modern {
+        background: #ffffff;
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-light-modern:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+        color: #0f172a !important;
+    }
+    .btn-voice-modern {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #ffffff !important;
+        border: none;
+        box-shadow: 0 1px 3px rgba(217, 119, 6, 0.35);
+    }
+    .btn-voice-modern:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        color: #ffffff !important;
+    }
+    .btn-export-modern {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff !important;
+        border: none;
+        box-shadow: 0 1px 3px rgba(5, 150, 105, 0.35);
+    }
+    .btn-export-modern:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: #ffffff !important;
+    }
+    .filter-status-modern {
+        height: 35px;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0 8px 0 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .filter-status-modern select {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #1e293b;
+        background-color: transparent;
+        padding: 0 20px 0 2px;
+        cursor: pointer;
+        height: 100%;
+    }
+    .task-action-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .task-action-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 2px;
+    }
+    .action-buttons-wrap {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    .action-buttons-wrap .timer-status-group,
+    .action-buttons-wrap .badge-status-group,
+    .action-buttons-wrap .owner-actions-group {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+    .action-buttons-wrap .btn,
+    .action-buttons-wrap .badge {
+        margin: 0 !important;
     }
     .btn-green-add {
         background-color: #2d6a4f;
@@ -485,31 +586,41 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
-                <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                    <div class="header-title-text fw-semibold text-break">
-                        Rencana Kerja &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}</span>
+                <div class="card-header-green d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+                    <div class="header-title-text d-flex align-items-center gap-2 flex-wrap text-white py-1">
+                        <i class="bi bi-kanban-fill text-warning me-1" style="font-size: 1.15rem;"></i>
+                        <span class="fw-bold text-white fs-6 mb-0">Rencana Kerja</span>
+                        <span class="text-white d-none d-sm-inline">:</span>
+                        <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
+                            {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}
+                        </span>
                     </div>
-                    <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
-                        <div class="filter-status-wrapper d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-2xs">
-                            <label for="filter-status" class="small fw-bold text-secondary mb-0 px-1 d-none d-lg-inline" style="font-size: 0.78rem;"><i class="bi bi-funnel-fill text-success me-1"></i>Status:</label>
-                            <select id="filter-status" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark py-0" style="font-size: 0.82rem; height: 28px; width: auto; cursor: pointer;">
+                    <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-xl-0">
+                        <div class="filter-status-modern" title="Filter checklist berdasarkan status">
+                            <i class="bi bi-funnel-fill text-success" style="font-size: 0.85rem;"></i>
+                            <span class="small fw-semibold text-secondary text-nowrap d-none d-xxl-inline" style="font-size: 0.78rem;">Status:</span>
+                            <select id="filter-status" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark p-0 pe-3 shadow-none">
                                 <option value="">Semua Status</option>
-                                <option value="Selesai">✅ Selesai</option>
-                                <option value="Proses">⏳ Proses / Berjalan</option>
-                                <option value="Belum Dimulai">⚪ Belum Dimulai</option>
+                                <option value="Selesai">Selesai</option>
+                                <option value="Proses">Proses / Berjalan</option>
+                                <option value="Belum Dimulai">Belum Dimulai</option>
                             </select>
                         </div>
-                        <button type="button" id="btn-toggle-all-cards" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" title="Buka atau tutup semua rincian">
-                            <i class="bi bi-arrows-expand me-1"></i> <span id="toggle-all-text">Buka Semua</span>
+                        <button type="button" id="btn-toggle-all-cards" class="btn btn-header-action btn-light-modern" title="Buka atau tutup semua rincian">
+                            <i class="bi bi-arrows-expand me-1.5 text-secondary"></i>
+                            <span id="toggle-all-text">Buka Semua</span>
                         </button>
-                        <button type="button" id="btn-voice-rencanakerja" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap">
-                            <i class="bi bi-volume-up-fill me-1"></i> Suara
+                        <button type="button" id="btn-voice-rencanakerja" class="btn btn-header-action btn-voice-modern" title="Dengarkan / Perintah Suara">
+                            <i class="bi bi-volume-up-fill me-1.5"></i>
+                            <span>Suara</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-success text-white fw-semibold text-nowrap" style="background-color: #2d6a4f; border-color: #2d6a4f;" data-bs-toggle="modal" data-bs-target="#modalExportExcel">
-                            <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export Laporan
+                        <button type="button" class="btn btn-header-action btn-export-modern" data-bs-toggle="modal" data-bs-target="#modalExportExcel" title="Export Laporan Rencana Kerja ke Excel">
+                            <i class="bi bi-file-earmark-arrow-down-fill me-1.5"></i>
+                            <span>Export Laporan</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-light border text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
-                            <i class="bi bi-file-earmark-excel text-success me-1"></i> Import Excel
+                        <button type="button" class="btn btn-header-action btn-light-modern" data-bs-toggle="modal" data-bs-target="#modalImportExcel" title="Import Rencana Kerja dari Excel">
+                            <i class="bi bi-file-earmark-excel-fill text-success me-1.5"></i>
+                            <span>Import Excel</span>
                         </button>
                     </div>
                 </div>

@@ -17,16 +17,6 @@ use App\Http\Controllers\InsidentilController;
 use App\Http\Controllers\RekapitulasiInsidentilController;
 use App\Http\Controllers\AnalisisKeterlambatanController;
 use App\Http\Controllers\MilestoneController;
-use App\Http\Controllers\AbsensiPkkmbPertamaController;
-use App\Http\Controllers\AbsensiPkkmbKeduaController;
-use App\Http\Controllers\AbsensiPkkmbKetigaController;
-use App\Http\Controllers\AbsensiEsqPertamaController;
-use App\Http\Controllers\AbsensiEsqKeduaController;
-use App\Http\Controllers\AbsensiEsqKetigaController;
-use App\Http\Controllers\AbsensiEsqKeempatController;
-use App\Http\Controllers\AbsensiMiladPertamaController;
-use App\Http\Controllers\AbsensiMiladKeduaController;
-use App\Http\Controllers\AbsensiKuliahUmumPertamaController;
 use App\Http\Controllers\RekapitulasiAbsensiController;
 use App\Http\Controllers\ScanAbsensiController;
 use App\Http\Controllers\AbsensiSettingController;
@@ -165,60 +155,6 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
         ->parameters([
             'evaluasi-pengenalan-wawasan-ibnu-sina' => 'wawasan'
         ]);
-
-    Route::get('absensi-pkkmb-pertama/export-excel', [AbsensiPkkmbPertamaController::class, 'exportExcel'])->name('absensi-pkkmb-pertama.export-excel');
-    Route::get('absensi-pkkmb-pertama/scan', [AbsensiPkkmbPertamaController::class, 'scan'])->name('absensi-pkkmb-pertama.scan');
-    Route::get('absensi-pkkmb-pertama/scan-proses', [AbsensiPkkmbPertamaController::class, 'scanProses'])->name('absensi-pkkmb-pertama.scan-proses');
-    Route::post('absensi-pkkmb-pertama/cleanup-orphaned', [AbsensiPkkmbPertamaController::class, 'cleanupOrphaned'])->name('absensi-pkkmb-pertama.cleanup-orphaned');
-    Route::resource('absensi-pkkmb-pertama', AbsensiPkkmbPertamaController::class);
-
-    Route::get('absensi-pkkmb-kedua/export-excel', [AbsensiPkkmbKeduaController::class, 'exportExcel'])->name('absensi-pkkmb-kedua.export-excel');
-    Route::get('absensi-pkkmb-kedua/scan', [AbsensiPkkmbKeduaController::class, 'scan'])->name('absensi-pkkmb-kedua.scan');
-    Route::get('absensi-pkkmb-kedua/scan-proses', [AbsensiPkkmbKeduaController::class, 'scanProses'])->name('absensi-pkkmb-kedua.scan-proses');
-    Route::post('absensi-pkkmb-kedua/cleanup-orphaned', [AbsensiPkkmbKeduaController::class, 'cleanupOrphaned'])->name('absensi-pkkmb-kedua.cleanup-orphaned');
-    Route::resource('absensi-pkkmb-kedua', AbsensiPkkmbKeduaController::class);
-
-    Route::get('absensi-pkkmb-ketiga/export-excel', [AbsensiPkkmbKetigaController::class, 'exportExcel'])->name('absensi-pkkmb-ketiga.export-excel');
-    Route::get('absensi-pkkmb-ketiga/scan', [AbsensiPkkmbKetigaController::class, 'scan'])->name('absensi-pkkmb-ketiga.scan');
-    Route::get('absensi-pkkmb-ketiga/scan-proses', [AbsensiPkkmbKetigaController::class, 'scanProses'])->name('absensi-pkkmb-ketiga.scan-proses');
-    Route::post('absensi-pkkmb-ketiga/cleanup-orphaned', [AbsensiPkkmbKetigaController::class, 'cleanupOrphaned'])->name('absensi-pkkmb-ketiga.cleanup-orphaned');
-    Route::resource('absensi-pkkmb-ketiga', AbsensiPkkmbKetigaController::class);
-
-    Route::get('absensi-esq-pertama/export-excel', [AbsensiEsqPertamaController::class, 'exportExcel'])->name('absensi-esq-pertama.export-excel');
-    Route::get('absensi-esq-pertama/scan', [AbsensiEsqPertamaController::class, 'scan'])->name('absensi-esq-pertama.scan');
-    Route::get('absensi-esq-pertama/scan-proses', [AbsensiEsqPertamaController::class, 'scanProses'])->name('absensi-esq-pertama.scan-proses');
-    Route::resource('absensi-esq-pertama', AbsensiEsqPertamaController::class);
-
-    Route::get('absensi-esq-kedua/export-excel', [AbsensiEsqKeduaController::class, 'exportExcel'])->name('absensi-esq-kedua.export-excel');
-    Route::get('absensi-esq-kedua/scan', [AbsensiEsqKeduaController::class, 'scan'])->name('absensi-esq-kedua.scan');
-    Route::get('absensi-esq-kedua/scan-proses', [AbsensiEsqKeduaController::class, 'scanProses'])->name('absensi-esq-kedua.scan-proses');
-    Route::resource('absensi-esq-kedua', AbsensiEsqKeduaController::class);
-
-    Route::get('absensi-esq-ketiga/export-excel', [AbsensiEsqKetigaController::class, 'exportExcel'])->name('absensi-esq-ketiga.export-excel');
-    Route::get('absensi-esq-ketiga/scan', [AbsensiEsqKetigaController::class, 'scan'])->name('absensi-esq-ketiga.scan');
-    Route::get('absensi-esq-ketiga/scan-proses', [AbsensiEsqKetigaController::class, 'scanProses'])->name('absensi-esq-ketiga.scan-proses');
-    Route::resource('absensi-esq-ketiga', AbsensiEsqKetigaController::class);
-
-    Route::get('absensi-esq-keempat/export-excel', [AbsensiEsqKeempatController::class, 'exportExcel'])->name('absensi-esq-keempat.export-excel');
-    Route::get('absensi-esq-keempat/scan', [AbsensiEsqKeempatController::class, 'scan'])->name('absensi-esq-keempat.scan');
-    Route::get('absensi-esq-keempat/scan-proses', [AbsensiEsqKeempatController::class, 'scanProses'])->name('absensi-esq-keempat.scan-proses');
-    Route::resource('absensi-esq-keempat', AbsensiEsqKeempatController::class);
-
-    Route::get('absensi-milad-pertama/export-excel', [AbsensiMiladPertamaController::class, 'exportExcel'])->name('absensi-milad-pertama.export-excel');
-    Route::get('absensi-milad-pertama/scan', [AbsensiMiladPertamaController::class, 'scan'])->name('absensi-milad-pertama.scan');
-    Route::get('absensi-milad-pertama/scan-proses', [AbsensiMiladPertamaController::class, 'scanProses'])->name('absensi-milad-pertama.scan-proses');
-    Route::resource('absensi-milad-pertama', AbsensiMiladPertamaController::class);
-
-    Route::get('absensi-milad-kedua/export-excel', [AbsensiMiladKeduaController::class, 'exportExcel'])->name('absensi-milad-kedua.export-excel');
-    Route::get('absensi-milad-kedua/scan', [AbsensiMiladKeduaController::class, 'scan'])->name('absensi-milad-kedua.scan');
-    Route::get('absensi-milad-kedua/scan-proses', [AbsensiMiladKeduaController::class, 'scanProses'])->name('absensi-milad-kedua.scan-proses');
-    Route::resource('absensi-milad-kedua', AbsensiMiladKeduaController::class);
-
-    Route::get('absensi-kuliah-umum-pertama/export-excel', [AbsensiKuliahUmumPertamaController::class, 'exportExcel'])->name('absensi-kuliah-umum-pertama.export-excel');
-    Route::get('absensi-kuliah-umum-pertama/scan', [AbsensiKuliahUmumPertamaController::class, 'scan'])->name('absensi-kuliah-umum-pertama.scan');
-    Route::get('absensi-kuliah-umum-pertama/scan-proses', [AbsensiKuliahUmumPertamaController::class, 'scanProses'])->name('absensi-kuliah-umum-pertama.scan-proses');
-    Route::resource('absensi-kuliah-umum-pertama', AbsensiKuliahUmumPertamaController::class);
-
     // Rekapitulasi Absensi Kepanitiaan (Sudah & Belum Absen)
     Route::get('rekapitulasi-absensi', [RekapitulasiAbsensiController::class, 'index'])->name('rekapitulasi-absensi.index');
     Route::get('rekapitulasi-absensi/data-sudah', [RekapitulasiAbsensiController::class, 'getDataSudah'])->name('rekapitulasi-absensi.data-sudah');
@@ -234,6 +170,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('presensi/sesi/{id}', [\App\Http\Controllers\UniversalPresensiController::class, 'showSesi'])->name('presensi.sesi.show');
     Route::get('presensi/sesi/{id}/data', [\App\Http\Controllers\UniversalPresensiController::class, 'getSesiData'])->name('presensi.sesi.data');
     Route::post('presensi/sesi/{id}/manual', [\App\Http\Controllers\UniversalPresensiController::class, 'storeManualPresensi'])->name('presensi.sesi.manual');
+    Route::post('presensi/sesi/{id}/bulk-update', [\App\Http\Controllers\UniversalPresensiController::class, 'bulkUpdatePresensi'])->name('presensi.sesi.bulk-update');
     Route::delete('presensi/presensi/{id}', [\App\Http\Controllers\UniversalPresensiController::class, 'destroyPresensi'])->name('presensi.presensi.destroy');
     Route::get('kepanitiaan/{id}/sesi', [\App\Http\Controllers\UniversalPresensiController::class, 'getSesiByKepanitiaan'])->name('presensi.sesi.list');
     Route::post('presensi/sesi/{id}/toggle', [\App\Http\Controllers\UniversalPresensiController::class, 'toggleStatus'])->name('presensi.sesi.toggle');

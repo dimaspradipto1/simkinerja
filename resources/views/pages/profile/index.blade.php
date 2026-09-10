@@ -116,25 +116,22 @@
 
                             <h6 class="card-title fw-bold text-success mb-3" style="color: #15432d !important;">Jabatan Kepanitiaan</h6>
 
-                            <div class="row mb-3">
-                                <div class="col-lg-4 col-md-4 text-muted fw-semibold">Jabatan PKKMB</div>
-                                <div class="col-lg-8 col-md-8 text-dark">{{ $user->jabatan_pkkmb ?: '-' }}</div>
-                            </div>
+                            @php
+                                $daftarKepanitiaan = $user->daftar_jabatan_kepanitiaan;
+                            @endphp
 
-                            <div class="row mb-3">
-                                <div class="col-lg-4 col-md-4 text-muted fw-semibold">Jabatan ESQ</div>
-                                <div class="col-lg-8 col-md-8 text-dark">{{ $user->jabatan_esq ?: '-' }}</div>
-                            </div>
-
-                            <div class="row mb-3">
-                                <div class="col-lg-4 col-md-4 text-muted fw-semibold">Jabatan MILAD</div>
-                                <div class="col-lg-8 col-md-8 text-dark">{{ $user->jabatan_milad ?: '-' }}</div>
-                            </div>
-
-                            <div class="row mb-3">
-                                <div class="col-lg-4 col-md-4 text-muted fw-semibold">Jabatan Kuliah Umum</div>
-                                <div class="col-lg-8 col-md-8 text-dark">{{ $user->jabatan_kuliah_umum ?: '-' }}</div>
-                            </div>
+                            @if(!empty($daftarKepanitiaan) && count($daftarKepanitiaan) > 0)
+                                <div class="d-flex flex-column gap-2 mb-3">
+                                    @foreach($daftarKepanitiaan as $kp)
+                                        <div class="d-flex align-items-center justify-content-between p-2.5 px-3 rounded-3 border bg-light">
+                                            <span class="fw-semibold text-dark"><i class="bi bi-bookmark-fill text-success me-2"></i>{{ $kp['nama'] }}</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5" style="font-size: 0.82rem;">{{ $kp['jabatan'] }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="text-muted small py-2"><i class="bi bi-dash-circle me-1"></i>Tidak ada jabatan kepanitiaan yang terdaftar.</div>
+                            @endif
                         </div>
 
                         <!-- Tab 2: Edit Profil Form -->
@@ -194,34 +191,43 @@
                                 </div>
 
                                 <hr class="my-4">
-                                <h6 class="fw-bold text-success mb-3" style="color: #15432d !important;">Jabatan Kepanitiaan</h6>
-
-                                <div class="row mb-3">
-                                    <label for="jabatan_pkkmb" class="col-md-4 col-lg-3 col-form-label fw-semibold">Jabatan PKKMB</label>
-                                    <div class="col-md-8 col-lg-9">
-                                        <input name="jabatan_pkkmb" type="text" class="form-control" id="jabatan_pkkmb" value="{{ old('jabatan_pkkmb', $user->jabatan_pkkmb) }}" placeholder="Jabatan kepanitiaan PKKMB">
-                                    </div>
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h6 class="fw-bold text-success mb-0" style="color: #15432d !important;">Jabatan Kepanitiaan (Dinamis / Nullable)</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" id="btn-add-profile-kepanitiaan">
+                                        <i class="bi bi-plus-circle me-1"></i> Tambah Kepanitiaan
+                                    </button>
                                 </div>
 
-                                <div class="row mb-3">
-                                    <label for="jabatan_esq" class="col-md-4 col-lg-3 col-form-label fw-semibold">Jabatan ESQ</label>
-                                    <div class="col-md-8 col-lg-9">
-                                        <input name="jabatan_esq" type="text" class="form-control" id="jabatan_esq" value="{{ old('jabatan_esq', $user->jabatan_esq) }}" placeholder="Jabatan kepanitiaan ESQ">
-                                    </div>
+                                <div id="profile-kepanitiaan-container" class="d-flex flex-column gap-2 mb-3">
+                                    @php
+                                        $profileItems = old('jabatan_kepanitiaan', $user->daftar_jabatan_kepanitiaan ?? []);
+                                    @endphp
+                                    @if(!empty($profileItems) && is_array($profileItems))
+                                        @foreach($profileItems as $idx => $item)
+                                            <div class="profile-kepanitiaan-row row g-2 align-items-center bg-light p-2 rounded-3 border">
+                                                <div class="col-md-6">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-white"><i class="bi bi-bookmark"></i></span>
+                                                        <input type="text" name="jabatan_kepanitiaan[{{ $idx }}][nama]" class="form-control" value="{{ $item['nama'] ?? '' }}" placeholder="Nama Kepanitiaan">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-white"><i class="bi bi-person-badge"></i></span>
+                                                        <input type="text" name="jabatan_kepanitiaan[{{ $idx }}][jabatan]" class="form-control" value="{{ $item['jabatan'] ?? '' }}" placeholder="Jabatan">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-1 text-center">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-profile-kepanitiaan rounded-pill px-2 py-1" title="Hapus">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @endif
                                 </div>
-
-                                <div class="row mb-3">
-                                    <label for="jabatan_milad" class="col-md-4 col-lg-3 col-form-label fw-semibold">Jabatan MILAD</label>
-                                    <div class="col-md-8 col-lg-9">
-                                        <input name="jabatan_milad" type="text" class="form-control" id="jabatan_milad" value="{{ old('jabatan_milad', $user->jabatan_milad) }}" placeholder="Jabatan kepanitiaan MILAD">
-                                    </div>
-                                </div>
-
-                                <div class="row mb-3">
-                                    <label for="jabatan_kuliah_umum" class="col-md-4 col-lg-3 col-form-label fw-semibold">Jabatan Kuliah Umum</label>
-                                    <div class="col-md-8 col-lg-9">
-                                        <input name="jabatan_kuliah_umum" type="text" class="form-control" id="jabatan_kuliah_umum" value="{{ old('jabatan_kuliah_umum', $user->jabatan_kuliah_umum) }}" placeholder="Jabatan kepanitiaan Kuliah Umum">
-                                    </div>
+                                <div id="empty-profile-kepanitiaan-notice" class="text-center py-2 text-muted small border border-dashed rounded-3 bg-light mb-3 {{ !empty($profileItems) ? 'd-none' : '' }}">
+                                    Belum ada jabatan kepanitiaan. Klik <strong>+ Tambah Kepanitiaan</strong> jika ada.
                                 </div>
 
                                 @if($user->isAdmin() || $user->isSuperAdmin())
@@ -248,3 +254,45 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        let pKepanitiaanIdx = $('#profile-kepanitiaan-container .profile-kepanitiaan-row').length;
+
+        $('#btn-add-profile-kepanitiaan').on('click', function() {
+            $('#empty-profile-kepanitiaan-notice').addClass('d-none');
+            const rowHtml = `
+                <div class="profile-kepanitiaan-row row g-2 align-items-center bg-light p-2 rounded-3 border">
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-bookmark"></i></span>
+                            <input type="text" name="jabatan_kepanitiaan[${pKepanitiaanIdx}][nama]" class="form-control" placeholder="Nama Kepanitiaan">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-person-badge"></i></span>
+                            <input type="text" name="jabatan_kepanitiaan[${pKepanitiaanIdx}][jabatan]" class="form-control" placeholder="Jabatan">
+                        </div>
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-profile-kepanitiaan rounded-pill px-2 py-1" title="Hapus">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#profile-kepanitiaan-container').append(rowHtml);
+            pKepanitiaanIdx++;
+        });
+
+        $(document).on('click', '.btn-remove-profile-kepanitiaan', function() {
+            $(this).closest('.profile-kepanitiaan-row').remove();
+            if ($('#profile-kepanitiaan-container .profile-kepanitiaan-row').length === 0) {
+                $('#empty-profile-kepanitiaan-notice').removeClass('d-none');
+            }
+        });
+    });
+</script>
+@endpush

@@ -136,17 +136,24 @@
 @endpush
 
 @section('content')
+@php
+    $isAdmin = Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin() || Auth::user()->hasRole('REKTOR') || (trim(strtoupper(Auth::user()->jabatan ?? '')) === 'REKTOR'));
+@endphp
 <div class="pagetitle">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
             <h1 class="d-flex align-items-center gap-2 mb-1" style="font-weight: 700;">
-                <i class="bi bi-clipboard-data-fill text-primary"></i> Rekapitulasi Presensi Kepanitiaan
+                @if($isAdmin)
+                    <i class="bi bi-clipboard-data-fill text-primary"></i> Rekapitulasi Presensi Kepanitiaan
+                @else
+                    <i class="bi bi-person-check-fill text-success"></i> Riwayat Presensi Kepanitiaan Saya
+                @endif
             </h1>
             <nav>
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-                    <li class="breadcrumb-item">Absensi</li>
-                    <li class="breadcrumb-item active">Rekapitulasi</li>
+                    <li class="breadcrumb-item">Presensi</li>
+                    <li class="breadcrumb-item active">{{ $isAdmin ? 'Rekapitulasi' : 'Riwayat Presensi Saya' }}</li>
                 </ol>
             </nav>
         </div>
@@ -236,7 +243,7 @@
                         <i class="bi bi-people-fill"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <div class="text-muted stat-label fw-semibold">Total Pegawai</div>
+                        <div class="text-muted stat-label fw-semibold">{{ $isAdmin ? 'Total Pegawai' : 'Data Pegawai' }}</div>
                         <h4 class="fw-bold mb-0 text-dark" id="stat-total-pegawai">0</h4>
                     </div>
                 </div>
@@ -315,9 +322,11 @@
                 </div>
                 <div>
                     <h5 class="card-title m-0 p-0 fs-6 fw-bold text-success">
-                        Pegawai SUDAH Absensi
+                        {{ $isAdmin ? 'Pegawai SUDAH Absensi' : 'Riwayat Presensi Hadir Anda' }}
                     </h5>
-                    <p class="text-muted small m-0 d-none d-sm-block" id="desc-tabel-sudah">Pegawai yang telah mencatatkan kehadiran.</p>
+                    <p class="text-muted small m-0 d-none d-sm-block" id="desc-tabel-sudah">
+                        {{ $isAdmin ? 'Pegawai yang telah mencatatkan kehadiran.' : 'Daftar sesi kepanitiaan yang telah Anda hadiri / tercatat kehadirannya.' }}
+                    </p>
                 </div>
             </div>
             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 px-md-3 py-2 rounded-pill fw-bold" id="badge-total-sudah" style="font-size: 0.82rem;">
@@ -354,9 +363,11 @@
                 </div>
                 <div>
                     <h5 class="card-title m-0 p-0 fs-6 fw-bold text-danger">
-                        Pegawai BELUM Absensi
+                        {{ $isAdmin ? 'Pegawai BELUM Absensi' : 'Sesi Belum Diikuti / Belum Hadir' }}
                     </h5>
-                    <p class="text-muted small m-0 d-none d-sm-block" id="desc-tabel-belum">Pegawai yang belum melakukan presensi pada sesi ini.</p>
+                    <p class="text-muted small m-0 d-none d-sm-block" id="desc-tabel-belum">
+                        {{ $isAdmin ? 'Pegawai yang belum melakukan presensi pada sesi ini.' : 'Status sesi kepanitiaan yang belum Anda hadiri / belum melakukan presensi.' }}
+                    </p>
                 </div>
             </div>
             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 px-md-3 py-2 rounded-pill fw-bold" id="badge-total-belum" style="font-size: 0.82rem;">

@@ -106,7 +106,15 @@ class LpjDataTable extends DataTable
      */
     public function query(Lpj $model): QueryBuilder
     {
-        return $model->newQuery()->with('user')->orderBy('id', 'desc');
+        $query = $model->newQuery()->with('user')->orderBy('id', 'desc');
+        $user = Auth::user();
+
+        // Opsi B: Jika bukan Admin / Super Admin / Pimpinan, hanya tampilkan LPJ milik pengguna sendiri
+        if ($user && !$user->isAdmin() && !$user->isSuperAdmin() && !$user->isPimpinanRektorat() && !$user->isPimpinanUnit()) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query;
     }
 
     /**

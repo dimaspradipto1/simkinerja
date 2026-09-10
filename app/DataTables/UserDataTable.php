@@ -58,7 +58,18 @@ class UserDataTable extends DataTable
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['checkbox', 'roles', 'is_active', 'action']);
+            ->addColumn('jabatan_kepanitiaan', function ($row) {
+                $list = $row->daftar_jabatan_kepanitiaan;
+                if (empty($list)) {
+                    return '<span class="text-muted">-</span>';
+                }
+                $badges = [];
+                foreach ($list as $item) {
+                    $badges[] = '<div class="mb-1 text-nowrap"><span class="badge bg-light text-dark border me-1">' . e($item['nama']) . '</span><span class="badge bg-success-subtle text-success border border-success-subtle">' . e($item['jabatan']) . '</span></div>';
+                }
+                return implode('', $badges);
+            })
+            ->rawColumns(['checkbox', 'roles', 'is_active', 'jabatan_kepanitiaan', 'action']);
     }
 
     /**
@@ -146,10 +157,9 @@ class UserDataTable extends DataTable
             Column::make('nidn')->title('NUP')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('unit')->title('Unit')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('jabatan')->title('Jabatan')->addClass('text-nowrap align-middle')->defaultContent('-'),
-            Column::make('jabatan_pkkmb')->title('Jabatan PKKMB')->addClass('text-nowrap align-middle')->defaultContent('-'),
-            Column::make('jabatan_esq')->title('Jabatan ESQ')->addClass('text-nowrap align-middle')->defaultContent('-'),
-            Column::make('jabatan_milad')->title('Jabatan MILAD')->addClass('text-nowrap align-middle')->defaultContent('-'),
-            Column::make('jabatan_kuliah_umum')->title('Jabatan Kuliah Umum')->addClass('text-nowrap align-middle')->defaultContent('-'),
+            Column::computed('jabatan_kepanitiaan')
+                ->title('Jabatan Kepanitiaan')
+                ->addClass('text-nowrap align-middle'),
             Column::make('roles')->title('Role')->addClass('text-nowrap align-middle'),
             Column::make('is_active')->title('Status')->addClass('text-nowrap text-center align-middle'),
             Column::computed('action')

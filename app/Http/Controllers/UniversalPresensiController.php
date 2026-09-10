@@ -8,6 +8,7 @@ use App\Models\KepanitiaanSesiAbsensi;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -396,6 +397,16 @@ class UniversalPresensiController extends Controller
 
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
 
+        $totalUsers = User::count();
+        $attendedUserIds = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->where(function ($q) {
+                $q->whereNotNull('hadir_datang')
+                  ->orWhereNotNull('hadir_pulang');
+            })->pluck('user_id')->toArray();
+
+        $totalSudahAbsen = count($attendedUserIds);
+        $totalBelumAbsen = max(0, $totalUsers - $totalSudahAbsen);
+
         $totalPresensi = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)->count();
         $totalHadirDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
             ->where('hadir_datang', 'Hadir')->count();
@@ -407,11 +418,27 @@ class UniversalPresensiController extends Controller
                   ->orWhereIn('hadir_pulang', ['Izin', 'Sakit', 'Alpha']);
             })->count();
 
+        $totalLengkap = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->whereNotNull('hadir_datang')
+            ->whereNotNull('hadir_pulang')->count();
+        $totalBelumPulang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->whereNotNull('hadir_datang')
+            ->whereNull('hadir_pulang')->count();
+        $totalBelumDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->whereNull('hadir_datang')
+            ->whereNotNull('hadir_pulang')->count();
+
         $users = User::orderBy('name', 'asc')->get();
         $allSesis = KepanitiaanSesiAbsensi::orderBy('tanggal', 'desc')->orderBy('id', 'asc')->get();
 
         return view('pages.presensi.show', compact(
             'sesi',
+            'totalUsers',
+            'totalSudahAbsen',
+            'totalBelumAbsen',
+            'totalLengkap',
+            'totalBelumPulang',
+            'totalBelumDatang',
             'totalPresensi',
             'totalHadirDatang',
             'totalHadirPulang',
@@ -422,48 +449,128 @@ class UniversalPresensiController extends Controller
     }
 
     /**
-     * Get DataTables JSON data for the session attendance list.
+     * Get DataTables JSON data for the session attendance list with filter support.
      */
-    public function getSesiData($id)
+    public function getSesiData(Request $request, $id)
     {
         $authUser = Auth::user();
         if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
             return response()->json(['error' => 'Akses ditolak.'], 403);
         }
 
-        $query = KepanitiaanPresensi::with('user')
-            ->where('kepanitiaan_sesi_absensi_id', $id)
-            ->latest();
+        $sesi = KepanitiaanSesiAbsensi::findOrFail($id);
+        $filter = $request->query('filter', 'all');
+
+        $query = User::query()
+            ->leftJoin('kepanitiaan_presensis', function ($join) use ($id) {
+                $join->on('users.id', '=', 'kepanitiaan_presensis.user_id')
+                     ->where('kepanitiaan_presensis.kepanitiaan_sesi_absensi_id', '=', $id);
+            })
+            ->select([
+                'users.id as user_id',
+                'users.name as user_name',
+                'users.nidn as user_nidn',
+                'users.jabatan as user_jabatan',
+                'users.unit as user_unit',
+                'users.email as user_email',
+                'kepanitiaan_presensis.id as presensi_id',
+                'kepanitiaan_presensis.kepanitiaan_sesi_absensi_id',
+                'kepanitiaan_presensis.hadir_datang',
+                'kepanitiaan_presensis.waktu_datang',
+                'kepanitiaan_presensis.hadir_pulang',
+                'kepanitiaan_presensis.waktu_pulang',
+                'kepanitiaan_presensis.catatan_hadir_datang',
+                'kepanitiaan_presensis.catatan_hadir_pulang',
+                'kepanitiaan_presensis.bukti_izin',
+                'kepanitiaan_presensis.created_at as presensi_created_at',
+            ]);
+
+        // Filter Logic
+        if ($filter === 'sudah') {
+            $query->where(function ($q) {
+                $q->whereNotNull('kepanitiaan_presensis.hadir_datang')
+                  ->orWhereNotNull('kepanitiaan_presensis.hadir_pulang');
+            });
+        } elseif ($filter === 'belum') {
+            $query->where(function ($q) {
+                $q->whereNull('kepanitiaan_presensis.id')
+                  ->orWhereNull('kepanitiaan_presensis.hadir_datang')
+                  ->orWhereNull('kepanitiaan_presensis.hadir_pulang');
+            });
+        } elseif ($filter === 'belum_semua') {
+            $query->whereNull('kepanitiaan_presensis.id');
+        } elseif ($filter === 'belum_datang') {
+            $query->whereNull('kepanitiaan_presensis.hadir_datang');
+        } elseif ($filter === 'belum_pulang') {
+            $query->whereNull('kepanitiaan_presensis.hadir_pulang');
+        } elseif ($filter === 'sudah_lengkap') {
+            $query->whereNotNull('kepanitiaan_presensis.hadir_datang')
+                  ->whereNotNull('kepanitiaan_presensis.hadir_pulang');
+        } elseif ($filter === 'sudah_datang') {
+            $query->whereNotNull('kepanitiaan_presensis.hadir_datang');
+        } elseif ($filter === 'sudah_pulang') {
+            $query->whereNotNull('kepanitiaan_presensis.hadir_pulang');
+        }
 
         return DataTables::of($query)
+            ->filter(function ($query) use ($request) {
+                if ($request->has('search') && !empty($request->input('search.value'))) {
+                    $keyword = $request->input('search.value');
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('users.name', 'like', "%{$keyword}%")
+                          ->orWhere('users.jabatan', 'like', "%{$keyword}%")
+                          ->orWhere('users.unit', 'like', "%{$keyword}%")
+                          ->orWhere('users.nidn', 'like', "%{$keyword}%")
+                          ->orWhere('users.email', 'like', "%{$keyword}%")
+                          ->orWhere('kepanitiaan_presensis.hadir_datang', 'like', "%{$keyword}%")
+                          ->orWhere('kepanitiaan_presensis.hadir_pulang', 'like', "%{$keyword}%")
+                          ->orWhere('kepanitiaan_presensis.catatan_hadir_datang', 'like', "%{$keyword}%")
+                          ->orWhere('kepanitiaan_presensis.catatan_hadir_pulang', 'like', "%{$keyword}%");
+                    });
+                }
+            })
+            ->orderColumn('user_info', function ($query, $direction) {
+                $query->orderBy('users.name', $direction);
+            })
+            ->orderColumn('status_datang', function ($query, $direction) {
+                $query->orderBy('kepanitiaan_presensis.hadir_datang', $direction);
+            })
+            ->orderColumn('status_pulang', function ($query, $direction) {
+                $query->orderBy('kepanitiaan_presensis.hadir_pulang', $direction);
+            })
+            ->orderColumn('tanggal', function ($query, $direction) {
+                $query->orderBy('kepanitiaan_presensis.created_at', $direction);
+            })
             ->addIndexColumn()
-            ->addColumn('tanggal', function ($p) {
-                if (!$p->created_at) {
+            ->addColumn('checkbox', function ($row) {
+                return '<div class="form-check d-flex justify-content-center m-0">'
+                     . '<input type="checkbox" class="form-check-input check-row-presensi" '
+                     . 'value="' . $row->user_id . '" '
+                     . 'data-presensi-id="' . ($row->presensi_id ?? '') . '" '
+                     . 'data-user-name="' . e($row->user_name) . '" '
+                     . 'data-hadir-datang="' . ($row->hadir_datang ?? '') . '" '
+                     . 'data-hadir-pulang="' . ($row->hadir_pulang ?? '') . '" '
+                     . 'style="cursor: pointer; width: 17px; height: 17px;">'
+                     . '</div>';
+            })
+            ->addColumn('tanggal', function ($row) use ($sesi) {
+                $createdAt = $row->presensi_created_at ? \Carbon\Carbon::parse($row->presensi_created_at) : ($sesi->tanggal ? \Carbon\Carbon::parse($sesi->tanggal) : null);
+                if (!$createdAt) {
                     return '<span class="text-muted">-</span>';
                 }
-                $hari = $p->created_at->translatedFormat('l');
-                $tgl = $p->created_at->format('d/m/Y');
+                $hari = $createdAt->translatedFormat('l');
+                $tgl = $createdAt->format('d/m/Y');
                 return '<div class="fw-bold text-dark text-nowrap">' . $hari . '</div><small class="text-muted text-nowrap"><i class="bi bi-calendar3 text-primary me-1"></i>' . $tgl . '</small>';
             })
-            ->filterColumn('user_info', function ($query, $keyword) {
-                $query->whereHas('user', function ($q) use ($keyword) {
-                    $q->where('name', 'like', "%{$keyword}%")
-                      ->orWhere('jabatan', 'like', "%{$keyword}%")
-                      ->orWhere('unit', 'like', "%{$keyword}%");
-                });
-            })
-            ->addColumn('user_info', function ($p) {
-                $u = $p->user;
-                if (!$u) return '<span class="text-muted fst-italic">Pengguna tidak ditemukan</span>';
-                
+            ->addColumn('user_info', function ($row) {
                 $html = '<div>';
-                $html .= '<div class="fw-bold text-dark" style="font-size: 0.9rem;">' . e($u->name) . '</div>';
-                $html .= '<small class="text-muted" style="font-size: 0.76rem;">' . e($u->jabatan ?? '-') . ' &bull; ' . e($u->unit ?? '-') . '</small>';
+                $html .= '<div class="fw-bold text-dark" style="font-size: 0.9rem;">' . e($row->user_name) . '</div>';
+                $html .= '<small class="text-muted" style="font-size: 0.76rem;">' . e($row->user_jabatan ?? '-') . ' &bull; ' . e($row->user_unit ?? '-') . '</small>';
                 $html .= '</div>';
                 return $html;
             })
-            ->addColumn('status_datang', function ($p) {
-                $status = $p->hadir_datang ?: 'Belum Absen';
+            ->addColumn('status_datang', function ($row) {
+                $status = $row->hadir_datang ?: 'Belum Absen';
                 $color = match ($status) {
                     'Hadir' => 'bg-success',
                     'Izin' => 'bg-warning text-dark',
@@ -471,11 +578,11 @@ class UniversalPresensiController extends Controller
                     'Alpha' => 'bg-danger',
                     default => 'bg-secondary',
                 };
-                $time = $p->waktu_datang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($p->waktu_datang, 0, 5) . ' WIB</div>' : '';
+                $time = $row->waktu_datang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($row->waktu_datang, 0, 5) . ' WIB</div>' : '';
                 return '<span class="badge ' . $color . '">' . $status . '</span>' . $time;
             })
-            ->addColumn('status_pulang', function ($p) {
-                $status = $p->hadir_pulang ?: 'Belum Absen';
+            ->addColumn('status_pulang', function ($row) {
+                $status = $row->hadir_pulang ?: 'Belum Absen';
                 $color = match ($status) {
                     'Hadir' => 'bg-success',
                     'Izin' => 'bg-warning text-dark',
@@ -483,36 +590,39 @@ class UniversalPresensiController extends Controller
                     'Alpha' => 'bg-danger',
                     default => 'bg-secondary',
                 };
-                $time = $p->waktu_pulang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($p->waktu_pulang, 0, 5) . ' WIB</div>' : '';
+                $time = $row->waktu_pulang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($row->waktu_pulang, 0, 5) . ' WIB</div>' : '';
                 return '<span class="badge ' . $color . '">' . $status . '</span>' . $time;
             })
-            ->addColumn('catatan_col', function ($p) {
-                $txt = $p->catatan_hadir_datang ?: ($p->catatan_hadir_pulang ?: '-');
+            ->addColumn('catatan_col', function ($row) {
+                $txt = $row->catatan_hadir_datang ?: ($row->catatan_hadir_pulang ?: '-');
                 $bukti = '';
-                if (!empty($p->bukti_izin)) {
-                    $url = asset('storage/' . $p->bukti_izin);
+                if (!empty($row->bukti_izin)) {
+                    $url = asset('storage/' . $row->bukti_izin);
                     $bukti = '<br><a href="' . $url . '" target="_blank" class="badge bg-light text-primary border mt-1"><i class="bi bi-paperclip me-1"></i>Bukti Izin</a>';
                 }
                 return '<small class="text-secondary">' . e($txt) . '</small>' . $bukti;
             })
-            ->addColumn('actions', function ($p) {
+            ->addColumn('actions', function ($row) {
                 $editData = htmlspecialchars(json_encode([
-                    'id' => $p->id,
-                    'user_id' => $p->user_id,
-                    'hadir_datang' => $p->hadir_datang,
-                    'waktu_datang' => $p->waktu_datang ? substr($p->waktu_datang, 0, 5) : '',
-                    'hadir_pulang' => $p->hadir_pulang,
-                    'waktu_pulang' => $p->waktu_pulang ? substr($p->waktu_pulang, 0, 5) : '',
-                    'catatan' => $p->catatan_hadir_datang ?: $p->catatan_hadir_pulang,
+                    'id' => $row->presensi_id,
+                    'user_id' => $row->user_id,
+                    'user_name' => $row->user_name,
+                    'hadir_datang' => $row->hadir_datang,
+                    'waktu_datang' => $row->waktu_datang ? substr($row->waktu_datang, 0, 5) : '',
+                    'hadir_pulang' => $row->hadir_pulang,
+                    'waktu_pulang' => $row->waktu_pulang ? substr($row->waktu_pulang, 0, 5) : '',
+                    'catatan' => $row->catatan_hadir_datang ?: $row->catatan_hadir_pulang,
                 ]), ENT_QUOTES, 'UTF-8');
 
                 $btn = '<div class="d-inline-flex gap-1">';
                 $btn .= '<button type="button" class="btn btn-sm btn-outline-primary" style="padding: 4px 8px;" onclick="window.editPresensiRow(' . $editData . ')" title="Ubah Data Presensi"><i class="bi bi-pencil"></i></button>';
-                $btn .= '<button type="button" class="btn btn-sm btn-outline-danger" style="padding: 4px 8px;" onclick="window.deletePresensiRow(' . $p->id . ')" title="Hapus Data"><i class="bi bi-trash"></i></button>';
+                if ($row->presensi_id) {
+                    $btn .= '<button type="button" class="btn btn-sm btn-outline-danger" style="padding: 4px 8px;" onclick="window.deletePresensiRow(' . $row->presensi_id . ')" title="Hapus Data"><i class="bi bi-trash"></i></button>';
+                }
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['tanggal', 'user_info', 'status_datang', 'status_pulang', 'catatan_col', 'actions'])
+            ->rawColumns(['checkbox', 'tanggal', 'user_info', 'status_datang', 'status_pulang', 'catatan_col', 'actions'])
             ->make(true);
     }
 
@@ -559,6 +669,141 @@ class UniversalPresensiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data presensi berhasil disimpan.',
+        ]);
+    }
+
+    /**
+     * Bulk update presensi datang & pulang for selected employees.
+     */
+    public function bulkUpdatePresensi(Request $request, $id)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $request->validate([
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'required|exists:users,id',
+            'update_datang' => 'nullable',
+            'hadir_datang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha,reset',
+            'waktu_datang' => 'nullable|string',
+            'update_pulang' => 'nullable',
+            'hadir_pulang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha,reset',
+            'waktu_pulang' => 'nullable|string',
+            'update_catatan' => 'nullable',
+            'catatan' => 'nullable|string|max:500',
+        ]);
+
+        $sesi = KepanitiaanSesiAbsensi::findOrFail($id);
+        $userIds = $request->user_ids;
+
+        $updateDatang = filter_var($request->input('update_datang'), FILTER_VALIDATE_BOOLEAN);
+        $updatePulang = filter_var($request->input('update_pulang'), FILTER_VALIDATE_BOOLEAN);
+        $updateCatatan = filter_var($request->input('update_catatan'), FILTER_VALIDATE_BOOLEAN);
+
+        if (!$updateDatang && !$updatePulang && !$updateCatatan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan pilih opsi yang ingin diubah (Centang Datang, Pulang, atau Catatan).'
+            ], 422);
+        }
+
+        $nowTime = now()->format('H:i');
+        $hadirDatang = $request->input('hadir_datang');
+        $waktuDatang = $request->input('waktu_datang') ?: $nowTime;
+        $hadirPulang = $request->input('hadir_pulang');
+        $waktuPulang = $request->input('waktu_pulang') ?: $nowTime;
+        $catatan = $request->input('catatan');
+
+        DB::beginTransaction();
+        try {
+            foreach ($userIds as $uId) {
+                $presensi = KepanitiaanPresensi::firstOrNew([
+                    'kepanitiaan_sesi_absensi_id' => $sesi->id,
+                    'user_id' => $uId,
+                ]);
+
+                if ($updateDatang) {
+                    if ($hadirDatang === 'reset' || empty($hadirDatang)) {
+                        $presensi->hadir_datang = null;
+                        $presensi->waktu_datang = null;
+                    } else {
+                        $presensi->hadir_datang = $hadirDatang;
+                        $presensi->waktu_datang = $waktuDatang;
+                    }
+                }
+
+                if ($updatePulang) {
+                    if ($hadirPulang === 'reset' || empty($hadirPulang)) {
+                        $presensi->hadir_pulang = null;
+                        $presensi->waktu_pulang = null;
+                    } else {
+                        $presensi->hadir_pulang = $hadirPulang;
+                        $presensi->waktu_pulang = $waktuPulang;
+                    }
+                }
+
+                if ($updateCatatan) {
+                    $presensi->catatan_hadir_datang = $catatan;
+                }
+
+                $presensi->save();
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui presensi massal: ' . $e->getMessage()], 500);
+        }
+
+        // Fresh statistics calculation
+        $totalUsers = User::count();
+        $attendedUserIds = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->where(function ($q) {
+                $q->whereNotNull('hadir_datang')
+                  ->orWhereNotNull('hadir_pulang');
+            })->pluck('user_id')->toArray();
+
+        $totalSudahAbsen = count($attendedUserIds);
+        $totalBelumAbsen = max(0, $totalUsers - $totalSudahAbsen);
+
+        $totalPresensi = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)->count();
+        $totalHadirDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->where('hadir_datang', 'Hadir')->count();
+        $totalHadirPulang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->where('hadir_pulang', 'Hadir')->count();
+        $totalIzinSakit = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->where(function ($q) {
+                $q->whereIn('hadir_datang', ['Izin', 'Sakit', 'Alpha'])
+                  ->orWhereIn('hadir_pulang', ['Izin', 'Sakit', 'Alpha']);
+            })->count();
+
+        $totalLengkap = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->whereNotNull('hadir_datang')
+            ->whereNotNull('hadir_pulang')->count();
+        $totalBelumPulang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->whereNotNull('hadir_datang')
+            ->whereNull('hadir_pulang')->count();
+        $totalBelumDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+            ->whereNull('hadir_datang')
+            ->whereNotNull('hadir_pulang')->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Berhasil memperbarui data presensi untuk ' . count($userIds) . ' pegawai terpilih.',
+            'stats' => [
+                'total_presensi' => $totalPresensi,
+                'hadir_datang' => $totalHadirDatang,
+                'hadir_pulang' => $totalHadirPulang,
+                'izin_sakit' => $totalIzinSakit,
+                'total_users' => $totalUsers,
+                'sudah_absen' => $totalSudahAbsen,
+                'belum_absen' => $totalBelumAbsen,
+                'lengkap' => $totalLengkap,
+                'belum_pulang' => $totalBelumPulang,
+                'belum_datang' => $totalBelumDatang,
+            ]
         ]);
     }
 

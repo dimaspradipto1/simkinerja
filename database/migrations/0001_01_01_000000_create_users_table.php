@@ -22,10 +22,7 @@ return new class extends Migration
             $table->string('nidn')->nullable();
             $table->string('unit')->nullable();
             $table->string('jabatan')->nullable();
-            $table->string('jabatan_pkkmb')->nullable();
-            $table->string('jabatan_esq')->nullable();
-            $table->string('jabatan_milad')->nullable();
-            $table->string('jabatan_kuliah_umum')->nullable();
+            $table->json('jabatan_kepanitiaan')->nullable();
             $table->string('status');
             $table->rememberToken();
             $table->timestamps();

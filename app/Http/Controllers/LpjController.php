@@ -75,6 +75,12 @@ class LpjController extends Controller
     public function show(string $id)
     {
         $lpj = Lpj::with(['user', 'kepanitiaan'])->findOrFail($id);
+
+        if (!$this->canManageLpj($lpj)) {
+            Alert::error('Akses Ditolak', 'Anda tidak memiliki izin untuk melihat data LPJ ini.');
+            return redirect()->route('lpj.index');
+        }
+
         return view('pages.lpj.show', compact('lpj'));
     }
 
@@ -166,6 +172,11 @@ class LpjController extends Controller
     public function download(string $id)
     {
         $lpj = Lpj::findOrFail($id);
+
+        if (!$this->canManageLpj($lpj)) {
+            Alert::error('Akses Ditolak', 'Anda tidak memiliki izin untuk mengunduh berkas LPJ ini.');
+            return redirect()->route('lpj.index');
+        }
 
         if (!$lpj->file_lpj || !Storage::disk('public')->exists($lpj->file_lpj)) {
             Alert::error('Gagal', 'Berkas file LPJ tidak ditemukan di server.');

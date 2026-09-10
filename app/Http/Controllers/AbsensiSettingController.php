@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\AbsensiSetting;
+use App\Models\Kepanitiaan;
+use App\Models\KepanitiaanSesiAbsensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use RealRashid\SweetAlert\Facades\Alert;
@@ -10,26 +12,38 @@ use RealRashid\SweetAlert\Facades\Alert;
 class AbsensiSettingController extends Controller
 {
     /**
-     * Ensure only authorized administrators can access.
+     * Ensure only authorized administrators or leadership can access.
      */
     private function checkAdmin()
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
-            abort(403, 'Unauthorized action. Hanya Admin atau Super Admin yang dapat mengelola status sesi absensi.');
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
+            abort(403, 'Unauthorized action. Hanya Admin atau Pimpinan yang dapat mengelola status sesi absensi.');
         }
     }
 
     /**
-     * Display a listing of attendance session statuses.
+     * Display a listing of attendance session statuses dynamically linked to Kepanitiaan.
      */
     public function index()
     {
         $this->checkAdmin();
 
-        $settings = AbsensiSetting::getAllGrouped();
+        $kepanitiaans = Kepanitiaan::with(['sesiAbsensis' => function ($q) {
+            $q->withCount('presensis')
+              ->orderBy('is_active', 'desc')
+              ->orderBy('tanggal', 'asc')
+              ->orderBy('id', 'asc');
+        }])
+        ->whereHas('sesiAbsensis')
+        ->orderBy('id', 'desc')
+        ->get();
 
-        return view('pages.pengaturan-absensi.index', compact('settings'));
+        $activeCount = KepanitiaanSesiAbsensi::where('is_active', true)->count();
+        $totalCount = KepanitiaanSesiAbsensi::count();
+        $closedCount = $totalCount - $activeCount;
+
+        return view('pages.pengaturan-absensi.index', compact('kepanitiaans', 'activeCount', 'totalCount', 'closedCount'));
     }
 
     /**
@@ -39,10 +53,61 @@ class AbsensiSettingController extends Controller
     {
         $this->checkAdmin();
 
+        $session = null;
+        if (is_numeric($slug)) {
+            $session = KepanitiaanSesiAbsensi::find((int) $slug);
+        }
+        if (!$session) {
+            $session = KepanitiaanSesiAbsensi::where('legacy_slug', $slug)
+                ->orWhere('token', $slug)
+                ->first();
+        }
+        if (!$session && str_starts_with($slug, 'sesi-')) {
+            $id = (int) str_replace('sesi-', '', $slug);
+            $session = KepanitiaanSesiAbsensi::find($id);
+        }
+
+        if ($session) {
+            $session->is_active = !$session->is_active;
+            $session->save();
+
+            // Sync legacy status if legacy_slug exists
+            if (!empty($session->legacy_slug)) {
+                AbsensiSetting::setStatus($session->legacy_slug, $session->is_active);
+            }
+
+            $statusText = $session->is_active ? 'Aktif (Tampil di Sidebar)' : 'Nonaktif (Tutup)';
+            $message = "Status sesi \"{$session->nama_sesi}\" berhasil diubah menjadi {$statusText}.";
+
+            $activeCount = KepanitiaanSesiAbsensi::where('is_active', true)->count();
+            $totalCount = KepanitiaanSesiAbsensi::count();
+            $closedCount = $totalCount - $activeCount;
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'is_active' => $session->is_active,
+                    'status_text' => $statusText,
+                    'message' => $message,
+                    'active_count' => $activeCount,
+                    'closed_count' => $closedCount,
+                    'total_count' => $totalCount,
+                ]);
+            }
+
+            Alert::success('Berhasil', $message);
+            return redirect()->back();
+        }
+
+        // Fallback to legacy AbsensiSetting::toggle
         $setting = AbsensiSetting::toggle($slug);
 
-        $statusText = $setting->is_active ? 'Aktif' : 'Nonaktif (Tutup)';
+        $statusText = $setting->is_active ? 'Aktif (Tampil di Sidebar)' : 'Nonaktif (Tutup)';
         $message = "Status {$setting->nama} berhasil diubah menjadi {$statusText}.";
+
+        $activeCount = KepanitiaanSesiAbsensi::where('is_active', true)->count();
+        $totalCount = KepanitiaanSesiAbsensi::count();
+        $closedCount = $totalCount - $activeCount;
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -50,6 +115,9 @@ class AbsensiSettingController extends Controller
                 'is_active' => $setting->is_active,
                 'status_text' => $statusText,
                 'message' => $message,
+                'active_count' => $activeCount,
+                'closed_count' => $closedCount,
+                'total_count' => $totalCount,
             ]);
         }
 

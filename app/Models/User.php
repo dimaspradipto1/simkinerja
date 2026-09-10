@@ -27,10 +27,7 @@ class User extends Authenticatable
         'nidn',
         'unit',
         'jabatan',
-        'jabatan_pkkmb',
-        'jabatan_esq',
-        'jabatan_milad',
-        'jabatan_kuliah_umum',
+        'jabatan_kepanitiaan',
         'status',
     ];
 
@@ -54,6 +51,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'jabatan_kepanitiaan' => 'array',
         ];
     }
 
@@ -128,11 +126,28 @@ class User extends Authenticatable
      */
     public function isKepanitiaan(): bool
     {
+        $hasDynamic = !empty($this->jabatan_kepanitiaan)
+            && is_array($this->jabatan_kepanitiaan)
+            && count(array_filter($this->jabatan_kepanitiaan, fn($item) => !empty($item['jabatan'] ?? null))) > 0;
+
         return $this->hasAnyRole(['kepanitiaan', 'panitia', 'admin kepanitiaan', 'staff kepanitiaan'])
-            || !empty($this->jabatan_pkkmb)
-            || !empty($this->jabatan_esq)
-            || !empty($this->jabatan_milad)
-            || !empty($this->jabatan_kuliah_umum);
+            || $hasDynamic;
+    }
+
+    /**
+     * Get list of committee positions
+     *
+     * @return array<array{nama: string, jabatan: string}>
+     */
+    public function getDaftarJabatanKepanitiaanAttribute(): array
+    {
+        if (!empty($this->jabatan_kepanitiaan) && is_array($this->jabatan_kepanitiaan)) {
+            return array_values(array_filter($this->jabatan_kepanitiaan, function ($item) {
+                return !empty($item['nama']) && !empty($item['jabatan']);
+            }));
+        }
+
+        return [];
     }
 
     /**

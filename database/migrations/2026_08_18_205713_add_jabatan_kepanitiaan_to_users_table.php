@@ -15,21 +15,15 @@ return new class extends Migration
             if (Schema::hasColumn('users', 'kepanitiaan')) {
                 $table->dropColumn('kepanitiaan');
             }
-            if (Schema::hasColumn('users', 'jabatan_kepanitiaan')) {
-                $table->dropColumn('jabatan_kepanitiaan');
+            if (!Schema::hasColumn('users', 'jabatan_kepanitiaan')) {
+                $table->json('jabatan_kepanitiaan')->nullable()->after('jabatan');
             }
 
-            if (!Schema::hasColumn('users', 'jabatan_pkkmb')) {
-                $table->string('jabatan_pkkmb')->nullable()->after('jabatan');
-            }
-            if (!Schema::hasColumn('users', 'jabatan_esq')) {
-                $table->string('jabatan_esq')->nullable()->after('jabatan_pkkmb');
-            }
-            if (!Schema::hasColumn('users', 'jabatan_milad')) {
-                $table->string('jabatan_milad')->nullable()->after('jabatan_esq');
-            }
-            if (!Schema::hasColumn('users', 'jabatan_kuliah_umum')) {
-                $table->string('jabatan_kuliah_umum')->nullable()->after('jabatan_milad');
+            $legacyCols = ['jabatan_pkkmb', 'jabatan_esq', 'jabatan_milad', 'jabatan_kuliah_umum'];
+            foreach ($legacyCols as $col) {
+                if (Schema::hasColumn('users', $col)) {
+                    $table->dropColumn($col);
+                }
             }
         });
     }
@@ -40,14 +34,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $cols = [];
-            foreach (['jabatan_pkkmb', 'jabatan_esq', 'jabatan_milad', 'jabatan_kuliah_umum'] as $c) {
-                if (Schema::hasColumn('users', $c)) {
-                    $cols[] = $c;
-                }
-            }
-            if (!empty($cols)) {
-                $table->dropColumn($cols);
+            if (Schema::hasColumn('users', 'jabatan_kepanitiaan')) {
+                $table->dropColumn('jabatan_kepanitiaan');
             }
         });
     }

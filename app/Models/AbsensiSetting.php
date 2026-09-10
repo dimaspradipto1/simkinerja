@@ -278,29 +278,11 @@ class AbsensiSetting
     }
 
     /**
-     * Get the Eloquent model class for a specific attendance slug.
+     * Get the Eloquent model class for a specific attendance slug (Deprecated - now using KepanitiaanPresensi).
      */
     public static function getModelClass(?string $slug): ?string
     {
-        if (!$slug) return null;
-
-        $map = [
-            'absensi-pkkmb-pertama' => \App\Models\AbsensiPkkmbPertama::class,
-            'absensi-pkkmb-kedua' => \App\Models\AbsensiPkkmbKedua::class,
-            'absensi-pkkmb-ketiga' => \App\Models\AbsensiPkkmbKetiga::class,
-            'absensi-esq-pertama' => \App\Models\AbsensiEsqPertama::class,
-            'absensi-esq-kedua' => \App\Models\AbsensiEsqKedua::class,
-            'absensi-esq-ketiga' => \App\Models\AbsensiEsqKetiga::class,
-            'absensi-esq-keempat' => \App\Models\AbsensiEsqKeempat::class,
-            'absensi-milad-pertama' => \App\Models\AbsensiMiladPertama::class,
-            'absensi-milad-kedua' => \App\Models\AbsensiMiladKedua::class,
-            'absensi-milad-ketiga' => \App\Models\AbsensiMiladKetiga::class,
-            'absensi-kuliah-umum-pertama' => \App\Models\AbsensiKuliahUmumPertama::class,
-            'absensi-kuliah-umum-kedua' => \App\Models\AbsensiKuliahUmumKedua::class,
-            'absensi-kuliah-umum-ketiga' => \App\Models\AbsensiKuliahUmumKetiga::class,
-        ];
-
-        return $map[$slug] ?? null;
+        return null;
     }
 
     /**
@@ -368,12 +350,43 @@ class AbsensiSetting
             ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-check-circle-fill me-1"></i>Sesi Aktif</span>'
             : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 rounded-pill fw-semibold" style="font-size: 0.72rem;"><i class="bi bi-lock-fill me-1"></i>Nonaktif (Tutup)</span>';
 
+        $sesiId = $absensiInfo['id'] ?? null;
+        if (!$sesiId && !empty($absensiInfo['slug'])) {
+            $dbSesi = \App\Models\KepanitiaanSesiAbsensi::where('legacy_slug', $absensiInfo['slug'])->first();
+            if ($dbSesi) {
+                $sesiId = $dbSesi->id;
+            }
+        }
+
+        $actionsHtml = '';
+        $currentUser = \Illuminate\Support\Facades\Auth::user();
+        $isAdmin = $currentUser && ($currentUser->isAdmin() || $currentUser->isSuperAdmin());
+
+        if ($sesiId && $isAdmin) {
+            $exportUrl = route('presensi.sesi.export', $sesiId);
+            $detailUrl = route('presensi.sesi.show', $sesiId);
+            $safeNama = htmlspecialchars(addslashes($absensiInfo['nama'] ?? 'Sesi Presensi'), ENT_QUOTES, 'UTF-8');
+            $actionsHtml = '
+            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                <a href="' . $exportUrl . '" class="btn btn-sm btn-success text-white rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center shadow-xs" style="font-size: 0.8rem;" title="Download Rekap Absensi Excel">
+                    <i class="bi bi-file-earmark-excel-fill" style="margin-right: 6px;"></i><span>Export Excel</span>
+                </a>
+                <button type="button" class="btn btn-sm btn-primary text-white rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center shadow-xs" onclick="window.openPresensiMultiSelectModal(' . $sesiId . ', \'' . $safeNama . '\')" title="Kelola Presensi & Multi-Select Pegawai">
+                    <i class="bi bi-check2-square" style="margin-right: 6px;"></i><span>Multi-Select Presensi</span>
+                </button>
+                <a href="' . $detailUrl . '" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-inline-flex align-items-center shadow-xs" style="font-size: 0.8rem;" title="Buka Halaman Presensi Lengkap">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            </div>';
+        }
+
         $thStyle = 'background-color: #f1f5f9 !important; color: #1e293b !important; font-weight: 700 !important; font-size: 0.73rem !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; padding: 9px 10px !important; border: 1px solid #cbd5e1 !important; text-align: center !important; vertical-align: middle !important; white-space: nowrap !important; display: table-cell !important;';
         $tdStyle = 'padding: 9px 8px !important; border: 1px solid #e2e8f0 !important; text-align: center !important; vertical-align: middle !important; background-color: #ffffff !important; display: table-cell !important;';
 
         $html = '<div class="mt-2 p-3 bg-white rounded border shadow-sm d-flex flex-column gap-2" style="border-left: 4px solid #198754 !important; word-break: break-word; overflow-wrap: break-word;">';
         $html .= '  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2">';
         $html .= '    <span class="text-dark small fw-bold d-inline-flex align-items-center flex-wrap gap-1.5"><i class="bi bi-card-checklist text-success fs-6 me-1" style="margin-right: 6px !important;"></i>Status Kehadiran Absensi: <span class="text-success fw-bold">' . e($absensiInfo['nama']) . '</span> ' . $statusBadge . '</span>';
+        $html .= $actionsHtml;
         $html .= '  </div>';
 
         $html .= '  <div class="table-responsive" style="overflow-x: auto !important; -webkit-overflow-scrolling: touch;">';

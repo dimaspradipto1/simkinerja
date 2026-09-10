@@ -34,10 +34,9 @@ class ProfileController extends Controller
             'nidn' => ['nullable', 'string', 'max:50'],
             'unit' => ['nullable', 'string', 'max:100'],
             'jabatan' => ['nullable', 'string', 'max:150'],
-            'jabatan_pkkmb' => ['nullable', 'string', 'max:150'],
-            'jabatan_esq' => ['nullable', 'string', 'max:150'],
-            'jabatan_milad' => ['nullable', 'string', 'max:150'],
-            'jabatan_kuliah_umum' => ['nullable', 'string', 'max:150'],
+            'jabatan_kepanitiaan' => ['nullable', 'array'],
+            'jabatan_kepanitiaan.*.nama' => ['nullable', 'string', 'max:255'],
+            'jabatan_kepanitiaan.*.jabatan' => ['nullable', 'string', 'max:255'],
         ];
 
         // Only allow admin or superadmin to change their own role from profile
@@ -53,6 +52,21 @@ class ProfileController extends Controller
             } else {
                 $validated['roles'] = trim((string) $validated['roles']);
             }
+        }
+
+        if (isset($validated['jabatan_kepanitiaan']) && is_array($validated['jabatan_kepanitiaan'])) {
+            $cleanKepanitiaan = [];
+            foreach ($validated['jabatan_kepanitiaan'] as $item) {
+                $nama = trim($item['nama'] ?? '');
+                $jabatan = trim($item['jabatan'] ?? '');
+                if (!empty($nama) && !empty($jabatan)) {
+                    $cleanKepanitiaan[] = [
+                        'nama' => $nama,
+                        'jabatan' => $jabatan,
+                    ];
+                }
+            }
+            $validated['jabatan_kepanitiaan'] = !empty($cleanKepanitiaan) ? $cleanKepanitiaan : null;
         }
 
         $user->update($validated);

@@ -23,7 +23,10 @@
                         </div>
                         <div>
                             <h5 class="card-title m-0 fw-bold text-dark fs-6">Daftar Laporan Pertanggungjawaban (LPJ)</h5>
-                            <small class="text-muted">Kelola dan arsipkan berkas serta tautan LPJ kegiatan</small>
+                            @php
+                                $isAdminOrPimpinan = Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin() || Auth::user()->isPimpinanRektorat() || Auth::user()->isPimpinanUnit());
+                            @endphp
+                            <small class="text-muted">{{ $isAdminOrPimpinan ? 'Kelola dan arsipkan berkas serta tautan LPJ kegiatan seluruh pegawai' : 'Kelola dan arsipkan berkas serta tautan LPJ kegiatan yang Anda unggah' }}</small>
                         </div>
                     </div>
                     <a href="{{ route('lpj.create') }}" class="btn btn-primary rounded btn-sm d-inline-flex align-items-center gap-1.5 px-3 py-2 fw-semibold shadow-xs">

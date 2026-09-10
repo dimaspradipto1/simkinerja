@@ -25,8 +25,10 @@ class DashboardController extends Controller
         $insidentilQuery = Insidentil::query();
         $usersQuery = User::query();
 
-        $userScope = function ($q) use ($user) {
-            if ($user) {
+        $isAdminOrLeader = $user && ($user->isAdmin() || $user->isSuperAdmin() || $user->isPimpinanRektorat());
+
+        $userScope = function ($q) use ($user, $isAdminOrLeader) {
+            if ($user && !$isAdminOrLeader) {
                 $q->where(function ($sub) use ($user) {
                     $sub->where('user_id', $user->id)
                         ->orWhereHas('taggedUsers', function ($qu) use ($user) {
@@ -37,13 +39,15 @@ class DashboardController extends Controller
         };
 
         if ($user) {
-            // Tampilkan data yang dibuat oleh user login ATAU di mana user login di-tag (rekan kerja)
-            $tasksQuery->where($userScope);
-            $kepanitiaanQuery->where($userScope);
-            $insidentilQuery->where($userScope);
+            // Jika bukan admin / rektorat, tampilkan data yang dibuat oleh user login ATAU di mana user login di-tag
+            if (!$isAdminOrLeader) {
+                $tasksQuery->where($userScope);
+                $kepanitiaanQuery->where($userScope);
+                $insidentilQuery->where($userScope);
 
-            if ($user->unit) {
-                $usersQuery->where('unit', $user->unit);
+                if ($user->unit) {
+                    $usersQuery->where('unit', $user->unit);
+                }
             }
         }
 
@@ -159,109 +163,24 @@ class DashboardController extends Controller
 
         $totalPegawai = $usersQuery->count();
 
-        // Data Pegawai yang sudah absen untuk masing-masing kepanitiaan (Datang & Pulang)
-        $kepanitiaanAbsensiList = [
-            'pkkmb' => [
-                'nama' => 'Kepanitiaan PKKMB',
-                'badge_color' => 'bg-success',
-                'text_color' => 'text-success',
-                'border_color' => '#198754',
-                'icon' => 'bi-mortarboard-fill',
-                'jabatan_key' => 'jabatan_pkkmb',
-                'sessions' => [
-                    [
-                        'id' => 'pkkmb_1',
-                        'title' => 'Hari Ke-1',
-                        'route' => route('absensi-pkkmb-pertama.index'),
-                        'records' => \App\Models\AbsensiPkkmbPertama::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                    [
-                        'id' => 'pkkmb_2',
-                        'title' => 'Hari Ke-2',
-                        'route' => route('absensi-pkkmb-kedua.index'),
-                        'records' => \App\Models\AbsensiPkkmbKedua::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                    [
-                        'id' => 'pkkmb_3',
-                        'title' => 'Hari Ke-3',
-                        'route' => route('absensi-pkkmb-ketiga.index'),
-                        'records' => \App\Models\AbsensiPkkmbKetiga::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                ],
-            ],
-            'esq' => [
-                'nama' => 'Kepanitiaan ESQ',
-                'badge_color' => 'bg-primary',
-                'text_color' => 'text-primary',
-                'border_color' => '#0d6efd',
-                'icon' => 'bi-heart-pulse-fill',
-                'jabatan_key' => 'jabatan_esq',
-                'sessions' => [
-                    [
-                        'id' => 'esq_1',
-                        'title' => 'Hari Ke-1',
-                        'route' => route('absensi-esq-pertama.index'),
-                        'records' => \App\Models\AbsensiEsqPertama::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                    [
-                        'id' => 'esq_2',
-                        'title' => 'Hari Ke-2',
-                        'route' => route('absensi-esq-kedua.index'),
-                        'records' => \App\Models\AbsensiEsqKedua::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                    [
-                        'id' => 'esq_3',
-                        'title' => 'Hari Ke-3',
-                        'route' => route('absensi-esq-ketiga.index'),
-                        'records' => \App\Models\AbsensiEsqKetiga::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                    [
-                        'id' => 'esq_4',
-                        'title' => 'Hari Ke-4',
-                        'route' => route('absensi-esq-keempat.index'),
-                        'records' => \App\Models\AbsensiEsqKeempat::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                ],
-            ],
-            'milad' => [
-                'nama' => 'Kepanitiaan MILAD',
-                'badge_color' => 'bg-warning text-dark',
-                'text_color' => 'text-warning',
-                'border_color' => '#ffc107',
-                'icon' => 'bi-stars',
-                'jabatan_key' => 'jabatan_milad',
-                'sessions' => [
-                    [
-                        'id' => 'milad_1',
-                        'title' => 'Hari Ke-1',
-                        'route' => route('absensi-milad-pertama.index'),
-                        'records' => \App\Models\AbsensiMiladPertama::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                    [
-                        'id' => 'milad_2',
-                        'title' => 'Hari Ke-2',
-                        'route' => route('absensi-milad-kedua.index'),
-                        'records' => \App\Models\AbsensiMiladKedua::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                ],
-            ],
-            'kuliah_umum' => [
-                'nama' => 'Kepanitiaan Kuliah Umum',
-                'badge_color' => 'bg-info text-dark',
-                'text_color' => 'text-info',
-                'border_color' => '#0dcaf0',
-                'icon' => 'bi-book-half',
-                'jabatan_key' => 'jabatan_kuliah_umum',
-                'sessions' => [
-                    [
-                        'id' => 'kuliah_umum_1',
-                        'title' => 'Kuliah Umum',
-                        'route' => route('absensi-kuliah-umum-pertama.index'),
-                        'records' => \App\Models\AbsensiKuliahUmumPertama::with('user')->orderBy('id', 'desc')->get(),
-                    ],
-                ],
-            ],
-        ];
+        // Ambil hanya kepanitiaan yang memiliki sesi absensi AKTIF (sesuai dengan yang tampil di sidebar)
+        $dynamicKepanitiaanList = Kepanitiaan::whereHas('sesiAbsensis', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->with(['sesiAbsensis' => function ($query) {
+                $query->where('is_active', true)->orderBy('tanggal', 'asc')->orderBy('id', 'asc');
+            }])
+            ->orderBy('id', 'asc')
+            ->get();
+
+        // Ambil semua sesi absensi aktif secara flat untuk tab switcher monitoring
+        $activeSessions = \App\Models\KepanitiaanSesiAbsensi::where('is_active', true)
+            ->with('kepanitiaan')
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $defaultSession = $activeSessions->first();
 
         return view('layouts.dashboard.index', compact(
             'totalTugas',
@@ -280,7 +199,10 @@ class DashboardController extends Controller
             'weekDays',
             'selectedDate',
             'scheduledTasksOnDate',
-            'kepanitiaanAbsensiList'
+            'dynamicKepanitiaanList',
+            'activeSessions',
+            'defaultSession',
+            'isAdminOrLeader'
         ));
     }
 
@@ -289,31 +211,23 @@ class DashboardController extends Controller
      */
     public function getAttendanceData(Request $request)
     {
-        $kepanitiaan = $request->query('kepanitiaan', 'pkkmb');
-        $day = (int) $request->query('day', 1);
+        $sesiId = $request->query('sesi_id');
 
-        $modelClass = match($kepanitiaan) {
-            'pkkmb' => match($day) {
-                1 => \App\Models\AbsensiPkkmbPertama::class,
-                2 => \App\Models\AbsensiPkkmbKedua::class,
-                default => \App\Models\AbsensiPkkmbKetiga::class,
-            },
-            'esq' => match($day) {
-                1 => \App\Models\AbsensiEsqPertama::class,
-                2 => \App\Models\AbsensiEsqKedua::class,
-                3 => \App\Models\AbsensiEsqKetiga::class,
-                default => \App\Models\AbsensiEsqKeempat::class,
-            },
-            'milad' => match($day) {
-                1 => \App\Models\AbsensiMiladPertama::class,
-                default => \App\Models\AbsensiMiladKedua::class,
-            },
-            'kuliah_umum' => \App\Models\AbsensiKuliahUmumPertama::class,
-            default => \App\Models\AbsensiPkkmbPertama::class,
-        };
+        if ($sesiId) {
+            $sesi = \App\Models\KepanitiaanSesiAbsensi::find($sesiId);
+        } else {
+            $sesi = \App\Models\KepanitiaanSesiAbsensi::where('is_active', true)
+                ->orderBy('tanggal', 'desc')
+                ->orderBy('id', 'asc')
+                ->first();
+        }
 
-        // Get all attendances keyed by user_id
-        $attendances = $modelClass::all()->keyBy('user_id');
+        // Fallback jika tidak ada sesi aktif
+        if (!$sesi) {
+            $sesi = \App\Models\KepanitiaanSesiAbsensi::latest('id')->first();
+        }
+
+        $sesiActiveId = $sesi ? $sesi->id : 0;
 
         $authUser = auth()->user();
         $canViewAll = false;
@@ -325,60 +239,77 @@ class DashboardController extends Controller
                      || $authUser->hasRole('rektor') 
                      || (trim(strtoupper($authUser->jabatan ?? '')) === 'REKTOR');
 
-            // HANYA Rektor, Super Admin, dan Admin yang dapat melihat daftar seluruh pegawai
             $canViewAll = $isSuperAdmin || $isAdmin || $isRektor;
         }
 
+        $usersQuery = User::query()
+            ->leftJoin('kepanitiaan_presensis', function ($join) use ($sesiActiveId) {
+                $join->on('users.id', '=', 'kepanitiaan_presensis.user_id')
+                     ->where('kepanitiaan_presensis.kepanitiaan_sesi_absensi_id', '=', $sesiActiveId);
+            })
+            ->select([
+                'users.id as id',
+                'users.name as name',
+                'users.nidn as nidn',
+                'users.unit as unit',
+                'users.jabatan as jabatan',
+                'kepanitiaan_presensis.hadir_datang as hadir_datang',
+                'kepanitiaan_presensis.waktu_datang as waktu_datang',
+                'kepanitiaan_presensis.hadir_pulang as hadir_pulang',
+                'kepanitiaan_presensis.waktu_pulang as waktu_pulang',
+            ]);
+
         if ($canViewAll) {
-            // Rektor, Super Admin, dan Admin dapat melihat seluruh pegawai (kecuali akun admin/superadmin)
             $excludedUserIds = User::all()
                 ->filter(fn($u) => $u->isAdmin() || $u->isSuperAdmin())
                 ->pluck('id');
 
-            $usersQuery = User::select('id', 'name', 'nidn', 'unit', 'jabatan')
-                ->whereNotIn('id', $excludedUserIds);
+            $usersQuery->whereNotIn('users.id', $excludedUserIds);
         } else {
-            // Selain Rektor, Super Admin, dan Admin (termasuk Wakil Rektor, Dekan, Staff, dll) HANYA menampilkan absensi dirinya sendiri
-            $usersQuery = User::select('id', 'name', 'nidn', 'unit', 'jabatan')
-                ->where('id', $authUser ? $authUser->id : 0);
+            $usersQuery->where('users.id', $authUser ? $authUser->id : 0);
         }
+
+        // Urutkan yang sudah hadir/absen di atas agar langsung terlihat sesuai sesi yang dipilih
+        $usersQuery->orderByRaw("CASE WHEN (kepanitiaan_presensis.hadir_datang IS NOT NULL OR kepanitiaan_presensis.hadir_pulang IS NOT NULL) THEN 0 ELSE 1 END")
+                   ->orderBy('users.name', 'asc');
 
         return DataTables::of($usersQuery)
             ->addIndexColumn()
             ->editColumn('name', function ($user) {
-                return '<span class="fw-bold text-dark" style="font-size: 0.95rem;">' . e($user->name) . '</span>';
+                return '<div>'
+                     . '<div class="fw-bold text-dark" style="font-size: 0.92rem;">' . e($user->name) . '</div>'
+                     . '<small class="text-muted" style="font-size: 0.76rem;">' . e($user->jabatan ?? '-') . ' &bull; ' . e($user->unit ?? '-') . '</small>'
+                     . '</div>';
             })
-            ->addColumn('datang', function ($user) use ($attendances) {
-                $att = $attendances->get($user->id);
-                $status = $att ? $att->hadir_datang : null;
-                $waktu = $att && $att->waktu_datang ? ' (' . substr($att->waktu_datang, 0, 5) . ' WIB)' : '';
+            ->addColumn('datang', function ($user) {
+                $status = $user->hadir_datang;
+                $waktu = $user->waktu_datang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($user->waktu_datang, 0, 5) . ' WIB</div>' : '';
 
                 if ($status === 'Hadir') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #198754; color: white; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Hadir' . $waktu . '">H</span>';
+                    return '<span class="badge bg-success">Hadir</span>' . $waktu;
                 } elseif ($status === 'Izin') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #ffc107; color: #000; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Izin' . $waktu . '">I</span>';
+                    return '<span class="badge bg-warning text-dark">Izin</span>' . $waktu;
                 } elseif ($status === 'Sakit') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #0dcaf0; color: #fff; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Sakit' . $waktu . '">S</span>';
-                } elseif ($status === 'Alpa') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #dc3545; color: #fff; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Alpa">A</span>';
+                    return '<span class="badge bg-info text-dark">Sakit</span>' . $waktu;
+                } elseif ($status === 'Alpha' || $status === 'Alpa') {
+                    return '<span class="badge bg-danger">Alpha</span>' . $waktu;
                 }
-                return '<span class="badge rounded px-2 py-1 border" style="background-color: #f8fafc; color: #94a3b8; font-weight: 600; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center; border-color: #e2e8f0 !important;" title="Belum Absen">B</span>';
+                return '<span class="badge bg-secondary">Belum Absen</span>';
             })
-            ->addColumn('pulang', function ($user) use ($attendances) {
-                $att = $attendances->get($user->id);
-                $status = $att ? $att->hadir_pulang : null;
-                $waktu = $att && $att->waktu_pulang ? ' (' . substr($att->waktu_pulang, 0, 5) . ' WIB)' : '';
+            ->addColumn('pulang', function ($user) {
+                $status = $user->hadir_pulang;
+                $waktu = $user->waktu_pulang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($user->waktu_pulang, 0, 5) . ' WIB</div>' : '';
 
                 if ($status === 'Hadir') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #198754; color: white; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Hadir Pulang' . $waktu . '">H</span>';
+                    return '<span class="badge bg-success">Hadir</span>' . $waktu;
                 } elseif ($status === 'Izin') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #ffc107; color: #000; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Izin' . $waktu . '">I</span>';
+                    return '<span class="badge bg-warning text-dark">Izin</span>' . $waktu;
                 } elseif ($status === 'Sakit') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #0dcaf0; color: #fff; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Sakit' . $waktu . '">S</span>';
-                } elseif ($status === 'Alpa') {
-                    return '<span class="badge rounded px-2 py-1 shadow-xs" style="background-color: #dc3545; color: #fff; font-weight: 700; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center;" title="Alpa">A</span>';
+                    return '<span class="badge bg-info text-dark">Sakit</span>' . $waktu;
+                } elseif ($status === 'Alpha' || $status === 'Alpa') {
+                    return '<span class="badge bg-danger">Alpha</span>' . $waktu;
                 }
-                return '<span class="badge rounded px-2 py-1 border" style="background-color: #f8fafc; color: #94a3b8; font-weight: 600; font-size: 0.85rem; min-width: 28px; display: inline-block; text-align: center; border-color: #e2e8f0 !important;" title="Belum Pulang">B</span>';
+                return '<span class="badge bg-secondary">Belum Absen</span>';
             })
             ->rawColumns(['name', 'datang', 'pulang'])
             ->make(true);

@@ -3,14 +3,16 @@
 
       <ul class="sidebar-nav" id="sidebar-nav">
 
+          <!-- 1. Dashboard -->
           <li class="nav-item">
               <a class="{{ request()->routeIs('dashboard') ? 'nav-link' : 'nav-link collapsed' }}"
                   href="{{ route('dashboard') }}">
-                  <i class="bi bi-grid"></i>
+                  <i class="bi bi-grid-fill text-primary"></i>
                   <span>Dashboard</span>
               </a>
           </li><!-- End Dashboard Nav -->
 
+          <!-- 2. Presensi Kepanitiaan (Admin & Pimpinan) -->
           @if (Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin()))
               @php
                   // Ambil hanya sesi yang AKTIF (sesi yang dikunci tidak perlu ditampilkan sama sekali)
@@ -19,39 +21,45 @@
                       ->orderBy('id', 'asc')
                       ->get();
               @endphp
-              <li class="nav-heading">Presensi Kepanitiaan</li>
+              <li class="nav-heading" id="sidebar-presensi-heading">Presensi Kepanitiaan</li>
 
-              @if($activeSessions->isNotEmpty())
-                  <li class="nav-item">
-                      <a class="{{ request()->routeIs('presensi.*') || request()->routeIs('absensi-*') ? 'nav-link' : 'nav-link collapsed' }}"
-                          data-bs-target="#presensi-kepanitiaan-nav" data-bs-toggle="collapse" href="#">
-                          <i class="bi bi-qr-code-scan"></i><span>Sesi Presensi Aktif</span>
-                          <span class="badge bg-success rounded-pill ms-2 px-2 py-0" style="font-size: 10px;">{{ $activeSessions->count() }}</span>
-                          <i class="bi bi-chevron-down ms-auto"></i>
-                      </a>
-                      <ul id="presensi-kepanitiaan-nav"
-                          class="nav-content collapse {{ request()->routeIs('presensi.*') || request()->routeIs('absensi-*') ? 'show' : '' }}"
-                          data-bs-parent="#sidebar-nav">
-                          @foreach($activeSessions as $activeSess)
-                              @php
-                                  $targetUrl = route('presensi.sesi.show', $activeSess->id);
-                              @endphp
-                              <li>
-                                  <a href="{{ $targetUrl }}" class="d-flex align-items-center justify-content-between pe-3 {{ request()->routeIs('presensi.sesi.show') && request()->route('id') == $activeSess->id ? 'active' : '' }}">
-                                      <div class="submenu-item-wrapper text-truncate" style="max-width: 190px;" title="{{ $activeSess->nama_sesi }}">
-                                          <i class="bi bi-circle-fill text-success" style="font-size: 6px;"></i>
-                                          <span class="submenu-item-text">{{ $activeSess->nama_sesi }}</span>
-                                      </div>
-                                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0 px-1.5 flex-shrink-0" style="font-size: 9px;">
-                                          Buka
-                                      </span>
-                                  </a>
-                              </li>
-                          @endforeach
-                      </ul>
-                  </li>
-              @endif
+              <!-- Sesi Presensi Aktif (Dropdown Menu) -->
+              <li class="nav-item" id="sidebar-presensi-active-item" style="{{ $activeSessions->isEmpty() ? 'display: none;' : '' }}">
+                  <a class="{{ request()->routeIs('presensi.*') || request()->routeIs('absensi-*') ? 'nav-link' : 'nav-link collapsed' }}"
+                      data-bs-target="#presensi-kepanitiaan-nav" data-bs-toggle="collapse" href="#">
+                      <i class="bi bi-qr-code-scan"></i><span>Sesi Presensi Aktif</span>
+                      <span class="badge bg-success rounded-pill ms-2 px-2 py-0" id="sidebar-active-sessions-badge" style="font-size: 10px;">{{ $activeSessions->count() }}</span>
+                      <i class="bi bi-chevron-down ms-auto"></i>
+                  </a>
+                  <ul id="presensi-kepanitiaan-nav"
+                      class="nav-content collapse {{ request()->routeIs('presensi.*') || request()->routeIs('absensi-*') ? 'show' : '' }}"
+                      data-bs-parent="#sidebar-nav">
+                      @foreach($activeSessions as $activeSess)
+                          @php
+                              $targetUrl = route('presensi.sesi.show', $activeSess->id);
+                          @endphp
+                          <li id="sidebar-sesi-item-{{ $activeSess->id }}">
+                              <a href="{{ $targetUrl }}" 
+                                 class="d-flex align-items-center gap-2 py-1.5 px-3 {{ request()->routeIs('presensi.sesi.show') && request()->route('id') == $activeSess->id ? 'active' : '' }}" 
+                                 title="{{ $activeSess->nama_sesi }}">
+                                  <i class="bi bi-circle-fill text-success flex-shrink-0" style="font-size: 6px;"></i>
+                                  <span class="text-truncate" style="font-size: 13px; font-weight: 500;">{{ $activeSess->nama_sesi }}</span>
+                              </a>
+                          </li>
+                      @endforeach
+                  </ul>
+              </li>
 
+              <!-- Status Sesi Absensi (Kontrol Aktif/Tutup Sesi) -->
+              <li class="nav-item">
+                  <a class="{{ request()->routeIs('pengaturan-absensi.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                      href="{{ route('pengaturan-absensi.index') }}">
+                      <i class="bi bi-sliders2"></i>
+                      <span>Status Sesi Absensi</span>
+                  </a>
+              </li>
+
+              <!-- Rekapitulasi Absensi -->
               <li class="nav-item">
                   <a class="{{ request()->routeIs('rekapitulasi-absensi.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('rekapitulasi-absensi.index') }}">
@@ -59,17 +67,30 @@
                       <span>Rekapitulasi Absensi</span>
                   </a>
               </li>
+          @elseif (Auth::check())
+              <!-- 2. Presensi Kepanitiaan (Pegawai / Panitia) -->
+              <li class="nav-heading" id="sidebar-presensi-heading">Presensi Kepanitiaan</li>
+              <li class="nav-item">
+                  <a class="{{ request()->routeIs('rekapitulasi-absensi.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                      href="{{ route('rekapitulasi-absensi.index') }}">
+                      <i class="bi bi-person-check-fill text-success"></i>
+                      <span>Riwayat Presensi Saya</span>
+                  </a>
+              </li>
           @endif
 
+          <!-- 3. Tugas & Kinerja -->
           @if (!Auth::check() || Auth::user()->canAccessKinerja())
               <li class="nav-heading">Tugas & Kinerja</li>
-                <li class="nav-item">
+
+              <li class="nav-item">
                   <a class="{{ request()->routeIs('kegiatan.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('kegiatan.create') }}">
-                      <i class="bi bi-calendar2-event-fill"></i>
+                      <i class="bi bi-plus-circle-fill text-success"></i>
                       <span>Tambah Kegiatan</span>
                   </a>
               </li>
+
               <li class="nav-item">
                   <a class="{{ request()->routeIs('rencana-kerja.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('rencana-kerja.index') }}">
@@ -89,18 +110,19 @@
               <li class="nav-item">
                   <a class="{{ request()->routeIs('insidentil.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('insidentil.index') }}">
-                      <i class="bi bi-lightning-charge"></i>
+                      <i class="bi bi-lightning-charge-fill text-warning"></i>
                       <span>Rencana Kerja Insidentil</span>
                   </a>
               </li>
 
+              <!-- 4. Rekapitulasi & Laporan -->
               <li class="nav-heading">Rekapitulasi & Laporan</li>
 
               <li class="nav-item">
                   <a class="{{ request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('rekapitulasi.index') }}">
                       <i class="bi bi-pie-chart-fill"></i>
-                      <span>Rekapitulasi</span>
+                      <span>Rekapitulasi Kinerja</span>
                   </a>
               </li>
 
@@ -121,23 +143,18 @@
               </li>
           @endif
 
+          <!-- 5. Pengaturan Sistem (Admin & Super Admin) -->
           @if (Auth::user() && (Auth::user()->isAdmin() || Auth::user()->isSuperAdmin()))
-              <li class="nav-heading">Pengaturan</li>
+              <li class="nav-heading">Pengaturan Sistem</li>
 
-              <li class="nav-item">
-                  <a class="{{ request()->routeIs('pengaturan-absensi.*') ? 'nav-link' : 'nav-link collapsed' }}"
-                      href="{{ route('pengaturan-absensi.index') }}">
-                      <i class="bi bi-toggle-on"></i>
-                      <span>Status Sesi Absensi</span>
-                  </a>
-              </li>
               <li class="nav-item">
                   <a class="{{ request()->routeIs('user.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('user.index') }}">
-                      <i class="bi bi-person"></i>
-                      <span>Pengguna</span>
+                      <i class="bi bi-person-gear"></i>
+                      <span>Kelola Pengguna</span>
                   </a>
               </li>
+
               <li class="nav-item">
                   <a class="{{ request()->routeIs('periode-akademik.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('periode-akademik.index') }}">
@@ -145,11 +162,12 @@
                       <span>Periode Akademik</span>
                   </a>
               </li>
+
               <li class="nav-item">
                   <a class="{{ request()->routeIs('kategori.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       href="{{ route('kategori.index') }}">
-                      <i class="bi bi-tags"></i>
-                      <span>Kategori</span>
+                      <i class="bi bi-tags-fill"></i>
+                      <span>Kategori Kegiatan</span>
                   </a>
               </li>
           @endif
@@ -161,35 +179,23 @@
   <style>
       /* Styling untuk merapikan submenu dan sejajar dengan bullet */
       .sidebar-nav .nav-content a {
-          padding: 8px 10px 8px 24px !important;
+          padding: 8px 12px 8px 24px !important;
           text-decoration: none;
-      }
-      .sidebar-nav .nav-content a .submenu-item-wrapper {
           display: flex;
           align-items: center;
-          gap: 10px;
-          min-width: 0;
-          flex: 1;
+          gap: 8px;
+          border-radius: 6px;
+          transition: all 0.2s ease;
       }
-      .sidebar-nav .nav-content a .submenu-item-wrapper i {
-          font-size: 6px;
+      .sidebar-nav .nav-content a i {
+          font-size: 6px !important;
           margin-right: 0 !important;
           flex-shrink: 0;
       }
-      .sidebar-nav .nav-content a .submenu-item-text {
-          white-space: nowrap;
+      .sidebar-nav .nav-content a span {
           font-size: 13.5px;
-          line-height: 1.2;
-      }
-      @media (max-width: 320px) {
-          .sidebar-nav .nav-content a .submenu-item-wrapper {
-              align-items: flex-start;
-          }
-          .sidebar-nav .nav-content a .submenu-item-wrapper i {
-              margin-top: 6px;
-          }
-          .sidebar-nav .nav-content a .submenu-item-text {
-              white-space: normal;
-          }
+          line-height: 1.3;
+          white-space: normal;
+          word-break: break-word;
       }
   </style>

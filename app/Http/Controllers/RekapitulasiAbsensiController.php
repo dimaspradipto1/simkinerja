@@ -2,19 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AbsensiEsqKedua;
-use App\Models\AbsensiEsqKetiga;
-use App\Models\AbsensiEsqKeempat;
-use App\Models\AbsensiEsqPertama;
-use App\Models\AbsensiKuliahUmumKedua;
-use App\Models\AbsensiKuliahUmumKetiga;
-use App\Models\AbsensiKuliahUmumPertama;
-use App\Models\AbsensiMiladKedua;
-use App\Models\AbsensiMiladKetiga;
-use App\Models\AbsensiMiladPertama;
-use App\Models\AbsensiPkkmbKedua;
-use App\Models\AbsensiPkkmbKetiga;
-use App\Models\AbsensiPkkmbPertama;
+use App\Models\KepanitiaanPresensi;
+use App\Models\KepanitiaanSesiAbsensi;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -23,34 +12,35 @@ use Yajra\DataTables\Facades\DataTables;
 class RekapitulasiAbsensiController extends Controller
 {
     /**
-     * Helper to resolve attendance model based on kepanitiaan and day
+     * Helper to resolve attendance session ID based on kepanitiaan and day
      */
-    private function getAttendanceModel(string $kepanitiaan, int $day): string
+    private function getSesiId(string $kepanitiaan, int $day): ?int
     {
-        return match ($kepanitiaan) {
+        $slug = match ($kepanitiaan) {
             'pkkmb' => match ($day) {
-                2 => AbsensiPkkmbKedua::class,
-                3 => AbsensiPkkmbKetiga::class,
-                default => AbsensiPkkmbPertama::class,
+                2 => 'absensi-pkkmb-kedua',
+                3 => 'absensi-pkkmb-ketiga',
+                default => 'absensi-pkkmb-pertama',
             },
             'esq' => match ($day) {
-                2 => AbsensiEsqKedua::class,
-                3 => AbsensiEsqKetiga::class,
-                4 => AbsensiEsqKeempat::class,
-                default => AbsensiEsqPertama::class,
+                2 => 'absensi-esq-kedua',
+                3 => 'absensi-esq-ketiga',
+                4 => 'absensi-esq-keempat',
+                default => 'absensi-esq-pertama',
             },
             'milad' => match ($day) {
-                2 => AbsensiMiladKedua::class,
-                3 => AbsensiMiladKetiga::class,
-                default => AbsensiMiladPertama::class,
+                2 => 'absensi-milad-kedua',
+                default => 'absensi-milad-pertama',
             },
-            'kuliah_umum' => match ($day) {
-                2 => AbsensiKuliahUmumKedua::class,
-                3 => AbsensiKuliahUmumKetiga::class,
-                default => AbsensiKuliahUmumPertama::class,
-            },
-            default => AbsensiPkkmbPertama::class,
+            'kuliah_umum' => 'absensi-kuliah-umum-pertama',
+            default => 'absensi-pkkmb-pertama',
         };
+
+        $sesi = KepanitiaanSesiAbsensi::where('legacy_slug', $slug)
+            ->orWhere('nama_sesi', 'like', "%{$kepanitiaan}%")
+            ->first();
+
+        return $sesi?->id;
     }
 
     /**
@@ -126,15 +116,15 @@ class RekapitulasiAbsensiController extends Controller
 
         if ($day === 0) {
             // Mode Rekap Semua Hari Sekaligus
-            $m1 = $this->getAttendanceModel($kepanitiaan, 1);
-            $m2 = $this->getAttendanceModel($kepanitiaan, 2);
-            $m3 = $this->getAttendanceModel($kepanitiaan, 3);
-            $m4 = $kepanitiaan === 'esq' ? $this->getAttendanceModel($kepanitiaan, 4) : null;
+            $s1 = $this->getSesiId($kepanitiaan, 1);
+            $s2 = $this->getSesiId($kepanitiaan, 2);
+            $s3 = $this->getSesiId($kepanitiaan, 3);
+            $s4 = $kepanitiaan === 'esq' ? $this->getSesiId($kepanitiaan, 4) : null;
 
-            $att1 = $m1::all()->keyBy('user_id');
-            $att2 = $m2::all()->keyBy('user_id');
-            $att3 = $m3::all()->keyBy('user_id');
-            $att4 = $m4 ? $m4::all()->keyBy('user_id') : collect();
+            $att1 = $s1 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s1)->get()->keyBy('user_id') : collect();
+            $att2 = $s2 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s2)->get()->keyBy('user_id') : collect();
+            $att3 = $s3 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s3)->get()->keyBy('user_id') : collect();
+            $att4 = $s4 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s4)->get()->keyBy('user_id') : collect();
 
             $mergedIds = array_merge(
                 $att1->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray(),
@@ -213,13 +203,14 @@ class RekapitulasiAbsensiController extends Controller
                 ->make(true);
         }
 
-        // Mode Single Day (1, 2, atau 3)
-        $modelClass = $this->getAttendanceModel($kepanitiaan, $day);
+        // Mode Single Day (1, 2, 3, atau 4)
+        $sesiId = $this->getSesiId($kepanitiaan, $day);
 
-        $attendances = $modelClass::where(function ($q) {
-            $q->whereNotNull('hadir_datang')
-              ->orWhereNotNull('hadir_pulang');
-        })->get()->keyBy('user_id');
+        $attendances = $sesiId ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesiId)
+            ->where(function ($q) {
+                $q->whereNotNull('hadir_datang')
+                  ->orWhereNotNull('hadir_pulang');
+            })->get()->keyBy('user_id') : collect();
 
         $attendedUserIds = $attendances->keys()->toArray();
 
@@ -310,19 +301,22 @@ class RekapitulasiAbsensiController extends Controller
         $day = (int) $request->query('day', 1);
 
         if ($day === 0) {
-            // Mode 3 Hari Sekaligus: Belum absen sama sekali di 3 hari
-            $m1 = $this->getAttendanceModel($kepanitiaan, 1);
-            $m2 = $this->getAttendanceModel($kepanitiaan, 2);
-            $m3 = $this->getAttendanceModel($kepanitiaan, 3);
+            // Mode 3/4 Hari Sekaligus: Belum absen sama sekali di seluruh hari
+            $s1 = $this->getSesiId($kepanitiaan, 1);
+            $s2 = $this->getSesiId($kepanitiaan, 2);
+            $s3 = $this->getSesiId($kepanitiaan, 3);
+            $s4 = $kepanitiaan === 'esq' ? $this->getSesiId($kepanitiaan, 4) : null;
 
-            $att1 = $m1::all()->keyBy('user_id');
-            $att2 = $m2::all()->keyBy('user_id');
-            $att3 = $m3::all()->keyBy('user_id');
+            $att1 = $s1 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s1)->get()->keyBy('user_id') : collect();
+            $att2 = $s2 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s2)->get()->keyBy('user_id') : collect();
+            $att3 = $s3 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s3)->get()->keyBy('user_id') : collect();
+            $att4 = $s4 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s4)->get()->keyBy('user_id') : collect();
 
             $allAttendedIds = array_unique(array_merge(
                 $att1->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray(),
                 $att2->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray(),
-                $att3->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray()
+                $att3->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray(),
+                $att4->filter(fn($a) => !empty($a->hadir_datang) || !empty($a->hadir_pulang))->keys()->toArray()
             ));
 
             $usersQuery = $this->getBaseUsersQuery()->whereNotIn('id', $allAttendedIds);
@@ -350,22 +344,23 @@ class RekapitulasiAbsensiController extends Controller
                     return e($user->jabatan ?: '-');
                 })
                 ->addColumn('status_datang', function () {
-                    return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-semibold"><i class="bi bi-x-circle me-1"></i>Belum Hadir (3 Hari)</span>';
+                    return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-semibold"><i class="bi bi-x-circle me-1"></i>Belum Hadir</span>';
                 })
                 ->addColumn('status_pulang', function () {
-                    return '<span class="badge bg-secondary-subtle text-secondary border px-2 py-1 fw-semibold"><i class="bi bi-dash-circle me-1"></i>Belum Pulang (3 Hari)</span>';
+                    return '<span class="badge bg-secondary-subtle text-secondary border px-2 py-1 fw-semibold"><i class="bi bi-dash-circle me-1"></i>Belum Pulang</span>';
                 })
                 ->rawColumns(['name', 'nidn', 'unit', 'jabatan', 'status_datang', 'status_pulang'])
                 ->make(true);
         }
 
         // Mode Single Day
-        $modelClass = $this->getAttendanceModel($kepanitiaan, $day);
+        $sesiId = $this->getSesiId($kepanitiaan, $day);
 
-        $attendedUserIds = $modelClass::where(function ($q) {
-            $q->whereNotNull('hadir_datang')
-              ->orWhereNotNull('hadir_pulang');
-        })->pluck('user_id')->toArray();
+        $attendedUserIds = $sesiId ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesiId)
+            ->where(function ($q) {
+                $q->whereNotNull('hadir_datang')
+                  ->orWhereNotNull('hadir_pulang');
+            })->pluck('user_id')->toArray() : [];
 
         $usersQuery = $this->getBaseUsersQuery()
             ->whereNotIn('id', $attendedUserIds);
@@ -416,15 +411,15 @@ class RekapitulasiAbsensiController extends Controller
 
         if ($day === 0) {
             // Stats Akumulasi Seluruh Hari
-            $m1 = $this->getAttendanceModel($kepanitiaan, 1);
-            $m2 = $this->getAttendanceModel($kepanitiaan, 2);
-            $m3 = $this->getAttendanceModel($kepanitiaan, 3);
-            $m4 = $kepanitiaan === 'esq' ? $this->getAttendanceModel($kepanitiaan, 4) : null;
+            $s1 = $this->getSesiId($kepanitiaan, 1);
+            $s2 = $this->getSesiId($kepanitiaan, 2);
+            $s3 = $this->getSesiId($kepanitiaan, 3);
+            $s4 = $kepanitiaan === 'esq' ? $this->getSesiId($kepanitiaan, 4) : null;
 
-            $att1 = $m1::whereIn('user_id', $targetUserIds)->get();
-            $att2 = $m2::whereIn('user_id', $targetUserIds)->get();
-            $att3 = $m3::whereIn('user_id', $targetUserIds)->get();
-            $att4 = $m4 ? $m4::whereIn('user_id', $targetUserIds)->get() : collect();
+            $att1 = $s1 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s1)->whereIn('user_id', $targetUserIds)->get() : collect();
+            $att2 = $s2 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s2)->whereIn('user_id', $targetUserIds)->get() : collect();
+            $att3 = $s3 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s3)->whereIn('user_id', $targetUserIds)->get() : collect();
+            $att4 = $s4 ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $s4)->whereIn('user_id', $targetUserIds)->get() : collect();
 
             $sudahDatangTotal = $att1->whereNotNull('hadir_datang')->count() + $att2->whereNotNull('hadir_datang')->count() + $att3->whereNotNull('hadir_datang')->count() + $att4->whereNotNull('hadir_datang')->count();
             $sudahPulangTotal = $att1->whereNotNull('hadir_pulang')->count() + $att2->whereNotNull('hadir_pulang')->count() + $att3->whereNotNull('hadir_pulang')->count() + $att4->whereNotNull('hadir_pulang')->count();
@@ -458,8 +453,8 @@ class RekapitulasiAbsensiController extends Controller
         }
 
         // Stats Single Day
-        $modelClass = $this->getAttendanceModel($kepanitiaan, $day);
-        $attendances = $modelClass::whereIn('user_id', $targetUserIds)->get();
+        $sesiId = $this->getSesiId($kepanitiaan, $day);
+        $attendances = $sesiId ? KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesiId)->whereIn('user_id', $targetUserIds)->get() : collect();
 
         $sudahDatang = $attendances->whereNotNull('hadir_datang')->count();
         $sudahPulang = $attendances->whereNotNull('hadir_pulang')->count();

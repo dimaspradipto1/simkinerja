@@ -548,6 +548,49 @@
             }
         };
 
+        // Global Real-Time Sync for Active Sessions on Sidebar
+        window.updateSidebarActiveSession = function(data) {
+            const container = $('#sidebar-presensi-active-item');
+            const badge = $('#sidebar-active-sessions-badge');
+            const navList = $('#presensi-kepanitiaan-nav');
+
+            if (!navList.length) return;
+
+            if (data.is_active) {
+                let existingItem = $('#sidebar-sesi-item-' + data.id);
+                if (!existingItem.length) {
+                    const newItemHtml = `
+                        <li id="sidebar-sesi-item-${data.id}">
+                            <a href="${data.url}" class="d-flex align-items-center gap-2 py-1.5 px-3" title="${data.nama}">
+                                <i class="bi bi-circle-fill text-success flex-shrink-0" style="font-size: 6px;"></i>
+                                <span class="text-truncate" style="font-size: 13px; font-weight: 500;">${data.nama}</span>
+                            </a>
+                        </li>
+                    `;
+                    navList.append(newItemHtml);
+                } else {
+                    existingItem.show();
+                }
+
+                container.show();
+                if (!navList.hasClass('show')) {
+                    navList.addClass('show');
+                    container.find('a[data-bs-toggle="collapse"]').removeClass('collapsed');
+                }
+            } else {
+                $('#sidebar-sesi-item-' + data.id).remove();
+            }
+
+            const activeItemsCount = data.active_count !== undefined ? data.active_count : navList.find('li').length;
+            badge.text(activeItemsCount);
+
+            if (activeItemsCount <= 0) {
+                container.hide();
+            } else {
+                container.show();
+            }
+        };
+
         $(document).on('click', '.btn-scan-barcode-modal', function(e) {
             e.preventDefault();
             window.openScanBarcodeModal(this);
@@ -660,6 +703,8 @@
                             window.LaravelDataTables["rencanakerja-table"].ajax.reload(null, false);
                         } else if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
                             window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
+                        } else if (typeof $ !== 'undefined' && $.fn.DataTable && $.fn.DataTable.isDataTable('#dashboard-attendance-table')) {
+                            $('#dashboard-attendance-table').DataTable().ajax.reload(null, false);
                         } else {
                             window.location.reload();
                         }
@@ -717,11 +762,21 @@
                 $('#modalPilihSesiIcon').attr('class', 'bi bi-qr-code-scan fs-4 text-white');
                 $('#modalPilihSesiAbsensiLabel').text('Pilih Sesi Scan Barcode');
                 $('#modalPilihSesiSublabel').text('Pilih sesi untuk membuka scanner kamera');
-            } else {
+            } else if (type === 'barcode') {
                 $('#modalPilihSesiHeader').css('background-color', '#0f172a');
                 $('#modalPilihSesiIcon').attr('class', 'bi bi-qr-code fs-4 text-white');
                 $('#modalPilihSesiAbsensiLabel').text('Pilih Sesi Barcode Absensi');
                 $('#modalPilihSesiSublabel').text('Pilih sesi untuk menampilkan barcode kehadiran');
+            } else if (type === 'export') {
+                $('#modalPilihSesiHeader').css('background-color', '#198754');
+                $('#modalPilihSesiIcon').attr('class', 'bi bi-file-earmark-excel-fill fs-4 text-white');
+                $('#modalPilihSesiAbsensiLabel').text('Pilih Sesi Export Excel');
+                $('#modalPilihSesiSublabel').text('Pilih sesi untuk mengunduh rekap absensi Excel');
+            } else if (type === 'multiselect') {
+                $('#modalPilihSesiHeader').css('background-color', '#0284c7');
+                $('#modalPilihSesiIcon').attr('class', 'bi bi-check2-square fs-4 text-white');
+                $('#modalPilihSesiAbsensiLabel').text('Pilih Sesi Multi-Select Presensi');
+                $('#modalPilihSesiSublabel').text('Pilih sesi untuk mengelola kehadiran & multi-select');
             }
 
             // Filter hanya sesi yang aktif (sesi yang dikunci tidak perlu ditampilkan)
@@ -741,19 +796,34 @@
 
             let html = '';
             activeSessionsList.forEach(function(sess) {
-                const iconClass = type === 'scan' ? 'bi-qr-code-scan text-primary' : 'bi-qr-code text-dark';
-                const actionLabel = type === 'scan' ? 'Buka Scanner Kamera' : 'Buka QR Barcode';
+                let iconClass = 'bi-qr-code text-dark';
+                let actionLabel = 'Buka QR Barcode';
+                if (type === 'scan') {
+                    iconClass = 'bi-qr-code-scan text-primary';
+                    actionLabel = 'Buka Scanner Kamera';
+                } else if (type === 'export') {
+                    iconClass = 'bi-file-earmark-excel-fill text-success';
+                    actionLabel = 'Download Rekap Excel';
+                } else if (type === 'multiselect') {
+                    iconClass = 'bi-check2-square text-info';
+                    actionLabel = 'Kelola Presensi & Multi-Select';
+                }
+
                 const token = sess.token || '';
                 const scanUrl = sess.scan_url || '';
+                const exportUrl = sess.export_url || '';
+                const sessId = sess.id || '';
 
                 html += `
                 <div class="card p-3 shadow-2xs rounded-3 session-choice-item mb-2 border" 
                      style="cursor: pointer; background-color: #ffffff;" 
+                     data-id="${sessId}"
                      data-slug="${sess.slug}" 
                      data-token="${token}"
                      data-scan-url="${scanUrl}"
                      data-title="${sess.nama}" 
                      data-url="${sess.url}" 
+                     data-export-url="${exportUrl}"
                      data-type="${type}"
                      data-active="1">
                     <div class="d-flex align-items-center justify-content-between gap-2">
@@ -801,6 +871,8 @@
             const scanUrl = $(this).data('scan-url');
             const url = $(this).data('url');
             const type = $(this).data('type');
+            const sessId = $(this).data('id');
+            const exportUrl = $(this).data('export-url');
 
             const pickerModalEl = document.getElementById('modalPilihSesiAbsensi');
             if (pickerModalEl) {
@@ -817,7 +889,7 @@
                         .data('title', title)
                         .data('url', url);
                     window.openScanBarcodeModal(dummyBtn);
-                } else {
+                } else if (type === 'barcode') {
                     const dummyBtn = $('<button>')
                         .data('slug', slug)
                         .data('token', token)
@@ -825,8 +897,314 @@
                         .data('title', title)
                         .data('url', url);
                     window.openBarcodeModal(dummyBtn);
+                } else if (type === 'export') {
+                    const targetExport = exportUrl || (sessId ? `{{ url('presensi/sesi') }}/${sessId}/export` : '');
+                    if (targetExport) {
+                        window.location.href = targetExport;
+                    }
+                } else if (type === 'multiselect') {
+                    if (sessId) {
+                        window.openPresensiMultiSelectModal(sessId, title);
+                    }
                 }
             }, 300);
+        });
+
+        // ==========================================
+        // MULTI-SELECT & PRESENSI MODAL ENGINE
+        // ==========================================
+        let currentGmpSesiId = null;
+        let currentGmpFilter = 'all';
+        const gmpSelectedUsersMap = new Map();
+        let gmpTable = null;
+
+        function updateGmpBulkToolbarUI() {
+            const count = gmpSelectedUsersMap.size;
+            $('#gmp-selected-count').text(count);
+            $('#gmp-bulk-modal-count').text(count);
+            $('#gmp-bulk-names-count').text(count);
+            $('#gmp-bulk-btn-count').text(count);
+
+            if (count > 0) {
+                $('#gmp-bulk-toolbar').attr('style', 'display: flex !important;');
+            } else {
+                $('#gmp-bulk-toolbar').attr('style', 'display: none !important;');
+            }
+
+            if (count > 0) {
+                const names = Array.from(gmpSelectedUsersMap.values()).map(n => `<span class="badge bg-white text-dark border me-1 mb-1 shadow-xs">${n}</span>`).join(' ');
+                $('#gmp-bulk-names-preview').html(names);
+            } else {
+                $('#gmp-bulk-names-preview').html('<span class="text-muted fst-italic">Tidak ada pegawai yang dipilih.</span>');
+            }
+        }
+
+        window.clearGmpSelectedRows = function() {
+            gmpSelectedUsersMap.clear();
+            $('#gmp-check-all-rows').prop('checked', false);
+            $('.gmp-check-row').prop('checked', false);
+            updateGmpBulkToolbarUI();
+        };
+
+        window.openPresensiMultiSelectModal = function(sesiId, sesiTitle) {
+            currentGmpSesiId = sesiId;
+            currentGmpFilter = 'all';
+            gmpSelectedUsersMap.clear();
+
+            $('#modalPresensiMultiSelectTitle').text('Presensi: ' + (sesiTitle || 'Sesi Presensi'));
+            $('#modalPresensiMultiSelectSubtitle').text('Kelola kehadiran pegawai & perbarui status absensi secara massal (' + (sesiTitle || '') + ')');
+            $('#gmp-btn-export').attr('href', `{{ url('presensi/sesi') }}/${sesiId}/export`);
+            $('#gmp-btn-fullpage').attr('href', `{{ url('presensi/sesi') }}/${sesiId}`);
+
+            // Reset filter buttons
+            $('.btn-gmp-filter').removeClass('btn-primary active').addClass('btn-outline-secondary');
+            $('.btn-gmp-filter[data-filter="all"]').removeClass('btn-outline-secondary').addClass('btn-primary active');
+            $('#label-gmp-filter-khusus').text('Pilih');
+            updateGmpBulkToolbarUI();
+
+            // Modal show
+            const modalEl = document.getElementById('modalPresensiMultiSelect');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+
+            // Init or reload table
+            if ($.fn.DataTable.isDataTable('#gmp-table')) {
+                $('#gmp-table').DataTable().destroy();
+                $('#gmp-table tbody').empty();
+            }
+
+            gmpTable = $('#gmp-table').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: `{{ url('presensi/sesi') }}/${sesiId}/data`,
+                    data: function(d) {
+                        d.filter = currentGmpFilter;
+                    }
+                },
+                columns: [
+                    { 
+                        data: 'checkbox', 
+                        name: 'checkbox', 
+                        orderable: false, 
+                        searchable: false, 
+                        className: 'text-center',
+                        render: function(data, type, row) {
+                            return `<div class="form-check d-flex justify-content-center m-0">
+                                <input type="checkbox" class="form-check-input gmp-check-row" 
+                                       value="${row.user_id}" 
+                                       data-user-name="${row.user_name || ''}" 
+                                       style="cursor: pointer; width: 17px; height: 17px;">
+                            </div>`;
+                        }
+                    },
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center fw-semibold text-muted' },
+                    { data: 'tanggal', name: 'created_at', className: 'text-center' },
+                    { data: 'user_info', name: 'user_info' },
+                    { data: 'status_datang', name: 'hadir_datang', className: 'text-center' },
+                    { data: 'status_pulang', name: 'hadir_pulang', className: 'text-center' },
+                    { data: 'catatan_col', name: 'catatan_hadir_datang', orderable: false },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' },
+                ],
+                order: [[3, 'asc']],
+                pageLength: 15,
+                drawCallback: function(settings) {
+                    let allChecked = true;
+                    let countInPage = 0;
+
+                    $('.gmp-check-row').each(function() {
+                        countInPage++;
+                        const uId = $(this).val();
+                        if (gmpSelectedUsersMap.has(uId)) {
+                            $(this).prop('checked', true);
+                        } else {
+                            $(this).prop('checked', false);
+                            allChecked = false;
+                        }
+                    });
+
+                    if (countInPage === 0 || !allChecked) {
+                        $('#gmp-check-all-rows').prop('checked', false);
+                    } else {
+                        $('#gmp-check-all-rows').prop('checked', true);
+                    }
+
+                    updateGmpBulkToolbarUI();
+                },
+                language: {
+                    processing: '<div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data presensi...',
+                    zeroRecords: '<div class="text-center py-4 text-muted"><i class="bi bi-people fs-3 d-block mb-1"></i>Tidak ada data pegawai yang sesuai dengan filter.</div>',
+                    info: "Menampilkan <strong>_START_-_END_</strong> dari <strong>_TOTAL_</strong> pegawai",
+                    infoEmpty: "Menampilkan 0 data",
+                    infoFiltered: "(disaring dari _MAX_ pegawai)",
+                    search: "Cari Pegawai:",
+                    paginate: {
+                        previous: '<i class="bi bi-chevron-left"></i>',
+                        next: '<i class="bi bi-chevron-right"></i>'
+                    }
+                }
+            });
+        };
+
+        // Header check all
+        $(document).on('change', '#gmp-check-all-rows', function() {
+            const isChecked = $(this).is(':checked');
+            $('.gmp-check-row').each(function() {
+                const uId = $(this).val();
+                const uName = $(this).data('user-name') || ('Pegawai #' + uId);
+                $(this).prop('checked', isChecked);
+                if (isChecked) {
+                    gmpSelectedUsersMap.set(uId, uName);
+                } else {
+                    gmpSelectedUsersMap.delete(uId);
+                }
+            });
+            updateGmpBulkToolbarUI();
+        });
+
+        // Individual row check
+        $(document).on('change', '.gmp-check-row', function() {
+            const uId = $(this).val();
+            const uName = $(this).data('user-name') || ('Pegawai #' + uId);
+            if ($(this).is(':checked')) {
+                gmpSelectedUsersMap.set(uId, uName);
+            } else {
+                gmpSelectedUsersMap.delete(uId);
+            }
+
+            let allChecked = true;
+            $('.gmp-check-row').each(function() {
+                if (!$(this).is(':checked')) allChecked = false;
+            });
+            $('#gmp-check-all-rows').prop('checked', allChecked);
+
+            updateGmpBulkToolbarUI();
+        });
+
+        // Filter buttons
+        $(document).on('click', '.btn-gmp-filter', function() {
+            $('.btn-gmp-filter').removeClass('btn-primary active').addClass('btn-outline-secondary');
+            $(this).removeClass('btn-outline-secondary').addClass('btn-primary active');
+            $('#label-gmp-filter-khusus').text('Pilih');
+            currentGmpFilter = $(this).data('filter');
+            if (gmpTable) gmpTable.ajax.reload();
+        });
+
+        $(document).on('click', '.gmp-filter-detail-item', function() {
+            $('.btn-gmp-filter').removeClass('btn-primary active').addClass('btn-outline-secondary');
+            const labelText = $(this).text().trim();
+            $('#label-gmp-filter-khusus').text(labelText);
+            currentGmpFilter = $(this).data('filter');
+            if (gmpTable) gmpTable.ajax.reload();
+        });
+
+        // Open Bulk Update Modal
+        window.openGmpBulkModal = function() {
+            if (gmpSelectedUsersMap.size === 0) {
+                Swal.fire('Peringatan', 'Silakan centang minimal satu pegawai untuk diubah presensinya.', 'warning');
+                return;
+            }
+
+            const now = new Date();
+            const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            $('#gmp_bulk_waktu_datang').val(currentTime);
+            $('#gmp_bulk_waktu_pulang').val(currentTime);
+
+            const modalEl = document.getElementById('modalGmpBulkPresensi');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        };
+
+        // Switch listeners
+        $(document).on('change', '#gmp_switch_update_datang', function() {
+            const on = $(this).is(':checked');
+            $('#gmp_wrapper_fields_datang').css('opacity', on ? '1' : '0.4').find('input, select').prop('disabled', !on);
+            $('#gmp-badge-datang-status').text(on ? 'Diubah' : 'Tidak Diubah').attr('class', on ? 'badge bg-success-subtle text-success small' : 'badge bg-secondary-subtle text-secondary small');
+        });
+
+        $(document).on('change', '#gmp_switch_update_pulang', function() {
+            const on = $(this).is(':checked');
+            $('#gmp_wrapper_fields_pulang').css('opacity', on ? '1' : '0.4').find('input, select').prop('disabled', !on);
+            $('#gmp-badge-pulang-status').text(on ? 'Diubah' : 'Tidak Diubah').attr('class', on ? 'badge bg-success-subtle text-success small' : 'badge bg-secondary-subtle text-secondary small');
+        });
+
+        $(document).on('change', '#gmp_switch_update_catatan', function() {
+            const on = $(this).is(':checked');
+            if (on) {
+                $('#gmp_wrapper_field_catatan').slideDown(150);
+            } else {
+                $('#gmp_wrapper_field_catatan').slideUp(150);
+            }
+        });
+
+        // Submit Bulk Presensi
+        $(document).on('submit', '#formGmpBulkPresensi', function(e) {
+            e.preventDefault();
+            if (!currentGmpSesiId) return;
+
+            const selectedIds = Array.from(gmpSelectedUsersMap.keys());
+            if (selectedIds.length === 0) {
+                Swal.fire('Peringatan', 'Tidak ada pegawai yang dipilih.', 'warning');
+                return;
+            }
+
+            const btn = $('#gmp-btn-submit-bulk');
+            const originalText = btn.html();
+            btn.prop('disabled', true).html('<div class="spinner-border spinner-border-sm me-1"></div> Menyimpan...');
+
+            $.ajax({
+                url: `{{ url('presensi/sesi') }}/${currentGmpSesiId}/bulk-update`,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    user_ids: selectedIds,
+                    update_datang: $('#gmp_switch_update_datang').is(':checked') ? 1 : 0,
+                    hadir_datang: $('#gmp_bulk_hadir_datang').val(),
+                    waktu_datang: $('#gmp_bulk_waktu_datang').val(),
+                    update_pulang: $('#gmp_switch_update_pulang').is(':checked') ? 1 : 0,
+                    hadir_pulang: $('#gmp_bulk_hadir_pulang').val(),
+                    waktu_pulang: $('#gmp_bulk_waktu_pulang').val(),
+                    update_catatan: $('#gmp_switch_update_catatan').is(':checked') ? 1 : 0,
+                    catatan: $('#gmp_bulk_catatan').val(),
+                },
+                dataType: 'json',
+                success: function(res) {
+                    btn.prop('disabled', false).html(originalText);
+                    if (res.success) {
+                        const modalEl = document.getElementById('modalGmpBulkPresensi');
+                        if (modalEl) {
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil Diperbarui!',
+                            text: res.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        window.clearGmpSelectedRows();
+                        if (gmpTable) gmpTable.ajax.reload(null, false);
+                        if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
+                            window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
+                        }
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html(originalText);
+                    let err = 'Terjadi kesalahan saat memperbarui presensi massal.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) err = xhr.responseJSON.message;
+                    Swal.fire('Gagal', err, 'error');
+                }
+            });
         });
 
         // Handler Kelola Sesi Presensi Kepanitiaan (Universal Dynamic Attendance)
@@ -886,7 +1264,6 @@
                     <td class="text-center fw-semibold text-muted" style="vertical-align: middle;">${idx + 1}</td>
                     <td style="vertical-align: middle;">
                         <a href="${s.detail_url}" class="fw-bold text-primary text-decoration-none d-block">${s.nama_sesi}</a>
-                        <div class="small text-muted font-monospace" style="font-size: 0.76rem;"><i class="bi bi-key me-1"></i>Token: ${s.token}</div>
                     </td>
                     <td class="text-center" style="vertical-align: middle;">
                         <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.78rem;">${s.tanggal || '-'}</span>
@@ -910,11 +1287,14 @@
                     </td>
                     <td class="text-center" style="vertical-align: middle;">
                         <div class="btn-group btn-group-sm">
-                            <a href="${s.detail_url}" class="btn btn-outline-primary" title="Buka Data Absensi Lengkap">
-                                <i class="bi bi-card-checklist me-1"></i>Data Absensi
+                            <button type="button" class="btn btn-outline-primary" onclick="window.openPresensiMultiSelectModal(${s.id}, '${s.nama_sesi.replace(/'/g, "\\'")}')" title="Kelola Presensi & Multi-Select Pegawai">
+                                <i class="bi bi-check2-square me-1"></i>Multi-Select
+                            </button>
+                            <a href="${s.detail_url}" class="btn btn-outline-secondary" title="Buka Halaman Presensi Lengkap" target="_blank">
+                                <i class="bi bi-box-arrow-up-right"></i>
                             </a>
                             <a href="${s.export_url}" class="btn btn-outline-success" title="Download Rekap Presensi Excel" target="_blank">
-                                <i class="bi bi-file-earmark-excel"></i>
+                                <i class="bi bi-file-earmark-excel-fill"></i>
                             </a>
                             <button type="button" class="btn btn-outline-danger btn-delete-sesi" data-id="${s.id}" data-nama="${s.nama_sesi}" title="Hapus Sesi">
                                 <i class="bi bi-trash"></i>
@@ -1314,6 +1694,225 @@
                     <span class="text-muted small">QR Code dan URL dibuat secara dinamis &amp; otomatis</span>
                     <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill fw-semibold" data-bs-dismiss="modal">Tutup</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Global Presensi & Multi-Select Pegawai -->
+    <div class="modal fade" id="modalPresensiMultiSelect" tabindex="-1" aria-labelledby="modalPresensiMultiSelectLabel" aria-hidden="true" style="z-index: 1065;">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden;">
+                <div class="modal-header bg-dark text-white py-3 px-4 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-check2-square fs-4 text-primary"></i>
+                        <div>
+                            <h6 class="modal-title fw-bold mb-0 text-white" id="modalPresensiMultiSelectTitle">Presensi Pegawai &amp; Multi-Select</h6>
+                            <small class="text-white-50" id="modalPresensiMultiSelectSubtitle">Kelola kehadiran pegawai &amp; perbarui status absensi secara massal</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="#" id="gmp-btn-export" class="btn btn-sm btn-success text-white fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" title="Download Rekap Absensi Excel">
+                            <i class="bi bi-file-earmark-excel-fill"></i> <span class="d-none d-sm-inline">Export Excel</span>
+                        </a>
+                        <a href="#" id="gmp-btn-fullpage" target="_blank" class="btn btn-sm btn-outline-light d-inline-flex align-items-center gap-1 shadow-xs" title="Buka Halaman Presensi Penuh di Tab Baru">
+                            <i class="bi bi-box-arrow-up-right"></i> <span class="d-none d-md-inline">Halaman Penuh</span>
+                        </a>
+                        <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- Filter & Bulk Action Toolbar -->
+                    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3 p-3 bg-white rounded-3 border shadow-2xs">
+                        <!-- Filter Buttons Group -->
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="text-muted small fw-bold me-1"><i class="bi bi-funnel text-primary me-1"></i>Filter Presensi:</span>
+                            <div class="btn-group shadow-xs" role="group" aria-label="Filter Presensi">
+                                <button type="button" class="btn btn-sm btn-primary active btn-gmp-filter" data-filter="all">
+                                    <i class="bi bi-people me-1"></i>Semua
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success btn-gmp-filter" data-filter="sudah">
+                                    <i class="bi bi-check-circle me-1"></i>Sudah Absen
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-gmp-filter" data-filter="belum">
+                                    <i class="bi bi-x-circle me-1"></i>Belum Absen
+                                </button>
+                            </div>
+
+                            <!-- Dropdown Filter Lanjutan -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1 shadow-xs font-medium" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="btnGmpFilterLanjutan">
+                                    <i class="bi bi-sliders"></i> Filter Khusus: <span id="label-gmp-filter-khusus" class="fw-bold">Pilih</span>
+                                </button>
+                                <ul class="dropdown-menu shadow border-0" style="font-size: 0.84rem; min-width: 260px; border-radius: 10px;">
+                                    <li class="dropdown-header text-uppercase fw-bold text-muted" style="font-size: 0.72rem;">Filter Detail Kehadiran</li>
+                                    <li><a class="dropdown-item py-2 gmp-filter-detail-item" href="javascript:void(0)" data-filter="sudah_lengkap"><i class="bi bi-check2-all text-success me-2"></i>Sudah Lengkap (Datang & Pulang)</a></li>
+                                    <li><a class="dropdown-item py-2 gmp-filter-detail-item" href="javascript:void(0)" data-filter="sudah_datang"><i class="bi bi-box-arrow-in-right text-success me-2"></i>Sudah Absen Datang</a></li>
+                                    <li><a class="dropdown-item py-2 gmp-filter-detail-item" href="javascript:void(0)" data-filter="sudah_pulang"><i class="bi bi-box-arrow-right text-info me-2"></i>Sudah Absen Pulang</a></li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li><a class="dropdown-item py-2 gmp-filter-detail-item" href="javascript:void(0)" data-filter="belum_pulang"><i class="bi bi-clock-history text-warning me-2"></i>Belum Absen Pulang</a></li>
+                                    <li><a class="dropdown-item py-2 gmp-filter-detail-item" href="javascript:void(0)" data-filter="belum_datang"><i class="bi bi-exclamation-circle text-warning me-2"></i>Belum Absen Datang</a></li>
+                                    <li><a class="dropdown-item py-2 gmp-filter-detail-item" href="javascript:void(0)" data-filter="belum_semua"><i class="bi bi-person-x text-danger me-2"></i>Belum Absen Sama Sekali</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Multi-Select Bulk Action Controls -->
+                        <div id="gmp-bulk-toolbar" class="d-flex align-items-center gap-2 flex-wrap" style="display: none !important;">
+                            <span class="badge bg-primary px-3 py-2 fs-6 fw-normal rounded-pill shadow-sm text-white">
+                                <i class="bi bi-check-square me-1"></i><span id="gmp-selected-count" class="fw-bold">0</span> pegawai dipilih
+                            </span>
+                            <button type="button" class="btn btn-warning btn-sm fw-bold d-inline-flex align-items-center gap-1 shadow-sm text-dark" onclick="window.openGmpBulkModal()" style="border-radius: 6px;">
+                                <i class="bi bi-pencil-square"></i> Ubah Presensi Terpilih
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.clearGmpSelectedRows()" title="Batal Pilih Semua" style="border-radius: 6px;">
+                                <i class="bi bi-x-lg me-1"></i>Batal
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white p-3">
+                        <div class="table-responsive">
+                            <table id="gmp-table" class="table table-hover align-middle w-100" style="font-size: 0.86rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center" style="width: 40px;">
+                                            <div class="form-check d-flex justify-content-center m-0">
+                                                <input type="checkbox" id="gmp-check-all-rows" class="form-check-input" style="cursor: pointer; width: 17px; height: 17px;" title="Pilih Semua Pegawai di Halaman Ini">
+                                            </div>
+                                        </th>
+                                        <th class="text-center" style="width: 45px;">No</th>
+                                        <th class="text-center" style="width: 110px;">Tanggal</th>
+                                        <th>Pegawai</th>
+                                        <th class="text-center" style="width: 140px;">Presensi Datang</th>
+                                        <th class="text-center" style="width: 140px;">Presensi Pulang</th>
+                                        <th>Keterangan / Bukti</th>
+                                        <th class="text-center" style="width: 80px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top py-2 px-4 justify-content-between">
+                    <span class="text-muted small"><i class="bi bi-shield-check me-1"></i>Perubahan presensi massal tersimpan otomatis secara real-time.</span>
+                    <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill fw-semibold" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sub-Modal Bulk Update Presensi -->
+    <div class="modal fade" id="modalGmpBulkPresensi" tabindex="-1" aria-labelledby="modalGmpBulkPresensiLabel" aria-hidden="true" style="z-index: 1075;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+                <div class="modal-header bg-light border-bottom py-3 px-4">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark fs-6 mb-0" id="modalGmpBulkPresensiLabel">
+                            <i class="bi bi-pencil-square text-primary me-2"></i>Ubah Presensi Terpilih (<span id="gmp-bulk-modal-count">0</span> Pegawai)
+                        </h5>
+                        <small class="text-muted">Perbarui status absensi datang dan absensi pulang pegawai secara massal.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formGmpBulkPresensi">
+                    <div class="modal-body p-4">
+                        <!-- Selected Employees Preview -->
+                        <div class="alert alert-light border mb-4 py-2 px-3 rounded-3 shadow-none">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="small fw-bold text-dark"><i class="bi bi-people-fill text-primary me-1"></i>Daftar Pegawai Terpilih:</span>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill"><span id="gmp-bulk-names-count">0</span> Pegawai</span>
+                            </div>
+                            <div id="gmp-bulk-names-preview" class="small text-muted" style="max-height: 55px; overflow-y: auto;">
+                                -
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Section Presensi Datang -->
+                            <div class="col-md-6">
+                                <div class="card h-100 border shadow-none" style="border-radius: 10px; background-color: #f8fafc;">
+                                    <div class="card-header bg-white border-bottom py-2 px-3 d-flex align-items-center justify-content-between">
+                                        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="gmp_switch_update_datang" name="update_datang" value="1" checked style="cursor: pointer; width: 34px; height: 17px;">
+                                            <label class="form-check-label fw-bold text-dark small" for="gmp_switch_update_datang" style="cursor: pointer;">
+                                                <i class="bi bi-box-arrow-in-right text-success me-1"></i>Ubah Absensi Datang
+                                            </label>
+                                        </div>
+                                        <span class="badge bg-success-subtle text-success small" id="gmp-badge-datang-status">Diubah</span>
+                                    </div>
+                                    <div class="card-body p-3" id="gmp_wrapper_fields_datang">
+                                        <div class="mb-3">
+                                            <label for="gmp_bulk_hadir_datang" class="form-label fw-semibold small">Status Kehadiran Datang</label>
+                                            <select class="form-select form-select-sm" id="gmp_bulk_hadir_datang" name="hadir_datang" style="border-radius: 6px;">
+                                                <option value="Hadir" selected>🟢 Hadir</option>
+                                                <option value="Izin">🟡 Izin</option>
+                                                <option value="Sakit">🔵 Sakit</option>
+                                                <option value="Alpha">🔴 Alpha</option>
+                                                <option value="reset">⚪ Belum Absen (Kosongkan/Reset)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="gmp_bulk_waktu_datang" class="form-label fw-semibold small">Waktu Datang (WIB)</label>
+                                            <input type="time" class="form-control form-control-sm" id="gmp_bulk_waktu_datang" name="waktu_datang" style="border-radius: 6px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section Presensi Pulang -->
+                            <div class="col-md-6">
+                                <div class="card h-100 border shadow-none" style="border-radius: 10px; background-color: #f8fafc;">
+                                    <div class="card-header bg-white border-bottom py-2 px-3 d-flex align-items-center justify-content-between">
+                                        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="gmp_switch_update_pulang" name="update_pulang" value="1" checked style="cursor: pointer; width: 34px; height: 17px;">
+                                            <label class="form-check-label fw-bold text-dark small" for="gmp_switch_update_pulang" style="cursor: pointer;">
+                                                <i class="bi bi-box-arrow-right text-info me-1"></i>Ubah Absensi Pulang
+                                            </label>
+                                        </div>
+                                        <span class="badge bg-success-subtle text-success small" id="gmp-badge-pulang-status">Diubah</span>
+                                    </div>
+                                    <div class="card-body p-3" id="gmp_wrapper_fields_pulang">
+                                        <div class="mb-3">
+                                            <label for="gmp_bulk_hadir_pulang" class="form-label fw-semibold small">Status Kehadiran Pulang</label>
+                                            <select class="form-select form-select-sm" id="gmp_bulk_hadir_pulang" name="hadir_pulang" style="border-radius: 6px;">
+                                                <option value="Hadir" selected>🟢 Hadir (Selesai Pulang)</option>
+                                                <option value="Izin">🟡 Izin</option>
+                                                <option value="Sakit">🔵 Sakit</option>
+                                                <option value="Alpha">🔴 Alpha</option>
+                                                <option value="reset">⚪ Belum Pulang (Kosongkan/Reset)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="gmp_bulk_waktu_pulang" class="form-label fw-semibold small">Waktu Pulang (WIB)</label>
+                                            <input type="time" class="form-control form-control-sm" id="gmp_bulk_waktu_pulang" name="waktu_pulang" style="border-radius: 6px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Catatan Massal -->
+                        <div class="mt-3">
+                            <div class="form-check form-switch mb-2 d-flex align-items-center gap-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="gmp_switch_update_catatan" name="update_catatan" value="1" style="cursor: pointer; width: 34px; height: 17px;">
+                                <label class="form-check-label fw-semibold text-dark small" for="gmp_switch_update_catatan" style="cursor: pointer;">
+                                    Tambahkan Catatan Khusus Massal
+                                </label>
+                            </div>
+                            <div id="gmp_wrapper_field_catatan" style="display: none;">
+                                <textarea class="form-control form-control-sm" id="gmp_bulk_catatan" name="catatan" rows="2" placeholder="Catatan massal (misal: Hadir tugas kepanitiaan, izin tugas dinas luar, dll)..." style="border-radius: 6px;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top py-3 px-4">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" style="border-radius: 6px;">Batal</button>
+                        <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold d-inline-flex align-items-center gap-1 shadow-sm" id="gmp-btn-submit-bulk" style="border-radius: 6px;">
+                            <i class="bi bi-check2-all me-1"></i> Terapkan Perubahan (<span id="gmp-bulk-btn-count">0</span> Pegawai)
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
