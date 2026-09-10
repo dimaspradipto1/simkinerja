@@ -1261,7 +1261,7 @@ class RencanaKerjaController extends Controller
     }
 
     /**
-     * Import Rencana Kerja from Excel File
+     * Import Rencana Kerja from Excel File (Mendukung Template Standar & File Hasil Export Laporan)
      */
     public function importExcel(Request $request)
     {
@@ -1281,69 +1281,266 @@ class RencanaKerjaController extends Controller
                 return redirect()->back();
             }
 
-            // Detect header columns
-            $header = array_map(function ($h) {
-                return strtolower(trim((string) $h));
-            }, $rows[0]);
-
-            $uraianIndex = array_search('uraian_tugas', $header);
-            if ($uraianIndex === false) {
-                $uraianIndex = 0;
+            // 1. Ekstraksi Periode dari Judul File (jika format Export Laporan)
+            $extractedPeriodeName = null;
+            if (!empty($rows[0][0]) && is_string($rows[0][0])) {
+                if (preg_match('/\(([^)]+)\)/', $rows[0][0], $pMatch)) {
+                    $cand = trim($pMatch[1]);
+                    if (!empty($cand) && strtoupper($cand) !== 'PERIODE AKADEMIK') {
+                        $extractedPeriodeName = $cand;
+                    }
+                }
             }
 
-            $periodeIndex = array_search('periode_akademik', $header);
-            $hariIndex = array_search('hari', $header);
-            $estTglMulaiIndex = array_search('estimasi_tanggal_mulai', $header);
-            $estJamMulaiIndex = array_search('estimasi_jam_mulai', $header);
-            $estTglSelesaiIndex = array_search('estimasi_tanggal_selesai', $header);
-            $estJamSelesaiIndex = array_search('estimasi_jam_selesai', $header);
+            // 2. Deteksi Target User (Jika Admin/Superadmin mengimpor file export milik staff)
+            $authUserId = auth()->id();
+            $targetUserId = $authUserId;
+            $authUser = auth()->user();
+            if ($authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat())) {
+                for ($r = 1; $r <= min(5, count($rows) - 1); $r++) {
+                    $cell0 = isset($rows[$r][0]) ? strtoupper(trim((string) $rows[$r][0])) : '';
+                    if (strpos($cell0, 'NAMA STAFF') !== false && !empty($rows[$r][2])) {
+                        $staffName = trim((string) $rows[$r][2]);
+                        if (!empty($staffName) && strtoupper($staffName) !== 'SEMUA STAFF') {
+                            $matchedUser = User::where('name', $staffName)->first();
+                            if ($matchedUser) {
+                                $targetUserId = $matchedUser->id;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // 3. Cari Baris Header (Scan hingga baris ke-15)
+            $headerRowIndex = null;
+            $isExportLaporan = false;
+            $header = [];
+
+            for ($r = 0; $r < min(15, count($rows)); $r++) {
+                $rowLower = array_map(function ($val) {
+                    return strtolower(trim((string) $val));
+                }, $rows[$r]);
+
+                // Deteksi file Export Laporan: memiliki 'uraian tugas' bersama 'estimasi pelaksanaan' atau 'no'
+                if (in_array('uraian tugas', $rowLower) || in_array('estimasi pelaksanaan', $rowLower)) {
+                    $headerRowIndex = $r;
+                    $isExportLaporan = true;
+                    $header = $rowLower;
+                    break;
+                }
+
+                // Deteksi Template Import Standar
+                if (in_array('uraian_tugas', $rowLower)) {
+                    $headerRowIndex = $r;
+                    $isExportLaporan = false;
+                    $header = $rowLower;
+                    break;
+                }
+            }
+
+            // Fallback jika tidak terdeteksi
+            if ($headerRowIndex === null) {
+                $headerRowIndex = 0;
+                $isExportLaporan = false;
+                $header = array_map(function ($val) {
+                    return strtolower(trim((string) $val));
+                }, $rows[0]);
+            }
+
+            // 4. Resolusi Periode Akademik Default
+            $defaultPeriode = PeriodeAkademik::first();
+            $fallbackPeriodeId = $request->input('periode_akademik_id') 
+                ? (int) $request->input('periode_akademik_id') 
+                : ($defaultPeriode ? $defaultPeriode->id : 1);
+
+            if ($request->filled('periode_akademik_id')) {
+                $resolvedGlobalPeriodeId = (int) $request->input('periode_akademik_id');
+            } elseif ($extractedPeriodeName) {
+                $resolvedGlobalPeriodeId = $this->resolvePeriodeAkademik($extractedPeriodeName, $fallbackPeriodeId);
+            } else {
+                $resolvedGlobalPeriodeId = $fallbackPeriodeId;
+            }
+
+            // 5. Pemetaan Kolom Berdasarkan Format
+            $estTglMulaiIndex = false;
+            $estJamMulaiIndex = false;
+            $estTglSelesaiIndex = false;
+            $estJamSelesaiIndex = false;
+            $estimasiIndex = false;
+            $realisasiIndex = false;
+            $hasilKerjaIndex = false;
+            $rtlIndex = false;
+            $buktiIndex = false;
+            $periodeIndex = false;
+            $statusIndex = false;
+
+            if ($isExportLaporan) {
+                $uraianIndex = array_search('uraian tugas', $header);
+                if ($uraianIndex === false) $uraianIndex = array_search('uraian_tugas', $header) ?: 2;
+                $hariIndex = array_search('hari', $header);
+                $estimasiIndex = array_search('estimasi pelaksanaan', $header);
+                $realisasiIndex = array_search('realisasi pelaksanaan', $header);
+                $statusIndex = array_search('status & berkas', $header);
+                if ($statusIndex === false) $statusIndex = array_search('status', $header);
+                $hasilKerjaIndex = array_search('indikator kinerja', $header);
+                if ($hasilKerjaIndex === false) $hasilKerjaIndex = array_search('hasil_kerja', $header);
+                $rtlIndex = array_search('rencana tindak lanjut', $header);
+                if ($rtlIndex === false) $rtlIndex = array_search('rencana_tindak_lanjut', $header);
+                $buktiIndex = array_search('bukti', $header);
+            } else {
+                $uraianIndex = array_search('uraian_tugas', $header);
+                if ($uraianIndex === false) $uraianIndex = 0;
+                $periodeIndex = array_search('periode_akademik', $header);
+                $hariIndex = array_search('hari', $header);
+                $estTglMulaiIndex = array_search('estimasi_tanggal_mulai', $header);
+                $estJamMulaiIndex = array_search('estimasi_jam_mulai', $header);
+                $estTglSelesaiIndex = array_search('estimasi_tanggal_selesai', $header);
+                $estJamSelesaiIndex = array_search('estimasi_jam_selesai', $header);
+                $statusIndex = array_search('status', $header);
+            }
 
             $count = 0;
-            $authUserId = auth()->id();
 
-            $defaultPeriode = PeriodeAkademik::first();
-            $fallbackPeriodeId = $request->input('periode_akademik_id') ? (int) $request->input('periode_akademik_id') : ($defaultPeriode ? $defaultPeriode->id : 1);
-
-            for ($i = 1; $i < count($rows); $i++) {
+            for ($i = $headerRowIndex + 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
-                $uraianTugas = isset($row[$uraianIndex]) ? trim((string) $row[$uraianIndex]) : '';
 
+                $uraianTugas = isset($row[$uraianIndex]) ? trim((string) $row[$uraianIndex]) : '';
                 if (empty($uraianTugas)) {
                     continue;
                 }
 
-                $rawPeriode = ($periodeIndex !== false && !empty($row[$periodeIndex])) ? trim((string) $row[$periodeIndex]) : null;
-                $rowPeriodeId = $this->resolvePeriodeAkademik($rawPeriode, $fallbackPeriodeId);
+                // Bersihkan tag rekan kerja dari uraian tugas jika ada, misal: "\n[Tag: Ahmad, Siti]"
+                $uraianTugas = preg_replace('/\n?\[Tag:.*?\]/is', '', $uraianTugas);
+                $uraianTugas = trim($uraianTugas);
+                if (empty($uraianTugas)) {
+                    continue;
+                }
 
+                // Resolusi Periode Akademik per-baris jika di file template ada kolom periode
+                if ($periodeIndex !== false && !empty($row[$periodeIndex])) {
+                    $rowPeriodeId = $this->resolvePeriodeAkademik(trim((string) $row[$periodeIndex]), $resolvedGlobalPeriodeId);
+                } else {
+                    $rowPeriodeId = $resolvedGlobalPeriodeId;
+                }
+
+                // Hari
                 $hariVal = ($hariIndex !== false && !empty($row[$hariIndex])) ? trim((string) $row[$hariIndex]) : null;
-                $rawEstTglMulai = ($estTglMulaiIndex !== false && !empty($row[$estTglMulaiIndex])) ? $row[$estTglMulaiIndex] : null;
-                $rawEstJamMulai = ($estJamMulaiIndex !== false && !empty($row[$estJamMulaiIndex])) ? $row[$estJamMulaiIndex] : null;
-                $rawEstTglSelesai = ($estTglSelesaiIndex !== false && !empty($row[$estTglSelesaiIndex])) ? $row[$estTglSelesaiIndex] : null;
-                $rawEstJamSelesai = ($estJamSelesaiIndex !== false && !empty($row[$estJamSelesaiIndex])) ? $row[$estJamSelesaiIndex] : null;
+                if ($hariVal === '-') $hariVal = null;
 
-                $estTglMulaiVal = $this->parseExcelDate($rawEstTglMulai);
-                $estJamMulaiVal = $this->parseExcelTime($rawEstJamMulai);
-                $estTglSelesaiVal = $this->parseExcelDate($rawEstTglSelesai);
-                $estJamSelesaiVal = $this->parseExcelTime($rawEstJamSelesai);
+                // Estimasi Waktu & Jam
+                $estTglMulaiVal = null;
+                $estJamMulaiVal = null;
+                $estTglSelesaiVal = null;
+                $estJamSelesaiVal = null;
+
+                if ($isExportLaporan && $estimasiIndex !== false && !empty($row[$estimasiIndex])) {
+                    $estText = (string) $row[$estimasiIndex];
+                    if (preg_match('/Mulai:\s*([0-9\/\-\.]+)(?:\s+([0-9:]+))?/i', $estText, $mStart)) {
+                        $estTglMulaiVal = $this->parseExcelDate($mStart[1]);
+                        $estJamMulaiVal = isset($mStart[2]) ? $this->parseExcelTime($mStart[2]) : null;
+                    }
+                    if (preg_match('/Selesai:\s*([0-9\/\-\.]+)(?:\s+([0-9:]+))?/i', $estText, $mEnd)) {
+                        $estTglSelesaiVal = $this->parseExcelDate($mEnd[1]);
+                        $estJamSelesaiVal = isset($mEnd[2]) ? $this->parseExcelTime($mEnd[2]) : null;
+                    }
+                } elseif (!$isExportLaporan) {
+                    $rawEstTglMulai = ($estTglMulaiIndex !== false && !empty($row[$estTglMulaiIndex])) ? $row[$estTglMulaiIndex] : null;
+                    $rawEstJamMulai = ($estJamMulaiIndex !== false && !empty($row[$estJamMulaiIndex])) ? $row[$estJamMulaiIndex] : null;
+                    $rawEstTglSelesai = ($estTglSelesaiIndex !== false && !empty($row[$estTglSelesaiIndex])) ? $row[$estTglSelesaiIndex] : null;
+                    $rawEstJamSelesai = ($estJamSelesaiIndex !== false && !empty($row[$estJamSelesaiIndex])) ? $row[$estJamSelesaiIndex] : null;
+
+                    $estTglMulaiVal = $this->parseExcelDate($rawEstTglMulai);
+                    $estJamMulaiVal = $this->parseExcelTime($rawEstJamMulai);
+                    $estTglSelesaiVal = $this->parseExcelDate($rawEstTglSelesai);
+                    $estJamSelesaiVal = $this->parseExcelTime($rawEstJamSelesai);
+                }
+
+                // Realisasi Waktu (khusus format export laporan jika ada)
+                $tglMulaiVal = null;
+                $waktuMulaiVal = null;
+                $tglSelesaiVal = null;
+                $waktuSelesaiVal = null;
+
+                if ($isExportLaporan && $realisasiIndex !== false && !empty($row[$realisasiIndex])) {
+                    $realText = (string) $row[$realisasiIndex];
+                    if (preg_match('/Mulai:\s*([0-9\/\-\.]+)(?:\s+([0-9:]+))?/i', $realText, $mRStart)) {
+                        $tglMulaiVal = $this->parseExcelDate($mRStart[1]);
+                        $waktuMulaiVal = isset($mRStart[2]) ? $this->parseExcelTime($mRStart[2]) : null;
+                    }
+                    if (preg_match('/Selesai:\s*([0-9\/\-\.]+)(?:\s+([0-9:]+))?/i', $realText, $mREnd)) {
+                        $tglSelesaiVal = $this->parseExcelDate($mREnd[1]);
+                        $waktuSelesaiVal = isset($mREnd[2]) ? $this->parseExcelTime($mREnd[2]) : null;
+                    }
+                }
+
+                // Status
+                $statusVal = 'Belum Dimulai';
+                if ($statusIndex !== false && !empty($row[$statusIndex])) {
+                    $rawStatus = trim((string) $row[$statusIndex]);
+                    if (stripos($rawStatus, 'Selesai') !== false) {
+                        $statusVal = 'Selesai';
+                    } elseif (stripos($rawStatus, 'Proses') !== false || stripos($rawStatus, 'Berjalan') !== false) {
+                        $statusVal = 'Proses';
+                    } elseif (stripos($rawStatus, 'Belum') !== false) {
+                        $statusVal = 'Belum Dimulai';
+                    }
+                }
+
+                // Indikator Kinerja / Hasil Kerja
+                $hasilKerjaVal = null;
+                if ($hasilKerjaIndex !== false && !empty($row[$hasilKerjaIndex])) {
+                    $txt = trim((string) $row[$hasilKerjaIndex]);
+                    if ($txt !== '-' && $txt !== '') {
+                        $hasilKerjaVal = $txt;
+                    }
+                }
+
+                // Rencana Tindak Lanjut
+                $rtlVal = null;
+                if ($rtlIndex !== false && !empty($row[$rtlIndex])) {
+                    $txt = trim((string) $row[$rtlIndex]);
+                    if ($txt !== '-' && $txt !== '') {
+                        $rtlVal = $txt;
+                    }
+                }
+
+                // External Link Bukti
+                $urlExternalVal = null;
+                if ($buktiIndex !== false && !empty($row[$buktiIndex])) {
+                    $buktiText = (string) $row[$buktiIndex];
+                    if (preg_match('/Link External:\s*(https?:\/\/[^\s\n\r]+)/i', $buktiText, $mUrl)) {
+                        $urlExternalVal = trim($mUrl[1]);
+                    }
+                }
 
                 RencanaKerja::create([
-                    'user_id' => $authUserId,
+                    'user_id' => $targetUserId,
                     'periode_akademik_id' => $rowPeriodeId,
+                    'kategori' => 'Rencana Kerja',
                     'uraian_tugas' => $uraianTugas,
                     'hari' => $hariVal,
                     'estimasi_tanggal_mulai' => $estTglMulaiVal,
                     'estimasi_jam_mulai' => $estJamMulaiVal,
                     'estimasi_tanggal_selesai' => $estTglSelesaiVal,
                     'estimasi_jam_selesai' => $estJamSelesaiVal,
-                    'status' => 'Belum Dimulai',
+                    'tanggal_mulai' => $tglMulaiVal,
+                    'waktu_mulai' => $waktuMulaiVal,
+                    'tanggal_selesai' => $tglSelesaiVal,
+                    'waktu_selesai' => $waktuSelesaiVal,
+                    'status' => $statusVal,
+                    'hasil_kerja' => $hasilKerjaVal,
+                    'rencana_tindak_lanjut' => $rtlVal,
+                    'url_external' => $urlExternalVal,
                 ]);
 
                 $count++;
             }
 
-            Alert::success('Berhasil', "Berhasil mengimpor {$count} data Rencana Kerja.")
+            $sourceFormat = $isExportLaporan ? 'File Hasil Export Laporan' : 'Template Standar';
+            Alert::success('Berhasil', "Berhasil mengimpor {$count} data Rencana Kerja (Terdeteksi format: {$sourceFormat}).")
                 ->toToast()
-                ->autoClose(4000)
+                ->autoClose(5000)
                 ->timerProgressBar();
 
             return redirect()->back();

@@ -754,13 +754,20 @@
             <form action="{{ route('rencana-kerja.import-excel') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
-                    <div class="p-3 mb-3 rounded" style="background-color: #e0f2fe; border: 1px solid #bae6fd;">
-                        <p class="mb-1 text-dark" style="font-size: 0.9rem;">
-                            Format header: <strong>uraian_tugas</strong>
-                        </p>
-                        <a href="{{ route('rencana-kerja.download-template') }}" class="btn btn-sm text-primary p-0 fw-bold border-0 bg-transparent" style="font-size: 0.95rem;">
-                            <i class="bi bi-download me-1"></i> Download Template
-                        </a>
+                    <div class="p-3 mb-3 rounded" style="background-color: #f0fdf4; border: 1px solid #bbf7d0;">
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <i class="bi bi-check-circle-fill text-success fs-5 mt-0.5"></i>
+                            <div style="font-size: 0.88rem;" class="text-dark">
+                                <span class="fw-bold text-success d-block mb-1">Sistem Dinamis Multi-Format:</span>
+                                Anda dapat mengunggah <strong>File Hasil "Export Laporan"</strong> secara langsung, atau menggunakan <strong>Template Standar Excel</strong>. Sistem akan mendeteksi formatnya secara otomatis.
+                            </div>
+                        </div>
+                        <div class="pt-2 border-top border-success-subtle d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Belum punya format?</span>
+                            <a href="{{ route('rencana-kerja.download-template') }}" class="btn btn-sm btn-outline-success fw-bold py-1 px-2.5" style="font-size: 0.82rem; border-radius: 6px;">
+                                <i class="bi bi-download me-1"></i> Download Template Standar
+                            </a>
+                        </div>
                     </div>
 
                     <div class="mb-3">
