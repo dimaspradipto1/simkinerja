@@ -218,7 +218,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->hasAnyRole(['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])) {
+        if ($this->hasAnyRole(['pimpinan rektorat', 'REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])) {
             return true;
         }
 
@@ -246,12 +246,28 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->hasAnyRole(['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III', 'SUPER ADMIN', 'ADMIN'])) {
+        if ($this->hasAnyRole(['pimpinan rektorat', 'REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III', 'SUPER ADMIN', 'ADMIN'])) {
             return true;
         }
 
         $jabatan = strtoupper($this->jabatan ?? '');
         return str_contains($jabatan, 'REKTOR') || str_contains($jabatan, 'WAKIL REKTOR');
+    }
+
+    /**
+     * Check if user is Pimpinan Sub Unit (Wadek, Kaprodi, Sekprodi, Kabid, Ka Lab, dll)
+     */
+    public function isPimpinanSubUnit(): bool
+    {
+        return $this->hasAnyRole(['pimpinan sub unit', 'kaprodi', 'ketua program studi', 'sekretaris prodi', 'kabid']);
+    }
+
+    /**
+     * Check if user is Staff / Pelaksana
+     */
+    public function isStaff(): bool
+    {
+        return $this->hasAnyRole(['staff', 'pegawai']);
     }
 
     /**
@@ -263,7 +279,12 @@ class User extends Authenticatable
             return true;
         }
 
+        if ($this->hasAnyRole(['pimpinan unit', 'pimpinan sub unit'])) {
+            return true;
+        }
+
         $pimpinanRoles = [
+            'pimpinan unit', 'pimpinan sub unit',
             'KEPALA BIRO', 'KEPALA ICT', 'KEPALA LPTI', 'DEKAN', 'WAKIL DEKAN I', 'WAKIL DEKAN II', 
             'KETUA PROGRAM STUDI', 'KAPRODI', 'ADMIN PERPUSTAKAAN', 'ADMIN LPPM', 'ADMIN LPMI',
             'KEPALA LPPM', 'KEPALA LPMI', 'KEPALA UPMI', 'KEPALA UPPM', 'KEPALA LABORATORIUM',

@@ -43,58 +43,38 @@
                             <label for="roles" class="form-label">Role Akses <span class="text-danger">*</span> <small class="text-muted">(Boleh pilih lebih dari satu)</small></label>
                             <select class="form-select select2 @error('roles') is-invalid @enderror" id="roles" name="roles[]" multiple="multiple">
                                 @php
-                                     $rolesList = [
-                                         'super admin',
-                                         'admin',
-                                         'tim evaluasi',
-                                         'kepanitiaan',
-                                         'rektor',
-                                         'wakil rektor i',
-                                         'wakil rektor ii',
-                                         'wakil rektor iii',
-                                         'kepala biro',
-                                         'kepala lpti',
-                                         'staff lpti',
-                                         'admin akademik universitas',
-                                         'staff akademik fakultas',
-                                         'admin kemahasiswaan',
-                                         'admin ijazah',
-                                         'admin perpustakaan',
-                                         'admin keuangan universitas',
-                                         'staff keuangan fakultas',
-                                         'admin kepegawaian',
-                                         'admin sarana prasarana',
-                                         'admin humas dan publikasi',
-                                         'admin kerjasama',
-                                         'admin karir dan alumni',
-                                         'admin perencanaan dan pengembangan',
-                                         'kepala lppm',
-                                         'staff lppm',
-                                         'kepala lpmi',
-                                         'staff lpmi',
-                                         'dekan',
-                                         'wakil dekan i',
-                                         'wakil dekan ii',
-                                         'ketua program studi',
-                                         'sekretaris program studi',
-                                         'kepala upmi',
-                                         'kepala uppm',
-                                         'staff uppm',
-                                         'gkm',
-                                         'kepala laboratorium',
-                                         'staff laboratorium',
-                                         'tata usaha fakultas',
-                                     ];
-                                     $selectedRoles = old('roles', $user->roles ?? '');
-                                     if (is_string($selectedRoles)) {
-                                         $selectedRoles = array_map('trim', explode(',', strtolower($selectedRoles)));
-                                     } elseif (is_array($selectedRoles)) {
-                                         $selectedRoles = array_map(function($r) { return strtolower(trim((string)$r)); }, $selectedRoles);
-                                     }
-                                 @endphp
-                                 @foreach($rolesList as $roleItem)
-                                     <option value="{{ $roleItem }}" {{ in_array(strtolower($roleItem), (array)$selectedRoles) ? 'selected' : '' }}>{{ ucwords($roleItem) }}</option>
-                                 @endforeach
+                                    $roleGroups = [
+                                        'Level Administrator' => [
+                                            'super admin' => 'Super Admin',
+                                            'admin' => 'Admin (IT / Pengelola)',
+                                        ],
+                                        'Level Pimpinan' => [
+                                            'pimpinan rektorat' => 'Pimpinan Rektorat (Rektor / Warek)',
+                                            'pimpinan unit' => 'Pimpinan Unit (Dekan / Ka. Biro / Ka. Lembaga / Ka. Perpus)',
+                                            'pimpinan sub unit' => 'Pimpinan Sub Unit (Wadek / Kaprodi / Sekprodi / Kabid / Ka. Lab)',
+                                        ],
+                                        'Level Pelaksana' => [
+                                            'staff' => 'Staff (Pelaksana Administrasi / TU / Laboran / Kasir / Pustakawan)',
+                                        ],
+                                        'Penugasan Khusus' => [
+                                            'kepanitiaan' => 'Kepanitiaan',
+                                            'tim evaluasi' => 'Tim Evaluasi (Monev / LPMI)',
+                                        ],
+                                    ];
+                                    $selectedRoles = old('roles', $user->roles ?? '');
+                                    if (is_string($selectedRoles)) {
+                                        $selectedRoles = array_map('trim', explode(',', strtolower($selectedRoles)));
+                                    } elseif (is_array($selectedRoles)) {
+                                        $selectedRoles = array_map(function($r) { return strtolower(trim((string)$r)); }, $selectedRoles);
+                                    }
+                                @endphp
+                                @foreach($roleGroups as $groupLabel => $roles)
+                                    <optgroup label="{{ $groupLabel }}">
+                                        @foreach($roles as $value => $label)
+                                            <option value="{{ $value }}" {{ in_array($value, (array)$selectedRoles) ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
                             </select>
                             @error('roles')
                                 <div class="invalid-feedback">{{ $message }}</div>

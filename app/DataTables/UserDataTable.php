@@ -38,7 +38,22 @@ class UserDataTable extends DataTable
                     return '-';
                 }
                 $badges = array_map(function ($r) {
-                    return '<span class="badge bg-secondary me-1 text-uppercase" style="font-size: 0.72rem; font-weight: 500;">' . e($r) . '</span>';
+                    $rLower = strtolower($r);
+                    $class = 'bg-secondary';
+                    if (in_array($rLower, ['super admin', 'superadmin', 'admin', 'admin ict'])) {
+                        $class = 'bg-dark text-white';
+                    } elseif (in_array($rLower, ['pimpinan rektorat', 'rektor', 'wakil rektor i', 'wakil rektor ii', 'wakil rektor iii'])) {
+                        $class = 'bg-primary text-white';
+                    } elseif (in_array($rLower, ['pimpinan unit', 'dekan', 'kepala biro', 'kepala lppm', 'kepala lpmi', 'kepala lpti', 'kepala perpustakaan'])) {
+                        $class = 'bg-info text-dark';
+                    } elseif (in_array($rLower, ['pimpinan sub unit', 'wakil dekan i', 'wakil dekan ii', 'ketua program studi', 'sekretaris program studi', 'kaprodi'])) {
+                        $class = 'bg-primary-subtle text-primary border border-primary-subtle';
+                    } elseif (in_array($rLower, ['kepanitiaan', 'panitia'])) {
+                        $class = 'bg-success text-white';
+                    } elseif (in_array($rLower, ['tim evaluasi', 'evaluasi'])) {
+                        $class = 'bg-warning text-dark';
+                    }
+                    return '<span class="badge ' . $class . ' me-1 text-uppercase" style="font-size: 0.72rem; font-weight: 500;">' . e($r) . '</span>';
                 }, $roles);
                 return implode(' ', $badges);
             })
