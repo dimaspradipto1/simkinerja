@@ -65,6 +65,7 @@
                                         ],
                                         'Penugasan Khusus' => [
                                             'kepanitiaan' => 'Kepanitiaan',
+                                            'koordinator panitia' => 'Koordinator Panitia',
                                             'tim evaluasi' => 'Tim Evaluasi (Monev / LPMI)',
                                         ],
                                     ];

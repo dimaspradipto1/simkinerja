@@ -279,7 +279,7 @@
 
                         <div class="col-12 mt-4">
                             <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Simpan</button>
-                            <a href="{{ route('kegiatan.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
+                            {{-- <a href="{{ route('kegiatan.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Kembali</a> --}}
                         </div>
                     </form>
 

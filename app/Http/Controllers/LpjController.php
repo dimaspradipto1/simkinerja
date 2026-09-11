@@ -15,10 +15,22 @@ use RealRashid\SweetAlert\Facades\Alert;
 class LpjController extends Controller
 {
     /**
+     * Check if current user has access to LPJ module.
+     */
+    private function checkAccess(): void
+    {
+        $user = Auth::user();
+        if (!$user || !$user->canAccessLpj()) {
+            abort(403, 'Akses Ditolak. Halaman Laporan Pertanggungjawaban (LPJ) hanya dapat diakses oleh Tim Evaluasi dan Koordinator Panitia.');
+        }
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(LpjDataTable $dataTable)
     {
+        $this->checkAccess();
         return $dataTable->render('pages.lpj.index');
     }
 
@@ -27,6 +39,7 @@ class LpjController extends Controller
      */
     public function create(Request $request)
     {
+        $this->checkAccess();
         $kepanitiaans = Kepanitiaan::query()
             ->orderBy('uraian_tugas', 'asc')
             ->get();
@@ -52,6 +65,7 @@ class LpjController extends Controller
      */
     public function store(LpjRequest $request)
     {
+        $this->checkAccess();
         $data = $request->validated();
         $data['user_id'] = Auth::id();
 
@@ -77,6 +91,7 @@ class LpjController extends Controller
      */
     public function show(string $id)
     {
+        $this->checkAccess();
         $lpj = Lpj::with(['user', 'kepanitiaan'])->findOrFail($id);
 
         if (!$this->canViewLpj($lpj)) {
@@ -92,6 +107,7 @@ class LpjController extends Controller
      */
     public function edit(string $id)
     {
+        $this->checkAccess();
         $lpj = Lpj::findOrFail($id);
 
         // Check if user is author or has admin/pimpinan role
@@ -112,6 +128,7 @@ class LpjController extends Controller
      */
     public function update(LpjRequest $request, string $id)
     {
+        $this->checkAccess();
         $lpj = Lpj::findOrFail($id);
 
         if (!$this->canManageLpj($lpj)) {
@@ -148,6 +165,7 @@ class LpjController extends Controller
      */
     public function destroy(string $id)
     {
+        $this->checkAccess();
         $lpj = Lpj::findOrFail($id);
 
         if (!$this->canManageLpj($lpj)) {
@@ -174,6 +192,7 @@ class LpjController extends Controller
      */
     public function download(string $id)
     {
+        $this->checkAccess();
         $lpj = Lpj::findOrFail($id);
 
         if (!$this->canViewLpj($lpj)) {

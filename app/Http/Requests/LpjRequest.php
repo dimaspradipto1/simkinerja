@@ -12,7 +12,7 @@ class LpjRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return \Illuminate\Support\Facades\Auth::check() && \Illuminate\Support\Facades\Auth::user()->canAccessLpj();
     }
 
     /**

@@ -130,6 +130,45 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is Koordinator Panitia (Ketua / Koordinator dalam Kepanitiaan)
+     */
+    public function isKoordinatorPanitia(): bool
+    {
+        if ($this->hasAnyRole(['koordinator panitia', 'koordinator', 'ketua panitia', 'admin kepanitiaan', 'koordinator kepanitiaan'])) {
+            return true;
+        }
+
+        $jabatan = strtolower($this->jabatan ?? '');
+        if (str_contains($jabatan, 'koordinator')) {
+            return true;
+        }
+
+        if (!empty($this->jabatan_kepanitiaan) && is_array($this->jabatan_kepanitiaan)) {
+            foreach ($this->jabatan_kepanitiaan as $item) {
+                $pos = strtolower($item['jabatan'] ?? '');
+                if (str_contains($pos, 'koordinator') || str_contains($pos, 'ketua') || str_contains($pos, 'penanggung jawab')) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can access Menu / Fitur LPJ
+     * Hanya Tim Evaluasi, Koordinator Panitia, dan Admin/Superadmin
+     */
+    public function canAccessLpj(): bool
+    {
+        if ($this->isAdmin() || $this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->isTimEvaluasi() || $this->isKoordinatorPanitia();
+    }
+
+    /**
      * Check if user has Kepanitiaan role
      */
     public function isKepanitiaan(): bool

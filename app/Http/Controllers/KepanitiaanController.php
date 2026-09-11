@@ -562,15 +562,17 @@ class KepanitiaanController extends Controller
                 }
             }
 
-            // Tombol Submit LPJ Khusus Rekan Kerja yang Di-tag
-            $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
-            $lpjUrlTagged = route('lpj.create', [
-                'kepanitiaan_id' => $row->id,
-                'kepanitiaan' => $row->uraian_tugas,
-                'nama_lpj' => 'LPJ ' . $firstLineTitle,
-                'tanggal' => $row->tanggal_selesai ?: ($row->tanggal_mulai ?: date('Y-m-d')),
-            ]);
-            $btn .= '<a href="' . $lpjUrlTagged . '" class="btn btn-outline-success d-inline-flex align-items-center justify-content-center gap-1 btn-mobile-stack" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span>Submit LPJ</span></a>';
+            // Tombol Submit LPJ Khusus Rekan Kerja yang Di-tag (Hanya jika memiliki akses LPJ)
+            if ($authUser && $authUser->canAccessLpj()) {
+                $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
+                $lpjUrlTagged = route('lpj.create', [
+                    'kepanitiaan_id' => $row->id,
+                    'kepanitiaan' => $row->uraian_tugas,
+                    'nama_lpj' => 'LPJ ' . $firstLineTitle,
+                    'tanggal' => $row->tanggal_selesai ?: ($row->tanggal_mulai ?: date('Y-m-d')),
+                ]);
+                $btn .= '<a href="' . $lpjUrlTagged . '" class="btn btn-outline-success d-inline-flex align-items-center justify-content-center gap-1 btn-mobile-stack" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span>Submit LPJ</span></a>';
+            }
 
             if ($collapseId) {
                 $btn .= '<button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 shadow-2xs btn-task-toggle btn-mobile-stack" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-weight: 600; border-radius: 8px; padding: 8px 14px; font-size: 0.84rem; min-height: 38px;" title="Buka / Tutup Rincian"><span class="toggle-text">Rincian</span><i class="bi bi-chevron-down toggle-icon transition-transform"></i></button>';
@@ -627,18 +629,21 @@ class KepanitiaanController extends Controller
         if ($canEditDelete) {
             $editUrl = route($routePrefix . '.edit', $row->id);
             $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
-            $lpjUrl = route('lpj.create', [
-                'kepanitiaan_id' => $row->id,
-                'kepanitiaan' => $row->uraian_tugas,
-                'nama_lpj' => 'LPJ ' . $firstLineTitle,
-                'tanggal' => $row->tanggal_selesai ?: ($row->tanggal_mulai ?: date('Y-m-d')),
-            ]);
-
             $safeTitle = htmlspecialchars(addslashes($firstLineTitle), ENT_QUOTES, 'UTF-8');
             $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-2">';
             $btn .= '<button type="button" class="btn btn-outline-primary btn-manage-sesi d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" onclick="window.openManageSesiModal(' . $row->id . ', \'' . $safeTitle . '\')" title="Presensi Kepanitiaan"><i class="bi bi-calendar2-check"></i> <span class="d-none d-md-inline">Presensi</span></button>';
             $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span class="d-none d-md-inline">Tag</span></button>';
-            $btn .= '<a href="' . $lpjUrl . '" class="btn btn-outline-success btn-create-lpj d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span class="d-none d-md-inline">Submit LPJ</span></a>';
+
+            if ($authUser && $authUser->canAccessLpj()) {
+                $lpjUrl = route('lpj.create', [
+                    'kepanitiaan_id' => $row->id,
+                    'kepanitiaan' => $row->uraian_tugas,
+                    'nama_lpj' => 'LPJ ' . $firstLineTitle,
+                    'tanggal' => $row->tanggal_selesai ?: ($row->tanggal_mulai ?: date('Y-m-d')),
+                ]);
+                $btn .= '<a href="' . $lpjUrl . '" class="btn btn-outline-success btn-create-lpj d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Submit LPJ Kepanitiaan ini"><i class="bi bi-file-earmark-plus-fill"></i> <span class="d-none d-md-inline">Submit LPJ</span></a>';
+            }
+
             $btn .= '<a href="' . $editUrl . '" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Edit Tugas"><i class="bi bi-pencil"></i> <span class="d-none d-md-inline">Edit</span></a>';
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.' . $deleteJsFunc . '(' . $row->id . ')" class="btn btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Hapus Tugas"><i class="bi bi-trash"></i> <span class="d-none d-md-inline">Hapus</span></button>';
             $btn .= '</div>';

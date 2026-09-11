@@ -134,7 +134,8 @@
                   </a>
               </li>
 
-              <!-- Menu Gabungan LPJ -->
+              <!-- Menu Gabungan LPJ (Hanya Tim Evaluasi, Koordinator Panitia, & Admin) -->
+              @if (Auth::user() && Auth::user()->canAccessLpj())
               <li class="nav-item">
                   <a class="{{ request()->routeIs('lpj.*') ? 'nav-link' : 'nav-link collapsed' }}"
                       data-bs-target="#lpj-nav" data-bs-toggle="collapse" href="#">
@@ -155,7 +156,7 @@
                               <i class="bi bi-circle"></i><span>Tambah LPJ</span>
                           </a>
                       </li>
-                      @if (Auth::user() && (Auth::user()->isSuperAdmin() || Auth::user()->isAdmin() || Auth::user()->isTimEvaluasi()))
+                      @if (Auth::user()->isSuperAdmin() || Auth::user()->isAdmin() || Auth::user()->isTimEvaluasi())
                           <li>
                               <a href="{{ route('lpj.template') }}" class="{{ request()->routeIs('lpj.template*') ? 'active' : '' }}">
                                   <i class="bi bi-circle"></i><span>Template LPJ</span>
@@ -164,6 +165,7 @@
                       @endif
                   </ul>
               </li>
+              @endif
           @endif
 
           <!-- 5. Pengaturan Sistem (Admin & Super Admin) -->
