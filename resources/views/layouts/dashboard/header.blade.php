@@ -88,10 +88,8 @@
                           ]);
                       }
 
-                      // 4. Permintaan Perubahan Estimasi dari bawahan (khusus Pimpinan/Admin)
-                      if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit()) {
-                          $isFullAccess = $authUser->isAdmin() || $authUser->isPimpinanRektorat();
-
+                      // 4. Permintaan Perubahan Estimasi dari bawahan (khusus Kepala Staff / Pimpinan Unit & Admin, tidak ke Rektor)
+                      if (!$authUser->isRektor() && ($authUser->isAdmin() || $authUser->isPimpinanUnit())) {
                           $unlockSources = [
                               ['model' => \App\Models\RencanaKerja::class, 'label' => 'Rencana Kerja', 'route' => 'rencana-kerja.edit'],
                               ['model' => \App\Models\Kepanitiaan::class, 'label' => 'Kepanitiaan', 'route' => 'kepanitiaan.edit'],
@@ -101,9 +99,11 @@
                           foreach ($unlockSources as $src) {
                               $unlockQuery = $src['model']::whereNotNull('estimasi_unlock_requested_at');
 
-                              if (!$isFullAccess) {
-                                  $unlockQuery->whereHas('user', function ($q) use ($authUser) {
-                                      $q->where('unit', $authUser->unit);
+                              if (!$authUser->isAdmin()) {
+                                  $unlockQuery->where(function ($q) use ($authUser) {
+                                      $q->whereHas('user', function ($qu) use ($authUser) {
+                                          $qu->where('unit', $authUser->unit);
+                                      })->orWhere('estimasi_unlock_reason', 'like', '%[Tujuan: ' . $authUser->name . '%');
                                   });
                               }
 

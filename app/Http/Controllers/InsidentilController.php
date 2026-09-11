@@ -289,17 +289,26 @@ class InsidentilController extends Controller
             }
         }
 
-        $pendingRequestsQuery = Insidentil::whereNotNull('estimasi_unlock_requested_at');
-        if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
-            if ($authUser->isPimpinanUnit()) {
-                $pendingRequestsQuery->whereHas('user', function ($q) use ($authUser) {
-                    $q->where('unit', $authUser->unit);
+        $pendingRequests = collect([]);
+        if ($authUser && !$authUser->isRektor()) {
+            $pendingRequestsQuery = Insidentil::whereNotNull('estimasi_unlock_requested_at');
+
+            if ($authUser->isAdmin()) {
+                // Admin can see all pending requests
+            } elseif ($authUser->isPimpinanUnit()) {
+                // Kepala Staff / Pimpinan Unit: only see requests from staff in their unit, or targeted to them
+                $pendingRequestsQuery->where(function ($q) use ($authUser) {
+                    $q->whereHas('user', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    })->orWhere('estimasi_unlock_reason', 'like', '%[Tujuan: ' . $authUser->name . '%');
                 });
             } else {
-                $pendingRequestsQuery->where('user_id', $authUser->id);
+                // Regular staff does not see incoming requests banner
+                $pendingRequestsQuery->whereRaw('1 = 0');
             }
+
+            $pendingRequests = $pendingRequestsQuery->with(['user', 'periodeAkademik'])->latest('estimasi_unlock_requested_at')->get();
         }
-        $pendingRequests = $pendingRequestsQuery->with(['user', 'periodeAkademik'])->latest('estimasi_unlock_requested_at')->get();
 
         return view('pages.insidentil.index', compact('periodeAkademiks', 'users', 'usersWithJabatan', 'pendingRequests'));
     }

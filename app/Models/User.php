@@ -210,11 +210,28 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is Superadmin or Rektor (Pimpinan Rektorat Utama)
+     * Check if user is specifically Rektor or Wakil Rektor (Pimpinan Rektorat, not Admin)
+     */
+    public function isRektor(): bool
+    {
+        if ($this->isAdmin() || $this->isSuperAdmin()) {
+            return false;
+        }
+
+        if ($this->hasAnyRole(['pimpinan rektorat', 'REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])) {
+            return true;
+        }
+
+        $jabatan = strtoupper($this->jabatan ?? '');
+        return str_contains($jabatan, 'REKTOR') || str_contains($jabatan, 'WAKIL REKTOR');
+    }
+
+    /**
+     * Check if user is Superadmin, Admin, or Rektor (Pimpinan Rektorat Utama)
      */
     public function isRektorOrSuperAdmin(): bool
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->isSuperAdmin() || $this->isAdmin()) {
             return true;
         }
 

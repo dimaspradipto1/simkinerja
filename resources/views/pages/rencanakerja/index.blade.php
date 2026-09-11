@@ -480,7 +480,7 @@
                             <select class="form-select" id="filter-jabatan">
                                 <option value="">-- Semua Jabatan --</option>
                                 @foreach($usersWithJabatan as $u)
-                                    <option value="{{ $u->jabatan }}" data-user-id="{{ $u->id }}" {{ (request('jabatan') == $u->jabatan || (!request()->has('jabatan') && auth()->user()->jabatan == $u->jabatan)) ? 'selected' : '' }}>
+                                    <option value="{{ $u->jabatan }}" data-user-id="{{ $u->id }}" {{ (request('jabatan') == $u->jabatan || (!request()->has('jabatan') && !auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin() && auth()->user()->jabatan == $u->jabatan)) ? 'selected' : '' }}>
                                         {{ $u->jabatan }} - {{ $u->name }}
                                     </option>
                                 @endforeach
