@@ -196,12 +196,12 @@
         </div>
 
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #0dcaf0 !important;">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid {{ $totalHadirPulang ? '#0dcaf0' : ($totalHadirDatang ? '#ffc107' : '#dc3545') }} !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Presensi Pulang</div>
                         <div class="fs-5 fw-bold {{ $totalHadirPulang ? 'text-info' : 'text-secondary' }} mt-1">
-                            {{ $totalHadirPulang ? 'Tercatat Pulang' : 'Belum Pulang' }}
+                            {{ $totalHadirPulang ? 'Tercatat Pulang' : ($totalHadirDatang ? 'Belum Pulang' : 'Belum Absen') }}
                         </div>
                     </div>
                     <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
@@ -318,7 +318,7 @@
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" style="width: 40px;">
-                                @if($canManage)
+                                @if(!empty($canManage) || !empty($isSekretarisOrAdmin))
                                 <div class="form-check d-flex justify-content-center m-0">
                                     <input type="checkbox" id="check-all-rows" class="form-check-input" style="cursor: pointer; width: 17px; height: 17px;" title="Pilih Semua Pegawai di Halaman Ini">
                                 </div>
@@ -374,6 +374,7 @@
                                 <option value="Izin">Izin</option>
                                 <option value="Sakit">Sakit</option>
                                 <option value="Alpha">Alpha</option>
+                                <option value="reset">Belum Absen (Reset)</option>
                             </select>
                         </div>
                         <div class="col-6">
@@ -391,6 +392,7 @@
                                 <option value="Izin">Izin</option>
                                 <option value="Sakit">Sakit</option>
                                 <option value="Alpha">Alpha</option>
+                                <option value="reset">Belum Absen (Reset)</option>
                             </select>
                         </div>
                         <div class="col-6">

@@ -262,8 +262,7 @@ class UniversalPresensiController extends Controller
         $authUser = Auth::user();
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
 
-        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
-        $canDelete = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+        $canDelete = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isSekretarisPanitia($sesi->kepanitiaan));
 
         if (!$canDelete) {
             if ($request->ajax() || $request->wantsJson()) {
@@ -297,8 +296,7 @@ class UniversalPresensiController extends Controller
         $authUser = Auth::user();
         $sesi = KepanitiaanSesiAbsensi::with(['kepanitiaan', 'presensis.user'])->findOrFail($sesiId);
 
-        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
-        $canExport = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+        $canExport = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isSekretarisPanitia($sesi->kepanitiaan));
 
         if (!$canExport) {
             abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengunduh rekap presensi ini.');
@@ -357,10 +355,10 @@ class UniversalPresensiController extends Controller
             $sheet->setCellValue('D' . $rowNum, $user->nidn ?? '-');
             $sheet->setCellValue('E' . $rowNum, $user->jabatan ?? '-');
             $sheet->setCellValue('F' . $rowNum, $user->unit ?? '-');
-            $sheet->setCellValue('G' . $rowNum, $p->hadir_datang ?? '-');
-            $sheet->setCellValue('H' . $rowNum, $p->waktu_datang ?? '-');
-            $sheet->setCellValue('I' . $rowNum, $p->hadir_pulang ?? '-');
-            $sheet->setCellValue('J' . $rowNum, $p->waktu_pulang ?? '-');
+            $sheet->setCellValue('G' . $rowNum, (!empty($p->hadir_datang) && $p->hadir_datang !== '-') ? $p->hadir_datang : 'Belum Absen');
+            $sheet->setCellValue('H' . $rowNum, (!empty($p->hadir_datang) && $p->hadir_datang !== '-') ? ($p->waktu_datang ?? '-') : '-');
+            $sheet->setCellValue('I' . $rowNum, (!empty($p->hadir_pulang) && $p->hadir_pulang !== '-') ? $p->hadir_pulang : 'Belum Absen');
+            $sheet->setCellValue('J' . $rowNum, (!empty($p->hadir_pulang) && $p->hadir_pulang !== '-') ? ($p->waktu_pulang ?? '-') : '-');
             $sheet->setCellValue('K' . $rowNum, $p->catatan_hadir_datang ?: ($p->catatan_hadir_pulang ?: '-'));
 
             $sheet->getStyle('A' . $rowNum . ':B' . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
@@ -454,12 +452,14 @@ class UniversalPresensiController extends Controller
             $totalBelumDatang = ($myPresensi && !$myPresensi->hadir_datang && $myPresensi->hadir_pulang) ? 1 : 0;
         }
 
+        $canManage = $isSekretarisOrAdmin;
         $users = $isSekretarisOrAdmin ? User::orderBy('name', 'asc')->get() : collect([$authUser]);
         $allSesis = KepanitiaanSesiAbsensi::orderBy('tanggal', 'desc')->orderBy('id', 'asc')->get();
 
         return view('pages.presensi.show', compact(
             'sesi',
             'isSekretarisOrAdmin',
+            'canManage',
             'totalUsers',
             'totalSudahAbsen',
             'totalBelumAbsen',
@@ -600,7 +600,7 @@ class UniversalPresensiController extends Controller
                 return $html;
             })
             ->addColumn('status_datang', function ($row) {
-                $status = $row->hadir_datang ?: 'Belum Absen';
+                $status = (!empty($row->hadir_datang) && $row->hadir_datang !== '-') ? $row->hadir_datang : 'Belum Absen';
                 $color = match ($status) {
                     'Hadir' => 'bg-success',
                     'Izin' => 'bg-warning text-dark',
@@ -608,11 +608,11 @@ class UniversalPresensiController extends Controller
                     'Alpha' => 'bg-danger',
                     default => 'bg-secondary',
                 };
-                $time = $row->waktu_datang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($row->waktu_datang, 0, 5) . ' WIB</div>' : '';
+                $time = (!empty($row->hadir_datang) && $row->hadir_datang !== '-' && $row->waktu_datang) ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($row->waktu_datang, 0, 5) . ' WIB</div>' : '';
                 return '<span class="badge ' . $color . '">' . $status . '</span>' . $time;
             })
             ->addColumn('status_pulang', function ($row) {
-                $status = $row->hadir_pulang ?: 'Belum Absen';
+                $status = (!empty($row->hadir_pulang) && $row->hadir_pulang !== '-') ? $row->hadir_pulang : 'Belum Absen';
                 $color = match ($status) {
                     'Hadir' => 'bg-success',
                     'Izin' => 'bg-warning text-dark',
@@ -620,7 +620,7 @@ class UniversalPresensiController extends Controller
                     'Alpha' => 'bg-danger',
                     default => 'bg-secondary',
                 };
-                $time = $row->waktu_pulang ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($row->waktu_pulang, 0, 5) . ' WIB</div>' : '';
+                $time = (!empty($row->hadir_pulang) && $row->hadir_pulang !== '-' && $row->waktu_pulang) ? '<div class="small text-muted mt-0.5"><i class="bi bi-clock me-1"></i>' . substr($row->waktu_pulang, 0, 5) . ' WIB</div>' : '';
                 return '<span class="badge ' . $color . '">' . $status . '</span>' . $time;
             })
             ->addColumn('catatan_col', function ($row) {
@@ -670,8 +670,7 @@ class UniversalPresensiController extends Controller
     {
         $authUser = Auth::user();
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
-        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
-        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isSekretarisPanitia($sesi->kepanitiaan));
 
         if (!$canManage) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
@@ -679,9 +678,9 @@ class UniversalPresensiController extends Controller
 
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'hadir_datang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha',
+            'hadir_datang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha,reset',
             'waktu_datang' => 'nullable',
-            'hadir_pulang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha',
+            'hadir_pulang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha,reset',
             'waktu_pulang' => 'nullable',
             'catatan' => 'nullable|string|max:500',
         ]);
@@ -691,13 +690,23 @@ class UniversalPresensiController extends Controller
             'user_id' => $request->user_id,
         ]);
 
-        if ($request->filled('hadir_datang')) {
-            $presensi->hadir_datang = $request->hadir_datang;
-            $presensi->waktu_datang = $request->waktu_datang ?: now()->format('H:i');
+        if ($request->has('hadir_datang')) {
+            if ($request->hadir_datang === 'reset' || empty($request->hadir_datang)) {
+                $presensi->hadir_datang = null;
+                $presensi->waktu_datang = null;
+            } else {
+                $presensi->hadir_datang = $request->hadir_datang;
+                $presensi->waktu_datang = $request->waktu_datang ?: now()->format('H:i');
+            }
         }
-        if ($request->filled('hadir_pulang')) {
-            $presensi->hadir_pulang = $request->hadir_pulang;
-            $presensi->waktu_pulang = $request->waktu_pulang ?: now()->format('H:i');
+        if ($request->has('hadir_pulang')) {
+            if ($request->hadir_pulang === 'reset' || empty($request->hadir_pulang)) {
+                $presensi->hadir_pulang = null;
+                $presensi->waktu_pulang = null;
+            } else {
+                $presensi->hadir_pulang = $request->hadir_pulang;
+                $presensi->waktu_pulang = $request->waktu_pulang ?: now()->format('H:i');
+            }
         }
         if ($request->filled('catatan')) {
             $presensi->catatan_hadir_datang = $request->catatan;
@@ -718,8 +727,7 @@ class UniversalPresensiController extends Controller
     {
         $authUser = Auth::user();
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
-        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
-        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isSekretarisPanitia($sesi->kepanitiaan));
 
         if (!$canManage) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
@@ -857,8 +865,7 @@ class UniversalPresensiController extends Controller
         $authUser = Auth::user();
         $presensi = KepanitiaanPresensi::with('sesiAbsensi.kepanitiaan')->findOrFail($id);
         $sesi = $presensi->sesiAbsensi;
-        $isOwner = $sesi && $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
-        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isSekretarisPanitia($sesi?->kepanitiaan));
 
         if (!$canManage) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
