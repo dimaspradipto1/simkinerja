@@ -25,146 +25,39 @@
               </li> --}}
               @php
                   $authUser = auth()->user();
-                  $notifications = collect();
-
-                  if ($authUser) {
-                      $today = \Carbon\Carbon::now()->format('Y-m-d');
-
-                      // 1. Overdue Tasks
-                      $overdueTasks = \App\Models\RencanaKerja::where(function($q) use ($authUser) {
-                              $q->where('user_id', $authUser->id)
-                                ->orWhereHas('taggedUsers', function($qu) use ($authUser) {
-                                    $qu->where('users.id', $authUser->id);
-                                });
-                          })
-                          ->where('status', '!=', 'Selesai')
-                          ->whereNotNull('estimasi_tanggal_selesai')
-                          ->where('estimasi_tanggal_selesai', '<', $today)
-                          ->latest()
-                          ->take(3)
-                          ->get();
-
-                      foreach ($overdueTasks as $t) {
-                          $notifications->push([
-                              'icon' => 'bi-exclamation-triangle-fill text-danger',
-                              'title' => 'Tugas Melewati Deadline',
-                              'message' => \Illuminate\Support\Str::limit($t->uraian_tugas, 45),
-                              'time' => 'Batas: ' . date('d/m/Y', strtotime($t->estimasi_tanggal_selesai)),
-                              'url' => route('rencana-kerja.index')
-                          ]);
-                      }
-
-                      // 2. Running Tasks
-                      $runningTasks = \App\Models\RencanaKerja::where(function($q) use ($authUser) {
-                              $q->where('user_id', $authUser->id)
-                                ->orWhereHas('taggedUsers', function($qu) use ($authUser) {
-                                    $qu->where('users.id', $authUser->id);
-                                });
-                          })
-                          ->where('status', 'Berjalan')
-                          ->latest()
-                          ->take(2)
-                          ->get();
-
-                      foreach ($runningTasks as $t) {
-                          $notifications->push([
-                              'icon' => 'bi-play-circle-fill text-primary',
-                              'title' => 'Tugas Sedang Berjalan',
-                              'message' => \Illuminate\Support\Str::limit($t->uraian_tugas, 45),
-                              'time' => 'Timer aktif saat ini',
-                              'url' => route('rencana-kerja.index')
-                          ]);
-                      }
-
-                      // 3. Tagged Kepanitiaan Tasks
-                      $taggedKepanitiaans = $authUser->taggedKepanitiaans()->latest()->take(2)->get();
-                      foreach ($taggedKepanitiaans as $k) {
-                          $notifications->push([
-                              'icon' => 'bi-people-fill text-warning',
-                              'title' => 'Penugasan Kepanitiaan',
-                              'message' => \Illuminate\Support\Str::limit($k->nama_kegiatan ?? $k->uraian_tugas, 45),
-                              'time' => 'Terdaftar dalam tim',
-                              'url' => route('kepanitiaan.index')
-                          ]);
-                      }
-
-                      // 4. Permintaan Perubahan Estimasi dari bawahan (khusus Kepala Staff / Pimpinan Unit & Admin, tidak ke Rektor)
-                      if (!$authUser->isRektor() && ($authUser->isAdmin() || $authUser->isPimpinanUnit())) {
-                          $unlockSources = [
-                              ['model' => \App\Models\RencanaKerja::class, 'label' => 'Rencana Kerja', 'route' => 'rencana-kerja.edit'],
-                              ['model' => \App\Models\Kepanitiaan::class, 'label' => 'Kepanitiaan', 'route' => 'kepanitiaan.edit'],
-                              ['model' => \App\Models\Insidentil::class, 'label' => 'Insidentil', 'route' => 'insidentil.edit'],
-                          ];
-
-                          foreach ($unlockSources as $src) {
-                              $unlockQuery = $src['model']::whereNotNull('estimasi_unlock_requested_at');
-
-                              if (!$authUser->isAdmin()) {
-                                  $unlockQuery->where(function ($q) use ($authUser) {
-                                      $q->whereHas('user', function ($qu) use ($authUser) {
-                                          $qu->where('unit', $authUser->unit);
-                                      })->orWhere('estimasi_unlock_reason', 'like', '%[Tujuan: ' . $authUser->name . '%');
-                                  });
-                              }
-
-                              $unlockRequests = $unlockQuery->latest('estimasi_unlock_requested_at')->take(2)->get();
-
-                              foreach ($unlockRequests as $r) {
-                                  $notifications->push([
-                                      'icon' => 'bi-unlock-fill text-warning',
-                                      'title' => 'Permintaan Perubahan Estimasi (' . $src['label'] . ')',
-                                      'message' => \Illuminate\Support\Str::limit(($r->user->name ?? '-') . ': ' . $r->uraian_tugas, 45),
-                                      'time' => 'Diajukan ' . \Carbon\Carbon::parse($r->estimasi_unlock_requested_at)->diffForHumans(),
-                                      'url' => route($src['route'], $r->id)
-                                  ]);
-                              }
-                          }
-                      }
-                  }
+                  $notifications = \App\Http\Controllers\NotificationController::fetchData($authUser);
                   $notifCount = $notifications->count();
               @endphp
 
-              <li class="nav-item dropdown">
+              <li class="nav-item dropdown" id="notificationDropdownContainer">
 
-                  <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+                  <a class="nav-link nav-icon" href="#" id="notificationDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Pemberitahuan">
                       <i class="bi bi-bell"></i>
-                      @if($notifCount > 0)
-                          <span class="badge bg-danger badge-number">{{ $notifCount }}</span>
-                      @endif
+                      <span class="badge bg-danger badge-number {{ $notifCount > 0 ? '' : 'd-none' }}" id="notificationBadge">
+                          {{ $notifCount > 0 ? $notifCount : '' }}
+                      </span>
                   </a><!-- End Notification Icon -->
 
-                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
-                      <li class="dropdown-header">
-                          @if($notifCount > 0)
-                              Anda memiliki {{ $notifCount }} pemberitahuan
-                          @else
-                              Tidak ada pemberitahuan baru
-                          @endif
-                      </li>
-                      <li>
-                          <hr class="dropdown-divider">
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications shadow-lg border-0 p-0" 
+                      style="min-width: 340px; max-width: 400px; border-radius: 12px; overflow: hidden;" 
+                      aria-labelledby="notificationDropdownBtn">
+                      
+                      <li class="dropdown-header d-flex align-items-center justify-content-between py-2.5 px-3 bg-light border-bottom">
+                          <span class="fw-bold text-dark" id="notificationHeaderTitle" style="font-size: 0.82rem;">
+                              @if($notifCount > 0)
+                                  Anda memiliki {{ $notifCount }} pemberitahuan
+                              @else
+                                  Tidak ada pemberitahuan baru
+                              @endif
+                          </span>
+                          <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none text-muted" id="btnRefreshNotif" title="Segarkan notifikasi" onclick="window.refreshNotifications(true)">
+                              <i class="bi bi-arrow-clockwise fs-6" id="iconRefreshNotif"></i>
+                          </button>
                       </li>
 
-                      @forelse($notifications as $notif)
-                          <li class="notification-item">
-                              <a href="{{ $notif['url'] }}" class="d-flex text-dark text-decoration-none w-100">
-                                  <i class="bi {{ $notif['icon'] }} me-2 fs-5"></i>
-                                  <div>
-                                      <h4 class="mb-1" style="font-size: 0.85rem; font-weight: 600;">{{ $notif['title'] }}</h4>
-                                      <p class="mb-1 text-muted" style="font-size: 0.78rem;">{{ $notif['message'] }}</p>
-                                      <p class="mb-0 text-secondary" style="font-size: 0.72rem;">{{ $notif['time'] }}</p>
-                                  </div>
-                              </a>
-                          </li>
-                          <li>
-                              <hr class="dropdown-divider">
-                          </li>
-                      @empty
-                          <li class="p-3 text-center text-muted small">
-                              <i class="bi bi-check-circle text-success d-block fs-3 mb-1"></i>
-                              Semua tugas Anda tepat waktu dan berjalan lancar!
-                          </li>
-                      @endforelse
+                      <div id="notificationItemsContainer" style="max-height: 420px; overflow-y: auto;">
+                          @include('layouts.dashboard.notification_items', ['notifications' => $notifications])
+                      </div>
 
                   </ul><!-- End Notification Dropdown Items -->
 
@@ -225,3 +118,98 @@
       </nav><!-- End Icons Navigation -->
 
   </header><!-- End Header -->
+
+  <style>
+      @keyframes spinClockwise {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+      }
+      .spin-animation {
+          display: inline-block;
+          animation: spinClockwise 0.8s linear infinite;
+      }
+      .notif-clickable-item {
+          cursor: pointer;
+      }
+      .notif-clickable-item:hover h6 {
+          color: #0d6efd !important;
+      }
+  </style>
+
+  <script>
+      (function() {
+          let isFetchingNotif = false;
+
+          window.refreshNotifications = function(showSpinner = false) {
+              if (isFetchingNotif) return;
+              isFetchingNotif = true;
+
+              const iconRefresh = document.getElementById('iconRefreshNotif');
+              if (showSpinner && iconRefresh) {
+                  iconRefresh.classList.add('spin-animation');
+              }
+
+              fetch('{{ route('notifications.data') }}', {
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'Accept': 'application/json'
+                  }
+              })
+              .then(res => {
+                  if (!res.ok) throw new Error('Network error ' + res.status);
+                  return res.json();
+              })
+              .then(data => {
+                  if (data && data.success) {
+                      const badge = document.getElementById('notificationBadge');
+                      const headerTitle = document.getElementById('notificationHeaderTitle');
+                      const container = document.getElementById('notificationItemsContainer');
+
+                      if (badge) {
+                          if (data.count > 0) {
+                              badge.textContent = data.count;
+                              badge.classList.remove('d-none');
+                          } else {
+                              badge.textContent = '';
+                              badge.classList.add('d-none');
+                          }
+                      }
+
+                      if (headerTitle) {
+                          headerTitle.textContent = data.count > 0 
+                              ? `Anda memiliki ${data.count} pemberitahuan` 
+                              : 'Tidak ada pemberitahuan baru';
+                      }
+
+                      if (container) {
+                          container.innerHTML = data.html;
+                      }
+                  }
+              })
+              .catch(err => {
+                  console.error('Error refreshing notifications:', err);
+              })
+              .finally(() => {
+                  isFetchingNotif = false;
+                  if (iconRefresh) {
+                      iconRefresh.classList.remove('spin-animation');
+                  }
+              });
+          };
+
+          document.addEventListener('DOMContentLoaded', function() {
+              // Otomatis refresh saat dropdown notifikasi diklik / dibuka
+              const dropdownEl = document.getElementById('notificationDropdownContainer');
+              if (dropdownEl) {
+                  dropdownEl.addEventListener('show.bs.dropdown', function() {
+                      window.refreshNotifications(false);
+                  });
+              }
+
+              // Polling latar belakang setiap 30 detik untuk update badge secara dinamis
+              setInterval(function() {
+                  window.refreshNotifications(false);
+              }, 30000);
+          });
+      })();
+  </script>

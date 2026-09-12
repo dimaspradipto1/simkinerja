@@ -47,9 +47,45 @@ class Kegiatan extends Model
             $kegiatan->syncToSource();
         });
 
+        static::deleting(function ($kegiatan) {
+            // 1. Delete uploaded file
+            if ($kegiatan->file && \Illuminate\Support\Facades\Storage::disk('public')->exists($kegiatan->file)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($kegiatan->file);
+            }
+
+            // 2. Detach tagged users
+            if (method_exists($kegiatan, 'taggedUsers')) {
+                $kegiatan->taggedUsers()->detach();
+            }
+
+            // 3. Delete polymorphic milestones
+            if (method_exists($kegiatan, 'milestones')) {
+                $kegiatan->milestones()->delete();
+            }
+        });
+
         static::deleted(function ($kegiatan) {
+            // Find and delete the corresponding source model (RencanaKerja, Kepanitiaan, Insidentil)
+            $sourceModel = null;
             if ($kegiatan->source_type && $kegiatan->source_id && class_exists($kegiatan->source_type)) {
-                $kegiatan->source_type::where('id', $kegiatan->source_id)->delete();
+                $sourceModel = $kegiatan->source_type::find($kegiatan->source_id);
+            }
+
+            // Fallback: If source_id was null or not matched, find by user_id and uraian_tugas
+            if (!$sourceModel) {
+                $targetClass = match($kegiatan->kategori) {
+                    'Kepanitiaan' => \App\Models\Kepanitiaan::class,
+                    'Insidentil' => \App\Models\Insidentil::class,
+                    default => \App\Models\RencanaKerja::class,
+                };
+                $sourceModel = $targetClass::where('user_id', $kegiatan->user_id)
+                    ->where('uraian_tugas', $kegiatan->uraian_tugas)
+                    ->first();
+            }
+
+            if ($sourceModel) {
+                // Delete source model instance so its own events and cleanups fire
+                $sourceModel->delete();
             }
         });
     }

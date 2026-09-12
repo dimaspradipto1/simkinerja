@@ -23,6 +23,7 @@ use App\Http\Controllers\AbsensiSettingController;
 use App\Http\Controllers\LpjController;
 use App\Http\Controllers\LaporanKinerjaPegawaiController;
 use App\Http\Controllers\LaporanPengembanganController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -48,6 +49,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
         ->name('dashboard');
     Route::get('/dashboard/attendance-data', [DashboardController::class, 'getAttendanceData'])
         ->name('dashboard.attendance-data');
+    Route::get('/notifications/data', [NotificationController::class, 'getNotifications'])
+        ->name('notifications.data');
     Route::get('profile', [ProfileController::class, 'index'])->name('profile');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('profile/password', [ProfileController::class, 'editPassword'])->name('profile.password');

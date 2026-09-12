@@ -405,6 +405,15 @@
             $('#appr_catatan').val('');
             $('#formApproveExtension').attr('action', route);
 
+            // Tutup dropdown notifikasi jika sedang terbuka
+            const openDropdown = document.querySelector('.dropdown-menu.show');
+            if (openDropdown) {
+                const toggleBtn = openDropdown.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                if (toggleBtn) {
+                    bootstrap.Dropdown.getOrCreateInstance(toggleBtn).hide();
+                }
+            }
+
             const modalEl = document.getElementById('modalApproveExtension');
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             modal.show();

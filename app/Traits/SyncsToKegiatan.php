@@ -15,10 +15,50 @@ trait SyncsToKegiatan
             $model->syncToKegiatan();
         });
 
+        static::deleting(function ($model) {
+            // 1. Delete uploaded file
+            if ($model->file && \Illuminate\Support\Facades\Storage::disk('public')->exists($model->file)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($model->file);
+            }
+
+            // 2. Detach tagged users
+            if (method_exists($model, 'taggedUsers')) {
+                $model->taggedUsers()->detach();
+            }
+
+            // 3. Delete polymorphic milestones
+            if (method_exists($model, 'milestones')) {
+                $model->milestones()->delete();
+            }
+
+            // 4. Cascade delete Kepanitiaan sessions and attendance records
+            if (method_exists($model, 'sesiAbsensis')) {
+                foreach ($model->sesiAbsensis as $sesi) {
+                    foreach ($sesi->presensis as $presensi) {
+                        if ($presensi->bukti_izin && \Illuminate\Support\Facades\Storage::disk('public')->exists($presensi->bukti_izin)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($presensi->bukti_izin);
+                        }
+                        $presensi->delete();
+                    }
+                    $sesi->delete();
+                }
+            }
+        });
+
         static::deleted(function ($model) {
-            Kegiatan::where('source_type', get_class($model))
-                ->where('source_id', $model->id)
-                ->delete();
+            $kegiatans = Kegiatan::where(function ($q) use ($model) {
+                $q->where('source_type', get_class($model))
+                  ->where('source_id', $model->id);
+            })->orWhere(function ($q) use ($model) {
+                $q->where('user_id', $model->user_id)
+                  ->where('uraian_tugas', $model->uraian_tugas);
+            })->get();
+
+            foreach ($kegiatans as $kegiatan) {
+                // Clear source_id to prevent loop
+                $kegiatan->source_id = null;
+                $kegiatan->delete();
+            }
         });
     }
 
