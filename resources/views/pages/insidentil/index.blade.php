@@ -195,7 +195,8 @@
                 <div class="col-md-4">
                     <label for="filter_jabatan" class="form-label fw-bold text-secondary small">Filter Jabatan Pegawai:</label>
                     <select id="filter_jabatan" class="form-select form-select-sm">
-                        <option value="">-- Semua Jabatan --</option>
+                        <option value="">-- Data Saya Sendiri ({{ auth()->user()->name }}) --</option>
+                        <option value="__all__">-- Semua Jabatan (Semua Pegawai) --</option>
                         @php
                             $uniqueJabatans = collect($usersWithJabatan)->pluck('jabatan')->unique()->filter();
                         @endphp

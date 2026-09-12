@@ -25,23 +25,28 @@ class InsidentilController extends Controller
         if ($request->ajax()) {
             $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
-            if ($authUser && !$request->filled('jabatan') && !$authUser->isAdmin()) {
-                $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
-                      });
-                });
-            }
-
-            if ($request->filled('jabatan')) {
-                $query->where(function ($q) use ($request) {
-                    $q->whereHas('user', function ($qu) use ($request) {
-                        $qu->where('jabatan', $request->jabatan);
-                    })->orWhereHas('taggedUsers', function ($qt) use ($request) {
-                        $qt->where('jabatan', $request->jabatan);
+            if ($request->filled('jabatan') && $request->jabatan !== '__own__') {
+                if ($request->jabatan === '__all__' || $request->jabatan === 'all') {
+                    // Tampilkan semua jabatan (hanya jika eksplisit dipilih opsi "Semua Jabatan")
+                } else {
+                    $query->where(function ($q) use ($request) {
+                        $q->whereHas('user', function ($qu) use ($request) {
+                            $qu->where('jabatan', $request->jabatan);
+                        })->orWhereHas('taggedUsers', function ($qt) use ($request) {
+                            $qt->where('jabatan', $request->jabatan);
+                        });
                     });
-                });
+                }
+            } else {
+                // Default: jika kriteria checklist untuk jabatan tidak dipilih, tampilkan data sendiri (user login + tagged)
+                if ($authUser) {
+                    $query->where(function ($q) use ($authUser) {
+                        $q->where('user_id', $authUser->id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                              $qu->where('users.id', $authUser->id);
+                          });
+                    });
+                }
             }
 
             if ($request->filled('periode_akademik_id')) {

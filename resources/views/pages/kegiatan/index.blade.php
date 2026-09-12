@@ -128,7 +128,8 @@
                         <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap">Filter Jabatan:</label>
                         <div style="min-width: 250px; max-width: 650px;" class="flex-grow-1">
                             <select class="form-select" id="filter-jabatan">
-                                <option value="">-- Semua Jabatan --</option>
+                                <option value="">-- Data Saya Sendiri ({{ auth()->user()->name }}) --</option>
+                                <option value="__all__" {{ request('jabatan') == '__all__' ? 'selected' : '' }}>-- Semua Jabatan (Semua Pegawai) --</option>
                                 @foreach($jabatanList as $jbt)
                                     <option value="{{ $jbt }}" {{ request('jabatan') == $jbt ? 'selected' : '' }}>
                                         {{ $jbt }}
@@ -368,7 +369,14 @@ $(document).ready(function() {
 
     $('#filter-jabatan').on('change', function() {
         let val = $(this).val();
-        $('#judul-jabatan').text(val ? val : 'Semua Pegawai');
+        let selectedText = $(this).find('option:selected').text().trim();
+        if (!val || val === '__own__') {
+            $('#judul-jabatan').text("{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}");
+        } else if (val === '__all__') {
+            $('#judul-jabatan').text('Semua Jabatan');
+        } else {
+            $('#judul-jabatan').text(selectedText || val);
+        }
         table.ajax.reload();
     });
 

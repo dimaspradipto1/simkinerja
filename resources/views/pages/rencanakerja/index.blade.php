@@ -465,7 +465,7 @@
 </div><!-- End Page Title -->
 
 <section class="section">
-    @if(auth()->check() && auth()->user()->isRektorOrSuperAdmin())
+    @if(auth()->check() && (auth()->user()->isRektorOrSuperAdmin() || auth()->user()->isPimpinanUnit()))
     <!-- Top Section: Kriteria Checklist Jabatan (Khusus Pimpinan & Admin) -->
     <div class="row mb-4">
         <div class="col-lg-12">
@@ -478,9 +478,11 @@
                         <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap">Kriteria Checklist untuk jabatan:</label>
                         <div style="min-width: 250px; max-width: 650px;" class="flex-grow-1">
                             <select class="form-select" id="filter-jabatan">
-                                <option value="">-- Semua Jabatan --</option>
+                                <option value=""></option>
+                                <option value="__own__">-- Data Saya Sendiri ({{ auth()->user()->name }}) --</option>
+                                <option value="__all__">-- Semua Jabatan (Semua Pegawai) --</option>
                                 @foreach($usersWithJabatan as $u)
-                                    <option value="{{ $u->jabatan }}" data-user-id="{{ $u->id }}" {{ (request('jabatan') == $u->jabatan || (!request()->has('jabatan') && !auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin() && auth()->user()->jabatan == $u->jabatan)) ? 'selected' : '' }}>
+                                    <option value="{{ $u->jabatan }}" data-user-id="{{ $u->id }}" {{ request('jabatan') == $u->jabatan ? 'selected' : '' }}>
                                         {{ $u->jabatan }} - {{ $u->name }}
                                     </option>
                                 @endforeach
@@ -607,7 +609,7 @@
                         <span class="fw-bold text-white fs-6 mb-0">Rencana Kerja</span>
                         <span class="text-white d-none d-sm-inline">:</span>
                         <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
-                            {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Jabatan' }}
+                            {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}
                         </span>
                     </div>
                     <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-xl-0">
@@ -1156,7 +1158,15 @@
             $('#filter-jabatan').on('change', function() {
                 var selectedText = $(this).find('option:selected').text();
                 var val = $(this).val();
-                $('#judul-jabatan').text(val ? selectedText.trim() : 'Semua Jabatan');
+                let ownTitle = "{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}";
+
+                if (!val || val === '__own__') {
+                    $('#judul-jabatan').text(ownTitle);
+                } else if (val === '__all__' || val === 'all') {
+                    $('#judul-jabatan').text('Semua Jabatan');
+                } else {
+                    $('#judul-jabatan').text(selectedText.trim());
+                }
 
                 if ($('#export_jabatan').length) {
                     $('#export_jabatan').val(val).trigger('change');
