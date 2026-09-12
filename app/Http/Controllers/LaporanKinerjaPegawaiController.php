@@ -168,11 +168,18 @@ class LaporanKinerjaPegawaiController extends Controller
         $kpQuery = Kepanitiaan::query();
         $inQuery = Insidentil::query();
 
-        // Filter tugas HANYA untuk pegawai yang terpilih sesuai filter unit / pencarian
-        $rkQuery->whereIn('user_id', $pegawaiIds);
-        $kgQuery->whereIn('user_id', $pegawaiIds);
-        $kpQuery->whereIn('user_id', $pegawaiIds);
-        $inQuery->whereIn('user_id', $pegawaiIds);
+        // Filter tugas untuk pegawai yang terpilih sesuai filter unit / pencarian (baik sebagai pembuat maupun yang ditag)
+        $filterByUserOrTagged = function ($q) use ($pegawaiIds) {
+            $q->where(function ($sub) use ($pegawaiIds) {
+                $sub->whereIn('user_id', $pegawaiIds)
+                    ->orWhereHas('taggedUsers', fn($qu) => $qu->whereIn('users.id', $pegawaiIds));
+            });
+        };
+
+        $filterByUserOrTagged($rkQuery);
+        $filterByUserOrTagged($kgQuery);
+        $filterByUserOrTagged($kpQuery);
+        $filterByUserOrTagged($inQuery);
 
         if ($selectedPeriodeId) {
             $rkQuery->where('periode_akademik_id', $selectedPeriodeId);
@@ -182,7 +189,7 @@ class LaporanKinerjaPegawaiController extends Controller
         }
 
         $allRk = $rkQuery->with(['user', 'taggedUsers'])->get();
-        $allKg = $kgQuery->with('user')->get();
+        $allKg = $kgQuery->with(['user', 'taggedUsers'])->get();
         $allKp = $kpQuery->with(['user', 'taggedUsers'])->get();
         $allIn = $inQuery->with(['user', 'taggedUsers'])->get();
 
@@ -202,20 +209,14 @@ class LaporanKinerjaPegawaiController extends Controller
         };
 
         $processTask = function ($task, $typeLabel) use (&$tasksByUser, &$dosenTriDharma, &$kendalaList, &$tindakLanjutList, $stripHtml, $pegawaiIds) {
-            $uid = $task->user_id;
-            if (!in_array($uid, $pegawaiIds)) {
-                return;
-            }
+            $uraian = (string)($task->uraian_tugas ?? '');
+            $status = $task->status;
+            $kategoriDharma = $this->classifyTriDharma($uraian);
 
-            if (!isset($tasksByUser[$uid])) {
-                $tasksByUser[$uid] = [
-                    'rk_total' => 0, 'rk_selesai' => 0,
-                    'kg_total' => 0, 'kg_selesai' => 0,
-                    'kp_total' => 0, 'kp_selesai' => 0,
-                    'in_total' => 0, 'in_selesai' => 0,
-                    'total' => 0, 'selesai' => 0, 'proses' => 0, 'belum' => 0,
-                ];
-            }
+            $participantIds = collect([$task->user_id])
+                ->merge($task->taggedUsers ? $task->taggedUsers->pluck('id') : [])
+                ->filter()
+                ->unique();
 
             $prefix = match($typeLabel) {
                 'Rencana Kerja' => 'rk_',
@@ -225,34 +226,46 @@ class LaporanKinerjaPegawaiController extends Controller
                 default => 'rk_'
             };
 
-            $tasksByUser[$uid][$prefix . 'total']++;
-            $tasksByUser[$uid]['total']++;
+            foreach ($participantIds as $uid) {
+                if (!in_array($uid, $pegawaiIds)) {
+                    continue;
+                }
 
-            $status = $task->status;
-            if ($status === 'Selesai') {
-                $tasksByUser[$uid][$prefix . 'selesai']++;
-                $tasksByUser[$uid]['selesai']++;
-            } elseif (in_array($status, ['Proses', 'Berjalan'])) {
-                $tasksByUser[$uid]['proses']++;
-            } else {
-                $tasksByUser[$uid]['belum']++;
-            }
+                if (!isset($tasksByUser[$uid])) {
+                    $tasksByUser[$uid] = [
+                        'rk_total' => 0, 'rk_selesai' => 0,
+                        'kg_total' => 0, 'kg_selesai' => 0,
+                        'kp_total' => 0, 'kp_selesai' => 0,
+                        'in_total' => 0, 'in_selesai' => 0,
+                        'total' => 0, 'selesai' => 0, 'proses' => 0, 'belum' => 0,
+                    ];
+                }
 
-            // Tri Dharma categorization jika pembuat adalah dosen
-            $uraian = (string)($task->uraian_tugas ?? '');
-            $kategoriDharma = $this->classifyTriDharma($uraian);
+                $tasksByUser[$uid][$prefix . 'total']++;
+                $tasksByUser[$uid]['total']++;
 
-            if (!isset($dosenTriDharma[$uid])) {
-                $dosenTriDharma[$uid] = [
-                    'pendidikan_total' => 0, 'pendidikan_selesai' => 0,
-                    'penelitian_total' => 0, 'penelitian_selesai' => 0,
-                    'pkm_total' => 0, 'pkm_selesai' => 0,
-                ];
-            }
+                if ($status === 'Selesai') {
+                    $tasksByUser[$uid][$prefix . 'selesai']++;
+                    $tasksByUser[$uid]['selesai']++;
+                } elseif (in_array($status, ['Proses', 'Berjalan'])) {
+                    $tasksByUser[$uid]['proses']++;
+                } else {
+                    $tasksByUser[$uid]['belum']++;
+                }
 
-            $dosenTriDharma[$uid][$kategoriDharma . '_total']++;
-            if ($status === 'Selesai') {
-                $dosenTriDharma[$uid][$kategoriDharma . '_selesai']++;
+                // Tri Dharma categorization jika user adalah dosen
+                if (!isset($dosenTriDharma[$uid])) {
+                    $dosenTriDharma[$uid] = [
+                        'pendidikan_total' => 0, 'pendidikan_selesai' => 0,
+                        'penelitian_total' => 0, 'penelitian_selesai' => 0,
+                        'pkm_total' => 0, 'pkm_selesai' => 0,
+                    ];
+                }
+
+                $dosenTriDharma[$uid][$kategoriDharma . '_total']++;
+                if ($status === 'Selesai') {
+                    $dosenTriDharma[$uid][$kategoriDharma . '_selesai']++;
+                }
             }
 
             // Tangkap kendala & permasalahan

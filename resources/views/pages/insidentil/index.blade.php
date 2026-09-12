@@ -315,10 +315,9 @@
                     @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
                     <div class="mb-3">
                         <label for="export_user_id" class="form-label fw-bold text-dark mb-1">
-                            Pilih Jabatan / Staff <span class="text-muted fw-normal">(Read Only / Sesuai Checklist)</span>
+                            Pilih Jabatan / Staff
                         </label>
-                        <input type="hidden" name="user_id" id="export_user_id_hidden">
-                        <select id="export_user_id" class="form-select bg-light" disabled style="pointer-events: none;">
+                        <select name="user_id" id="export_user_id" class="form-select bg-white">
                             <option value="">-- Semua Staff / Jabatan --</option>
                             @foreach($usersWithJabatan as $u)
                                 <option value="{{ $u->id }}" data-jabatan="{{ $u->jabatan }}">{{ $u->name }} &mdash; {{ $u->jabatan }}</option>
@@ -468,11 +467,20 @@ $(document).ready(function() {
         }
 
         // Sync user
-        if (!$('#export_user_id').length) return;
-        let authId = "{{ auth()->user()->id }}";
-        if ($('#export_user_id option[value="' + authId + '"]').length) {
-            $('#export_user_id').val(authId).trigger('change');
-            $('#export_user_id_hidden').val(authId);
+        if ($('#export_user_id').length) {
+            let filterJabatanVal = $('#filter_jabatan').val();
+            let targetId = '';
+            if (filterJabatanVal && isNaN(filterJabatanVal)) {
+                let matchOpt = $('#export_user_id option').filter(function() {
+                    return $(this).text().indexOf(filterJabatanVal) !== -1;
+                });
+                if (matchOpt.length) {
+                    targetId = matchOpt.first().val();
+                }
+            } else if (filterJabatanVal && !isNaN(filterJabatanVal)) {
+                targetId = filterJabatanVal;
+            }
+            $('#export_user_id').val(targetId).trigger('change');
         }
     }
 

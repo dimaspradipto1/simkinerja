@@ -379,6 +379,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Kepanitiaan::class, 'kepanitiaan_user', 'user_id', 'kepanitiaan_id')->withTimestamps();
     }
 
+    public function taggedKegiatans()
+    {
+        return $this->belongsToMany(Kegiatan::class, 'kegiatan_user', 'user_id', 'kegiatan_id')->withTimestamps();
+    }
+
     public function taggedInsidentils()
     {
         return $this->belongsToMany(Insidentil::class, 'insidentil_user', 'user_id', 'insidentil_id')->withTimestamps();

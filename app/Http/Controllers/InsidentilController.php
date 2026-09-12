@@ -828,8 +828,12 @@ class InsidentilController extends Controller
                     });
                 }
             } elseif ($authUser->isPimpinanUnit()) {
-                $query->whereHas('user', function ($q) use ($authUser) {
-                    $q->where('unit', $authUser->unit);
+                $query->where(function ($q) use ($authUser) {
+                    $q->whereHas('user', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    })->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    });
                 });
                 if ($request->filled('user_id')) {
                     $query->where(function ($q) use ($request) {
@@ -840,10 +844,11 @@ class InsidentilController extends Controller
                     });
                 }
             } else {
-                $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
+                $targetId = $authUser->id;
+                $query->where(function ($q) use ($targetId) {
+                    $q->where('user_id', $targetId)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($targetId) {
+                          $qu->where('users.id', $targetId);
                       });
                 });
             }
@@ -859,10 +864,17 @@ class InsidentilController extends Controller
         $jabatanStaff = 'SEMUA JABATAN';
         $unitStaff = 'SEMUA UNIT';
 
-        if ($request->filled('user_id') && ($u = User::find($request->user_id))) {
-            $namaStaff = strtoupper($u->name);
-            $jabatanStaff = strtoupper($u->jabatan ?? '-');
-            $unitStaff = strtoupper($u->unit ?? '-');
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = User::find($request->user_id);
+        } elseif ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
+            $targetUser = $authUser;
+        }
+
+        if ($targetUser) {
+            $namaStaff = strtoupper($targetUser->name);
+            $jabatanStaff = strtoupper($targetUser->jabatan ?? '-');
+            $unitStaff = strtoupper($targetUser->unit ?? '-');
         } elseif ($items->count() > 0 && $items->pluck('user_id')->unique()->count() === 1) {
             $firstUser = $items->first()->user;
             if ($firstUser) {
@@ -870,10 +882,6 @@ class InsidentilController extends Controller
                 $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
                 $unitStaff = strtoupper($firstUser->unit ?? '-');
             }
-        } elseif ($authUser && !$authUser->isSuperAdmin()) {
-            $namaStaff = strtoupper($authUser->name);
-            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
-            $unitStaff = strtoupper($authUser->unit ?? '-');
         }
 
         $periodeText = 'SEMUA PERIODE';
@@ -885,7 +893,7 @@ class InsidentilController extends Controller
 
         $safeStaff = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $namaStaff)));
         $safePeriode = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $periodeText)));
-        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode') . '_laporan insidentil.pdf';
+        $filename = ($safeStaff ?: 'Semua Staff') . '_' . ($safePeriode ?: 'Periode') . '_laporan rencana kerja insidentil.pdf';
 
         $pdf = Pdf::loadView('pages.insidentil.pdf', compact('items', 'namaStaff', 'jabatanStaff', 'unitStaff', 'periodeText'))
             ->setPaper('a4', 'landscape');
@@ -912,8 +920,12 @@ class InsidentilController extends Controller
                     });
                 }
             } elseif ($authUser->isPimpinanUnit()) {
-                $query->whereHas('user', function ($q) use ($authUser) {
-                    $q->where('unit', $authUser->unit);
+                $query->where(function ($q) use ($authUser) {
+                    $q->whereHas('user', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    })->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    });
                 });
                 if ($request->filled('user_id')) {
                     $query->where(function ($q) use ($request) {
@@ -924,10 +936,11 @@ class InsidentilController extends Controller
                     });
                 }
             } else {
-                $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
+                $targetId = $authUser->id;
+                $query->where(function ($q) use ($targetId) {
+                    $q->where('user_id', $targetId)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($targetId) {
+                          $qu->where('users.id', $targetId);
                       });
                 });
             }
@@ -943,10 +956,17 @@ class InsidentilController extends Controller
         $jabatanStaff = 'SEMUA JABATAN';
         $unitStaff = 'SEMUA UNIT';
 
-        if ($request->filled('user_id') && ($u = User::find($request->user_id))) {
-            $namaStaff = strtoupper($u->name);
-            $jabatanStaff = strtoupper($u->jabatan ?? '-');
-            $unitStaff = strtoupper($u->unit ?? '-');
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = User::find($request->user_id);
+        } elseif ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
+            $targetUser = $authUser;
+        }
+
+        if ($targetUser) {
+            $namaStaff = strtoupper($targetUser->name);
+            $jabatanStaff = strtoupper($targetUser->jabatan ?? '-');
+            $unitStaff = strtoupper($targetUser->unit ?? '-');
         } elseif ($items->count() > 0 && $items->pluck('user_id')->unique()->count() === 1) {
             $firstUser = $items->first()->user;
             if ($firstUser) {
@@ -954,10 +974,6 @@ class InsidentilController extends Controller
                 $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
                 $unitStaff = strtoupper($firstUser->unit ?? '-');
             }
-        } elseif ($authUser && !$authUser->isSuperAdmin()) {
-            $namaStaff = strtoupper($authUser->name);
-            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
-            $unitStaff = strtoupper($authUser->unit ?? '-');
         }
 
         $periodeText = 'SEMUA PERIODE';

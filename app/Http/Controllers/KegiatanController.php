@@ -1055,24 +1055,38 @@ class KegiatanController extends Controller
         $authUser = Auth::user();
         $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers'])->latest();
 
-        if ($authUser && !$request->filled('jabatan') && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
-            if ($authUser->isPimpinanUnit()) {
-                $query->whereHas('user', function ($qu) use ($authUser) {
-                    $qu->where('unit', $authUser->unit);
-                });
-            } else {
+        if ($authUser) {
+            if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', fn($qu) => $qu->where('users.id', $request->user_id));
+                    });
+                }
+            } elseif ($authUser->isPimpinanUnit()) {
                 $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
-                      });
+                    $q->whereHas('user', fn($qu) => $qu->where('unit', $authUser->unit))
+                      ->orWhereHas('taggedUsers', fn($qu) => $qu->where('unit', $authUser->unit));
+                });
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', fn($qu) => $qu->where('users.id', $request->user_id));
+                    });
+                }
+            } else {
+                $targetId = $authUser->id;
+                $query->where(function ($q) use ($targetId) {
+                    $q->where('user_id', $targetId)
+                      ->orWhereHas('taggedUsers', fn($qu) => $qu->where('users.id', $targetId));
                 });
             }
         }
 
         if ($request->filled('jabatan')) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where('jabatan', $request->jabatan);
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('user', fn($qu) => $qu->where('jabatan', $request->jabatan))
+                  ->orWhereHas('taggedUsers', fn($qt) => $qt->where('jabatan', $request->jabatan));
             });
         }
 

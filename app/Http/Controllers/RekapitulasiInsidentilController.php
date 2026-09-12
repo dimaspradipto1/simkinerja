@@ -53,18 +53,24 @@ class RekapitulasiInsidentilController extends Controller
 
         $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers']);
 
-        if (!$request->filled('jabatan') && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
+        if (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
             if ($authUser->isPimpinanUnit()) {
-                $query->whereHas('user', function ($qu) use ($authUser) {
-                    $qu->where('unit', $authUser->unit);
+                $query->where(function ($q) use ($authUser) {
+                    $q->whereHas('user', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    })->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    });
                 });
             } else {
-                $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
-                      });
-                });
+                if (!$request->filled('jabatan')) {
+                    $query->where(function ($q) use ($authUser) {
+                        $q->where('user_id', $authUser->id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                              $qu->where('users.id', $authUser->id);
+                          });
+                    });
+                }
             }
         }
 
@@ -75,8 +81,14 @@ class RekapitulasiInsidentilController extends Controller
         if ($request->filled('jabatan')) {
             $filterValue = $request->jabatan;
             if (is_numeric($filterValue)) {
-                $query->where('user_id', $filterValue);
+                $query->where(function ($q) use ($filterValue) {
+                    $q->where('user_id', $filterValue)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($filterValue) {
+                          $qu->where('users.id', $filterValue);
+                      });
+                });
             } else {
+                // Fallback: filter by jabatan string
                 $query->where(function ($q) use ($request) {
                     $q->whereHas('user', function ($qu) use ($request) {
                         $qu->where('jabatan', $request->jabatan);

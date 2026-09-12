@@ -1749,17 +1749,38 @@ class RencanaKerjaController extends Controller
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
                 // Superadmin, Admin, Pimpinan Rektorat -> Seluruh data
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
+                    });
+                }
             } elseif ($authUser->isPimpinanUnit()) {
-                // Pimpinan Unit -> Unit miliknya
-                $query->whereHas('user', function ($q) use ($authUser) {
-                    $q->where('unit', $authUser->unit);
+                // Pimpinan Unit -> Unit miliknya (baik pemilik maupun rekan kerja yang di-tag)
+                $query->where(function ($q) use ($authUser) {
+                    $q->whereHas('user', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    })->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    });
                 });
+                if ($request->filled('user_id')) {
+                    $query->where(function ($q) use ($request) {
+                        $q->where('user_id', $request->user_id)
+                          ->orWhereHas('taggedUsers', function ($qu) use ($request) {
+                              $qu->where('users.id', $request->user_id);
+                          });
+                    });
+                }
             } else {
                 // Staff regular -> Milik sendiri atau yang di-tag ke mereka
-                $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
+                $targetId = $authUser->id;
+                $query->where(function ($q) use ($targetId) {
+                    $q->where('user_id', $targetId)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($targetId) {
+                          $qu->where('users.id', $targetId);
                       });
                 });
             }
@@ -1767,15 +1788,6 @@ class RencanaKerjaController extends Controller
 
         if ($request->filled('periode_akademik_id')) {
             $query->where('periode_akademik_id', $request->periode_akademik_id);
-        }
-
-        if ($request->filled('user_id')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('user_id', $request->user_id)
-                  ->orWhereHas('taggedUsers', function ($qu) use ($request) {
-                      $qu->where('users.id', $request->user_id);
-                  });
-            });
         }
 
         if ($request->filled('jabatan')) {
@@ -1795,10 +1807,17 @@ class RencanaKerjaController extends Controller
         $jabatanStaff = 'SEMUA JABATAN';
         $unitStaff = 'SEMUA UNIT';
 
-        if ($request->filled('user_id') && ($u = \App\Models\User::find($request->user_id))) {
-            $namaStaff = strtoupper($u->name);
-            $jabatanStaff = strtoupper($u->jabatan ?? '-');
-            $unitStaff = strtoupper($u->unit ?? '-');
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = \App\Models\User::find($request->user_id);
+        } elseif ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
+            $targetUser = $authUser;
+        }
+
+        if ($targetUser) {
+            $namaStaff = strtoupper($targetUser->name);
+            $jabatanStaff = strtoupper($targetUser->jabatan ?? '-');
+            $unitStaff = strtoupper($targetUser->unit ?? '-');
         } elseif ($request->filled('jabatan') && ($u = \App\Models\User::where('jabatan', $request->jabatan)->first())) {
             $namaStaff = strtoupper($u->name);
             $jabatanStaff = strtoupper($u->jabatan ?? '-');
@@ -1810,10 +1829,6 @@ class RencanaKerjaController extends Controller
                 $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
                 $unitStaff = strtoupper($firstUser->unit ?? '-');
             }
-        } elseif ($authUser && !$authUser->isSuperAdmin()) {
-            $namaStaff = strtoupper($authUser->name);
-            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
-            $unitStaff = strtoupper($authUser->unit ?? '-');
         }
 
         // Periode Akademik Text (Lookup by request, item relation, or latest record)
@@ -2021,10 +2036,6 @@ class RencanaKerjaController extends Controller
         $authUser = auth()->user();
         $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
-        if ($request->filled('periode_akademik_id')) {
-            $query->where('periode_akademik_id', $request->periode_akademik_id);
-        }
-
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
                 if ($request->filled('user_id')) {
@@ -2036,8 +2047,12 @@ class RencanaKerjaController extends Controller
                     });
                 }
             } elseif ($authUser->isPimpinanUnit()) {
-                $query->whereHas('user', function ($q) use ($authUser) {
-                    $q->where('unit', $authUser->unit);
+                $query->where(function ($q) use ($authUser) {
+                    $q->whereHas('user', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    })->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
+                        $qu->where('unit', $authUser->unit);
+                    });
                 });
                 if ($request->filled('user_id')) {
                     $query->where(function ($q) use ($request) {
@@ -2049,13 +2064,18 @@ class RencanaKerjaController extends Controller
                 }
             } else {
                 // Staff regular -> Milik sendiri atau yang di-tag ke mereka
-                $query->where(function ($q) use ($authUser) {
-                    $q->where('user_id', $authUser->id)
-                      ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                          $qu->where('users.id', $authUser->id);
+                $targetId = $authUser->id;
+                $query->where(function ($q) use ($targetId) {
+                    $q->where('user_id', $targetId)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($targetId) {
+                          $qu->where('users.id', $targetId);
                       });
                 });
             }
+        }
+
+        if ($request->filled('periode_akademik_id')) {
+            $query->where('periode_akademik_id', $request->periode_akademik_id);
         }
 
         if ($request->filled('jabatan')) {
@@ -2074,10 +2094,17 @@ class RencanaKerjaController extends Controller
         $jabatanStaff = 'SEMUA JABATAN';
         $unitStaff = 'SEMUA UNIT';
 
-        if ($request->filled('user_id') && ($u = \App\Models\User::find($request->user_id))) {
-            $namaStaff = strtoupper($u->name);
-            $jabatanStaff = strtoupper($u->jabatan ?? '-');
-            $unitStaff = strtoupper($u->unit ?? '-');
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = \App\Models\User::find($request->user_id);
+        } elseif ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
+            $targetUser = $authUser;
+        }
+
+        if ($targetUser) {
+            $namaStaff = strtoupper($targetUser->name);
+            $jabatanStaff = strtoupper($targetUser->jabatan ?? '-');
+            $unitStaff = strtoupper($targetUser->unit ?? '-');
         } elseif ($request->filled('jabatan') && ($u = \App\Models\User::where('jabatan', $request->jabatan)->first())) {
             $namaStaff = strtoupper($u->name);
             $jabatanStaff = strtoupper($u->jabatan ?? '-');
@@ -2089,10 +2116,6 @@ class RencanaKerjaController extends Controller
                 $jabatanStaff = strtoupper($firstUser->jabatan ?? '-');
                 $unitStaff = strtoupper($firstUser->unit ?? '-');
             }
-        } elseif ($authUser && !$authUser->isSuperAdmin()) {
-            $namaStaff = strtoupper($authUser->name);
-            $jabatanStaff = strtoupper($authUser->jabatan ?? '-');
-            $unitStaff = strtoupper($authUser->unit ?? '-');
         }
 
         $periodeText = 'PERIODE AKADEMIK';
