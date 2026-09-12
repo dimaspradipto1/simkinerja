@@ -104,6 +104,7 @@
 
     <!-- KPI Metric Summary Cards -->
     <div class="row g-3 mb-4">
+        @if($isSekretarisOrAdmin)
         <div class="col-6 col-md-3">
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #0d6efd !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
@@ -159,6 +160,73 @@
                 </div>
             </div>
         </div>
+        @else
+        <!-- Kartu Kehadiran Khusus Pengguna Sendiri -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid {{ $totalSudahAbsen ? '#198754' : '#dc3545' }} !important;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Status Kehadiran</div>
+                        <div class="fs-5 fw-bold {{ $totalSudahAbsen ? 'text-success' : 'text-danger' }} mt-1">
+                            <i class="bi {{ $totalSudahAbsen ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }} me-1"></i>
+                            {{ $totalSudahAbsen ? 'Sudah Hadir' : 'Belum Absen' }}
+                        </div>
+                    </div>
+                    <div class="rounded-circle {{ $totalSudahAbsen ? 'bg-success text-success' : 'bg-danger text-danger' }} bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-person-check-fill fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #198754 !important;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Presensi Datang</div>
+                        <div class="fs-5 fw-bold {{ $totalHadirDatang ? 'text-success' : 'text-secondary' }} mt-1">
+                            {{ $totalHadirDatang ? 'Tercatat Hadir' : 'Belum Absen' }}
+                        </div>
+                    </div>
+                    <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-box-arrow-in-right fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #0dcaf0 !important;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Presensi Pulang</div>
+                        <div class="fs-5 fw-bold {{ $totalHadirPulang ? 'text-info' : 'text-secondary' }} mt-1">
+                            {{ $totalHadirPulang ? 'Tercatat Pulang' : 'Belum Pulang' }}
+                        </div>
+                    </div>
+                    <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-box-arrow-right fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #ffc107 !important;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Kelengkapan</div>
+                        <div class="fs-6 fw-bold text-dark mt-1">
+                            {{ $totalLengkap ? 'Lengkap (Datang & Pulang)' : ($totalBelumPulang ? 'Belum Presensi Pulang' : ($totalSudahAbsen ? 'Izin / Sakit' : 'Belum Absen')) }}
+                        </div>
+                    </div>
+                    <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-clock-history fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 
     <!-- Attendance Table Card -->
@@ -166,19 +234,22 @@
         <div class="card-header bg-white py-3 px-4 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 border-bottom">
             <div>
                 <h5 class="card-title m-0 p-0 fs-5 fw-bold text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-card-checklist text-primary"></i>Daftar Kehadiran Pegawai
+                    <i class="bi bi-card-checklist text-primary"></i>
+                    @if($isSekretarisOrAdmin)
+                        Daftar Kehadiran Pegawai
+                    @else
+                        Data Presensi Saya &mdash; {{ auth()->user()->name }}
+                    @endif
                 </h5>
-                <p class="text-muted small mb-0 mt-0.5">Semua data absensi yang tercatat pada sesi ini secara real-time.</p>
+                <p class="text-muted small mb-0 mt-0.5">
+                    @if($isSekretarisOrAdmin)
+                        Semua data absensi yang tercatat pada sesi ini secara real-time.
+                    @else
+                        Rekaman kehadiran Anda untuk sesi ini.
+                    @endif
+                </p>
             </div>
-            @php
-                $canManage = auth()->check() && (
-                    auth()->user()->isAdmin() || 
-                    auth()->user()->isSuperAdmin() || 
-                    auth()->user()->isKoordinatorPanitia() || 
-                    ($sesi->kepanitiaan && $sesi->kepanitiaan->user_id === auth()->id())
-                );
-            @endphp
-            @if($canManage)
+            @if($isSekretarisOrAdmin)
             <div class="d-flex align-items-center gap-2">
                 <a href="{{ route('presensi.sesi.export', $sesi->id) }}" class="btn btn-success d-inline-flex align-items-center gap-1 shadow-sm font-medium" style="border-radius: 8px; font-size: 0.85rem; padding: 7px 14px;">
                     <i class="bi bi-file-earmark-excel"></i> Export Excel
@@ -191,6 +262,7 @@
         </div>
 
         <div class="card-body p-4">
+            @if($isSekretarisOrAdmin)
             <!-- Filter & Bulk Action Toolbar -->
             <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3 p-3 bg-light rounded-3 border">
                 <!-- Filter Buttons Group -->
@@ -239,6 +311,7 @@
                     </button>
                 </div>
             </div>
+            @endif
 
             <div class="table-responsive">
                 <table id="presensi-session-table" class="table table-hover align-middle w-100" style="font-size: 0.88rem;">

@@ -402,43 +402,64 @@ class UniversalPresensiController extends Controller
         }
 
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
+        $isSekretarisOrAdmin = $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isSekretarisPanitia($sesi->kepanitiaan);
 
-        $totalUsers = User::count();
-        $attendedUserIds = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
-            ->where(function ($q) {
-                $q->whereNotNull('hadir_datang')
-                  ->orWhereNotNull('hadir_pulang');
-            })->pluck('user_id')->toArray();
+        if ($isSekretarisOrAdmin) {
+            $totalUsers = User::count();
+            $attendedUserIds = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->where(function ($q) {
+                    $q->whereNotNull('hadir_datang')
+                      ->orWhereNotNull('hadir_pulang');
+                })->pluck('user_id')->toArray();
 
-        $totalSudahAbsen = count($attendedUserIds);
-        $totalBelumAbsen = max(0, $totalUsers - $totalSudahAbsen);
+            $totalSudahAbsen = count($attendedUserIds);
+            $totalBelumAbsen = max(0, $totalUsers - $totalSudahAbsen);
 
-        $totalPresensi = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)->count();
-        $totalHadirDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
-            ->where('hadir_datang', 'Hadir')->count();
-        $totalHadirPulang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
-            ->where('hadir_pulang', 'Hadir')->count();
-        $totalIzinSakit = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
-            ->where(function ($q) {
-                $q->whereIn('hadir_datang', ['Izin', 'Sakit', 'Alpha'])
-                  ->orWhereIn('hadir_pulang', ['Izin', 'Sakit', 'Alpha']);
-            })->count();
+            $totalPresensi = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)->count();
+            $totalHadirDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->where('hadir_datang', 'Hadir')->count();
+            $totalHadirPulang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->where('hadir_pulang', 'Hadir')->count();
+            $totalIzinSakit = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->where(function ($q) {
+                    $q->whereIn('hadir_datang', ['Izin', 'Sakit', 'Alpha'])
+                      ->orWhereIn('hadir_pulang', ['Izin', 'Sakit', 'Alpha']);
+                })->count();
 
-        $totalLengkap = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
-            ->whereNotNull('hadir_datang')
-            ->whereNotNull('hadir_pulang')->count();
-        $totalBelumPulang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
-            ->whereNotNull('hadir_datang')
-            ->whereNull('hadir_pulang')->count();
-        $totalBelumDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
-            ->whereNull('hadir_datang')
-            ->whereNotNull('hadir_pulang')->count();
+            $totalLengkap = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->whereNotNull('hadir_datang')
+                ->whereNotNull('hadir_pulang')->count();
+            $totalBelumPulang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->whereNotNull('hadir_datang')
+                ->whereNull('hadir_pulang')->count();
+            $totalBelumDatang = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->whereNull('hadir_datang')
+                ->whereNotNull('hadir_pulang')->count();
+        } else {
+            // Pengguna selain admin dan sekretaris panitia: hanya melihat data presensi diri sendiri
+            $myPresensi = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
+                ->where('user_id', $authUser->id)
+                ->first();
 
-        $users = User::orderBy('name', 'asc')->get();
+            $isAttended = $myPresensi && (!empty($myPresensi->hadir_datang) || !empty($myPresensi->hadir_pulang));
+            $totalUsers = 1;
+            $totalSudahAbsen = $isAttended ? 1 : 0;
+            $totalBelumAbsen = $isAttended ? 0 : 1;
+            $totalPresensi = $totalSudahAbsen;
+            $totalHadirDatang = ($myPresensi && $myPresensi->hadir_datang === 'Hadir') ? 1 : 0;
+            $totalHadirPulang = ($myPresensi && $myPresensi->hadir_pulang === 'Hadir') ? 1 : 0;
+            $totalIzinSakit = ($myPresensi && in_array($myPresensi->hadir_datang, ['Izin', 'Sakit', 'Alpha'])) ? 1 : 0;
+            $totalLengkap = ($myPresensi && $myPresensi->hadir_datang && $myPresensi->hadir_pulang) ? 1 : 0;
+            $totalBelumPulang = ($myPresensi && $myPresensi->hadir_datang && !$myPresensi->hadir_pulang) ? 1 : 0;
+            $totalBelumDatang = ($myPresensi && !$myPresensi->hadir_datang && $myPresensi->hadir_pulang) ? 1 : 0;
+        }
+
+        $users = $isSekretarisOrAdmin ? User::orderBy('name', 'asc')->get() : collect([$authUser]);
         $allSesis = KepanitiaanSesiAbsensi::orderBy('tanggal', 'desc')->orderBy('id', 'asc')->get();
 
         return view('pages.presensi.show', compact(
             'sesi',
+            'isSekretarisOrAdmin',
             'totalUsers',
             'totalSudahAbsen',
             'totalBelumAbsen',
@@ -465,8 +486,8 @@ class UniversalPresensiController extends Controller
         }
 
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
-        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser->id);
-        $canManage = $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner;
+        $isSekretarisOrAdmin = $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isSekretarisPanitia($sesi->kepanitiaan);
+        $canManage = $isSekretarisOrAdmin;
 
         $filter = $request->query('filter', 'all');
 
@@ -517,6 +538,12 @@ class UniversalPresensiController extends Controller
         } elseif ($filter === 'belum_semua') {
             $query->whereNull('kepanitiaan_presensis.hadir_datang')
                   ->whereNull('kepanitiaan_presensis.hadir_pulang');
+        }
+
+        // HANYA ADMIN DAN SEKRETARIS PANITIA YANG BISA MELIHAT SEMUA PEGAWAI.
+        // PENGGUNA LAIN HANYA BISA MELIHAT DATA DIRINYA SENDIRI:
+        if (!$isSekretarisOrAdmin) {
+            $query->where('users.id', $authUser->id);
         }
 
         return DataTables::of($query)

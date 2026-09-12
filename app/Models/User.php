@@ -156,6 +156,49 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is Sekretaris Panitia / Pengelola Kepanitiaan
+     */
+    public function isSekretarisPanitia(?\App\Models\Kepanitiaan $kepanitiaan = null): bool
+    {
+        if ($this->isAdmin() || $this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->hasAnyRole(['sekretaris panitia', 'sekretaris kepanitiaan', 'sekretaris', 'admin kepanitiaan', 'koordinator panitia', 'koordinator', 'ketua panitia'])) {
+            return true;
+        }
+
+        $jabatan = strtolower($this->jabatan ?? '');
+        if (str_contains($jabatan, 'sekretaris panitia') || str_contains($jabatan, 'sekretaris kepanitiaan') || str_contains($jabatan, 'koordinator panitia') || str_contains($jabatan, 'ketua panitia')) {
+            return true;
+        }
+
+        if (!empty($this->jabatan_kepanitiaan) && is_array($this->jabatan_kepanitiaan)) {
+            foreach ($this->jabatan_kepanitiaan as $item) {
+                $pos = strtolower($item['jabatan'] ?? '');
+                $namaKep = strtolower($item['nama'] ?? '');
+
+                if ($kepanitiaan && !empty($kepanitiaan->uraian_tugas)) {
+                    $targetKep = strtolower($kepanitiaan->uraian_tugas);
+                    if ((str_contains($pos, 'sekretaris') || str_contains($pos, 'koordinator') || str_contains($pos, 'ketua')) && (str_contains($targetKep, $namaKep) || str_contains($namaKep, $targetKep))) {
+                        return true;
+                    }
+                } else {
+                    if (str_contains($pos, 'sekretaris') || str_contains($pos, 'koordinator') || str_contains($pos, 'ketua')) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if ($kepanitiaan && $kepanitiaan->user_id === $this->id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Check if user can access Menu / Fitur LPJ
      * Hanya Tim Evaluasi, Koordinator Panitia, dan Admin/Superadmin
      */
