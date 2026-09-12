@@ -170,6 +170,15 @@
                 </h5>
                 <p class="text-muted small mb-0 mt-0.5">Semua data absensi yang tercatat pada sesi ini secara real-time.</p>
             </div>
+            @php
+                $canManage = auth()->check() && (
+                    auth()->user()->isAdmin() || 
+                    auth()->user()->isSuperAdmin() || 
+                    auth()->user()->isKoordinatorPanitia() || 
+                    ($sesi->kepanitiaan && $sesi->kepanitiaan->user_id === auth()->id())
+                );
+            @endphp
+            @if($canManage)
             <div class="d-flex align-items-center gap-2">
                 <a href="{{ route('presensi.sesi.export', $sesi->id) }}" class="btn btn-success d-inline-flex align-items-center gap-1 shadow-sm font-medium" style="border-radius: 8px; font-size: 0.85rem; padding: 7px 14px;">
                     <i class="bi bi-file-earmark-excel"></i> Export Excel
@@ -178,6 +187,7 @@
                     <i class="bi bi-plus-circle"></i> + Input Presensi Manual
                 </button>
             </div>
+            @endif
         </div>
 
         <div class="card-body p-4">
@@ -235,9 +245,13 @@
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" style="width: 40px;">
+                                @if($canManage)
                                 <div class="form-check d-flex justify-content-center m-0">
                                     <input type="checkbox" id="check-all-rows" class="form-check-input" style="cursor: pointer; width: 17px; height: 17px;" title="Pilih Semua Pegawai di Halaman Ini">
                                 </div>
+                                @else
+                                <span class="text-muted small">&bull;</span>
+                                @endif
                             </th>
                             <th class="text-center" style="width: 45px;">No</th>
                             <th class="text-center" style="width: 120px;">Tanggal</th>

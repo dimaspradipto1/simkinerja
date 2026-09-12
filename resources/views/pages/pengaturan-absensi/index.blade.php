@@ -124,7 +124,7 @@
                                     <th class="text-center text-uppercase fw-bold text-muted small" style="width: 130px;">Kehadiran</th>
                                     <th style="width: 170px;" class="text-center text-uppercase fw-bold text-muted small">Status di Sidebar</th>
                                     <th style="width: 130px;" class="text-center text-uppercase fw-bold text-muted small">Aksi / Switch</th>
-                                    <th style="width: 190px;" class="text-center text-uppercase fw-bold text-muted small">Tautan Presensi</th>
+                                    <th style="width: 220px;" class="text-center text-uppercase fw-bold text-muted small">Aksi Presensi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -192,12 +192,12 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex align-items-center justify-content-center" style="gap: 10px;">
+                                            <div class="d-flex align-items-center justify-content-center" style="gap: 8px;">
                                                 <!-- Link Buka Langsung (Halaman yang sama dengan sidebar) -->
                                                 <a href="{{ $targetUrl }}" 
                                                    class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center shadow-sm"
                                                    title="Buka Halaman Presensi Sesi Ini (Sesuai Sidebar)">
-                                                    <i class="bi bi-box-arrow-up-right" style="margin-right: 6px;"></i>
+                                                    <i class="bi bi-box-arrow-up-right" style="margin-right: 5px;"></i>
                                                     <span>Buka</span>
                                                 </a>
 
@@ -215,6 +215,19 @@
                                                         title="Tampilkan Barcode QR Sesi Ini">
                                                     <i class="bi bi-qr-code text-warning fs-6"></i>
                                                 </button>
+
+                                                @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin() || auth()->user()->isKoordinatorPanitia() || ($kepanitiaan->user_id === auth()->id())))
+                                                <!-- Tombol Hapus Sesi Presensi -->
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger rounded-circle shadow-sm btn-delete-sesi d-inline-flex align-items-center justify-content-center"
+                                                        style="width: 32px; height: 32px; min-width: 32px;"
+                                                        data-id="{{ $sesi->id }}"
+                                                        data-nama="{{ $sesi->nama_sesi }}"
+                                                        data-url="{{ route('presensi.sesi.destroy', $sesi->id) }}"
+                                                        title="Hapus Sesi Presensi Ini">
+                                                    <i class="bi bi-trash-fill fs-6"></i>
+                                                </button>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
@@ -468,6 +481,103 @@ $(document).ready(function() {
                     icon: 'error',
                     title: 'Gagal Mengubah Status',
                     text: xhr.responseJSON?.message || 'Terjadi kesalahan sistem saat mengubah status absensi.',
+                });
+            }
+        });
+    });
+
+    // Delete Sesi Presensi with SweetAlert2 Confirmation
+    $(document).on('click', '.btn-delete-sesi', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const sesiId = btn.data('id');
+        const namaSesi = btn.data('nama');
+        const deleteUrl = btn.data('url');
+        const row = $('#row-sesi-' + sesiId);
+        const kepCard = btn.closest('.kepanitiaan-card');
+
+        Swal.fire({
+            title: 'Hapus Sesi Presensi?',
+            html: `Apakah Anda yakin ingin menghapus sesi <strong>${namaSesi}</strong>?<br><span class="text-danger small mt-1 d-block"><i class="bi bi-exclamation-triangle me-1"></i>Seluruh rekaman data presensi pegawai pada sesi ini juga akan dihapus.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                btn.prop('disabled', true);
+                $.ajax({
+                    url: deleteUrl,
+                    type: 'DELETE',
+                    data: {
+                        _token: "{{ csrf_token() }}"
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil Dihapus',
+                                text: response.message || 'Sesi presensi berhasil dihapus.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+
+                            // Animate removal of the row
+                            row.fadeOut(350, function() {
+                                $(this).remove();
+
+                                // Update counters
+                                const remainingRows = kepCard.find('.sesi-row').length;
+                                const activeInKep = kepCard.find('.sesi-row[data-active="1"]').length;
+                                kepCard.find('.kep-active-count').text(activeInKep);
+                                kepCard.find('.kep-session-summary').html(`<span class="text-success fw-bold kep-active-count">${activeInKep}</span> dari ${remainingRows} Sesi Aktif`);
+
+                                // If no sessions left in this kepanitiaan card
+                                if (remainingRows === 0) {
+                                    kepCard.fadeOut(300, function() { $(this).remove(); });
+                                }
+
+                                // Update global counter badges
+                                let currentTotal = parseInt($('#badge-count-total').text()) || 1;
+                                let newTotal = Math.max(0, currentTotal - 1);
+                                $('#stat-total-sessions').text(newTotal);
+                                $('#badge-count-total').text(newTotal);
+
+                                if (row.attr('data-active') === '1') {
+                                    let curActive = parseInt($('#badge-count-active').text()) || 1;
+                                    let newActive = Math.max(0, curActive - 1);
+                                    $('#stat-active-sessions').text(newActive);
+                                    $('#badge-count-active').text(newActive);
+                                } else {
+                                    let curClosed = parseInt($('#badge-count-closed').text()) || 1;
+                                    let newClosed = Math.max(0, curClosed - 1);
+                                    $('#stat-closed-sessions').text(newClosed);
+                                    $('#badge-count-closed').text(newClosed);
+                                }
+
+                                // Remove from sidebar if active
+                                if (typeof window.updateSidebarActiveSession === 'function') {
+                                    window.updateSidebarActiveSession({
+                                        id: sesiId,
+                                        is_active: false
+                                    });
+                                }
+                                $('#sidebar-sesi-item-' + sesiId).remove();
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Menghapus Sesi',
+                            text: xhr.responseJSON?.message || 'Terjadi kesalahan sistem saat menghapus sesi presensi.',
+                        });
+                    }
                 });
             }
         });

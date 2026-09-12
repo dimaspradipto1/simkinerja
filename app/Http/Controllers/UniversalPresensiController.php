@@ -260,11 +260,14 @@ class UniversalPresensiController extends Controller
     public function destroySesi(Request $request, $id)
     {
         $authUser = Auth::user();
-        $sesi = KepanitiaanSesiAbsensi::findOrFail($id);
+        $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
 
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && $sesi->kepanitiaan?->user_id !== $authUser->id)) {
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
+        $canDelete = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+
+        if (!$canDelete) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Akses ditolak. Anda tidak memiliki izin menghapus sesi ini.'], 403);
             }
             Alert::error('Akses Ditolak', 'Anda tidak memiliki izin menghapus sesi ini.');
             return redirect()->back();
@@ -275,7 +278,7 @@ class UniversalPresensiController extends Controller
         $sesi->presensis()->delete();
         $sesi->delete();
 
-        if ($request->ajax()) {
+        if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Sesi presensi "' . $namaSesi . '" beserta datanya berhasil dihapus.',
@@ -292,11 +295,14 @@ class UniversalPresensiController extends Controller
     public function exportExcel($sesiId)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
-            abort(403, 'Akses ditolak. Hanya administrator yang dapat mengunduh rekap presensi.');
-        }
-
         $sesi = KepanitiaanSesiAbsensi::with(['kepanitiaan', 'presensis.user'])->findOrFail($sesiId);
+
+        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
+        $canExport = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+
+        if (!$canExport) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengunduh rekap presensi ini.');
+        }
         $presensis = $sesi->presensis()->with('user')->get();
 
         $spreadsheet = new Spreadsheet();
@@ -390,9 +396,9 @@ class UniversalPresensiController extends Controller
     public function showSesi($id)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
-            Alert::error('Akses Ditolak', 'Hanya administrator yang dapat mengakses data absensi.');
-            return redirect()->route('dashboard');
+        if (!$authUser) {
+            Alert::error('Akses Ditolak', 'Silakan login terlebih dahulu.');
+            return redirect()->route('login');
         }
 
         $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
@@ -454,11 +460,14 @@ class UniversalPresensiController extends Controller
     public function getSesiData(Request $request, $id)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
-            return response()->json(['error' => 'Akses ditolak.'], 403);
+        if (!$authUser) {
+            return response()->json(['error' => 'Akses ditolak. Silakan login.'], 401);
         }
 
-        $sesi = KepanitiaanSesiAbsensi::findOrFail($id);
+        $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
+        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser->id);
+        $canManage = $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner;
+
         $filter = $request->query('filter', 'all');
 
         $query = User::query()
@@ -472,9 +481,7 @@ class UniversalPresensiController extends Controller
                 'users.nidn as user_nidn',
                 'users.jabatan as user_jabatan',
                 'users.unit as user_unit',
-                'users.email as user_email',
                 'kepanitiaan_presensis.id as presensi_id',
-                'kepanitiaan_presensis.kepanitiaan_sesi_absensi_id',
                 'kepanitiaan_presensis.hadir_datang',
                 'kepanitiaan_presensis.waktu_datang',
                 'kepanitiaan_presensis.hadir_pulang',
@@ -485,24 +492,15 @@ class UniversalPresensiController extends Controller
                 'kepanitiaan_presensis.created_at as presensi_created_at',
             ]);
 
-        // Filter Logic
+        // Filter status kehadiran
         if ($filter === 'sudah') {
             $query->where(function ($q) {
                 $q->whereNotNull('kepanitiaan_presensis.hadir_datang')
                   ->orWhereNotNull('kepanitiaan_presensis.hadir_pulang');
             });
         } elseif ($filter === 'belum') {
-            $query->where(function ($q) {
-                $q->whereNull('kepanitiaan_presensis.id')
-                  ->orWhereNull('kepanitiaan_presensis.hadir_datang')
-                  ->orWhereNull('kepanitiaan_presensis.hadir_pulang');
-            });
-        } elseif ($filter === 'belum_semua') {
-            $query->whereNull('kepanitiaan_presensis.id');
-        } elseif ($filter === 'belum_datang') {
-            $query->whereNull('kepanitiaan_presensis.hadir_datang');
-        } elseif ($filter === 'belum_pulang') {
-            $query->whereNull('kepanitiaan_presensis.hadir_pulang');
+            $query->whereNull('kepanitiaan_presensis.hadir_datang')
+                  ->whereNull('kepanitiaan_presensis.hadir_pulang');
         } elseif ($filter === 'sudah_lengkap') {
             $query->whereNotNull('kepanitiaan_presensis.hadir_datang')
                   ->whereNotNull('kepanitiaan_presensis.hadir_pulang');
@@ -510,27 +508,29 @@ class UniversalPresensiController extends Controller
             $query->whereNotNull('kepanitiaan_presensis.hadir_datang');
         } elseif ($filter === 'sudah_pulang') {
             $query->whereNotNull('kepanitiaan_presensis.hadir_pulang');
+        } elseif ($filter === 'belum_pulang') {
+            $query->whereNotNull('kepanitiaan_presensis.hadir_datang')
+                  ->whereNull('kepanitiaan_presensis.hadir_pulang');
+        } elseif ($filter === 'belum_datang') {
+            $query->whereNull('kepanitiaan_presensis.hadir_datang')
+                  ->whereNotNull('kepanitiaan_presensis.hadir_pulang');
+        } elseif ($filter === 'belum_semua') {
+            $query->whereNull('kepanitiaan_presensis.hadir_datang')
+                  ->whereNull('kepanitiaan_presensis.hadir_pulang');
         }
 
         return DataTables::of($query)
-            ->filter(function ($query) use ($request) {
-                if ($request->has('search') && !empty($request->input('search.value'))) {
-                    $keyword = $request->input('search.value');
-                    $query->where(function ($q) use ($keyword) {
-                        $q->where('users.name', 'like', "%{$keyword}%")
-                          ->orWhere('users.jabatan', 'like', "%{$keyword}%")
-                          ->orWhere('users.unit', 'like', "%{$keyword}%")
-                          ->orWhere('users.nidn', 'like', "%{$keyword}%")
-                          ->orWhere('users.email', 'like', "%{$keyword}%")
-                          ->orWhere('kepanitiaan_presensis.hadir_datang', 'like', "%{$keyword}%")
-                          ->orWhere('kepanitiaan_presensis.hadir_pulang', 'like', "%{$keyword}%")
-                          ->orWhere('kepanitiaan_presensis.catatan_hadir_datang', 'like', "%{$keyword}%")
-                          ->orWhere('kepanitiaan_presensis.catatan_hadir_pulang', 'like', "%{$keyword}%");
-                    });
-                }
+            ->filterColumn('user_name', function ($query, $keyword) {
+                $query->where('users.name', 'LIKE', "%{$keyword}%");
             })
-            ->orderColumn('user_info', function ($query, $direction) {
-                $query->orderBy('users.name', $direction);
+            ->filterColumn('user_jabatan', function ($query, $keyword) {
+                $query->where('users.jabatan', 'LIKE', "%{$keyword}%");
+            })
+            ->filterColumn('status_datang', function ($query, $keyword) {
+                $query->where('kepanitiaan_presensis.hadir_datang', 'LIKE', "%{$keyword}%");
+            })
+            ->filterColumn('status_pulang', function ($query, $keyword) {
+                $query->where('kepanitiaan_presensis.hadir_pulang', 'LIKE', "%{$keyword}%");
             })
             ->orderColumn('status_datang', function ($query, $direction) {
                 $query->orderBy('kepanitiaan_presensis.hadir_datang', $direction);
@@ -542,7 +542,10 @@ class UniversalPresensiController extends Controller
                 $query->orderBy('kepanitiaan_presensis.created_at', $direction);
             })
             ->addIndexColumn()
-            ->addColumn('checkbox', function ($row) {
+            ->addColumn('checkbox', function ($row) use ($canManage) {
+                if (!$canManage) {
+                    return '<span class="text-muted small">&bull;</span>';
+                }
                 return '<div class="form-check d-flex justify-content-center m-0">'
                      . '<input type="checkbox" class="form-check-input check-row-presensi" '
                      . 'value="' . $row->user_id . '" '
@@ -602,7 +605,14 @@ class UniversalPresensiController extends Controller
                 }
                 return '<small class="text-secondary">' . e($txt) . '</small>' . $bukti;
             })
-            ->addColumn('actions', function ($row) {
+            ->addColumn('actions', function ($row) use ($canManage, $authUser) {
+                if (!$canManage) {
+                    if ($row->user_id === $authUser->id) {
+                        return '<span class="badge bg-light text-primary border" style="font-size: 0.75rem;">Data Saya</span>';
+                    }
+                    return '<span class="text-muted small">-</span>';
+                }
+
                 $editData = htmlspecialchars(json_encode([
                     'id' => $row->presensi_id,
                     'user_id' => $row->user_id,
@@ -632,7 +642,11 @@ class UniversalPresensiController extends Controller
     public function storeManualPresensi(Request $request, $id)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+        $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
+        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
+        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+
+        if (!$canManage) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
 
@@ -644,8 +658,6 @@ class UniversalPresensiController extends Controller
             'waktu_pulang' => 'nullable',
             'catatan' => 'nullable|string|max:500',
         ]);
-
-        $sesi = KepanitiaanSesiAbsensi::findOrFail($id);
 
         $presensi = KepanitiaanPresensi::firstOrNew([
             'kepanitiaan_sesi_absensi_id' => $sesi->id,
@@ -678,7 +690,11 @@ class UniversalPresensiController extends Controller
     public function bulkUpdatePresensi(Request $request, $id)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+        $sesi = KepanitiaanSesiAbsensi::with('kepanitiaan')->findOrFail($id);
+        $isOwner = $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
+        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+
+        if (!$canManage) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
 
@@ -695,7 +711,6 @@ class UniversalPresensiController extends Controller
             'catatan' => 'nullable|string|max:500',
         ]);
 
-        $sesi = KepanitiaanSesiAbsensi::findOrFail($id);
         $userIds = $request->user_ids;
 
         $updateDatang = filter_var($request->input('update_datang'), FILTER_VALIDATE_BOOLEAN);
@@ -813,11 +828,14 @@ class UniversalPresensiController extends Controller
     public function destroyPresensi($id)
     {
         $authUser = Auth::user();
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin())) {
+        $presensi = KepanitiaanPresensi::with('sesiAbsensi.kepanitiaan')->findOrFail($id);
+        $sesi = $presensi->sesiAbsensi;
+        $isOwner = $sesi && $sesi->kepanitiaan && ($sesi->kepanitiaan->user_id === $authUser?->id);
+        $canManage = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isKoordinatorPanitia() || $isOwner);
+
+        if (!$canManage) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
-
-        $presensi = KepanitiaanPresensi::findOrFail($id);
         if ($presensi->bukti_izin && Storage::disk('public')->exists($presensi->bukti_izin)) {
             Storage::disk('public')->delete($presensi->bukti_izin);
         }
