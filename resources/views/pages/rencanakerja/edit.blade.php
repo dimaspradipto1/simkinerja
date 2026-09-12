@@ -45,7 +45,7 @@
                                 <option value="" disabled {{ old('periode_akademik_id', $rencanaKerja->periode_akademik_id) ? '' : 'selected' }}>-- Pilih Periode Akademik --</option>
                                 @foreach($periodeAkademiks as $pa)
                                     <option value="{{ $pa->id }}" {{ old('periode_akademik_id', $rencanaKerja->periode_akademik_id) == $pa->id ? 'selected' : '' }}>
-                                        {{ $pa->nama_periode }}
+                                        {{ $pa->formatted_ta ?? $pa->nama_periode }}
                                     </option>
                                 @endforeach
                             </select>

@@ -130,7 +130,7 @@
                             @endif
                             <div class="d-inline-flex align-items-start gap-1 p-1 px-2 rounded bg-danger-subtle text-danger border border-danger-subtle" style="word-break: break-word; max-width: 100%;">
                                 <span class="fw-bold flex-shrink-0"><i class="bi bi-exclamation-circle-fill me-1"></i>Kendala:</span>
-                                <span class="text-dark fw-medium">{{ $rReason }}</span>
+                                <span class="text-dark fw-medium">{{ strip_tags($rReason) }}</span>
                             </div>
                         </div>
 

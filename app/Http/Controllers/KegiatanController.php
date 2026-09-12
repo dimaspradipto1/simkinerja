@@ -108,7 +108,8 @@ class KegiatanController extends Controller
                     // 2. Metadata Chips (Periode, Hari, Pegawai)
                     $chips = [];
                     if ($row->periodeAkademik) {
-                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-mortarboard-fill me-1"></i>' . e($row->periodeAkademik->nama_periode) . '</span>';
+                        $taLabel = $row->periodeAkademik->formatted_ta ?? ('T.A. ' . $row->periodeAkademik->nama_periode);
+                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-mortarboard-fill me-1"></i>' . e($taLabel) . '</span>';
                     }
 
                     if ($row->user) {
@@ -233,12 +234,14 @@ class KegiatanController extends Controller
 
                     if ($row->hasil_kerja) {
                         $hasContent = true;
-                        $contentHtml .= '<div class="text-secondary small" style="font-size: 0.8rem;"><strong class="text-dark"><i class="bi bi-check2-square text-success me-1"></i>Hasil Kerja:</strong> ' . nl2br(e($row->hasil_kerja)) . '</div>';
+                        $cleanHk = trim(strip_tags(html_entity_decode((string)$row->hasil_kerja, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                        $contentHtml .= '<div class="text-secondary small" style="font-size: 0.8rem;"><strong class="text-dark"><i class="bi bi-check2-square text-success me-1"></i>Hasil Kerja:</strong> ' . nl2br(e($cleanHk)) . '</div>';
                     }
 
                     if ($row->rencana_tindak_lanjut) {
                         $hasContent = true;
-                        $contentHtml .= '<div class="text-secondary small" style="font-size: 0.8rem;"><strong class="text-dark"><i class="bi bi-arrow-right-circle text-warning me-1"></i>Tindak Lanjut:</strong> ' . nl2br(e($row->rencana_tindak_lanjut)) . '</div>';
+                        $cleanTl = trim(strip_tags(html_entity_decode((string)$row->rencana_tindak_lanjut, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                        $contentHtml .= '<div class="text-secondary small" style="font-size: 0.8rem;"><strong class="text-dark"><i class="bi bi-arrow-right-circle text-warning me-1"></i>Tindak Lanjut:</strong> ' . nl2br(e($cleanTl)) . '</div>';
                     }
 
                     $contentHtml .= '</div>';
@@ -1269,11 +1272,13 @@ class KegiatanController extends Controller
 
                 // 3. Catatan Kendala Tambahan
                 if (!empty($row->estimasi_unlock_reason)) {
-                    $badges[] = '<div class="small text-danger mt-1 p-1 bg-danger-subtle rounded border border-danger-subtle"><i class="bi bi-chat-left-dots-fill me-1"></i><strong>Alasan Kendala:</strong> ' . e($row->estimasi_unlock_reason) . '</div>';
+                    $cleanReason = trim(strip_tags(html_entity_decode((string)$row->estimasi_unlock_reason, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                    $badges[] = '<div class="small text-danger mt-1 p-1 bg-danger-subtle rounded border border-danger-subtle"><i class="bi bi-chat-left-dots-fill me-1"></i><strong>Alasan Kendala:</strong> ' . e($cleanReason) . '</div>';
                 }
 
                 if (!empty($row->rencana_tindak_lanjut)) {
-                    $badges[] = '<div class="small text-secondary mt-1"><i class="bi bi-arrow-right-circle-fill me-1"></i><strong>Tindak Lanjut:</strong> ' . e($row->rencana_tindak_lanjut) . '</div>';
+                    $cleanRtl = trim(strip_tags(html_entity_decode((string)$row->rencana_tindak_lanjut, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                    $badges[] = '<div class="small text-secondary mt-1"><i class="bi bi-arrow-right-circle-fill me-1"></i><strong>Tindak Lanjut:</strong> ' . e($cleanRtl) . '</div>';
                 }
 
                 return implode('', $badges) ?: '<span class="text-muted small">-</span>';

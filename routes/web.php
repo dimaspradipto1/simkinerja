@@ -21,6 +21,8 @@ use App\Http\Controllers\RekapitulasiAbsensiController;
 use App\Http\Controllers\ScanAbsensiController;
 use App\Http\Controllers\AbsensiSettingController;
 use App\Http\Controllers\LpjController;
+use App\Http\Controllers\LaporanKinerjaPegawaiController;
+use App\Http\Controllers\LaporanPengembanganController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -133,6 +135,15 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('analisis-keterlambatan/export-pdf', [AnalisisKeterlambatanController::class, 'exportPdf'])->name('analisis-keterlambatan.export-pdf');
     Route::post('analisis-keterlambatan/{id}/saran-pimpinan', [AnalisisKeterlambatanController::class, 'updateSaranPimpinan'])->name('analisis-keterlambatan.update-saran');
     Route::resource('analisis-keterlambatan', AnalisisKeterlambatanController::class)->only(['index']);
+
+    // Laporan Eksekutif Yayasan & Universitas Ibnu Sina
+    Route::get('laporan-kinerja-pegawai', [LaporanKinerjaPegawaiController::class, 'index'])->name('laporan-kinerja-pegawai.index');
+    Route::get('laporan-kinerja-pegawai/export-pdf', [LaporanKinerjaPegawaiController::class, 'exportPdf'])->name('laporan-kinerja-pegawai.export-pdf');
+    Route::get('laporan-kinerja-pegawai/export-excel', [LaporanKinerjaPegawaiController::class, 'exportExcel'])->name('laporan-kinerja-pegawai.export-excel');
+
+    Route::get('laporan-pengembangan/export-pdf/{id}', [LaporanPengembanganController::class, 'exportPdf'])->name('laporan-pengembangan.export-pdf');
+    Route::get('laporan-pengembangan/export-excel/{id}', [LaporanPengembanganController::class, 'exportExcel'])->name('laporan-pengembangan.export-excel');
+    Route::resource('laporan-pengembangan', LaporanPengembanganController::class);
 
     // LPJ (Laporan Pertanggungjawaban) Routes
     Route::get('lpj/template', [LpjController::class, 'template'])->name('lpj.template');

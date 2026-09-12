@@ -561,7 +561,7 @@
                                 <i class="bi bi-exclamation-circle-fill flex-shrink-0 mt-0.5"></i>
                                 <div>
                                     <span class="fw-bold me-1">Kendala:</span>
-                                    <span class="text-dark fw-medium">{{ $rReason }}</span>
+                                    <span class="text-dark fw-medium">{{ strip_tags($rReason) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -717,7 +717,7 @@
                             <option value="">-- Pilih Periode Akademik --</option>
                             @foreach($periodeAkademiks as $p)
                                 <option value="{{ $p->id }}" {{ $p->id == $defaultPeriodeId ? 'selected' : '' }}>
-                                    {{ $p->nama_periode }}
+                                    {{ $p->formatted_ta ?? $p->nama_periode }}
                                 </option>
                             @endforeach
                         </select>
@@ -791,7 +791,7 @@
                             <option value="">-- Otomatis Sesuai Data Excel --</option>
                             @if(isset($periodeAkademiks))
                                 @foreach($periodeAkademiks as $p)
-                                    <option value="{{ $p->id }}">{{ $p->nama_periode }}</option>
+                                    <option value="{{ $p->id }}">{{ $p->formatted_ta ?? $p->nama_periode }}</option>
                                 @endforeach
                             @endif
                         </select>

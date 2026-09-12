@@ -578,7 +578,7 @@
                                 <i class="bi bi-exclamation-circle-fill flex-shrink-0 mt-0.5"></i>
                                 <div>
                                     <span class="fw-bold me-1">Kendala:</span>
-                                    <span class="text-dark fw-medium">{{ $rReason }}</span>
+                                    <span class="text-dark fw-medium">{{ strip_tags($rReason) }}</span>
                                 </div>
                             </div>
                         </div>

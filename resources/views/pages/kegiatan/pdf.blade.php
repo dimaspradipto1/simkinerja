@@ -150,8 +150,8 @@
                     <td class="text-center" style="font-size: 7pt;">
                         <strong>{{ $item->status }}</strong>
                     </td>
-                    <td class="text-left" style="font-size: 7pt;">{!! $item->hasil_kerja ? nl2br(e($item->hasil_kerja)) : '-' !!}</td>
-                    <td class="text-left" style="font-size: 7pt;">{!! $item->rencana_tindak_lanjut ? nl2br(e($item->rencana_tindak_lanjut)) : '-' !!}</td>
+                    <td class="text-left" style="font-size: 7pt;">{!! $item->hasil_kerja ? nl2br(e(trim(strip_tags(html_entity_decode((string)$item->hasil_kerja, ENT_QUOTES | ENT_HTML5, 'UTF-8'))))) : '-' !!}</td>
+                    <td class="text-left" style="font-size: 7pt;">{!! $item->rencana_tindak_lanjut ? nl2br(e(trim(strip_tags(html_entity_decode((string)$item->rencana_tindak_lanjut, ENT_QUOTES | ENT_HTML5, 'UTF-8'))))) : '-' !!}</td>
                 </tr>
             @empty
                 <tr>

@@ -93,6 +93,11 @@ class InsidentilController extends Controller
                     if ($row->user) {
                         $html .= '<div class="small text-muted mb-1"><i class="bi bi-person-circle me-1"></i><strong>Pembuat:</strong> ' . e($row->user->name) . ' <span class="badge bg-light text-dark border ms-1">' . e($row->user->jabatan ?? '-') . '</span></div>';
                     }
+
+                    if ($row->periodeAkademik) {
+                        $taLabel = $row->periodeAkademik->formatted_ta ?? ('T.A. ' . $row->periodeAkademik->nama_periode);
+                        $html .= '<div class="mb-1"><span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-mortarboard-fill me-1"></i>' . e($taLabel) . '</span></div>';
+                    }
                     
                     if ($row->taggedUsers->count() > 0) {
                         $html .= '<div class="small text-muted"><i class="bi bi-people-fill me-1 text-info"></i><strong>Rekan Kerja:</strong> ';
