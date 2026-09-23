@@ -280,8 +280,8 @@
         <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-0">
             <h5 class="card-title m-0 fw-bold text-dark fs-6"><i class="bi bi-list-task me-2 text-danger"></i>Audit Detail Keterlambatan Pekerjaan & Interupsi Task</h5>
             <div class="d-flex gap-2">
-                <button type="button" id="btn-export-excel" class="btn btn-sm btn-outline-success px-3"><i class="bi bi-file-earmark-excel me-1"></i> Export Excel</button>
-                <button type="button" id="btn-export-pdf" class="btn btn-sm btn-outline-danger px-3"><i class="bi bi-file-earmark-pdf me-1"></i> Export PDF</button>
+                <button type="button" id="btn-export-excel" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+                <button type="button" id="btn-export-pdf" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5"><i class="bi bi-file-earmark-pdf"></i> Export PDF</button>
             </div>
         </div>
         <div class="card-body p-3">

@@ -76,24 +76,22 @@
 
                 <div class="col-lg-4 text-lg-end">
                     <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
-                        <button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center gap-1 shadow-sm btn-scan-barcode-modal"
+                        <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 btn-scan-barcode-modal"
                                 data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
                                 data-token="{{ $sesi->token }}"
                                 data-scan-url="{{ route('presensi.scan-proses', ['token' => $sesi->token]) }}"
                                 data-title="{{ $sesi->nama_sesi }}"
-                                onclick="window.openScanBarcodeModal(this)"
-                                style="border-radius: 8px; font-size: 0.85rem; padding: 8px 14px;">
+                                onclick="window.openScanBarcodeModal(this)">
                             <i class="bi bi-qr-code-scan"></i> Scan Barcode
                         </button>
 
-                        <button type="button" class="btn btn-light text-dark fw-bold d-inline-flex align-items-center gap-1 shadow-sm btn-barcode-absensi"
+                        <button type="button" class="btn btn-light btn-sm text-dark border d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 btn-barcode-absensi"
                                 data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
                                 data-token="{{ $sesi->token }}"
                                 data-scan-url="{{ route('presensi.scan-proses', ['token' => $sesi->token]) }}"
                                 data-title="{{ $sesi->nama_sesi }}"
                                 data-url="{{ route('presensi.scan-proses', ['token' => $sesi->token]) }}"
-                                onclick="window.openBarcodeModal(this)"
-                                style="border-radius: 8px; font-size: 0.85rem; padding: 8px 14px;">
+                                onclick="window.openBarcodeModal(this)">
                             <i class="bi bi-qr-code"></i> Barcode Absensi
                         </button>
                     </div>
@@ -251,11 +249,11 @@
             </div>
             @if($isSekretarisOrAdmin)
             <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('presensi.sesi.export', $sesi->id) }}" class="btn btn-success d-inline-flex align-items-center gap-1 shadow-sm font-medium" style="border-radius: 8px; font-size: 0.85rem; padding: 7px 14px;">
+                <a href="{{ route('presensi.sesi.export', $sesi->id) }}" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5">
                     <i class="bi bi-file-earmark-excel"></i> Export Excel
                 </a>
-                <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm font-medium" onclick="window.openManualPresensiModal()" style="border-radius: 8px; font-size: 0.85rem; padding: 7px 14px;">
-                    <i class="bi bi-plus-circle"></i> + Input Presensi Manual
+                <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5" onclick="window.openManualPresensiModal()">
+                    <i class="bi bi-plus-circle"></i> Input Presensi Manual
                 </button>
             </div>
             @endif

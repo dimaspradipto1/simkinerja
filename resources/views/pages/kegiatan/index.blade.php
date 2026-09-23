@@ -119,8 +119,8 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                     <span class="header-title-text"><i class="bi bi-filter me-2"></i>Filter Kegiatan Berdasarkan Jabatan / Pegawai</span>
-                    <a href="{{ route('kegiatan.create') }}" class="btn btn-green-add text-nowrap ms-auto ms-md-0">
-                        <i class="bi bi-plus-lg me-1"></i> Tambah Kegiatan
+                    <a href="{{ route('kegiatan.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap ms-auto ms-md-0">
+                        <i class="bi bi-plus-circle"></i> Tambah Kegiatan
                     </a>
                 </div>
                 <div class="card-body pt-3">
@@ -153,14 +153,14 @@
                         Daftar Kegiatan &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Pegawai' }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
-                        <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-danger text-white fw-bold text-nowrap d-none">
-                            <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="selected-count">0</span>)
+                        <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap d-none">
+                            <i class="bi bi-trash-fill"></i> Hapus Terpilih (<span id="selected-count">0</span>)
                         </button>
-                        <a href="{{ route('kegiatan.export-pdf', request()->query()) }}" class="btn btn-sm btn-light border text-danger fw-semibold text-nowrap">
-                            <i class="bi bi-file-earmark-pdf-fill me-1 text-danger"></i> Cetak PDF
+                        <a href="{{ route('kegiatan.export-pdf', request()->query()) }}" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap">
+                            <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
                         </a>
-                        <a href="{{ route('kegiatan.create') }}" class="btn btn-sm btn-success text-white fw-bold text-nowrap px-3 shadow-xs" style="background-color: #15432d; border-color: #15432d;">
-                            <i class="bi bi-plus-circle-fill me-1"></i> Tambah Kegiatan
+                        <a href="{{ route('kegiatan.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap">
+                            <i class="bi bi-plus-circle"></i> Tambah Kegiatan
                         </a>
                     </div>
                 </div>

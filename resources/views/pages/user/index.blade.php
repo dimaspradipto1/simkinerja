@@ -19,14 +19,14 @@
                     <div class="d-flex justify-content-between align-items-center pt-3 mb-3">
                         <h5 class="card-title p-0 m-0">Daftar Pengguna</h5>
                         <div class="d-flex gap-2 align-items-center">
-                            <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 d-none">
+                            <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 d-none">
                                 <i class="bi bi-trash-fill"></i> Hapus Terpilih (<span id="selected-count">0</span>)
                             </button>
-                            <a href="{{ route('user.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-plus-circle"></i> Tambah
+                            <a href="{{ route('user.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5">
+                                <i class="bi bi-plus-circle"></i> Tambah Pengguna
                             </a>
-                            <button type="button" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalImportExcel" style="background-color: #15432d; border-color: #15432d;">
-                                <i class="bi bi-file-earmark-excel"></i> Import User Excel
+                            <button type="button" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5" data-bs-toggle="modal" data-bs-target="#modalImportExcel">
+                                <i class="bi bi-file-earmark-excel"></i> Import Excel
                             </button>
                         </div>
                     </div>

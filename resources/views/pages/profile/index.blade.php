@@ -227,7 +227,7 @@
                                     @endif
                                 </div>
                                 <div id="empty-profile-kepanitiaan-notice" class="text-center py-2 text-muted small border border-dashed rounded-3 bg-light mb-3 {{ !empty($profileItems) ? 'd-none' : '' }}">
-                                    Belum ada jabatan kepanitiaan. Klik <strong>+ Tambah Kepanitiaan</strong> jika ada.
+                                    Belum ada jabatan kepanitiaan. Klik <strong>Tambah Kepanitiaan</strong> jika ada.
                                 </div>
 
                                 @if($user->isAdmin() || $user->isSuperAdmin())

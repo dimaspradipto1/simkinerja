@@ -15,9 +15,10 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <a href="{{ route('periode-akademik.create') }}" class="btn btn-primary rounded btn-sm">
-                        <i class="bi bi-plus-lg me-1"></i> Tambah Periode
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="card-title m-0 fw-bold text-dark fs-6"><i class="bi bi-calendar-event me-2 text-primary"></i>Daftar Periode Akademik</h5>
+                    <a href="{{ route('periode-akademik.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5">
+                        <i class="bi bi-plus-circle"></i> Tambah Periode
                     </a>
                 </div>
                 <div class="card-body mt-3">

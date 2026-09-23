@@ -29,8 +29,8 @@
                             <small class="text-muted">{{ $isAdminOrPimpinan ? 'Kelola dan arsipkan berkas serta tautan LPJ kegiatan seluruh pegawai' : 'Kelola dan arsipkan berkas serta tautan LPJ kegiatan yang Anda unggah' }}</small>
                         </div>
                     </div>
-                    <a href="{{ route('lpj.create') }}" class="btn btn-primary rounded btn-sm d-inline-flex align-items-center gap-1.5 px-3 py-2 fw-semibold shadow-xs">
-                        <i class="bi bi-plus-lg"></i> Tambah LPJ
+                    <a href="{{ route('lpj.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5">
+                        <i class="bi bi-plus-circle"></i> Tambah LPJ
                     </a>
                 </div>
                 <div class="card-body mt-2">

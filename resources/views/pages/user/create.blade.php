@@ -166,7 +166,7 @@
                                         @endif
                                     </div>
                                     <div id="empty-kepanitiaan-notice" class="text-center py-3 text-muted small border border-dashed rounded-3 bg-white mt-1 {{ !empty($oldItems) ? 'd-none' : '' }}">
-                                        <i class="bi bi-info-circle me-1 text-info"></i> Belum ada jabatan kepanitiaan yang ditambahkan. Klik <strong>+ Tambah Kepanitiaan</strong> jika pegawai ini memiliki tugas kepanitiaan.
+                                        <i class="bi bi-info-circle me-1 text-info"></i> Belum ada jabatan kepanitiaan yang ditambahkan. Klik <strong>Tambah Kepanitiaan</strong> jika pegawai ini memiliki tugas kepanitiaan.
                                     </div>
                                 </div>
                             </div>

@@ -18,8 +18,8 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h5 class="card-title m-0 fw-bold text-dark fs-6"><i class="bi bi-tags-fill me-2 text-primary"></i>Daftar Kategori</h5>
-                    <a href="{{ route('kategori.create') }}" class="btn btn-primary rounded btn-sm">
-                        <i class="bi bi-plus-lg me-1"></i> Tambah Kategori
+                    <a href="{{ route('kategori.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5">
+                        <i class="bi bi-plus-circle"></i> Tambah Kategori
                     </a>
                 </div>
                 <div class="card-body mt-2">

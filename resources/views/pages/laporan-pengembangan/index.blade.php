@@ -79,9 +79,8 @@
         </div>
         @if(Auth::user()->isAdmin() || Auth::user()->isSuperAdmin() || Auth::user()->isPimpinanRektorat())
             <div>
-                <a href="{{ route('laporan-pengembangan.create') }}" class="btn btn-success d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3 shadow-sm fw-semibold text-sm">
-                    <i class="bi bi-plus-circle-fill fs-6"></i>
-                    <span>Buat Laporan Baru</span>
+                <a href="{{ route('laporan-pengembangan.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5">
+                    <i class="bi bi-plus-circle"></i> Buat Laporan Baru
                 </a>
             </div>
         @endif

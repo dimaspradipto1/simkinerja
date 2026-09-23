@@ -1258,7 +1258,7 @@
 
         function renderSesiPresensiTable(sesis) {
             if (!sesis || sesis.length === 0) {
-                $('#tableSesiPresensiBody').html('<tr><td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-calendar-x fs-4 d-block mb-1 text-secondary"></i>Belum ada sesi presensi untuk kepanitiaan ini.<br><small class="text-primary">Klik "+ Tambah Sesi Baru" di atas untuk membuat sesi pertama.</small></td></tr>');
+                $('#tableSesiPresensiBody').html('<tr><td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-calendar-x fs-4 d-block mb-1 text-secondary"></i>Belum ada sesi presensi untuk kepanitiaan ini.<br><small class="text-primary">Klik "Tambah Sesi Baru" di atas untuk membuat sesi pertama.</small></td></tr>');
                 return;
             }
 
