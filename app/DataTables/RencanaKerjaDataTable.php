@@ -47,6 +47,9 @@ class RencanaKerjaDataTable extends DataTable
                     ->minifiedAjax()
                     ->orderBy(1)
                     ->selectStyleSingle()
+                    ->parameters([
+                        'stateSave' => true,
+                    ])
                     ->buttons([
                         Button::make('excel'),
             Button::make('csv'),

@@ -76,6 +76,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('rencana-kerja/{rencana_kerja}/update-tags', [RencanaKerjaController::class, 'updateTags'])->name('rencana-kerja.update-tags');
     Route::post('rencana-kerja/{rencana_kerja}/request-unlock-estimasi', [RencanaKerjaController::class, 'requestUnlockEstimasi'])->name('rencana-kerja.request-unlock-estimasi');
     Route::post('rencana-kerja/{rencana_kerja}/approve-extension', [RencanaKerjaController::class, 'approveExtension'])->name('rencana-kerja.approve-extension');
+    Route::post('rencana-kerja/{rencana_kerja}/reopen', [RencanaKerjaController::class, 'reopen'])->name('rencana-kerja.reopen');
+    Route::post('rencana-kerja/{rencana_kerja}/request-reopen', [RencanaKerjaController::class, 'requestReopen'])->name('rencana-kerja.request-reopen');
     Route::resource('rencana-kerja', RencanaKerjaController::class);
 
     Route::get('rekapitulasi/data', [RekapitulasiController::class, 'getData'])->name('rekapitulasi.data');
@@ -94,6 +96,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('kepanitiaan/{kepanitiaan}/update-tags', [KepanitiaanController::class, 'updateTags'])->name('kepanitiaan.update-tags');
     Route::post('kepanitiaan/{kepanitiaan}/request-unlock-estimasi', [KepanitiaanController::class, 'requestUnlockEstimasi'])->name('kepanitiaan.request-unlock-estimasi');
     Route::post('kepanitiaan/{kepanitiaan}/approve-extension', [KepanitiaanController::class, 'approveExtension'])->name('kepanitiaan.approve-extension');
+    Route::post('kepanitiaan/{kepanitiaan}/reopen', [KepanitiaanController::class, 'reopen'])->name('kepanitiaan.reopen');
+    Route::post('kepanitiaan/{kepanitiaan}/request-reopen', [KepanitiaanController::class, 'requestReopen'])->name('kepanitiaan.request-reopen');
     Route::resource('kepanitiaan', KepanitiaanController::class);
 
     // Kegiatan Routes
@@ -106,6 +110,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('kegiatan/{kegiatan}/update-tags', [KegiatanController::class, 'updateTags'])->name('kegiatan.update-tags');
     Route::post('kegiatan/{kegiatan}/request-unlock-estimasi', [KegiatanController::class, 'requestUnlockEstimasi'])->name('kegiatan.request-unlock-estimasi');
     Route::post('kegiatan/{kegiatan}/approve-extension', [KegiatanController::class, 'approveExtension'])->name('kegiatan.approve-extension');
+    Route::post('kegiatan/{kegiatan}/reopen', [KegiatanController::class, 'reopen'])->name('kegiatan.reopen');
+    Route::post('kegiatan/{kegiatan}/request-reopen', [KegiatanController::class, 'requestReopen'])->name('kegiatan.request-reopen');
     Route::get('rekapitulasi-kegiatan/data', [KegiatanController::class, 'getRekapData'])->name('rekapitulasi-kegiatan.data');
     Route::resource('kegiatan', KegiatanController::class);
 
@@ -126,6 +132,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('insidentil/{insidentil}/update-tags', [InsidentilController::class, 'updateTags'])->name('insidentil.update-tags');
     Route::post('insidentil/{insidentil}/request-unlock-estimasi', [InsidentilController::class, 'requestUnlockEstimasi'])->name('insidentil.request-unlock-estimasi');
     Route::post('insidentil/{insidentil}/approve-extension', [InsidentilController::class, 'approveExtension'])->name('insidentil.approve-extension');
+    Route::post('insidentil/{insidentil}/reopen', [InsidentilController::class, 'reopen'])->name('insidentil.reopen');
+    Route::post('insidentil/{insidentil}/request-reopen', [InsidentilController::class, 'requestReopen'])->name('insidentil.request-reopen');
     Route::resource('insidentil', InsidentilController::class);
 
     // Rekapitulasi Insidentil Routes

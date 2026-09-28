@@ -391,12 +391,24 @@
 
         // Helper to refresh datatables across different pages
         function refreshTables() {
-            if (typeof $('#rencanakerja-table').DataTable === 'function' && $.fn.DataTable.isDataTable('#rencanakerja-table')) {
+            if (typeof refreshAnyTable === 'function') {
+                refreshAnyTable();
+                return;
+            }
+            if (window.LaravelDataTables && window.LaravelDataTables['rencanakerja-table']) {
+                window.LaravelDataTables['rencanakerja-table'].ajax.reload(null, false);
+            } else if (window.LaravelDataTables && window.LaravelDataTables['kepanitiaan-table']) {
+                window.LaravelDataTables['kepanitiaan-table'].ajax.reload(null, false);
+            } else if (window.LaravelDataTables && window.LaravelDataTables['insidentil-table']) {
+                window.LaravelDataTables['insidentil-table'].ajax.reload(null, false);
+            } else if (typeof $('#rencanakerja-table').DataTable === 'function' && $.fn.DataTable.isDataTable('#rencanakerja-table')) {
                 $('#rencanakerja-table').DataTable().ajax.reload(null, false);
             } else if (typeof $('#kepanitiaan-table').DataTable === 'function' && $.fn.DataTable.isDataTable('#kepanitiaan-table')) {
                 $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
             } else if (typeof $('#insidentil-table').DataTable === 'function' && $.fn.DataTable.isDataTable('#insidentil-table')) {
                 $('#insidentil-table').DataTable().ajax.reload(null, false);
+            } else if (typeof $('#kegiatan-table').DataTable === 'function' && $.fn.DataTable.isDataTable('#kegiatan-table')) {
+                $('#kegiatan-table').DataTable().ajax.reload(null, false);
             } else {
                 location.reload();
             }

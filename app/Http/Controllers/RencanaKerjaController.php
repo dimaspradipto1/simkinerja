@@ -602,6 +602,19 @@ class RencanaKerjaController extends Controller
         $btn .= '<div class="timer-status-group d-inline-flex align-items-center gap-2">';
         if ($status === 'Selesai' || $waktuSelesai) {
             $btn .= '<button type="button" class="btn text-white fw-bold disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
+            if ($isLeader) {
+                if (!empty($row->reopen_reason)) {
+                    $btn .= '<button type="button" class="btn btn-warning text-dark fw-bold btn-reopen-task" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->reopen_reason) . '" onclick="window.reopenTask(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Pegawai meminta buka kembali tugas ini: ' . e($row->reopen_reason) . '"><i class="bi bi-unlock-fill me-1"></i> Buka Kembali <span class="badge bg-danger text-white ms-1" style="font-size: 0.72rem;">Ada Permohonan</span></button>';
+                } else {
+                    $btn .= '<button type="button" class="btn btn-outline-warning text-dark fw-bold btn-reopen-task" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="" onclick="window.reopenTask(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka kembali tugas yang sudah selesai agar dapat dikerjakan lagi"><i class="bi bi-unlock-fill me-1"></i> Buka Kembali</button>';
+                }
+            } else {
+                if (!empty($row->reopen_reason) && !empty($row->reopen_requested_at)) {
+                    $btn .= '<span class="badge bg-warning text-dark py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 8px; min-height: 38px;" title="Permohonan buka kembali sedang menunggu persetujuan pimpinan/admin"><i class="bi bi-hourglass-split me-1"></i> Menunggu Buka Kembali</span>';
+                } else {
+                    $btn .= '<button type="button" class="btn btn-outline-warning text-dark fw-bold btn-request-reopen" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" onclick="window.requestReopenTask(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Tidak sengaja tertekan selesai? Klik untuk minta pimpinan/admin membuka kembali tugas ini"><i class="bi bi-unlock me-1"></i> Minta Buka Kembali</button>';
+                }
+            }
         } elseif ($isExpired) {
             if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
                 if ($isLeader) {
@@ -924,6 +937,94 @@ class RencanaKerjaController extends Controller
             ->timerProgressBar();
 
         return redirect()->back();
+    }
+
+    /**
+     * Pegawai mengajukan permohonan buka kembali tugas yang tidak sengaja diselesaikan.
+     */
+    public function requestReopen(Request $request, RencanaKerja $rencanaKerja)
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $canAccess = ($rencanaKerja->user_id === $authUser->id)
+            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
+            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
+
+        if (!$canAccess) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk tugas ini.'], 403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $rencanaKerja->update([
+            'reopen_reason' => $request->input('reason'),
+            'reopen_requested_at' => now(),
+        ]);
+
+        $rencanaKerja->syncToKegiatan();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permohonan buka kembali tugas berhasil dikirimkan ke Pimpinan/Admin.',
+        ]);
+    }
+
+    /**
+     * Pimpinan atau Admin membuka kembali tugas yang sudah selesai (karena tidak sengaja selesai).
+     */
+    public function reopen(Request $request, RencanaKerja $rencanaKerja)
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kembali tugas yang telah diselesaikan.',
+            ], 403);
+        }
+
+        // 1. Hapus milestone auto-log "Selesai Pekerjaan" jika ada
+        $finishMilestones = $rencanaKerja->milestones()
+            ->where(function ($q) {
+                $q->where('nama_milestone', 'Selesai Pekerjaan')
+                  ->orWhere('nama_milestone', 'like', '%Selesai%Pekerjaan%');
+            })->get();
+        foreach ($finishMilestones as $fm) {
+            $fm->delete();
+        }
+
+        // 2. Kembalikan status milestone terakhir yang sempat ditandai 'Selesai' ke 'Di-pause'
+        $lastMilestone = $rencanaKerja->milestones()->latest()->first();
+        if ($lastMilestone && $lastMilestone->status === 'Selesai') {
+            $lastMilestone->status = 'Di-pause';
+            $lastMilestone->waktu_selesai = null;
+            $lastMilestone->save();
+        }
+
+        // 3. Kembalikan status tugas ke 'Di-pause', reset waktu_selesai
+        $rencanaKerja->update([
+            'status' => 'Di-pause',
+            'waktu_selesai' => null,
+            'tanggal_selesai' => null,
+            'last_started_at' => null,
+            'reopen_reason' => null,
+            'reopen_requested_at' => null,
+            'reopened_at' => now(),
+            'reopened_by' => $authUser->id,
+        ]);
+
+        $rencanaKerja->syncToKegiatan();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil dibuka kembali. Status dikembalikan ke "Di-pause" agar pengerjaan dapat dilanjutkan.',
+        ]);
     }
 
     /**

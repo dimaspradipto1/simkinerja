@@ -280,6 +280,107 @@
     <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 
+    <script>
+        // Global DataTables Default Settings: Preserve Page & State Across Entire App
+        if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.dataTable) {
+            jQuery.extend(true, jQuery.fn.dataTable.defaults, {
+                stateSave: true,
+                stateDuration: 60 * 60 * 24 // 24 jam simpan state (halaman, pagination, sorting, search)
+            });
+
+            // Patch ajax.reload agar secara default SELALU mempertahankan halaman aktif (resetPaging = false)
+            if (jQuery.fn.dataTable.Api) {
+                var _origDtAjaxReload = jQuery.fn.dataTable.Api.prototype.ajax.reload;
+                jQuery.fn.dataTable.Api.prototype.ajax.reload = function (callback, resetPaging) {
+                    // Default resetPaging ke false agar tidak lompat ke halaman 1
+                    if (resetPaging !== true) {
+                        resetPaging = false;
+                    }
+                    return _origDtAjaxReload.call(this, callback, resetPaging);
+                };
+            }
+        }
+
+        // Global Scroll Position Preservation (mencegah layar melompat kembali ke awal halaman)
+        (function() {
+            var isAjaxDrawing = false;
+            var ajaxSavedScrollY = 0;
+
+            if (typeof jQuery !== 'undefined') {
+                // Saat DataTables mulai mengambil data AJAX
+                jQuery(document).on('preXhr.dt', function() {
+                    ajaxSavedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+                    isAjaxDrawing = true;
+                });
+
+                // Saat DataTables selesai me-render ulang baris tabel (draw)
+                jQuery(document).on('draw.dt', function() {
+                    if (isAjaxDrawing && ajaxSavedScrollY > 0) {
+                        var targetY = ajaxSavedScrollY;
+                        requestAnimationFrame(function() {
+                            window.scrollTo({
+                                top: targetY,
+                                behavior: 'instant'
+                            });
+                        });
+                        setTimeout(function() {
+                            if (Math.abs((window.scrollY || document.documentElement.scrollTop) - targetY) > 40) {
+                                window.scrollTo({
+                                    top: targetY,
+                                    behavior: 'instant'
+                                });
+                            }
+                            isAjaxDrawing = false;
+                        }, 60);
+                    } else {
+                        isAjaxDrawing = false;
+                    }
+                });
+            }
+
+            // Simpan posisi scroll sebelum halaman di-reload / submit form
+            window.addEventListener('beforeunload', function() {
+                try {
+                    sessionStorage.setItem('simkinerja_last_scroll_y', window.scrollY || document.documentElement.scrollTop || 0);
+                    sessionStorage.setItem('simkinerja_last_url', window.location.pathname);
+                } catch (e) {}
+            });
+
+            // Pulihkan posisi scroll setelah halaman selesai dimuat
+            function restoreScrollPos() {
+                try {
+                    var savedUrl = sessionStorage.getItem('simkinerja_last_url');
+                    var savedScroll = sessionStorage.getItem('simkinerja_last_scroll_y');
+                    if (savedUrl === window.location.pathname && savedScroll !== null) {
+                        var targetY = parseInt(savedScroll, 10);
+                        sessionStorage.removeItem('simkinerja_last_scroll_y');
+                        sessionStorage.removeItem('simkinerja_last_url');
+                        if (targetY > 0) {
+                            setTimeout(function() {
+                                window.scrollTo({
+                                    top: targetY,
+                                    behavior: 'instant'
+                                });
+                            }, 50);
+                            setTimeout(function() {
+                                window.scrollTo({
+                                    top: targetY,
+                                    behavior: 'instant'
+                                });
+                            }, 250);
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            if (document.readyState === 'loading') {
+                window.addEventListener('DOMContentLoaded', restoreScrollPos);
+            } else {
+                restoreScrollPos();
+            }
+        })();
+    </script>
+
     @php
         $authUserForModal = Auth::user();
         $pimpinanList = $authUserForModal ? $authUserForModal->getDirectSupervisors() : collect();
@@ -417,6 +518,267 @@
             const modalEl = document.getElementById('modalApproveExtension');
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             modal.show();
+        };
+
+        // Helper to refresh dataTables across any page without resetting pagination
+        function refreshAnyTable() {
+            var reloaded = false;
+
+            // 1. Refresh via DataTables API if available
+            try {
+                if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.dataTable && jQuery.fn.dataTable.tables) {
+                    var allTables = jQuery.fn.dataTable.tables({ api: true });
+                    if (allTables && allTables.length > 0) {
+                        allTables.each(function() {
+                            if (this.ajax && typeof this.ajax.reload === 'function') {
+                                this.ajax.reload(null, false);
+                                reloaded = true;
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Error refreshing tables via api:", e);
+            }
+
+            // 2. Refresh via window.LaravelDataTables registry
+            if (typeof window.LaravelDataTables !== 'undefined' && window.LaravelDataTables) {
+                for (var key in window.LaravelDataTables) {
+                    if (window.LaravelDataTables.hasOwnProperty(key)) {
+                        var dt = window.LaravelDataTables[key];
+                        if (dt && dt.ajax && typeof dt.ajax.reload === 'function') {
+                            dt.ajax.reload(null, false);
+                            reloaded = true;
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback to known table selectors
+            if (!reloaded && typeof jQuery !== 'undefined') {
+                var selectorList = [
+                    '#rencanakerja-table', 
+                    '#kepanitiaan-table', 
+                    '#insidentil-table', 
+                    '#kegiatan-table', 
+                    '#kategori-table', 
+                    '#user-table',
+                    '#users-table', 
+                    '#periodeakademik-table', 
+                    '#periode-table', 
+                    '#lpj-table',
+                    '#rekap-table',
+                    '#rekap-insidentil-table',
+                    '#table-sudah-absen',
+                    '#table-belum-absen',
+                    '#dashboard-attendance-table',
+                    '#gmp-table'
+                ];
+                for (var i = 0; i < selectorList.length; i++) {
+                    var sel = selectorList[i];
+                    if (jQuery(sel).length && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable(sel)) {
+                        try {
+                            jQuery(sel).DataTable().ajax.reload(null, false);
+                            reloaded = true;
+                        } catch (err) {}
+                    }
+                }
+            }
+
+            // 4. Local table variable if available in current scope
+            if (!reloaded && typeof table !== 'undefined' && table.ajax && typeof table.ajax.reload === 'function') {
+                table.ajax.reload(null, false);
+                reloaded = true;
+            }
+
+            // 5. Ultimate fallback: reload page while maintaining scroll position
+            if (!reloaded) {
+                try {
+                    sessionStorage.setItem('simkinerja_last_scroll_y', window.scrollY || document.documentElement.scrollTop || 0);
+                    sessionStorage.setItem('simkinerja_last_url', window.location.pathname);
+                } catch (e) {}
+                location.reload();
+            }
+        }
+
+        // Global Request Reopen Task (Pegawai yang tidak sengaja menyelesaikan tugas)
+        window.requestReopenTask = function(el) {
+            const btn = $(el);
+            const id = btn.data('id');
+            const type = btn.data('type') || 'rencana-kerja';
+            const uraian = btn.data('uraian') || '';
+
+            if (typeof Swal === 'undefined') {
+                const reason = prompt('Tuliskan alasan permohonan buka kembali tugas:', 'Tidak sengaja tertekan selesai, mohon dibuka kembali agar pekerjaan dapat dilanjutkan.');
+                if (reason) {
+                    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+                    $.ajax({
+                        url: `/${type}/${id}/request-reopen`,
+                        type: 'POST',
+                        data: { _token: csrf, reason: reason },
+                        success: function(res) {
+                            alert(res.message);
+                            refreshAnyTable();
+                        }
+                    });
+                }
+                return;
+            }
+
+            Swal.fire({
+                title: 'Permohonan Buka Kembali Tugas',
+                html: `
+                    <div class="text-start">
+                        <div class="p-2.5 mb-2 bg-light rounded border">
+                            <span class="d-block text-muted small fw-bold text-uppercase mb-1">Uraian Tugas</span>
+                            <div class="fw-semibold text-dark small text-break">${uraian || '-'}</div>
+                        </div>
+                        <div class="alert alert-warning py-2 px-3 small mb-2 d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                            <div>Tugas ini telah ditandai <strong>Selesai</strong>. Jika tidak sengaja tertekan, ajukan permohonan agar <strong>Pimpinan / Admin</strong> dapat membukanya kembali.</div>
+                        </div>
+                        <label class="form-label fw-semibold small text-muted mb-1">
+                            Alasan Permohonan:
+                        </label>
+                        <textarea id="swal-reopen-reason" class="form-control form-control-sm" rows="3" placeholder="Contoh: Tidak sengaja tertekan selesai, pekerjaan belum selesai...">Tidak sengaja tertekan selesai, mohon dibuka kembali agar pekerjaan dapat dilanjutkan.</textarea>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-send-fill me-1"></i> Kirim Permohonan',
+                cancelButtonText: 'Batal',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const reason = document.getElementById('swal-reopen-reason').value.trim();
+                    if (!reason) {
+                        Swal.showValidationMessage('Alasan permohonan wajib diisi.');
+                        return false;
+                    }
+                    return reason;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+                    fetch(`/${type}/${id}/request-reopen`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrf,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ reason: result.value })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Permohonan Terkirim',
+                                text: data.message || 'Permohonan buka kembali tugas berhasil dikirimkan ke pimpinan/admin.',
+                                icon: 'success',
+                                timer: 2500,
+                                showConfirmButton: false
+                            });
+                            refreshAnyTable();
+                        } else {
+                            Swal.fire('Gagal', data.message || 'Gagal mengirim permohonan.', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        Swal.fire('Terjadi Kesalahan', 'Gagal memproses permohonan ke server.', 'error');
+                    });
+                }
+            });
+        };
+
+        // Global Reopen Task (Khusus Pimpinan, Admin, Superadmin)
+        window.reopenTask = function(el) {
+            const btn = $(el);
+            const id = btn.data('id');
+            const type = btn.data('type') || 'rencana-kerja';
+            const uraian = btn.data('uraian') || '';
+            const pegawai = btn.data('pegawai') || '';
+            const reason = btn.data('reason') || '';
+
+            let reasonHtml = '';
+            if (reason) {
+                reasonHtml = `
+                    <div class="p-2.5 bg-warning-subtle text-warning-emphasis rounded border border-warning-subtle mb-3">
+                        <div class="fw-bold small mb-1 d-flex align-items-center gap-1">
+                            <i class="bi bi-chat-left-quote-fill text-warning"></i> Alasan / Permohonan Pegawai:
+                        </div>
+                        <div class="text-dark small lh-sm text-break">${reason}</div>
+                    </div>
+                `;
+            }
+
+            const confirmDialog = function() {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+                fetch(`/${type}/${id}/reopen`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Tugas Dibuka Kembali',
+                            text: data.message || 'Tugas berhasil dibuka kembali. Status dikembalikan ke Di-pause.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        refreshAnyTable();
+                    } else {
+                        Swal.fire('Gagal', data.message || 'Gagal membuka kembali tugas.', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Terjadi Kesalahan', 'Gagal menghubungkan ke server.', 'error');
+                });
+            };
+
+            if (typeof Swal === 'undefined') {
+                if (confirm('Buka kembali tugas ini? Status akan dikembalikan ke Di-pause agar dapat dikerjakan lagi.')) {
+                    confirmDialog();
+                }
+                return;
+            }
+
+            Swal.fire({
+                title: 'Buka Kembali Tugas?',
+                html: `
+                    <div class="text-start">
+                        <div class="p-2.5 mb-2 bg-light rounded border">
+                            <span class="d-block text-muted small fw-bold text-uppercase mb-1">Uraian Tugas</span>
+                            <div class="fw-semibold text-dark small text-break">${uraian || '-'}</div>
+                            ${pegawai ? `<div class="small text-muted mt-1"><i class="bi bi-person-fill me-1"></i>Pegawai: <strong>${pegawai}</strong></div>` : ''}
+                        </div>
+                        ${reasonHtml}
+                        <div class="alert alert-info py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-info-circle-fill text-info fs-5"></i>
+                            <div>Status tugas akan dikembalikan ke <strong>Di-pause</strong> dan waktu selesai di-reset agar pegawai dapat melanjutkan pekerjaannya.</div>
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-unlock-fill me-1"></i> Ya, Buka Kembali',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    confirmDialog();
+                }
+            });
         };
 
         // Global Barcode Absensi Modal Handler
@@ -708,15 +1070,7 @@
                         icon: response.success ? 'success' : 'info',
                         confirmButtonColor: '#198754'
                     }).then(() => {
-                        if (window.LaravelDataTables && window.LaravelDataTables["rencanakerja-table"]) {
-                            window.LaravelDataTables["rencanakerja-table"].ajax.reload(null, false);
-                        } else if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
-                            window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
-                        } else if (typeof $ !== 'undefined' && $.fn.DataTable && $.fn.DataTable.isDataTable('#dashboard-attendance-table')) {
-                            $('#dashboard-attendance-table').DataTable().ajax.reload(null, false);
-                        } else {
-                            window.location.reload();
-                        }
+                        refreshAnyTable();
                     });
                 },
                 error: function(xhr) {

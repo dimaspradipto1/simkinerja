@@ -36,6 +36,10 @@ class Kepanitiaan extends Model
         'estimasi_jam_selesai_awal',
         'last_started_at',
         'durasi_detik',
+        'reopen_reason',
+        'reopen_requested_at',
+        'reopened_at',
+        'reopened_by',
     ];
 
     /**

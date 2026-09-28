@@ -122,6 +122,7 @@ class UserDataTable extends DataTable
             ->columns($this->getColumns())
             ->minifiedAjax()
             ->parameters([
+                'stateSave' => true,
                 'autoWidth' => false,
                 'ordering' => true,
                 'scrollX' => true,

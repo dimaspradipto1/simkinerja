@@ -109,6 +109,8 @@ trait SyncsToKegiatan
                     'total_paused_seconds' => (int) ($this->total_paused_seconds ?? 0),
                     'estimasi_unlock_reason' => $this->estimasi_unlock_reason,
                     'estimasi_unlock_requested_at' => $this->estimasi_unlock_requested_at,
+                    'reopen_reason' => $this->reopen_reason,
+                    'reopen_requested_at' => $this->reopen_requested_at,
                 ]
             );
 

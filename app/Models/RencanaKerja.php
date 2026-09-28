@@ -36,6 +36,10 @@ class RencanaKerja extends Model
         'durasi_detik',
         'estimasi_unlock_reason',
         'estimasi_unlock_requested_at',
+        'reopen_reason',
+        'reopen_requested_at',
+        'reopened_at',
+        'reopened_by',
     ];
 
     public function user()

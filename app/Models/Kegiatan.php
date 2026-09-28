@@ -38,6 +38,10 @@ class Kegiatan extends Model
         'total_paused_seconds',
         'estimasi_unlock_reason',
         'estimasi_unlock_requested_at',
+        'reopen_reason',
+        'reopen_requested_at',
+        'reopened_at',
+        'reopened_by',
     ];
 
     public static function boot(): void
@@ -124,6 +128,8 @@ class Kegiatan extends Model
                         'total_paused_seconds' => $this->total_paused_seconds,
                         'estimasi_unlock_reason' => $this->estimasi_unlock_reason,
                         'estimasi_unlock_requested_at' => $this->estimasi_unlock_requested_at,
+                        'reopen_reason' => $this->reopen_reason,
+                        'reopen_requested_at' => $this->reopen_requested_at,
                     ]);
 
                     if (method_exists($sourceModel, 'taggedUsers')) {
