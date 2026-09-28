@@ -265,18 +265,9 @@ class InsidentilController extends Controller
                     // Start/Pause/Stop Timer buttons
                     if ($row->status === 'Selesai' || $allMilestonesSelesai) {
                         $btn .= '<button type="button" class="btn btn-sm text-white fw-bold disabled me-1" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
-                        if ($isLeader) {
-                            if (!empty($row->reopen_reason)) {
-                                $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1 btn-reopen-task" data-id="' . $row->id . '" data-type="insidentil" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->reopen_reason) . '" onclick="window.reopenTask(this)" style="height: 32px;" title="Pegawai meminta buka kembali tugas ini: ' . e($row->reopen_reason) . '"><i class="bi bi-unlock-fill me-1"></i> Buka Kembali <span class="badge bg-danger text-white ms-1" style="font-size: 0.7rem;">Ada Permohonan</span></button>';
-                            } else {
-                                $btn .= '<button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold text-nowrap px-2 me-1 btn-reopen-task" data-id="' . $row->id . '" data-type="insidentil" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="" onclick="window.reopenTask(this)" style="height: 32px;" title="Buka kembali tugas yang sudah selesai agar dapat dikerjakan lagi"><i class="bi bi-unlock-fill me-1"></i> Buka Kembali</button>';
-                            }
-                        } else {
-                            if (!empty($row->reopen_reason) && !empty($row->reopen_requested_at)) {
-                                $btn .= '<span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;" title="Permohonan buka kembali sedang menunggu persetujuan pimpinan/admin"><i class="bi bi-hourglass-split me-1"></i> Menunggu Buka Kembali</span>';
-                            } else {
-                                $btn .= '<button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold text-nowrap px-2 me-1 btn-request-reopen" data-id="' . $row->id . '" data-type="insidentil" data-uraian="' . e($row->uraian_tugas) . '" onclick="window.requestReopenTask(this)" style="height: 32px;" title="Tidak sengaja tertekan selesai? Klik untuk minta pimpinan/admin membuka kembali tugas ini"><i class="bi bi-unlock me-1"></i> Minta Buka Kembali</button>';
-                            }
+                        // Tombol buka kunci HANYA ada di role admin dan pimpinan. Di role sendiri (staff) tidak ada.
+                        if ($authUser && $authUser->canUnlockTasks()) {
+                            $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1 btn-reopen-task" data-id="' . $row->id . '" data-type="insidentil" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="" onclick="window.reopenTask(this)" style="height: 32px;" title="Buka kunci tugas yang sudah selesai agar dapat dikerjakan lagi"><i class="bi bi-unlock-fill me-1"></i> Buka Kunci</button>';
                         }
                     } elseif ($isExpired) {
                         $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
@@ -623,9 +614,11 @@ class InsidentilController extends Controller
         if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kembali tugas yang telah diselesaikan.',
+                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kunci tugas yang telah diselesaikan.',
             ], 403);
         }
+
+        $now = \Carbon\Carbon::now();
 
         // 1. Hapus milestone auto-log "Selesai Pekerjaan" jika ada
         $finishMilestones = $insidentil->milestones()
@@ -637,23 +630,32 @@ class InsidentilController extends Controller
             $fm->delete();
         }
 
-        // 2. Kembalikan status milestone terakhir yang sempat ditandai 'Selesai' ke 'Di-pause'
+        // 2. Aktifkan milestone point agar langsung melanjutkan dan berjalan otomatis
         $lastMilestone = $insidentil->milestones()->latest()->first();
-        if ($lastMilestone && $lastMilestone->status === 'Selesai') {
-            $lastMilestone->status = 'Di-pause';
+        if ($lastMilestone) {
+            $lastMilestone->status = 'Berjalan';
             $lastMilestone->waktu_selesai = null;
+            $lastMilestone->last_started_at = $now;
             $lastMilestone->save();
+        } else {
+            $insidentil->milestones()->create([
+                'nama_milestone' => 'Melanjutkan Pekerjaan',
+                'status' => 'Berjalan',
+                'waktu_mulai' => $now,
+                'last_started_at' => $now,
+                'durasi_detik' => 0,
+            ]);
         }
 
-        // 3. Kembalikan status tugas ke 'Di-pause', reset waktu_selesai
+        // 3. Kembalikan status tugas ke 'Berjalan', reset waktu_selesai, pasang last_started_at agar waktu berjalan otomatis tanpa perlu klik Lanjut
         $insidentil->update([
-            'status' => 'Di-pause',
+            'status' => 'Berjalan',
             'waktu_selesai' => null,
             'tanggal_selesai' => null,
-            'last_started_at' => null,
+            'last_started_at' => $now,
             'reopen_reason' => null,
             'reopen_requested_at' => null,
-            'reopened_at' => now(),
+            'reopened_at' => $now,
             'reopened_by' => $authUser->id,
         ]);
 
@@ -661,7 +663,7 @@ class InsidentilController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Tugas berhasil dibuka kembali. Status dikembalikan ke "Di-pause" agar pengerjaan dapat dilanjutkan.',
+            'message' => 'Kunci tugas berhasil dibuka dan pengerjaan langsung berjalan otomatis.',
         ]);
     }
 
@@ -1002,8 +1004,39 @@ class InsidentilController extends Controller
             }
         }
 
-        if ($request->filled('periode_akademik_id')) {
-            $query->where('periode_akademik_id', $request->periode_akademik_id);
+        $filterType = $request->input('filter_type', 'periode');
+        $startDate = $request->input('tanggal_mulai') ?: $request->input('start_date');
+        $endDate = $request->input('tanggal_selesai') ?: $request->input('end_date');
+
+        if ($filterType === 'range' || (!$request->filled('periode_akademik_id') && ($startDate || $endDate))) {
+            if ($startDate && $endDate) {
+                $query->where(function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tanggal_mulai', [$startDate, $endDate])
+                      ->orWhereBetween('tanggal_selesai', [$startDate, $endDate])
+                      ->orWhereBetween('estimasi_tanggal_mulai', [$startDate, $endDate])
+                      ->orWhereBetween('estimasi_tanggal_selesai', [$startDate, $endDate])
+                      ->orWhere(function ($sub) use ($startDate, $endDate) {
+                          $sub->whereDate('created_at', '>=', $startDate)
+                              ->whereDate('created_at', '<=', $endDate);
+                      });
+                });
+            } elseif ($startDate) {
+                $query->where(function ($q) use ($startDate) {
+                    $q->whereDate('tanggal_mulai', '>=', $startDate)
+                      ->orWhereDate('estimasi_tanggal_mulai', '>=', $startDate)
+                      ->orWhereDate('created_at', '>=', $startDate);
+                });
+            } elseif ($endDate) {
+                $query->where(function ($q) use ($endDate) {
+                    $q->whereDate('tanggal_selesai', '<=', $endDate)
+                      ->orWhereDate('estimasi_tanggal_selesai', '<=', $endDate)
+                      ->orWhereDate('created_at', '<=', $endDate);
+                });
+            }
+        } else {
+            if ($request->filled('periode_akademik_id')) {
+                $query->where('periode_akademik_id', $request->periode_akademik_id);
+            }
         }
 
         $items = $query->latest()->get();
@@ -1032,11 +1065,22 @@ class InsidentilController extends Controller
             }
         }
 
+        // Periode Akademik / Rentang Tanggal Text (Lookup by request, item relation, or latest record)
         $periodeText = 'SEMUA PERIODE';
-        if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
-            $periodeText = strtoupper($p->nama_periode);
-        } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
-            $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
+        if ($filterType === 'range' || (!$request->filled('periode_akademik_id') && ($startDate || $endDate))) {
+            if ($startDate && $endDate) {
+                $periodeText = date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate));
+            } elseif ($startDate) {
+                $periodeText = 'DARI ' . date('d/m/Y', strtotime($startDate));
+            } elseif ($endDate) {
+                $periodeText = 'SAMPAI ' . date('d/m/Y', strtotime($endDate));
+            }
+        } else {
+            if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
+                $periodeText = strtoupper($p->nama_periode);
+            } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
+                $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
+            }
         }
 
         $safeStaff = trim(preg_replace('/[^A-Za-z0-9\-\s]/', '', str_replace(['/', '\\'], '-', $namaStaff)));
@@ -1094,8 +1138,39 @@ class InsidentilController extends Controller
             }
         }
 
-        if ($request->filled('periode_akademik_id')) {
-            $query->where('periode_akademik_id', $request->periode_akademik_id);
+        $filterType = $request->input('filter_type', 'periode');
+        $startDate = $request->input('tanggal_mulai') ?: $request->input('start_date');
+        $endDate = $request->input('tanggal_selesai') ?: $request->input('end_date');
+
+        if ($filterType === 'range' || (!$request->filled('periode_akademik_id') && ($startDate || $endDate))) {
+            if ($startDate && $endDate) {
+                $query->where(function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tanggal_mulai', [$startDate, $endDate])
+                      ->orWhereBetween('tanggal_selesai', [$startDate, $endDate])
+                      ->orWhereBetween('estimasi_tanggal_mulai', [$startDate, $endDate])
+                      ->orWhereBetween('estimasi_tanggal_selesai', [$startDate, $endDate])
+                      ->orWhere(function ($sub) use ($startDate, $endDate) {
+                          $sub->whereDate('created_at', '>=', $startDate)
+                              ->whereDate('created_at', '<=', $endDate);
+                      });
+                });
+            } elseif ($startDate) {
+                $query->where(function ($q) use ($startDate) {
+                    $q->whereDate('tanggal_mulai', '>=', $startDate)
+                      ->orWhereDate('estimasi_tanggal_mulai', '>=', $startDate)
+                      ->orWhereDate('created_at', '>=', $startDate);
+                });
+            } elseif ($endDate) {
+                $query->where(function ($q) use ($endDate) {
+                    $q->whereDate('tanggal_selesai', '<=', $endDate)
+                      ->orWhereDate('estimasi_tanggal_selesai', '<=', $endDate)
+                      ->orWhereDate('created_at', '<=', $endDate);
+                });
+            }
+        } else {
+            if ($request->filled('periode_akademik_id')) {
+                $query->where('periode_akademik_id', $request->periode_akademik_id);
+            }
         }
 
         $items = $query->latest()->get();
@@ -1124,11 +1199,22 @@ class InsidentilController extends Controller
             }
         }
 
+        // Periode Akademik / Rentang Tanggal Text (Lookup by request, item relation, or latest record)
         $periodeText = 'SEMUA PERIODE';
-        if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
-            $periodeText = strtoupper($p->nama_periode);
-        } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
-            $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
+        if ($filterType === 'range' || (!$request->filled('periode_akademik_id') && ($startDate || $endDate))) {
+            if ($startDate && $endDate) {
+                $periodeText = date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate));
+            } elseif ($startDate) {
+                $periodeText = 'DARI ' . date('d/m/Y', strtotime($startDate));
+            } elseif ($endDate) {
+                $periodeText = 'SAMPAI ' . date('d/m/Y', strtotime($endDate));
+            }
+        } else {
+            if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
+                $periodeText = strtoupper($p->nama_periode);
+            } elseif ($items->count() > 0 && $items->first()->periodeAkademik) {
+                $periodeText = strtoupper($items->first()->periodeAkademik->nama_periode);
+            }
         }
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();

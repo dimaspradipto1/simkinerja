@@ -356,18 +356,9 @@ class KegiatanController extends Controller
 
         if ($status === 'Selesai' || $waktuSelesai) {
             $btn .= '<button type="button" class="btn btn-sm text-white fw-bold text-nowrap px-3 me-1 disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; height: 32px; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
-            if ($isLeader) {
-                if (!empty($row->reopen_reason)) {
-                    $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1 btn-reopen-task" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->reopen_reason) . '" onclick="window.reopenTask(this)" style="height: 32px;" title="Pegawai meminta buka kembali kegiatan ini: ' . e($row->reopen_reason) . '"><i class="bi bi-unlock-fill me-1"></i> Buka Kembali <span class="badge bg-danger text-white ms-1" style="font-size: 0.7rem;">Ada Permohonan</span></button>';
-                } else {
-                    $btn .= '<button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold text-nowrap px-2 me-1 btn-reopen-task" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="" onclick="window.reopenTask(this)" style="height: 32px;" title="Buka kembali kegiatan yang sudah selesai agar dapat dikerjakan lagi"><i class="bi bi-unlock-fill me-1"></i> Buka Kembali</button>';
-                }
-            } else {
-                if (!empty($row->reopen_reason) && !empty($row->reopen_requested_at)) {
-                    $btn .= '<span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;" title="Permohonan buka kembali sedang menunggu persetujuan pimpinan/admin"><i class="bi bi-hourglass-split me-1"></i> Menunggu Buka Kembali</span>';
-                } else {
-                    $btn .= '<button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold text-nowrap px-2 me-1 btn-request-reopen" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" onclick="window.requestReopenTask(this)" style="height: 32px;" title="Tidak sengaja tertekan selesai? Klik untuk minta pimpinan/admin membuka kembali kegiatan ini"><i class="bi bi-unlock me-1"></i> Minta Buka Kembali</button>';
-                }
+            // Tombol buka kunci HANYA ada di role admin dan pimpinan. Di role sendiri (staff) tidak ada.
+            if ($authUser && $authUser->canUnlockTasks()) {
+                $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1 btn-reopen-task" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="" onclick="window.reopenTask(this)" style="height: 32px;" title="Buka kunci kegiatan yang sudah selesai agar dapat dikerjakan lagi"><i class="bi bi-unlock-fill me-1"></i> Buka Kunci</button>';
             }
         } elseif ($isExpired) {
             if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
@@ -826,9 +817,11 @@ class KegiatanController extends Controller
         if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kembali tugas yang telah diselesaikan.',
+                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kunci tugas yang telah diselesaikan.',
             ], 403);
         }
+
+        $now = \Carbon\Carbon::now();
 
         // 1. Hapus milestone auto-log "Selesai Kegiatan" jika ada di model Kegiatan
         $finishMilestones = $kegiatan->milestones()
@@ -842,50 +835,74 @@ class KegiatanController extends Controller
         }
 
         $lastMilestone = $kegiatan->milestones()->latest()->first();
-        if ($lastMilestone && $lastMilestone->status === 'Selesai') {
-            $lastMilestone->status = 'Di-pause';
+        if ($lastMilestone) {
+            $lastMilestone->status = 'Berjalan';
             $lastMilestone->waktu_selesai = null;
+            $lastMilestone->last_started_at = $now;
             $lastMilestone->save();
+        } else {
+            $kegiatan->milestones()->create([
+                'nama_milestone' => 'Melanjutkan Pekerjaan',
+                'status' => 'Berjalan',
+                'waktu_mulai' => $now,
+                'last_started_at' => $now,
+                'durasi_detik' => 0,
+            ]);
         }
 
-        // 2. Jika berasal dari source model (RencanaKerja, Kepanitiaan, Insidentil), bersihkan juga di source
+        // 2. Jika berasal dari source model (RencanaKerja, Kepanitiaan, Insidentil), aktifkan juga di source
         if ($kegiatan->source_type && $kegiatan->source_id && class_exists($kegiatan->source_type)) {
             $sourceModel = $kegiatan->source_type::find($kegiatan->source_id);
-            if ($sourceModel && method_exists($sourceModel, 'milestones')) {
-                $sourceFinishes = $sourceModel->milestones()
-                    ->where(function ($q) {
-                        $q->where('nama_milestone', 'Selesai Pekerjaan')
-                          ->orWhere('nama_milestone', 'like', '%Selesai%');
-                    })->get();
-                foreach ($sourceFinishes as $sf) {
-                    $sf->delete();
+            if ($sourceModel) {
+                if (method_exists($sourceModel, 'milestones')) {
+                    $sourceFinishes = $sourceModel->milestones()
+                        ->where(function ($q) {
+                            $q->where('nama_milestone', 'Selesai Pekerjaan')
+                              ->orWhere('nama_milestone', 'like', '%Selesai%');
+                        })->get();
+                    foreach ($sourceFinishes as $sf) {
+                        $sf->delete();
+                    }
+
+                    $sourceLastM = $sourceModel->milestones()->latest()->first();
+                    if ($sourceLastM) {
+                        $sourceLastM->status = 'Berjalan';
+                        $sourceLastM->waktu_selesai = null;
+                        $sourceLastM->last_started_at = $now;
+                        $sourceLastM->save();
+                    }
                 }
 
-                $sourceLastM = $sourceModel->milestones()->latest()->first();
-                if ($sourceLastM && $sourceLastM->status === 'Selesai') {
-                    $sourceLastM->status = 'Di-pause';
-                    $sourceLastM->waktu_selesai = null;
-                    $sourceLastM->save();
-                }
+                $sourceModel->update([
+                    'status' => 'Berjalan',
+                    'waktu_selesai' => null,
+                    'tanggal_selesai' => null,
+                    'last_started_at' => $now,
+                    'reopen_reason' => null,
+                    'reopen_requested_at' => null,
+                    'reopened_at' => $now,
+                    'reopened_by' => $authUser->id,
+                ]);
             }
         }
 
-        // 3. Kembalikan status kegiatan ke 'Di-pause'
+        // 3. Kembalikan status kegiatan ke 'Berjalan', waktu berjalan otomatis
         $kegiatan->update([
-            'status' => 'Di-pause',
+            'status' => 'Berjalan',
             'waktu_selesai' => null,
             'tanggal_selesai' => null,
-            'is_paused' => true,
-            'paused_at' => now(),
+            'last_started_at' => $now,
+            'is_paused' => false,
+            'paused_at' => null,
             'reopen_reason' => null,
             'reopen_requested_at' => null,
-            'reopened_at' => now(),
+            'reopened_at' => $now,
             'reopened_by' => $authUser->id,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Kegiatan berhasil dibuka kembali. Status dikembalikan ke "Di-pause" agar pengerjaan dapat dilanjutkan.',
+            'message' => 'Kunci tugas berhasil dibuka dan pengerjaan langsung berjalan otomatis.',
         ]);
     }
 

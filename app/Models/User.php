@@ -412,6 +412,19 @@ class User extends Authenticatable
         return false;
     }
 
+    /**
+     * Check if user is Admin or Pimpinan (can unlock / reopen completed tasks)
+     */
+    public function canUnlockTasks(): bool
+    {
+        return $this->isSuperAdmin() 
+            || $this->isAdmin() 
+            || $this->isPimpinanRektorat() 
+            || $this->isPimpinanUnit() 
+            || $this->isPimpinanSubUnit()
+            || $this->isKoordinatorPanitia();
+    }
+
     public function taggedRencanaKerjas()
     {
         return $this->belongsToMany(RencanaKerja::class, 'rencana_kerja_user', 'user_id', 'rencana_kerja_id')->withTimestamps();

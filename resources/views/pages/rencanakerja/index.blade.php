@@ -709,9 +709,31 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('rencana-kerja.export-excel') }}" method="GET">
+            <form action="{{ route('rencana-kerja.export-excel') }}" method="GET" id="formExportExcelRencanaKerja">
                 <div class="modal-body p-4">
+                    <!-- Pilihan Opsi Filter Export -->
                     <div class="mb-3">
+                        <label class="form-label fw-bold text-dark mb-2">
+                            Pilihan Filter Laporan <span class="text-danger">*</span>
+                        </label>
+                        <div class="d-flex gap-3 p-2 bg-light rounded border">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input export-filter-choice" type="radio" name="filter_type" id="export_filter_rk_periode" value="periode" checked>
+                                <label class="form-check-label fw-semibold text-dark cursor-pointer" for="export_filter_rk_periode">
+                                    <i class="bi bi-mortarboard me-1 text-success"></i> Tahun Akademik
+                                </label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input export-filter-choice" type="radio" name="filter_type" id="export_filter_rk_range" value="range">
+                                <label class="form-check-label fw-semibold text-dark cursor-pointer" for="export_filter_rk_range">
+                                    <i class="bi bi-calendar-range me-1 text-primary"></i> Range Tanggal
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Opsi 1: Periode Akademik -->
+                    <div class="mb-3" id="wrapper_export_periode">
                         <label for="export_periode_akademik_id" class="form-label fw-bold text-dark mb-1">
                             Pilih Periode Akademik <span class="text-danger">*</span>
                         </label>
@@ -723,6 +745,23 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <!-- Opsi 2: Range Tanggal -->
+                    <div class="mb-3 d-none" id="wrapper_export_range">
+                        <label class="form-label fw-bold text-dark mb-1">
+                            Pilih Rentang Tanggal <span class="text-danger">*</span>
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="export_tanggal_mulai" class="form-label small text-muted mb-1">Tanggal Mulai</label>
+                                <input type="date" name="tanggal_mulai" id="export_tanggal_mulai" class="form-control bg-white">
+                            </div>
+                            <div class="col-6">
+                                <label for="export_tanggal_selesai" class="form-label small text-muted mb-1">Tanggal Selesai</label>
+                                <input type="date" name="tanggal_selesai" id="export_tanggal_selesai" class="form-control bg-white">
+                            </div>
+                        </div>
                     </div>
 
                     @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin()))
@@ -1089,6 +1128,63 @@
         }
 
         initExportModalSelect2();
+
+        // Handler toggle pilihan export: Periode Akademik vs Range Tanggal
+        $(document).on('change', '.export-filter-choice', function () {
+            let choice = $('input[name="filter_type"]:checked').val();
+            if (choice === 'range') {
+                $('#wrapper_export_periode').addClass('d-none');
+                $('#export_periode_akademik_id').prop('required', false);
+                $('#wrapper_export_range').removeClass('d-none');
+                $('#export_tanggal_mulai').prop('required', true);
+                $('#export_tanggal_selesai').prop('required', true);
+            } else {
+                $('#wrapper_export_range').addClass('d-none');
+                $('#export_tanggal_mulai').prop('required', false);
+                $('#export_tanggal_selesai').prop('required', false);
+                $('#wrapper_export_periode').removeClass('d-none');
+                $('#export_periode_akademik_id').prop('required', true);
+                if ($('#export_periode_akademik_id').data('select2')) {
+                    $('#export_periode_akademik_id').next('.select2-container').css('width', '100%');
+                }
+            }
+        });
+
+        $('#formExportExcelRencanaKerja').on('submit', function (e) {
+            let choice = $('input[name="filter_type"]:checked').val();
+            if (choice === 'range') {
+                let start = $('#export_tanggal_mulai').val();
+                let end = $('#export_tanggal_selesai').val();
+                if (!start || !end) {
+                    e.preventDefault();
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Pilih Rentang Tanggal',
+                            text: 'Silakan isi Tanggal Mulai dan Tanggal Selesai terlebih dahulu.',
+                            confirmButtonColor: '#15432d'
+                        });
+                    } else {
+                        alert('Silakan isi Tanggal Mulai dan Tanggal Selesai terlebih dahulu.');
+                    }
+                    return false;
+                }
+                if (start > end) {
+                    e.preventDefault();
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Rentang Tanggal Tidak Valid',
+                            text: 'Tanggal Mulai tidak boleh lebih besar dari Tanggal Selesai.',
+                            confirmButtonColor: '#15432d'
+                        });
+                    } else {
+                        alert('Tanggal Mulai tidak boleh lebih besar dari Tanggal Selesai.');
+                    }
+                    return false;
+                }
+            }
+        });
 
         $('#modalExportExcel').on('show.bs.modal shown.bs.modal', function () {
             initExportModalSelect2();

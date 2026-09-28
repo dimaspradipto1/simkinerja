@@ -728,15 +728,15 @@
                 .then(data => {
                     if (data.success) {
                         Swal.fire({
-                            title: 'Tugas Dibuka Kembali',
-                            text: data.message || 'Tugas berhasil dibuka kembali. Status dikembalikan ke Di-pause.',
+                            title: 'Kunci Tugas Dibuka',
+                            text: data.message || 'Kunci tugas berhasil dibuka. Status dikembalikan ke Di-pause.',
                             icon: 'success',
                             timer: 2000,
                             showConfirmButton: false
                         });
                         refreshAnyTable();
                     } else {
-                        Swal.fire('Gagal', data.message || 'Gagal membuka kembali tugas.', 'error');
+                        Swal.fire('Gagal', data.message || 'Gagal membuka kunci tugas.', 'error');
                     }
                 })
                 .catch(err => {
@@ -746,14 +746,14 @@
             };
 
             if (typeof Swal === 'undefined') {
-                if (confirm('Buka kembali tugas ini? Status akan dikembalikan ke Di-pause agar dapat dikerjakan lagi.')) {
+                if (confirm('Buka kunci tugas ini? Status akan dikembalikan ke Di-pause agar dapat dikerjakan lagi.')) {
                     confirmDialog();
                 }
                 return;
             }
 
             Swal.fire({
-                title: 'Buka Kembali Tugas?',
+                title: 'Buka Kunci Tugas?',
                 html: `
                     <div class="text-start">
                         <div class="p-2.5 mb-2 bg-light rounded border">
@@ -764,7 +764,7 @@
                         ${reasonHtml}
                         <div class="alert alert-info py-2 px-3 small mb-0 d-flex align-items-center gap-2">
                             <i class="bi bi-info-circle-fill text-info fs-5"></i>
-                            <div>Status tugas akan dikembalikan ke <strong>Di-pause</strong> dan waktu selesai di-reset agar pegawai dapat melanjutkan pekerjaannya.</div>
+                            <div>Status tugas akan dibuka kunci dan dikembalikan ke <strong>Di-pause</strong> agar pegawai dapat melanjutkan pekerjaannya.</div>
                         </div>
                     </div>
                 `,
@@ -772,7 +772,7 @@
                 showCancelButton: true,
                 confirmButtonColor: '#f59e0b',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="bi bi-unlock-fill me-1"></i> Ya, Buka Kembali',
+                confirmButtonText: '<i class="bi bi-unlock-fill me-1"></i> Ya, Buka Kunci',
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
