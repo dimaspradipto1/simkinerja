@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('kepanitiaan_sesi_absensis', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('kepanitiaan_id')->constrained('kepanitiaans')->cascadeOnDelete();
+            $table->foreignId('kepanitiaan_id')->constrained('kegiatans')->cascadeOnDelete();
             $table->string('nama_sesi'); // Contoh: "Hari Pertama", "Gladi Bersih", "Pelaksanaan"
             $table->date('tanggal')->nullable();
             $table->time('waktu_mulai_datang')->nullable();

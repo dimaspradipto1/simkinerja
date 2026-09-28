@@ -31,12 +31,6 @@ class CleanDuplicateUsers extends Command
     protected array $relatedTables = [
         'kegiatans' => 'user_id',
         'kegiatan_user' => 'user_id',
-        'rencana_kerjas' => 'user_id',
-        'rencana_kerja_user' => 'user_id',
-        'kepanitiaans' => 'user_id',
-        'kepanitiaan_user' => 'user_id',
-        'insidentils' => 'user_id',
-        'insidentil_user' => 'user_id',
     ];
 
     public function handle()

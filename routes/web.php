@@ -101,7 +101,10 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('kepanitiaan', KepanitiaanController::class);
 
     // Kegiatan Routes
+    Route::get('kegiatan/download-template', [KegiatanController::class, 'downloadTemplate'])->name('kegiatan.download-template');
+    Route::get('kegiatan/export-excel', [KegiatanController::class, 'exportExcel'])->name('kegiatan.export-excel');
     Route::get('kegiatan/export-pdf', [KegiatanController::class, 'exportPdf'])->name('kegiatan.export-pdf');
+    Route::post('kegiatan/import-excel', [KegiatanController::class, 'importExcel'])->name('kegiatan.import-excel');
     Route::post('kegiatan/{kegiatan}/start', [KegiatanController::class, 'start'])->name('kegiatan.start');
     Route::post('kegiatan/{kegiatan}/pause', [KegiatanController::class, 'pause'])->name('kegiatan.pause');
     Route::post('kegiatan/{kegiatan}/stop', [KegiatanController::class, 'stop'])->name('kegiatan.stop');

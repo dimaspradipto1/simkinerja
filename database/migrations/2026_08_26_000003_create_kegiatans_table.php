@@ -14,9 +14,9 @@ return new class extends Migration
         if (!Schema::hasTable('kegiatans')) {
             Schema::create('kegiatans', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-                $table->foreignId('periode_akademik_id')->constrained()->cascadeOnDelete();
-                $table->string('kategori')->nullable();
+                $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+                $table->foreignId('periode_akademik_id')->constrained('periode_akademiks')->cascadeOnDelete();
+                $table->string('kategori')->nullable(); // Rencana Kerja, Kepanitiaan, Insidentil
                 $table->string('source_type')->nullable();
                 $table->unsignedBigInteger('source_id')->nullable();
                 $table->text('uraian_tugas');
@@ -25,6 +25,8 @@ return new class extends Migration
                 $table->time('estimasi_jam_selesai')->nullable();
                 $table->date('estimasi_tanggal_mulai')->nullable();
                 $table->date('estimasi_tanggal_selesai')->nullable();
+                $table->date('estimasi_tanggal_selesai_awal')->nullable();
+                $table->time('estimasi_jam_selesai_awal')->nullable();
                 $table->time('waktu_mulai')->nullable();
                 $table->time('waktu_selesai')->nullable();
                 $table->date('tanggal_mulai')->nullable();
@@ -33,12 +35,21 @@ return new class extends Migration
                 $table->text('url_external')->nullable();
                 $table->text('hasil_kerja')->nullable();
                 $table->text('rencana_tindak_lanjut')->nullable();
+                $table->text('saran_pimpinan')->nullable();
+                $table->dateTime('last_started_at')->nullable();
+                $table->unsignedInteger('durasi_detik')->default(0);
                 $table->string('status')->default('Belum Dimulai');
                 $table->boolean('is_paused')->default(false);
                 $table->timestamp('paused_at')->nullable();
                 $table->unsignedInteger('total_paused_seconds')->default(0);
+                $table->text('alasan_pause')->nullable();
                 $table->text('estimasi_unlock_reason')->nullable();
                 $table->timestamp('estimasi_unlock_requested_at')->nullable();
+                $table->timestamp('estimasi_unlock_approved_at')->nullable();
+                $table->text('reopen_reason')->nullable();
+                $table->timestamp('reopen_requested_at')->nullable();
+                $table->timestamp('reopened_at')->nullable();
+                $table->foreignId('reopened_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
             });
         }

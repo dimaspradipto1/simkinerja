@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
 use Yajra\DataTables\Facades\DataTables;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class KegiatanController extends Controller
 {
@@ -288,7 +294,13 @@ class KegiatanController extends Controller
                 ->make(true);
         }
 
-        return redirect()->route('kegiatan.create');
+        $jabatanList = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->distinct()->orderBy('jabatan')->pluck('jabatan');
+        $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
+        $defaultPeriode = PeriodeAkademik::first();
+        $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
+        $usersWithJabatan = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->orderBy('name')->get();
+
+        return view('pages.kegiatan.index', compact('jabatanList', 'periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan'));
     }
 
     /**
@@ -523,12 +535,11 @@ class KegiatanController extends Controller
             $validated['status'] = 'Belum Dimulai';
         }
 
-        // Simpan data ke model target (secara otomatis akan disinkronkan ke tabel kegiatans via SyncsToKegiatan trait)
+        // Simpan langsung ke model target (tersimpan di tabel kegiatans secara otomatis melalui STI)
         if (trim($kategori) === 'Kepanitiaan') {
             $record = Kepanitiaan::create($validated);
             if ($request->has('tagged_users')) {
                 $record->taggedUsers()->sync($request->input('tagged_users'));
-                $record->syncToKegiatan();
             }
 
             // Simpan sesi presensi baru jika diisi dari form
@@ -559,7 +570,6 @@ class KegiatanController extends Controller
             $record = Insidentil::create($validated);
             if ($request->has('tagged_users')) {
                 $record->taggedUsers()->sync($request->input('tagged_users'));
-                $record->syncToKegiatan();
             }
             Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Rencana Kerja Insidentil.')
                 ->toToast()
@@ -571,7 +581,6 @@ class KegiatanController extends Controller
             $record = RencanaKerja::create($validated);
             if ($request->has('tagged_users')) {
                 $record->taggedUsers()->sync($request->input('tagged_users'));
-                $record->syncToKegiatan();
             }
             Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Rencana Kerja Utama.')
                 ->toToast()
@@ -645,34 +654,23 @@ class KegiatanController extends Controller
 
         // Jika kegiatan bertipe Kepanitiaan dan ada input sesi presensi baru
         if (trim($kegiatan->kategori) === 'Kepanitiaan' && $request->filled('nama_sesi_presensi')) {
-            $kepanitiaanId = null;
-            if ($kegiatan->source_type === \App\Models\Kepanitiaan::class && $kegiatan->source_id) {
-                $kepanitiaanId = $kegiatan->source_id;
-            } else {
-                $kp = \App\Models\Kepanitiaan::where('uraian_tugas', $kegiatan->uraian_tugas)->first();
-                if ($kp) $kepanitiaanId = $kp->id;
-            }
-
-            if ($kepanitiaanId) {
-                $sesiNames = (array) $request->input('nama_sesi_presensi');
-                $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
-                foreach ($sesiNames as $idx => $sName) {
-                    $trimmed = trim((string)$sName);
-                    if (!empty($trimmed)) {
-                        \App\Models\KepanitiaanSesiAbsensi::create([
-                            'kepanitiaan_id' => $kepanitiaanId,
-                            'nama_sesi' => $trimmed,
-                            'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kegiatan->tanggal_mulai ?: date('Y-m-d')),
-                            'token' => \Illuminate\Support\Str::random(24),
-                            'is_active' => true,
-                        ]);
-                    }
+            $sesiNames = (array) $request->input('nama_sesi_presensi');
+            $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+            foreach ($sesiNames as $idx => $sName) {
+                $trimmed = trim((string)$sName);
+                if (!empty($trimmed)) {
+                    \App\Models\KepanitiaanSesiAbsensi::create([
+                        'kepanitiaan_id' => $kegiatan->id,
+                        'nama_sesi' => $trimmed,
+                        'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kegiatan->tanggal_mulai ?: date('Y-m-d')),
+                        'token' => \Illuminate\Support\Str::random(24),
+                        'is_active' => true,
+                    ]);
                 }
             }
         }
 
         $kegiatan->taggedUsers()->sync($request->input('tagged_users', []));
-        $kegiatan->syncToSource();
 
         Alert::success('Berhasil', 'Kegiatan berhasil diperbarui')
             ->toToast()
@@ -1187,7 +1185,6 @@ class KegiatanController extends Controller
         ]);
 
         $kegiatan->taggedUsers()->sync($request->input('tagged_users', []));
-        $kegiatan->syncToSource();
 
         return response()->json([
             'success' => true,
@@ -1222,10 +1219,236 @@ class KegiatanController extends Controller
     /**
      * Export to PDF.
      */
-    public function exportPdf(Request $request)
+    /**
+     * Download Excel Import Template for Kegiatan.
+     */
+    public function downloadTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Template Kegiatan');
+
+        // Header Columns
+        $headers = [
+            'A1' => 'uraian_tugas',
+            'B1' => 'kategori',
+            'C1' => 'periode_akademik',
+            'D1' => 'hari',
+            'E1' => 'estimasi_tanggal_mulai',
+            'F1' => 'estimasi_jam_mulai',
+            'G1' => 'estimasi_tanggal_selesai',
+            'H1' => 'estimasi_jam_selesai',
+        ];
+
+        foreach ($headers as $cell => $val) {
+            $sheet->setCellValue($cell, $val);
+        }
+
+        $headerRange = 'A1:H1';
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(10);
+        $sheet->getStyle($headerRange)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('15432D');
+        $sheet->getStyle($headerRange)->getFont()->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle($headerRange)->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(1)->setRowHeight(26);
+
+        // Sample Rows
+        $sheet->setCellValue('A2', 'Menyusun Laporan Kinerja Mingguan');
+        $sheet->setCellValue('B2', 'Rencana Kerja');
+        $sheet->setCellValue('C2', '2026/2027 Semester Ganjil');
+        $sheet->setCellValue('D2', 'Senin');
+        $sheet->setCellValue('E2', date('Y-m-d'));
+        $sheet->setCellValue('F2', '08:00');
+        $sheet->setCellValue('G2', date('Y-m-d'));
+        $sheet->setCellValue('H2', '16:00');
+
+        $sheet->setCellValue('A3', 'Panitia Pelaksana Kegiatan PKKMB');
+        $sheet->setCellValue('B3', 'Kepanitiaan');
+        $sheet->setCellValue('C3', '2026/2027 Semester Ganjil');
+        $sheet->setCellValue('D3', 'Selasa');
+        $sheet->setCellValue('E3', date('Y-m-d'));
+        $sheet->setCellValue('F3', '08:30');
+        $sheet->setCellValue('G3', date('Y-m-d'));
+        $sheet->setCellValue('H3', '15:00');
+
+        $sheet->setCellValue('A4', 'Penanganan Gangguan Jaringan Kampus');
+        $sheet->setCellValue('B4', 'Insidentil');
+        $sheet->setCellValue('C4', '2026/2027 Semester Ganjil');
+        $sheet->setCellValue('D4', 'Rabu');
+        $sheet->setCellValue('E4', date('Y-m-d'));
+        $sheet->setCellValue('F4', '10:00');
+        $sheet->setCellValue('G4', date('Y-m-d'));
+        $sheet->setCellValue('H4', '12:00');
+
+        foreach (range('A', 'H') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'template_import_kegiatan.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * Import Kegiatan from Excel File.
+     */
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file_excel' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+            'periode_akademik_id' => 'nullable|exists:periode_akademiks,id',
+            'kategori' => 'nullable|string',
+        ]);
+
+        try {
+            $file = $request->file('file_excel');
+            $spreadsheet = IOFactory::load($file->getRealPath());
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray();
+
+            if (empty($rows) || count($rows) < 2) {
+                Alert::error('Gagal', 'File Excel kosong atau tidak memiliki data yang valid.')->toToast();
+                return redirect()->back();
+            }
+
+            $authUser = Auth::user();
+            $targetUserId = $authUser ? $authUser->id : null;
+            $defaultKategori = $request->input('kategori') ?: 'Rencana Kerja';
+
+            $headerRowIndex = 0;
+            $header = array_map(fn($v) => strtolower(trim((string)$v)), $rows[0]);
+            
+            $uraianIndex = array_search('uraian_tugas', $header);
+            if ($uraianIndex === false) {
+                foreach ($header as $i => $colName) {
+                    if (str_contains($colName, 'uraian') || str_contains($colName, 'tugas') || str_contains($colName, 'kegiatan')) {
+                        $uraianIndex = $i;
+                        break;
+                    }
+                }
+            }
+
+            if ($uraianIndex === false) {
+                for ($r = 1; $r < min(10, count($rows)); $r++) {
+                    $testHeader = array_map(fn($v) => strtolower(trim((string)$v)), $rows[$r]);
+                    foreach ($testHeader as $i => $colName) {
+                        if (str_contains($colName, 'uraian') || str_contains($colName, 'tugas') || str_contains($colName, 'kegiatan')) {
+                            $headerRowIndex = $r;
+                            $header = $testHeader;
+                            $uraianIndex = $i;
+                            break 2;
+                        }
+                    }
+                }
+            }
+
+            if ($uraianIndex === false) {
+                Alert::error('Format Salah', 'Kolom Uraian Tugas / Kegiatan tidak ditemukan pada file Excel.')->toToast();
+                return redirect()->back();
+            }
+
+            $kategoriIndex = false;
+            $periodeIndex = false;
+            $hariIndex = false;
+            $estTglMulaiIndex = false;
+            $estJamMulaiIndex = false;
+            $estTglSelesaiIndex = false;
+            $estJamSelesaiIndex = false;
+
+            foreach ($header as $i => $col) {
+                if (str_contains($col, 'kategori')) $kategoriIndex = $i;
+                elseif (str_contains($col, 'periode')) $periodeIndex = $i;
+                elseif (str_contains($col, 'hari')) $hariIndex = $i;
+                elseif (str_contains($col, 'estimasi') && str_contains($col, 'mulai') && str_contains($col, 'tgl')) $estTglMulaiIndex = $i;
+                elseif (str_contains($col, 'estimasi') && str_contains($col, 'mulai') && str_contains($col, 'jam')) $estJamMulaiIndex = $i;
+                elseif (str_contains($col, 'estimasi') && str_contains($col, 'selesai') && str_contains($col, 'tgl')) $estTglSelesaiIndex = $i;
+                elseif (str_contains($col, 'estimasi') && str_contains($col, 'selesai') && str_contains($col, 'jam')) $estJamSelesaiIndex = $i;
+            }
+
+            $defaultPeriodeId = $request->input('periode_akademik_id');
+            if (!$defaultPeriodeId) {
+                $p = PeriodeAkademik::first();
+                $defaultPeriodeId = $p ? $p->id : null;
+            }
+
+            $count = 0;
+            for ($r = $headerRowIndex + 1; $r < count($rows); $r++) {
+                $row = $rows[$r];
+                $uraian = !empty($row[$uraianIndex]) ? trim((string)$row[$uraianIndex]) : '';
+                if (empty($uraian) || $uraian === '-' || strtolower($uraian) === 'uraian tugas' || strtolower($uraian) === 'uraian kegiatan') {
+                    continue;
+                }
+
+                $kategoriVal = $defaultKategori;
+                if ($kategoriIndex !== false && !empty($row[$kategoriIndex])) {
+                    $rawKat = trim((string)$row[$kategoriIndex]);
+                    if (stripos($rawKat, 'kepanitiaan') !== false) {
+                        $kategoriVal = 'Kepanitiaan';
+                    } elseif (stripos($rawKat, 'insidentil') !== false) {
+                        $kategoriVal = 'Insidentil';
+                    } elseif (stripos($rawKat, 'rencana') !== false) {
+                        $kategoriVal = 'Rencana Kerja';
+                    }
+                }
+
+                $rowPeriodeId = $defaultPeriodeId;
+                if ($periodeIndex !== false && !empty($row[$periodeIndex])) {
+                    $perText = trim((string)$row[$periodeIndex]);
+                    $foundP = PeriodeAkademik::where('nama_periode', 'like', "%{$perText}%")->first();
+                    if ($foundP) {
+                        $rowPeriodeId = $foundP->id;
+                    }
+                }
+
+                $hariVal = ($hariIndex !== false && !empty($row[$hariIndex])) ? trim((string)$row[$hariIndex]) : null;
+                $estTglMulaiVal = ($estTglMulaiIndex !== false && !empty($row[$estTglMulaiIndex])) ? trim((string)$row[$estTglMulaiIndex]) : null;
+                $estJamMulaiVal = ($estJamMulaiIndex !== false && !empty($row[$estJamMulaiIndex])) ? trim((string)$row[$estJamMulaiIndex]) : null;
+                $estTglSelesaiVal = ($estTglSelesaiIndex !== false && !empty($row[$estTglSelesaiIndex])) ? trim((string)$row[$estTglSelesaiIndex]) : null;
+                $estJamSelesaiVal = ($estJamSelesaiIndex !== false && !empty($row[$estJamSelesaiIndex])) ? trim((string)$row[$estJamSelesaiIndex]) : null;
+
+                Kegiatan::create([
+                    'user_id' => $targetUserId,
+                    'periode_akademik_id' => $rowPeriodeId,
+                    'kategori' => $kategoriVal,
+                    'uraian_tugas' => $uraian,
+                    'hari' => $hariVal,
+                    'estimasi_tanggal_mulai' => $estTglMulaiVal ?: date('Y-m-d'),
+                    'estimasi_jam_mulai' => $estJamMulaiVal ?: '08:00:00',
+                    'estimasi_tanggal_selesai' => $estTglSelesaiVal ?: date('Y-m-d'),
+                    'estimasi_jam_selesai' => $estJamSelesaiVal ?: '16:00:00',
+                    'status' => 'Belum Dimulai',
+                ]);
+
+                $count++;
+            }
+
+            Alert::success('Berhasil', "Berhasil mengimpor {$count} data kegiatan.")
+                ->toToast()
+                ->autoClose(4000)
+                ->timerProgressBar();
+
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Alert::error('Gagal', 'Gagal memproses file Excel: ' . $e->getMessage())->toToast();
+            return redirect()->back();
+        }
+    }
+
+    /**
+     * Build base query for export (PDF & Excel) supporting both options: (1) Periode Akademik, (2) Range Tanggal.
+     */
+    private function buildExportQuery(Request $request)
     {
         $authUser = Auth::user();
-        $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers'])->latest();
+        $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones'])->latest();
 
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
@@ -1255,21 +1478,268 @@ class KegiatanController extends Controller
             }
         }
 
-        if ($request->filled('jabatan')) {
+        if ($request->filled('jabatan') && $request->jabatan !== '__all__' && $request->jabatan !== 'all') {
             $query->where(function ($q) use ($request) {
                 $q->whereHas('user', fn($qu) => $qu->where('jabatan', $request->jabatan))
                   ->orWhereHas('taggedUsers', fn($qt) => $qt->where('jabatan', $request->jabatan));
             });
         }
 
-        if ($request->filled('periode_akademik_id')) {
-            $query->where('periode_akademik_id', $request->periode_akademik_id);
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
         }
 
+        $filterType = $request->input('filter_type', 'periode');
+        $startDate = $request->input('tanggal_mulai') ?: $request->input('start_date');
+        $endDate = $request->input('tanggal_selesai') ?: $request->input('end_date');
+
+        if ($filterType === 'range' || (!$request->filled('periode_akademik_id') && ($startDate || $endDate))) {
+            if ($startDate && $endDate) {
+                $query->where(function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tanggal_mulai', [$startDate, $endDate])
+                      ->orWhereBetween('tanggal_selesai', [$startDate, $endDate])
+                      ->orWhereBetween('estimasi_tanggal_mulai', [$startDate, $endDate])
+                      ->orWhereBetween('estimasi_tanggal_selesai', [$startDate, $endDate])
+                      ->orWhere(function ($sub) use ($startDate, $endDate) {
+                          $sub->whereDate('created_at', '>=', $startDate)
+                              ->whereDate('created_at', '<=', $endDate);
+                      });
+                });
+            } elseif ($startDate) {
+                $query->where(function ($q) use ($startDate) {
+                    $q->whereDate('tanggal_mulai', '>=', $startDate)
+                      ->orWhereDate('estimasi_tanggal_mulai', '>=', $startDate)
+                      ->orWhereDate('created_at', '>=', $startDate);
+                });
+            } elseif ($endDate) {
+                $query->where(function ($q) use ($endDate) {
+                    $q->whereDate('tanggal_selesai', '<=', $endDate)
+                      ->orWhereDate('estimasi_tanggal_selesai', '<=', $endDate)
+                      ->orWhereDate('created_at', '<=', $endDate);
+                });
+            }
+        } else {
+            if ($request->filled('periode_akademik_id')) {
+                $query->where('periode_akademik_id', $request->periode_akademik_id);
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * Export Kegiatan to Excel.
+     */
+    public function exportExcel(Request $request)
+    {
+        $authUser = Auth::user();
+        $query = $this->buildExportQuery($request);
+        $items = $query->latest()->get();
+
+        $filterType = $request->input('filter_type', 'periode');
+        $startDate = $request->input('tanggal_mulai') ?: $request->input('start_date');
+        $endDate = $request->input('tanggal_selesai') ?: $request->input('end_date');
+
+        $periodeText = 'SEMUA PERIODE';
+        if ($filterType === 'range' || (!$request->filled('periode_akademik_id') && ($startDate || $endDate))) {
+            if ($startDate && $endDate) {
+                $periodeText = date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate));
+            } elseif ($startDate) {
+                $periodeText = 'DARI ' . date('d/m/Y', strtotime($startDate));
+            } elseif ($endDate) {
+                $periodeText = 'SAMPAI ' . date('d/m/Y', strtotime($endDate));
+            }
+        } else {
+            if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
+                $periodeText = strtoupper($p->nama_periode);
+            } elseif ($items->count() > 0 && ($first = $items->first()) && $first->periodeAkademik) {
+                $periodeText = strtoupper($first->periodeAkademik->nama_periode);
+            }
+        }
+
+        $namaStaff = 'SEMUA PEGAWAI';
+        $jabatanStaff = 'SEMUA JABATAN';
+        $unitStaff = 'SEMUA UNIT';
+
+        $targetUser = null;
+        if ($request->filled('user_id')) {
+            $targetUser = User::find($request->user_id);
+        } elseif ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
+            $targetUser = $authUser;
+        }
+
+        if ($targetUser) {
+            $namaStaff = strtoupper($targetUser->name);
+            $jabatanStaff = strtoupper($targetUser->jabatan ?? '-');
+            $unitStaff = strtoupper($targetUser->unit ?? '-');
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Laporan Kegiatan');
+
+        // Row 1: Title
+        $titleText = 'LAPORAN REKAPITULASI KEGIATAN (' . $periodeText . ')';
+        $sheet->mergeCells('A1:L1');
+        $sheet->setCellValue('A1', $titleText);
+        $sheet->getStyle('A1:L1')->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:L1')->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('15432D');
+        $sheet->getStyle('A1:L1')->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(1)->setRowHeight(30);
+
+        // Metadata
+        $sheet->setCellValue('A3', 'NAMA PEGAWAI');
+        $sheet->setCellValue('B3', ': ' . $namaStaff);
+        $sheet->getStyle('A3')->getFont()->setBold(true);
+
+        $sheet->setCellValue('A4', 'JABATAN');
+        $sheet->setCellValue('B4', ': ' . $jabatanStaff);
+        $sheet->getStyle('A4')->getFont()->setBold(true);
+
+        $sheet->setCellValue('A5', 'UNIT');
+        $sheet->setCellValue('B5', ': ' . $unitStaff);
+        $sheet->getStyle('A5')->getFont()->setBold(true);
+
+        // Headers
+        $headers = [
+            'A7' => 'NO',
+            'B7' => 'PEGAWAI',
+            'C7' => 'KATEGORI',
+            'D7' => 'HARI',
+            'E7' => 'URAIAN KEGIATAN',
+            'F7' => 'ESTIMASI PELAKSANAAN',
+            'G7' => 'REALISASI PELAKSANAAN',
+            'H7' => 'DURASI',
+            'I7' => 'STATUS',
+            'J7' => 'HASIL KEGIATAN',
+            'K7' => 'RENCANA TINDAK LANJUT',
+            'L7' => 'BUKTI / BERKAS',
+        ];
+
+        foreach ($headers as $cell => $val) {
+            $sheet->setCellValue($cell, $val);
+        }
+
+        $headerRange = 'A7:L7';
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(9);
+        $sheet->getStyle($headerRange)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('15432D');
+        $sheet->getStyle($headerRange)->getFont()->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle($headerRange)->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(7)->setRowHeight(25);
+
+        $rowNum = 8;
+        $no = 1;
+
+        foreach ($items as $item) {
+            $durasiStr = '-';
+            if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
+                try {
+                    $tglMulaiStr = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+                    $tglSelesaiStr = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglMulaiStr;
+                    $startTs = strtotime($tglMulaiStr . ' ' . $item->waktu_mulai);
+                    $endTs = strtotime($tglSelesaiStr . ' ' . $item->waktu_selesai);
+                    $diffInSeconds = max(0, $endTs - $startTs);
+
+                    $hours = floor($diffInSeconds / 3600);
+                    $minutes = floor(($diffInSeconds % 3600) / 60);
+                    $durasiStr = ($hours > 0 ? $hours . 'j ' : '') . $minutes . 'm';
+                } catch (\Exception $e) {
+                    $durasiStr = '-';
+                }
+            }
+
+            $estStr = 'Mulai: ' . ($item->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) : '-') . ($item->estimasi_jam_mulai ? ' ' . substr($item->estimasi_jam_mulai, 0, 5) : '') . "\n" .
+                      'Selesai: ' . ($item->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($item->estimasi_tanggal_selesai)) : '-') . ($item->estimasi_jam_selesai ? ' ' . substr($item->estimasi_jam_selesai, 0, 5) : '');
+
+            $realStr = 'Mulai: ' . ($item->tanggal_mulai ? date('d/m/Y', strtotime($item->tanggal_mulai)) : '-') . ($item->waktu_mulai ? ' ' . substr($item->waktu_mulai, 0, 5) : '') . "\n" .
+                       'Selesai: ' . ($item->tanggal_selesai && $item->waktu_selesai !== '00:00:00' ? date('d/m/Y', strtotime($item->tanggal_selesai)) . ' ' . substr($item->waktu_selesai, 0, 5) : '-');
+
+            $fileLinkStr = $item->file ? asset('storage/' . $item->file) : '-';
+            $extLinkStr = $item->url_external ?? '-';
+            $buktiStr = 'Berkas: ' . $fileLinkStr . "\nLink: ' . $extLinkStr";
+
+            $pegawaiStr = ($item->user->name ?? '-') . "\n(" . ($item->user->jabatan ?? '-') . ')';
+            if ($item->taggedUsers->count() > 0) {
+                $pegawaiStr .= "\n[Tag: " . implode(', ', $item->taggedUsers->pluck('name')->toArray()) . ']';
+            }
+
+            $sheet->setCellValue('A' . $rowNum, $no++);
+            $sheet->setCellValue('B' . $rowNum, $pegawaiStr);
+            $sheet->setCellValue('C' . $rowNum, $item->kategori ?: 'Rencana Kerja');
+            $sheet->setCellValue('D' . $rowNum, $item->hari ?: '-');
+            $sheet->setCellValue('E' . $rowNum, $item->uraian_tugas);
+            $sheet->setCellValue('F' . $rowNum, $estStr);
+            $sheet->setCellValue('G' . $rowNum, $realStr);
+            $sheet->setCellValue('H' . $rowNum, $durasiStr);
+            $sheet->setCellValue('I' . $rowNum, $item->status ?: 'Belum Dimulai');
+            $sheet->setCellValue('J' . $rowNum, strip_tags($item->hasil_kerja ?: '-'));
+            $sheet->setCellValue('K' . $rowNum, strip_tags($item->rencana_tindak_lanjut ?: '-'));
+            $sheet->setCellValue('L' . $rowNum, $buktiStr);
+
+            $sheet->getStyle('A' . $rowNum . ':L' . $rowNum)->getAlignment()->setWrapText(true);
+            $sheet->getStyle('A' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('C' . $rowNum . ':D' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('H' . $rowNum . ':I' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            $rowNum++;
+        }
+
+        $lastRow = max(8, $rowNum - 1);
+        $dataRange = 'A7:L' . $lastRow;
+        $sheet->getStyle($dataRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        foreach (range('A', 'L') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'Laporan_Kegiatan_' . date('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * Export to PDF supporting both (1) Periode Akademik and (2) Range Tanggal.
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = $this->buildExportQuery($request);
         $kegiatans = $query->get();
+
+        $filterType = $request->input('filter_type', 'periode');
+        $startDate = $request->input('tanggal_mulai') ?: $request->input('start_date');
+        $endDate = $request->input('tanggal_selesai') ?: $request->input('end_date');
+
+        $periodeText = '';
+        if ($filterType === 'range' || (!$request->filled('periode_akademik_id') && ($startDate || $endDate))) {
+            if ($startDate && $endDate) {
+                $periodeText = date('d/m/Y', strtotime($startDate)) . ' s/d ' . date('d/m/Y', strtotime($endDate));
+            } elseif ($startDate) {
+                $periodeText = 'Dari ' . date('d/m/Y', strtotime($startDate));
+            } elseif ($endDate) {
+                $periodeText = 'Sampai ' . date('d/m/Y', strtotime($endDate));
+            }
+        } else {
+            if ($request->filled('periode_akademik_id') && ($p = PeriodeAkademik::find($request->periode_akademik_id))) {
+                $periodeText = $p->nama_periode;
+            }
+        }
+
         $periode = $request->filled('periode_akademik_id') ? PeriodeAkademik::find($request->periode_akademik_id) : null;
 
-        $pdf = Pdf::loadView('pages.kegiatan.pdf', compact('kegiatans', 'periode'))
+        $pdf = Pdf::loadView('pages.kegiatan.pdf', compact('kegiatans', 'periode', 'periodeText'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->download('Laporan_Kegiatan_' . date('YmdHis') . '.pdf');

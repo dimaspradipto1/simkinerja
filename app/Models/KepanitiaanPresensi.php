@@ -28,6 +28,11 @@ class KepanitiaanPresensi extends Model
         return $this->belongsTo(KepanitiaanSesiAbsensi::class, 'kepanitiaan_sesi_absensi_id');
     }
 
+    public function sesi()
+    {
+        return $this->sesiAbsensi();
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

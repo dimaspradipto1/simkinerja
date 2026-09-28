@@ -427,12 +427,12 @@ class User extends Authenticatable
 
     public function taggedRencanaKerjas()
     {
-        return $this->belongsToMany(RencanaKerja::class, 'rencana_kerja_user', 'user_id', 'rencana_kerja_id')->withTimestamps();
+        return $this->belongsToMany(RencanaKerja::class, 'kegiatan_user', 'user_id', 'kegiatan_id')->withTimestamps();
     }
 
     public function taggedKepanitiaans()
     {
-        return $this->belongsToMany(Kepanitiaan::class, 'kepanitiaan_user', 'user_id', 'kepanitiaan_id')->withTimestamps();
+        return $this->belongsToMany(Kepanitiaan::class, 'kegiatan_user', 'user_id', 'kegiatan_id')->withTimestamps();
     }
 
     public function taggedKegiatans()
@@ -442,7 +442,7 @@ class User extends Authenticatable
 
     public function taggedInsidentils()
     {
-        return $this->belongsToMany(Insidentil::class, 'insidentil_user', 'user_id', 'insidentil_id')->withTimestamps();
+        return $this->belongsToMany(Insidentil::class, 'kegiatan_user', 'user_id', 'kegiatan_id')->withTimestamps();
     }
 
     /**

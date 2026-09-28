@@ -1324,7 +1324,7 @@ class RencanaKerjaController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:rencana_kerjas,id',
+            'ids.*' => 'integer|exists:kegiatans,id',
         ]);
 
         $authUser = Auth::user();

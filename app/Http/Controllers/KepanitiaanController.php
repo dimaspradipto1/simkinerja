@@ -1506,7 +1506,7 @@ class KepanitiaanController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:kepanitiaans,id',
+            'ids.*' => 'integer|exists:kegiatans,id',
         ]);
 
         $authUser = Auth::user();

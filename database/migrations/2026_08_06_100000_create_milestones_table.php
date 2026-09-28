@@ -21,6 +21,7 @@ return new class extends Migration
             $table->dateTime('waktu_selesai')->nullable();
             $table->dateTime('last_started_at')->nullable();
             $table->unsignedInteger('durasi_detik')->default(0);
+            $table->text('alasan_pause')->nullable();
             $table->timestamps();
         });
     }

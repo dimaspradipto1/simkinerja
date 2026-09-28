@@ -24,7 +24,7 @@ class LpjRequest extends FormRequest
     {
         return [
             'nama_lpj' => 'required|string|max:255',
-            'kepanitiaan_id' => 'nullable|integer|exists:kepanitiaans,id',
+            'kepanitiaan_id' => 'nullable|integer|exists:kegiatans,id',
             'nama_kepanitiaan' => 'required|string|max:255',
             'tanggal_kegiatan' => 'nullable|date',
             'keterangan' => 'nullable|string',

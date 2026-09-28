@@ -2,62 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
-class Insidentil extends Model
+class Insidentil extends Kegiatan
 {
-    use HasFactory, \App\Traits\SyncsToKegiatan;
+    protected $table = 'kegiatans';
 
-    protected $table = 'insidentils';
-
-    protected $fillable = [
-        'user_id',
-        'periode_akademik_id',
-        'uraian_tugas',
-        'hari',
-        'estimasi_jam_mulai',
-        'estimasi_jam_selesai',
-        'estimasi_tanggal_mulai',
-        'estimasi_tanggal_selesai',
-        'waktu_mulai',
-        'waktu_selesai',
-        'tanggal_mulai',
-        'tanggal_selesai',
-        'file',
-        'url_external',
-        'hasil_kerja',
-        'rencana_tindak_lanjut',
-        'status',
-        'alasan_pause',
-        'last_started_at',
-        'durasi_detik',
-        'estimasi_unlock_reason',
-        'estimasi_unlock_requested_at',
-        'reopen_reason',
-        'reopen_requested_at',
-        'reopened_at',
-        'reopened_by',
-    ];
-
-    public function user()
+    protected static function booted(): void
     {
-        return $this->belongsTo(User::class);
-    }
+        static::addGlobalScope('kategori', function (Builder $builder) {
+            $builder->where('kegiatans.kategori', 'Insidentil');
+        });
 
-    public function periodeAkademik()
-    {
-        return $this->belongsTo(PeriodeAkademik::class, 'periode_akademik_id');
-    }
-
-    public function taggedUsers()
-    {
-        return $this->belongsToMany(User::class, 'insidentil_user', 'insidentil_id', 'user_id')->withTimestamps();
-    }
-
-    public function milestones()
-    {
-        return $this->morphMany(Milestone::class, 'milestonable');
+        static::creating(function ($model) {
+            if (empty($model->kategori)) {
+                $model->kategori = 'Insidentil';
+            }
+        });
     }
 }
-

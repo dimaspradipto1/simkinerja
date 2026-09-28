@@ -97,21 +97,22 @@
     <div style="border-top: 2.5px solid #356B3A; border-bottom: 1px solid #356B3A; height: 2px; margin-bottom: 10px;"></div>
 
     <div class="title-header">
-        LAPORAN REKAPITULASI KEGIATAN {{ $periode ? '(' . $periode->nama_periode . ')' : '' }}
+        LAPORAN REKAPITULASI KEGIATAN {{ !empty($periodeText) ? '(' . $periodeText . ')' : ($periode ? '(' . $periode->nama_periode . ')' : '') }}
     </div>
 
     <table class="data-table">
         <thead>
             <tr>
                 <th style="width: 3%;">NO</th>
-                <th style="width: 14%;">PEGAWAI</th>
+                <th style="width: 13%;">PEGAWAI</th>
+                <th style="width: 9%;">KATEGORI</th>
                 <th style="width: 5%;">HARI</th>
-                <th style="width: 18%;">URAIAN KEGIATAN</th>
+                <th style="width: 16%;">URAIAN KEGIATAN</th>
                 <th style="width: 12%;">ESTIMASI</th>
                 <th style="width: 12%;">REALISASI</th>
                 <th style="width: 7%;">STATUS</th>
-                <th style="width: 14%;">HASIL KEGIATAN</th>
-                <th style="width: 15%;">TINDAK LANJUT</th>
+                <th style="width: 11%;">HASIL KEGIATAN</th>
+                <th style="width: 12%;">TINDAK LANJUT</th>
             </tr>
         </thead>
         <tbody>
@@ -126,6 +127,9 @@
                                 <strong>Rekan:</strong> {{ implode(', ', $item->taggedUsers->pluck('name')->toArray()) }}
                             </div>
                         @endif
+                    </td>
+                    <td class="text-center" style="font-size: 6.5pt;">
+                        <span style="font-weight: bold;">{{ $item->kategori ?: 'Rencana Kerja' }}</span>
                     </td>
                     <td class="text-center">{{ $item->hari ?? '-' }}</td>
                     <td class="text-left">
@@ -155,7 +159,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center" style="padding: 15px; color: #777777;">
+                    <td colspan="10" class="text-center" style="padding: 15px; color: #777777;">
                         Tidak ada data kegiatan.
                     </td>
                 </tr>

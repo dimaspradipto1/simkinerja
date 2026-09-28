@@ -29,5 +29,16 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('production')) {
             URL::forceScheme('https');
         }
+
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'App\Models\Kegiatan'     => \App\Models\Kegiatan::class,
+            'App\Models\RencanaKerja' => \App\Models\RencanaKerja::class,
+            'App\Models\Kepanitiaan'  => \App\Models\Kepanitiaan::class,
+            'App\Models\Insidentil'   => \App\Models\Insidentil::class,
+            'kegiatan'                => \App\Models\Kegiatan::class,
+            'rencana_kerja'           => \App\Models\RencanaKerja::class,
+            'kepanitiaan'             => \App\Models\Kepanitiaan::class,
+            'insidentil'              => \App\Models\Insidentil::class,
+        ]);
     }
 }

@@ -156,9 +156,12 @@
                         <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap d-none">
                             <i class="bi bi-trash-fill"></i> Hapus Terpilih (<span id="selected-count">0</span>)
                         </button>
-                        <a href="{{ route('kegiatan.export-pdf', request()->query()) }}" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap">
-                            <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
-                        </a>
+                        <button type="button" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalExportKegiatan" style="background-color: #15432d; border-color: #15432d;">
+                            <i class="bi bi-file-earmark-arrow-down-fill"></i> Export Laporan
+                        </button>
+                        <button type="button" class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportKegiatan">
+                            <i class="bi bi-file-earmark-excel"></i> Import Excel
+                        </button>
                         <a href="{{ route('kegiatan.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap">
                             <i class="bi bi-plus-circle"></i> Tambah Kegiatan
                         </a>
@@ -324,6 +327,185 @@
         </div>
     </div>
 </div>
+<!-- Modal Export Excel & PDF Kegiatan -->
+<div class="modal fade" id="modalExportKegiatan" tabindex="-1" aria-labelledby="modalExportKegiatanLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background-color: #15432d;">
+                <h5 class="modal-title fw-bold" id="modalExportKegiatanLabel">
+                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i> Export Laporan Kegiatan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('kegiatan.export-excel') }}" method="GET" id="formExportExcelKegiatan">
+                <div class="modal-body p-4">
+                    <!-- Pilihan Opsi Filter Export -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark mb-2">
+                            Pilihan Filter Laporan <span class="text-danger">*</span>
+                        </label>
+                        <div class="d-flex gap-3 p-2 bg-light rounded border">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input export-filter-choice-kg" type="radio" name="filter_type" id="export_filter_kg_periode" value="periode" checked>
+                                <label class="form-check-label fw-semibold text-dark cursor-pointer" for="export_filter_kg_periode">
+                                    <i class="bi bi-mortarboard me-1 text-success"></i> Tahun Akademik
+                                </label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input export-filter-choice-kg" type="radio" name="filter_type" id="export_filter_kg_range" value="range">
+                                <label class="form-check-label fw-semibold text-dark cursor-pointer" for="export_filter_kg_range">
+                                    <i class="bi bi-calendar-range me-1 text-primary"></i> Range Tanggal
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Opsi 1: Periode Akademik -->
+                    <div class="mb-3" id="wrapper_export_periode_kg">
+                        <label for="export_periode_akademik_id_kg" class="form-label fw-bold text-dark mb-1">
+                            Pilih Periode Akademik <span class="text-danger">*</span>
+                        </label>
+                        <select name="periode_akademik_id" id="export_periode_akademik_id_kg" class="form-select bg-white" required>
+                            <option value="">-- Pilih Periode Akademik --</option>
+                            @if(isset($periodeAkademiks))
+                                @foreach($periodeAkademiks as $p)
+                                    <option value="{{ $p->id }}" {{ $p->id == ($defaultPeriodeId ?? null) ? 'selected' : '' }}>
+                                        {{ $p->formatted_ta ?? $p->nama_periode }}
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+
+                    <!-- Opsi 2: Range Tanggal -->
+                    <div class="mb-3 d-none" id="wrapper_export_range_kg">
+                        <label class="form-label fw-bold text-dark mb-1">
+                            Pilih Rentang Tanggal <span class="text-danger">*</span>
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="export_tanggal_mulai_kg" class="form-label small text-muted mb-1">Tanggal Mulai</label>
+                                <input type="date" name="tanggal_mulai" id="export_tanggal_mulai_kg" class="form-control bg-white">
+                            </div>
+                            <div class="col-6">
+                                <label for="export_tanggal_selesai_kg" class="form-label small text-muted mb-1">Tanggal Selesai</label>
+                                <input type="date" name="tanggal_selesai" id="export_tanggal_selesai_kg" class="form-control bg-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Kategori Kegiatan -->
+                    <div class="mb-3">
+                        <label for="export_kategori_kg" class="form-label fw-bold text-dark mb-1">
+                            Kategori Kegiatan
+                        </label>
+                        <select name="kategori" id="export_kategori_kg" class="form-select bg-white">
+                            <option value="">-- Semua Kategori Kegiatan --</option>
+                            <option value="Rencana Kerja">Rencana Kerja</option>
+                            <option value="Kepanitiaan">Kepanitiaan</option>
+                            <option value="Insidentil">Insidentil</option>
+                        </select>
+                    </div>
+
+                    @if(auth()->check() && (auth()->user()->isPimpinanUnit() || auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat()))
+                    <div class="mb-3">
+                        <label for="export_user_id_kg" class="form-label fw-bold text-dark mb-1">
+                            Pilih Jabatan / Pegawai
+                        </label>
+                        <select name="user_id" id="export_user_id_kg" class="form-select bg-white">
+                            <option value="">-- Semua Pegawai / Jabatan --</option>
+                            @if(isset($usersWithJabatan))
+                                @foreach($usersWithJabatan as $u)
+                                    <option value="{{ $u->id }}">{{ $u->name }} &mdash; {{ $u->jabatan }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+                    @else
+                        <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                    @endif
+                </div>
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" formaction="{{ route('kegiatan.export-excel') }}" class="btn btn-success px-3 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Unduh Excel
+                        </button>
+                        <button type="submit" formaction="{{ route('kegiatan.export-pdf') }}" class="btn btn-danger px-3 text-white fw-bold">
+                            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Unduh PDF
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Import Excel Kegiatan -->
+<div class="modal fade" id="modalImportKegiatan" tabindex="-1" aria-labelledby="modalImportKegiatanLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background-color: #2d6a4f;">
+                <h5 class="modal-title fw-bold" id="modalImportKegiatanLabel">
+                    <i class="bi bi-file-earmark-excel me-2"></i> Import Kegiatan Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('kegiatan.import-excel') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="p-3 mb-3 rounded" style="background-color: #f0fdf4; border: 1px solid #bbf7d0;">
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <i class="bi bi-check-circle-fill text-success fs-5 mt-0.5"></i>
+                            <div style="font-size: 0.88rem;" class="text-dark">
+                                <span class="fw-bold text-success d-block mb-1">Mendukung Format Terpadu:</span>
+                                Anda dapat mengunggah file template terpadu yang memuat kolom kategori (<strong>Rencana Kerja</strong>, <strong>Kepanitiaan</strong>, atau <strong>Insidentil</strong>).
+                            </div>
+                        </div>
+                        <div class="pt-2 border-top border-success-subtle d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Belum punya format?</span>
+                            <a href="{{ route('kegiatan.download-template') }}" class="btn btn-sm btn-outline-success fw-bold py-1 px-2.5" style="font-size: 0.82rem; border-radius: 6px;">
+                                <i class="bi bi-download me-1"></i> Download Template Terpadu
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark mb-2">Kategori Default <span class="text-muted fw-normal" style="font-size: 0.85rem;">(Jika di Excel kolom kategori kosong)</span></label>
+                        <select name="kategori" class="form-select bg-white">
+                            <option value="Rencana Kerja">Rencana Kerja</option>
+                            <option value="Kepanitiaan">Kepanitiaan</option>
+                            <option value="Insidentil">Insidentil</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark mb-2">Periode Akademik Default <span class="text-muted fw-normal" style="font-size: 0.85rem;">(Opsional, jika di Excel kosong)</span></label>
+                        <select name="periode_akademik_id" class="form-select bg-white">
+                            <option value="">-- Otomatis Sesuai Data Excel --</option>
+                            @if(isset($periodeAkademiks))
+                                @foreach($periodeAkademiks as $p)
+                                    <option value="{{ $p->id }}">{{ $p->formatted_ta ?? $p->nama_periode }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark mb-2">Pilih File Excel (.xlsx, .xls, .csv)</label>
+                        <input type="file" name="file_excel" class="form-control bg-white" accept=".xlsx,.xls,.csv" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success px-4 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -400,6 +582,23 @@ $(document).ready(function() {
             $('#select-all-checkbox').prop('checked', false);
         }
     }
+
+    // Toggle Opsi Filter Export Kegiatan (Periode Akademik vs Range Tanggal)
+    $('.export-filter-choice-kg').on('change', function() {
+        if ($(this).val() === 'periode') {
+            $('#wrapper_export_periode_kg').removeClass('d-none');
+            $('#wrapper_export_range_kg').addClass('d-none');
+            $('#export_periode_akademik_id_kg').prop('required', true);
+            $('#export_tanggal_mulai_kg').prop('required', false).val('');
+            $('#export_tanggal_selesai_kg').prop('required', false).val('');
+        } else {
+            $('#wrapper_export_periode_kg').addClass('d-none');
+            $('#wrapper_export_range_kg').removeClass('d-none');
+            $('#export_periode_akademik_id_kg').prop('required', false);
+            $('#export_tanggal_mulai_kg').prop('required', true);
+            $('#export_tanggal_selesai_kg').prop('required', true);
+        }
+    });
 
     // Bulk Delete
     $('#btn-bulk-delete').on('click', function() {

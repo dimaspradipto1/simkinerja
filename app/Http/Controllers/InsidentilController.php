@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use RealRashid\SweetAlert\Facades\Alert;
 use Yajra\DataTables\Facades\DataTables;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class InsidentilController extends Controller
 {
@@ -913,6 +919,62 @@ class InsidentilController extends Controller
 
         Alert::success('Berhasil', 'Lampiran & Hasil Kerja berhasil diunggah.');
         return redirect()->back();
+    }
+
+    /**
+     * Download Excel Import Template for Insidentil
+     */
+    public function downloadTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Template Insidentil');
+
+        $headers = [
+            'A1' => 'uraian_tugas',
+            'B1' => 'periode_akademik',
+            'C1' => 'hari',
+            'D1' => 'estimasi_tanggal_mulai',
+            'E1' => 'estimasi_jam_mulai',
+            'F1' => 'estimasi_tanggal_selesai',
+            'G1' => 'estimasi_jam_selesai',
+        ];
+
+        foreach ($headers as $cell => $val) {
+            $sheet->setCellValue($cell, $val);
+        }
+
+        $headerRange = 'A1:G1';
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(9);
+        $sheet->getStyle($headerRange)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('15432D');
+        $sheet->getStyle($headerRange)->getFont()->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle($headerRange)->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(1)->setRowHeight(25);
+
+        $sheet->setCellValue('A2', 'Penanganan Gangguan Jaringan Kampus');
+        $sheet->setCellValue('B2', '2026/2027 Semester Ganjil');
+        $sheet->setCellValue('C2', 'Senin');
+        $sheet->setCellValue('D2', date('Y-m-d'));
+        $sheet->setCellValue('E2', '08:00');
+        $sheet->setCellValue('F2', date('Y-m-d'));
+        $sheet->setCellValue('G2', '16:00');
+
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'template_import_insidentil.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     /**
