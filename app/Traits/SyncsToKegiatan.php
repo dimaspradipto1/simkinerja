@@ -103,6 +103,7 @@ trait SyncsToKegiatan
                     'hasil_kerja' => $this->hasil_kerja,
                     'rencana_tindak_lanjut' => $this->rencana_tindak_lanjut,
                     'status' => $this->status ?? 'Belum Dimulai',
+                    'alasan_pause' => $this->alasan_pause,
                     'is_paused' => (bool) ($this->is_paused ?? false),
                     'paused_at' => $this->paused_at,
                     'total_paused_seconds' => (int) ($this->total_paused_seconds ?? 0),

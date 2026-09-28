@@ -125,6 +125,10 @@ class MilestoneHelper
                 if ($m->catatan) {
                     $html .= '<div class="mt-1 text-muted text-truncate" title="' . e($m->catatan) . '"><i class="bi bi-chat-left-text me-1"></i>' . e($m->catatan) . '</div>';
                 }
+                $alasanPause = $m->alasan_pause ?: (($m->status === 'Di-pause' && $parent && !empty($parent->alasan_pause)) ? $parent->alasan_pause : null);
+                if ($alasanPause) {
+                    $html .= '<div class="mt-1 p-1 px-1 rounded bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.69rem; line-height: 1.25;" title="' . e($alasanPause) . '"><i class="bi bi-pause-circle-fill me-1 text-warning"></i><strong>Penyebab Pause:</strong> ' . e(\Illuminate\Support\Str::limit($alasanPause, 60)) . '</div>';
+                }
                 $html .= '</div>';
                 $html .= '</div>'; // end top content
 

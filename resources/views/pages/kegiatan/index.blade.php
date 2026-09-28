@@ -455,18 +455,77 @@ $(document).ready(function() {
     };
 
     window.pauseTaskTimer = function(id, routePrefix) {
-        $.ajax({
-            url: "{{ url('kegiatan') }}/" + id + "/pause",
-            type: 'POST',
-            data: { _token: "{{ csrf_token() }}" },
-            success: function(res) {
-                if (res.success) {
-                    Swal.fire({ title: 'Dijeda', text: res.message, icon: 'info', timer: 1200, showConfirmButton: false });
-                    table.ajax.reload(null, false);
-                }
+        Swal.fire({
+            title: 'Jeda Kegiatan (Pause)',
+            html: `
+                <div class="text-start">
+                    <label class="form-label fw-semibold small text-muted mb-1">
+                        <i class="bi bi-info-circle-fill text-warning me-1"></i>Penyebab Di-pause:
+                    </label>
+                    <textarea id="swal-pause-kegiatan-reason" class="form-control" rows="3" placeholder="Masukkan alasan atau kendala mengapa kegiatan di-pause..."></textarea>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d97706',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-pause-fill me-1"></i> Pause Kegiatan',
+            cancelButtonText: 'Batal',
+            focusConfirm: false,
+            preConfirm: () => {
+                const el = document.getElementById('swal-pause-kegiatan-reason');
+                return el ? el.value.trim() : '';
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "{{ url('kegiatan') }}/" + id + "/pause",
+                    type: 'POST',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        alasan_pause: result.value || ''
+                    },
+                    success: function(res) {
+                        if (res.success) {
+                            Swal.fire({ title: 'Dijeda', text: res.message, icon: 'info', timer: 1200, showConfirmButton: false });
+                            table.ajax.reload(null, false);
+                        }
+                    }
+                });
             }
         });
     };
+
+    $(document).on('click', '.btn-simpan-alasan-pause', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const id = btn.data('id');
+        const container = btn.closest('.border');
+        const textarea = container.find('.field-alasan-pause');
+        const alasan = textarea.val();
+
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>');
+
+        $.ajax({
+            url: "{{ url('kegiatan') }}/" + id + "/upload-attachment",
+            type: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                alasan_pause: alasan
+            },
+            success: function(res) {
+                btn.prop('disabled', false).html('<i class="bi bi-check2-circle me-1"></i> Simpan Penyebab Pause');
+                if (res.success) {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Penyebab pause berhasil disimpan.', showConfirmButton: false, timer: 2000 });
+                    table.ajax.reload(null, false);
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html('<i class="bi bi-check2-circle me-1"></i> Simpan Penyebab Pause');
+                alert('Gagal menyimpan penyebab pause.');
+            }
+        });
+    });
 
     window.stopTimer = function(id) {
         $('#stop-task-id').val(id);

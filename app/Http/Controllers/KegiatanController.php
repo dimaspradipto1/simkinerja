@@ -215,6 +215,25 @@ class KegiatanController extends Controller
                     $html .= '  </div>';
                     $html .= '</div>';
 
+                    if ($row->status === 'Di-pause') {
+                        $html .= '<div class="mt-2 p-2 px-3 rounded-2 border" style="background-color: #fffbeb; border-color: #fde68a !important;">';
+                        $html .= '<div class="d-flex align-items-center justify-content-between mb-1">';
+                        $html .= '<label class="form-label mb-0 text-warning-emphasis fw-bold small d-flex align-items-center gap-1">';
+                        $html .= '<i class="bi bi-pause-circle-fill text-warning"></i> Penyebab Di-pause:';
+                        $html .= '</label>';
+                        $html .= '<span class="badge bg-warning text-dark fw-semibold" style="font-size: 0.7rem;">Status: Di-pause</span>';
+                        $html .= '</div>';
+                        $html .= '<div class="mt-1">';
+                        $html .= '<textarea name="alasan_pause" class="form-control form-control-sm border-warning-subtle shadow-2xs field-alasan-pause" data-id="' . $row->id . '" data-type="kegiatan" rows="2" placeholder="Tuliskan penyebab atau kendala kegiatan di-pause...">' . e($row->alasan_pause ?? '') . '</textarea>';
+                        $html .= '</div>';
+                        $html .= '<div class="d-flex justify-content-end mt-2">';
+                        $html .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold px-3 btn-simpan-alasan-pause" data-id="' . $row->id . '" data-type="kegiatan" style="font-size: 0.78rem;">';
+                        $html .= '<i class="bi bi-check2-circle me-1"></i> Simpan Penyebab Pause';
+                        $html .= '</button>';
+                        $html .= '</div>';
+                        $html .= '</div>';
+                    }
+
                     // 4. Attachments & Work Results
                     $hasContent = false;
                     $contentHtml = '<div class="p-2 px-3 bg-white rounded border border-light-subtle shadow-2xs mt-1 d-flex flex-column gap-2">';
@@ -753,7 +772,7 @@ class KegiatanController extends Controller
     /**
      * Helper to automatically log milestone points for task timer events.
      */
-    private function autoLogMilestone($kegiatan, $action, $now)
+    private function autoLogMilestone($kegiatan, $action, $now, $alasanPause = null)
     {
         if ($action === 'start') {
             $pausedMilestones = $kegiatan->milestones()->where('status', 'Di-pause')->get();
@@ -786,6 +805,9 @@ class KegiatanController extends Controller
                 }
                 $m->last_started_at = null;
                 $m->status = 'Di-pause';
+                if ($alasanPause !== null) {
+                    $m->alasan_pause = $alasanPause;
+                }
                 $m->save();
             }
         } elseif ($action === 'stop') {
@@ -872,14 +894,16 @@ class KegiatanController extends Controller
     public function pause(Request $request, Kegiatan $kegiatan)
     {
         $now = now();
+        $alasanPause = $request->input('alasan_pause');
 
         $kegiatan->update([
             'status' => 'Di-pause',
+            'alasan_pause' => $alasanPause,
             'is_paused' => true,
             'paused_at' => $now,
         ]);
 
-        $this->autoLogMilestone($kegiatan, 'pause', $now);
+        $this->autoLogMilestone($kegiatan, 'pause', $now, $alasanPause);
 
         return response()->json([
             'success' => true,
@@ -967,6 +991,12 @@ class KegiatanController extends Controller
 
         if ($request->filled('url_external')) {
             $updateData['url_external'] = $request->input('url_external');
+        }
+
+        if ($request->has('alasan_pause')) {
+            $alasanPause = $request->input('alasan_pause');
+            $updateData['alasan_pause'] = $alasanPause;
+            $kegiatan->milestones()->where('status', 'Di-pause')->update(['alasan_pause' => $alasanPause]);
         }
 
         $kegiatan->update($updateData);

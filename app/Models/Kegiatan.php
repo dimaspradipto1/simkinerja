@@ -32,6 +32,7 @@ class Kegiatan extends Model
         'hasil_kerja',
         'rencana_tindak_lanjut',
         'status',
+        'alasan_pause',
         'is_paused',
         'paused_at',
         'total_paused_seconds',

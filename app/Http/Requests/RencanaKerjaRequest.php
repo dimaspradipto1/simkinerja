@@ -37,6 +37,7 @@ class RencanaKerjaRequest extends FormRequest
             'waktu_selesai' => ['nullable'],
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_selesai' => ['nullable', 'date'],
+            'alasan_pause' => ['nullable', 'string'],
             'tagged_users' => ['nullable', 'array'],
             'tagged_users.*' => ['exists:users,id'],
         ];

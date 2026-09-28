@@ -17,6 +17,7 @@ class Milestone extends Model
         'milestonable_type',
         'nama_milestone',
         'catatan',
+        'alasan_pause',
         'status',
         'waktu_mulai',
         'waktu_selesai',

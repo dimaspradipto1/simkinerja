@@ -29,6 +29,9 @@ class Insidentil extends Model
         'hasil_kerja',
         'rencana_tindak_lanjut',
         'status',
+        'alasan_pause',
+        'last_started_at',
+        'durasi_detik',
         'estimasi_unlock_reason',
         'estimasi_unlock_requested_at',
     ];

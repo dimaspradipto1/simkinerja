@@ -35,6 +35,7 @@ class KepanitiaanRequest extends FormRequest
             'tagged_users' => ['nullable', 'array'],
             'tagged_users.*' => ['exists:users,id'],
             'jenis_absensi' => ['nullable'],
+            'alasan_pause' => ['nullable', 'string'],
         ];
     }
 

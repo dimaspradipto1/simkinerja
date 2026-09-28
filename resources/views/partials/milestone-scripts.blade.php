@@ -122,23 +122,70 @@
         // Pause Main Task Timer
         window.pauseTaskTimer = function (id, taskType) {
             taskType = taskType || 'rencana-kerja';
-            fetch(`/${taskType}/${id}/pause`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+
+            const doPause = function (alasan) {
+                fetch(`/${taskType}/${id}/pause`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ alasan_pause: alasan || '' })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success || data.status === 'success') {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Pekerjaan Dijeda',
+                                text: data.message || 'Tugas berhasil di-pause.',
+                                icon: 'info',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        }
+                        refreshTables();
+                    } else {
+                        alert(data.message || 'Gagal men-jeda tugas.');
+                    }
+                })
+                .catch(err => console.error(err));
+            };
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Jeda Pekerjaan (Pause)',
+                    html: `
+                        <div class="text-start">
+                            <label class="form-label fw-semibold small text-muted mb-1">
+                                <i class="bi bi-info-circle-fill text-warning me-1"></i>Penyebab Di-pause:
+                            </label>
+                            <textarea id="swal-pause-task-reason" class="form-control" rows="3" placeholder="Masukkan alasan atau penyebab pekerjaan di-pause (misal: menunggu data, istirahat, kendala teknis)..."></textarea>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d97706',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="bi bi-pause-fill me-1"></i> Pause Pekerjaan',
+                    cancelButtonText: 'Batal',
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        const el = document.getElementById('swal-pause-task-reason');
+                        return el ? el.value.trim() : '';
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        doPause(result.value);
+                    }
+                });
+            } else {
+                const reason = prompt('Penyebab di-pause (opsional):');
+                if (reason !== null) {
+                    doPause(reason);
                 }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    refreshTables();
-                } else {
-                    alert(data.message || 'Gagal men-jeda tugas.');
-                }
-            })
-            .catch(err => console.error(err));
+            }
         };
 
         // Start / Resume Milestone
@@ -164,24 +211,121 @@
 
         // Pause Milestone
         window.pauseMilestone = function (id) {
-            fetch(`/milestone/${id}/pause`, {
+            const doPauseMilestone = function (alasan) {
+                fetch(`/milestone/${id}/pause`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ alasan_pause: alasan || '' })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Milestone Dijeda',
+                                text: data.message || 'Milestone berhasil di-pause.',
+                                icon: 'info',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        }
+                        refreshTables();
+                    } else {
+                        alert(data.message || 'Gagal men-jeda milestone.');
+                    }
+                })
+                .catch(err => console.error(err));
+            };
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Jeda Milestone (Pause)',
+                    html: `
+                        <div class="text-start">
+                            <label class="form-label fw-semibold small text-muted mb-1">
+                                <i class="bi bi-info-circle-fill text-warning me-1"></i>Penyebab Di-pause:
+                            </label>
+                            <textarea id="swal-pause-milestone-reason" class="form-control" rows="3" placeholder="Masukkan alasan atau penyebab point milestone di-pause..."></textarea>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d97706',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="bi bi-pause-fill me-1"></i> Pause Point',
+                    cancelButtonText: 'Batal',
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        const el = document.getElementById('swal-pause-milestone-reason');
+                        return el ? el.value.trim() : '';
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        doPauseMilestone(result.value);
+                    }
+                });
+            } else {
+                const reason = prompt('Penyebab di-pause (opsional):');
+                if (reason !== null) {
+                    doPauseMilestone(reason);
+                }
+            }
+        };
+
+        // Quick Save Alasan Pause from Detail Textarea
+        $(document).on('click', '.btn-simpan-alasan-pause', function (e) {
+            e.preventDefault();
+            const btn = $(this);
+            const id = btn.data('id');
+            const taskType = btn.data('type') || 'rencana-kerja';
+            const container = btn.closest('.border');
+            const textarea = container.find('.field-alasan-pause');
+            const alasan = textarea.val();
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...');
+
+            const formData = new FormData();
+            formData.append('_token', getCsrfToken());
+            formData.append('alasan_pause', alasan);
+
+            fetch(`/${taskType}/${id}/upload-attachment`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': getCsrfToken(),
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
+                    'Accept': 'application/json'
+                },
+                body: formData
             })
             .then(res => res.json())
             .then(data => {
+                btn.prop('disabled', false).html('<i class="bi bi-check2-circle me-1"></i> Simpan Penyebab Pause');
                 if (data.success) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Penyebab pause berhasil disimpan.',
+                            showConfirmButton: false,
+                            timer: 2500,
+                            timerProgressBar: true
+                        });
+                    }
                     refreshTables();
                 } else {
-                    alert(data.message || 'Gagal men-jeda milestone.');
+                    alert(data.message || 'Gagal menyimpan penyebab pause.');
                 }
             })
-            .catch(err => console.error(err));
-        };
+            .catch(err => {
+                console.error(err);
+                btn.prop('disabled', false).html('<i class="bi bi-check2-circle me-1"></i> Simpan Penyebab Pause');
+                alert('Terjadi kesalahan saat menyimpan penyebab pause.');
+            });
+        });
 
         // Stop / Complete Milestone
         window.stopMilestone = function (id) {

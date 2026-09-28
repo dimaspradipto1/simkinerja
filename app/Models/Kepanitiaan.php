@@ -28,6 +28,7 @@ class Kepanitiaan extends Model
         'hasil_kerja',
         'rencana_tindak_lanjut',
         'status',
+        'alasan_pause',
         'estimasi_unlock_reason',
         'estimasi_unlock_requested_at',
         'estimasi_unlock_approved_at',

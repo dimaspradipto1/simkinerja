@@ -236,6 +236,16 @@
                             </select>
                         </div>
 
+                        <div class="col-md-12" id="wrapper-alasan-pause" style="{{ old('status', $kegiatan->status) == 'Di-pause' ? '' : 'display: none;' }}">
+                            <label for="alasan_pause" class="form-label fw-semibold text-warning-emphasis">
+                                <i class="bi bi-pause-circle-fill text-warning me-1"></i> Penyebab Di-pause
+                            </label>
+                            <textarea class="form-control border-warning @error('alasan_pause') is-invalid @enderror" id="alasan_pause" name="alasan_pause" rows="3" placeholder="Penyebab atau kendala kegiatan di-pause...">{{ old('alasan_pause', $kegiatan->alasan_pause) }}</textarea>
+                            @error('alasan_pause')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="col-md-6">
                             <label for="file" class="form-label fw-semibold">Unggah Berkas Baru</label>
                             <input type="file" class="form-control @error('file') is-invalid @enderror" id="file" name="file">
@@ -334,6 +344,14 @@
 
         $('#btnTambahBarisSesiEdit').on('click', function() {
             tambahBarisSesiEdit();
+        });
+
+        $('#status').on('change', function() {
+            if ($(this).val() === 'Di-pause') {
+                $('#wrapper-alasan-pause').slideDown(200);
+            } else {
+                $('#wrapper-alasan-pause').slideUp(200);
+            }
         });
     });
 </script>

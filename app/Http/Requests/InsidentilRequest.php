@@ -36,6 +36,7 @@ class InsidentilRequest extends FormRequest
             'tanggal_selesai' => ['nullable', 'date'],
             'tagged_users' => ['nullable', 'array'],
             'tagged_users.*' => ['exists:users,id'],
+            'alasan_pause' => ['nullable', 'string'],
         ];
     }
 

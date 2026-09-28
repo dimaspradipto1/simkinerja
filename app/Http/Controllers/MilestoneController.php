@@ -131,7 +131,7 @@ class MilestoneController extends Controller
     /**
      * Pause milestone point timer.
      */
-    public function pause(Milestone $milestone)
+    public function pause(Request $request, Milestone $milestone)
     {
         $now = Carbon::now();
 
@@ -140,18 +140,26 @@ class MilestoneController extends Controller
             $milestone->durasi_detik = (int) ($milestone->durasi_detik ?? 0) + $elapsedSeconds;
         }
 
+        $alasanPause = $request->input('alasan_pause');
         $milestone->last_started_at = null;
         $milestone->status = 'Di-pause';
+        if ($alasanPause !== null) {
+            $milestone->alasan_pause = $alasanPause;
+        }
         $milestone->save();
 
         if ($milestone->milestonable) {
             $parent = $milestone->milestonable;
             $runningCount = $parent->milestones()->where('status', 'Berjalan')->count();
             if ($runningCount === 0) {
-                $parent->update([
+                $parentUpdate = [
                     'status' => 'Di-pause',
                     'last_started_at' => null,
-                ]);
+                ];
+                if ($alasanPause !== null) {
+                    $parentUpdate['alasan_pause'] = $alasanPause;
+                }
+                $parent->update($parentUpdate);
             }
         }
 

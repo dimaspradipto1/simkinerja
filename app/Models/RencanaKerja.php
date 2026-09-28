@@ -31,6 +31,9 @@ class RencanaKerja extends Model
         'rencana_tindak_lanjut',
         'saran_pimpinan',
         'status',
+        'alasan_pause',
+        'last_started_at',
+        'durasi_detik',
         'estimasi_unlock_reason',
         'estimasi_unlock_requested_at',
     ];

@@ -169,6 +169,18 @@
                             @enderror
                         </div>
 
+                        @if($insidentil->status === 'Di-pause' || $insidentil->alasan_pause)
+                        <div class="col-md-12">
+                            <label for="alasan_pause" class="form-label fw-semibold text-warning-emphasis">
+                                <i class="bi bi-pause-circle-fill text-warning me-1"></i> Penyebab Di-pause
+                            </label>
+                            <textarea class="form-control border-warning @error('alasan_pause') is-invalid @enderror" id="alasan_pause" name="alasan_pause" rows="3" placeholder="Penyebab atau kendala pekerjaan di-pause...">{{ old('alasan_pause', $insidentil->alasan_pause) }}</textarea>
+                            @error('alasan_pause')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        @endif
+
                         <div class="col-12 mt-4 d-flex flex-wrap align-items-center justify-content-end gap-2">
                             @if($estimasiLocked)
                                 @if($insidentil->estimasi_unlock_requested_at)

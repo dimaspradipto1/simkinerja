@@ -113,6 +113,25 @@ class InsidentilController extends Controller
                         $html .= implode('', $tags) . '</div>';
                     }
                     
+                    if ($row->status === 'Di-pause') {
+                        $html .= '<div class="mt-2 p-2 px-3 rounded-2 border" style="background-color: #fffbeb; border-color: #fde68a !important;">';
+                        $html .= '<div class="d-flex align-items-center justify-content-between mb-1">';
+                        $html .= '<label class="form-label mb-0 text-warning-emphasis fw-bold small d-flex align-items-center gap-1">';
+                        $html .= '<i class="bi bi-pause-circle-fill text-warning"></i> Penyebab Di-pause:';
+                        $html .= '</label>';
+                        $html .= '<span class="badge bg-warning text-dark fw-semibold" style="font-size: 0.7rem;">Status: Di-pause</span>';
+                        $html .= '</div>';
+                        $html .= '<div class="mt-1">';
+                        $html .= '<textarea name="alasan_pause" class="form-control form-control-sm border-warning-subtle shadow-2xs field-alasan-pause" data-id="' . $row->id . '" data-type="insidentil" rows="2" placeholder="Tuliskan penyebab atau kendala pekerjaan di-pause...">' . e($row->alasan_pause ?? '') . '</textarea>';
+                        $html .= '</div>';
+                        $html .= '<div class="d-flex justify-content-end mt-2">';
+                        $html .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold px-3 btn-simpan-alasan-pause" data-id="' . $row->id . '" data-type="insidentil" style="font-size: 0.78rem;">';
+                        $html .= '<i class="bi bi-check2-circle me-1"></i> Simpan Penyebab Pause';
+                        $html .= '</button>';
+                        $html .= '</div>';
+                        $html .= '</div>';
+                    }
+
                     $html .= \App\Helpers\MilestoneHelper::renderWidget($row->milestones, $row->id, \App\Models\Insidentil::class);
                     
                     // Render Form Upload Berkas, Link External, Hasil Kerja, dan Rencana Tindak Lanjut
@@ -128,6 +147,13 @@ class InsidentilController extends Controller
                     $html .= '<input type="url" name="url_external" class="form-control form-control-sm" value="' . e($row->url_external ?? '') . '" placeholder="https://drive.google.com/...">';
                     $html .= '</div>';
                     $html .= '</div>';
+
+                    if ($row->status === 'Di-pause') {
+                        $html .= '<div class="mb-2">';
+                        $html .= '<label class="form-label small fw-semibold text-warning-emphasis mb-1"><i class="bi bi-pause-circle-fill text-warning me-1"></i> Penyebab Di-pause</label>';
+                        $html .= '<textarea name="alasan_pause" class="form-control form-control-sm" rows="2" placeholder="Masukkan alasan / kendala pekerjaan di-pause...">' . e($row->alasan_pause ?? '') . '</textarea>';
+                        $html .= '</div>';
+                    }
 
                     // TinyMCE Hasil Kerja & Rencana Tindak Lanjut
                     $html .= '<div class="mb-2">';
@@ -560,7 +586,7 @@ class InsidentilController extends Controller
     /**
      * Helper to automatically log milestone points for task timer events.
      */
-    private function autoLogMilestone($insidentil, $action, $now)
+    private function autoLogMilestone($insidentil, $action, $now, $alasanPause = null)
     {
         if ($action === 'start') {
             // Mark any paused milestones as completed for phase 1
@@ -594,6 +620,9 @@ class InsidentilController extends Controller
                 }
                 $m->last_started_at = null;
                 $m->status = 'Di-pause';
+                if ($alasanPause !== null) {
+                    $m->alasan_pause = $alasanPause;
+                }
                 $m->save();
             }
         } elseif ($action === 'stop') {
@@ -664,7 +693,7 @@ class InsidentilController extends Controller
     /**
      * Pause task timer.
      */
-    public function pause(Insidentil $insidentil)
+    public function pause(Request $request, Insidentil $insidentil)
     {
         $now = \Carbon\Carbon::now();
 
@@ -673,12 +702,16 @@ class InsidentilController extends Controller
             $insidentil->durasi_detik = (int) ($insidentil->durasi_detik ?? 0) + $elapsedSeconds;
         }
 
+        $alasanPause = $request->input('alasan_pause');
         $insidentil->last_started_at = null;
         $insidentil->status = 'Di-pause';
+        if ($alasanPause !== null) {
+            $insidentil->alasan_pause = $alasanPause;
+        }
         $insidentil->save();
 
         // Auto log milestone point for pause
-        $this->autoLogMilestone($insidentil, 'pause', $now);
+        $this->autoLogMilestone($insidentil, 'pause', $now, $alasanPause);
 
         return response()->json(['status' => 'success', 'message' => 'Pekerjaan berhasil di-pause.']);
     }
@@ -752,6 +785,13 @@ class InsidentilController extends Controller
 
         if ($request->has('rencana_tindak_lanjut')) {
             $updateData['rencana_tindak_lanjut'] = $request->input('rencana_tindak_lanjut');
+        }
+
+        if ($request->has('alasan_pause')) {
+            $alasanPause = $request->input('alasan_pause');
+            $updateData['alasan_pause'] = $alasanPause;
+            // Also update any paused milestones
+            $insidentil->milestones()->where('status', 'Di-pause')->update(['alasan_pause' => $alasanPause]);
         }
 
         if (!empty($updateData)) {

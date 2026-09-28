@@ -222,6 +222,18 @@
                             @enderror
                         </div>
 
+                        @if($rencanaKerja->status === 'Di-pause' || $rencanaKerja->alasan_pause)
+                        <div class="col-md-12">
+                            <label for="alasan_pause" class="form-label fw-semibold text-warning-emphasis">
+                                <i class="bi bi-pause-circle-fill text-warning me-1"></i> Penyebab Di-pause
+                            </label>
+                            <textarea class="form-control border-warning @error('alasan_pause') is-invalid @enderror" id="alasan_pause" name="alasan_pause" rows="3" placeholder="Penyebab atau kendala pekerjaan di-pause...">{{ old('alasan_pause', $rencanaKerja->alasan_pause) }}</textarea>
+                            @error('alasan_pause')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        @endif
+
                         <div class="col-12 mt-4 d-flex flex-wrap align-items-center gap-2">
                             <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Perbarui Rencana Kerja</button>
                             <a href="{{ route('rencana-kerja.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
