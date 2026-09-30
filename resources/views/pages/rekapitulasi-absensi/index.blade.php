@@ -12,19 +12,9 @@
         border: 1px solid #f1f5f9;
     }
 
-    .kepanitiaan-btn, .day-btn {
-        transition: all 0.2s ease-in-out;
-        white-space: nowrap;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.35rem;
-        padding: 0.45rem 1rem !important;
-        font-size: 0.85rem !important;
-        margin-bottom: 0.25rem;
-    }
-    .kepanitiaan-btn:hover, .day-btn:hover {
-        transform: translateY(-1px);
+    .form-select:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
     }
 
     /* Stat Cards */
@@ -94,12 +84,6 @@
         .filter-card .card-body {
             padding: 1.15rem !important;
         }
-        .kepanitiaan-btn, .day-btn {
-            font-size: 0.82rem !important;
-            padding: 0.45rem 0.75rem !important;
-            flex-grow: 1;
-            text-align: center;
-        }
         .stat-kpi-card {
             padding: 0.95rem 0.85rem !important;
             border-radius: 0.85rem !important;
@@ -161,70 +145,93 @@
 </div><!-- End Page Title -->
 
 <section class="section mt-3">
-    <!-- Filter Control Bar Card -->
+    <!-- Filter Control Bar Card: Dropdown Form -->
     <div class="card filter-card mb-3 mb-md-4">
         <div class="card-body p-3 p-md-4">
-            <div class="row g-3 g-lg-4 align-items-center justify-content-between">
-                <!-- Kepanitiaan Selector -->
-                <div class="col-12 col-xl-6">
-                    <div class="text-secondary small fw-bold text-uppercase mb-2" style="letter-spacing: 0.5px;">
-                        <i class="bi bi-tag-fill text-primary me-1"></i> Kepanitiaan:
-                    </div>
-                    <div class="row g-2" id="kepanitiaan-pills">
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $kepanitiaan === 'pkkmb' ? 'btn-primary shadow-sm' : 'btn-outline-primary' }} rounded-pill fw-semibold kepanitiaan-btn" data-kepanitiaan="pkkmb">
-                                <i class="bi bi-mortarboard me-1"></i> PKKMB
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $kepanitiaan === 'esq' ? 'btn-primary shadow-sm' : 'btn-outline-primary' }} rounded-pill fw-semibold kepanitiaan-btn" data-kepanitiaan="esq">
-                                <i class="bi bi-heart-pulse me-1"></i> ESQ
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $kepanitiaan === 'milad' ? 'btn-primary shadow-sm' : 'btn-outline-primary' }} rounded-pill fw-semibold kepanitiaan-btn" data-kepanitiaan="milad">
-                                <i class="bi bi-stars me-1"></i> MILAD
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $kepanitiaan === 'kuliah_umum' ? 'btn-primary shadow-sm' : 'btn-outline-primary' }} rounded-pill fw-semibold kepanitiaan-btn" data-kepanitiaan="kuliah_umum">
-                                <i class="bi bi-book me-1"></i> Kuliah Umum
-                            </button>
-                        </div>
+            <div class="row g-3 align-items-end">
+                <!-- Dropdown 1: Pilih Kepanitiaan -->
+                <div class="col-12 col-md-6 col-lg-5">
+                    <label for="select-kepanitiaan" class="form-label fw-bold text-secondary small text-uppercase mb-1" style="letter-spacing: 0.5px;">
+                        <i class="bi bi-tag-fill text-primary me-1"></i> Pilih Kepanitiaan:
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-primary border-end-0">
+                            <i class="bi bi-people-fill"></i>
+                        </span>
+                        <select class="form-select border-start-0 ps-1 fw-semibold shadow-none" id="select-kepanitiaan" style="border-color: #dee2e6; font-size: 0.9rem;">
+                            @if($activeKepanitiaans->isNotEmpty())
+                                <optgroup label="-- Sesi Aktif (Sedang Buka) --">
+                                    @foreach($activeKepanitiaans as $k)
+                                        @php
+                                            $activeCount = $k->sesiAbsensis->where('is_active', true)->count();
+                                        @endphp
+                                        <option value="{{ $k->id }}" {{ $selectedKepanitiaanId == $k->id ? 'selected' : '' }}>
+                                            {{ $k->uraian_tugas }} [{{ $activeCount }} Sesi Aktif]
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+
+                            @php
+                                $otherKepanitiaans = $allKepanitiaans->whereNotIn('id', $activeKepanitiaans->pluck('id'));
+                            @endphp
+                            @if($otherKepanitiaans->isNotEmpty())
+                                <optgroup label="-- Kepanitiaan Lainnya --">
+                                    @foreach($otherKepanitiaans as $k)
+                                        <option value="{{ $k->id }}" {{ $selectedKepanitiaanId == $k->id ? 'selected' : '' }}>
+                                            {{ $k->uraian_tugas }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+                        </select>
                     </div>
                 </div>
 
-                <!-- Day Selector -->
-                <div class="col-12 col-xl-6">
-                    <div class="text-secondary small fw-bold text-uppercase mb-2" style="letter-spacing: 0.5px;">
-                        <i class="bi bi-calendar3 text-success me-1"></i> Hari Pelaksanaan:
+                <!-- Dropdown 2: Pilih Sesi / Hari Pelaksanaan -->
+                <div class="col-12 col-md-6 col-lg-5">
+                    <label for="select-sesi" class="form-label fw-bold text-secondary small text-uppercase mb-1" style="letter-spacing: 0.5px;">
+                        <i class="bi bi-calendar3 text-success me-1"></i> Pilih Sesi / Hari Pelaksanaan:
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-success border-end-0">
+                            <i class="bi bi-calendar2-check"></i>
+                        </span>
+                        <select class="form-select border-start-0 ps-1 fw-semibold shadow-none" id="select-sesi" style="border-color: #dee2e6; font-size: 0.9rem;">
+                            @if($selectedKepanitiaan && $selectedKepanitiaan->sesiAbsensis->isNotEmpty())
+                                @foreach($selectedKepanitiaan->sesiAbsensis as $s)
+                                    <option value="{{ $s->id }}" {{ (!$isAllDays && $selectedSesiId == $s->id) ? 'selected' : '' }}>
+                                        {{ $s->nama_sesi }} {{ $s->is_active ? ' [AKTIF / BUKA]' : '' }}
+                                    </option>
+                                @endforeach
+                                @if($selectedKepanitiaan->sesiAbsensis->count() > 1)
+                                    <option value="all" {{ $isAllDays ? 'selected' : '' }}>
+                                        -- Rekap Semua Sesi --
+                                    </option>
+                                @endif
+                            @else
+                                <option value="">Tidak ada sesi absensi</option>
+                            @endif
+                        </select>
                     </div>
-                    <div class="row g-2" id="day-selector-container">
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $day == 1 ? 'btn-success shadow-sm' : 'btn-outline-success' }} rounded-pill fw-semibold day-btn" data-day="1" id="btn-day-1">
-                                <i class="bi bi-calendar-event me-1"></i> Hari Ke-1 (H-1)
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $day == 2 ? 'btn-success shadow-sm' : 'btn-outline-success' }} rounded-pill fw-semibold day-btn" data-day="2" id="btn-day-2">
-                                <i class="bi bi-calendar-event me-1"></i> Hari Ke-2 (H-2)
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $day == 3 ? 'btn-success shadow-sm' : 'btn-outline-success' }} rounded-pill fw-semibold day-btn" data-day="3" id="btn-day-3">
-                                <i class="bi bi-calendar-event me-1"></i> Hari Ke-3 (H-3)
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-auto {{ $kepanitiaan === 'esq' ? '' : 'd-none' }}" id="col-day-4">
-                            <button type="button" class="btn btn-sm w-100 {{ $day == 4 ? 'btn-success shadow-sm' : 'btn-outline-success' }} rounded-pill fw-semibold day-btn" data-day="4" id="btn-day-4">
-                                <i class="bi bi-calendar-event me-1"></i> Hari Ke-4 (H-4)
-                            </button>
-                        </div>
-                        <div class="col-6 col-md-auto">
-                            <button type="button" class="btn btn-sm w-100 {{ $day == 0 ? 'btn-success shadow-sm' : 'btn-outline-success' }} rounded-pill fw-semibold day-btn" data-day="0" id="btn-day-all">
-                                <i class="bi bi-calendar-week-fill me-1"></i> <span id="label-rekap-all">Rekap Semua Hari</span>
-                            </button>
-                        </div>
+                </div>
+
+                <!-- Status Badge -->
+                <div class="col-12 col-lg-2 d-flex align-items-center justify-content-center justify-content-lg-start">
+                    <div id="sesi-status-badge-container" class="w-100 text-center text-lg-start">
+                        @if($isAllDays)
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.8rem;">
+                                <i class="bi bi-calendar-range me-1"></i> Rekap Semua Sesi
+                            </span>
+                        @elseif($selectedSesi && $selectedSesi->is_active)
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.8rem;">
+                                <i class="bi bi-broadcast me-1"></i> Sesi Aktif (Buka)
+                            </span>
+                        @else
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.8rem;">
+                                <i class="bi bi-lock-fill me-1"></i> Sesi Ditutup
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -258,7 +265,7 @@
                         <i class="bi bi-box-arrow-in-right"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <div class="text-muted stat-label fw-semibold" id="label-sudah-datang">Presensi Datang</div>
+                        <div class="text-muted stat-label fw-semibold" id="label-sudah-datang">Sudah Datang</div>
                         <h4 class="fw-bold mb-0 text-success" id="stat-sudah-datang">0</h4>
                     </div>
                 </div>
@@ -288,7 +295,7 @@
                         <i class="bi bi-box-arrow-right"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <div class="text-muted stat-label fw-semibold" id="label-sudah-pulang">Presensi Pulang</div>
+                        <div class="text-muted stat-label fw-semibold" id="label-sudah-pulang">Sudah Pulang</div>
                         <h4 class="fw-bold mb-0 text-info" id="stat-sudah-pulang">0</h4>
                     </div>
                 </div>
@@ -399,24 +406,90 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    let currentKepanitiaan = '{{ $kepanitiaan }}';
-    let currentDay = {{ $day }};
+    const allKepanitiaansData = @json($allKepanitiaansJson);
+    
+    let currentKepanitiaanId = {{ $selectedKepanitiaanId ?? 'null' }};
+    let currentSesiId = '{{ $selectedSesiId }}';
 
-    function updateHeaders() {
-        if (currentDay === 0) {
-            $('#th-absen-datang').text('Datang (3 Hari)');
-            $('#th-absen-pulang').text('Pulang (3 Hari)');
-            $('#desc-tabel-sudah').text('Rangkuman presensi pegawai di seluruh 3 hari pelaksanaan.');
-            $('#desc-tabel-belum').text('Pegawai yang belum absen sama sekali pada seluruh 3 hari.');
+    function getKepanitiaanById(id) {
+        return allKepanitiaansData.find(k => k.id == id) || allKepanitiaansData[0] || null;
+    }
+
+    // Populate opsi Sesi pada Dropdown kedua saat Kepanitiaan dipilih
+    function populateSesiDropdown() {
+        const k = getKepanitiaanById(currentKepanitiaanId);
+        const select = $('#select-sesi');
+        select.empty();
+
+        if (!k || !k.sesis || k.sesis.length === 0) {
+            select.append('<option value="">Tidak ada sesi absensi</option>');
+            $('#sesi-status-badge-container').html('<span class="badge bg-secondary-subtle text-secondary border px-2.5 py-1.5 rounded-pill"><i class="bi bi-dash-circle me-1"></i>Tidak Ada Sesi</span>');
+            return;
+        }
+
+        // Cek apakah currentSesiId masih valid di kepanitiaan ini
+        const exists = (currentSesiId === 'all') || k.sesis.some(s => s.id == currentSesiId);
+        if (!exists) {
+            const activeSess = k.sesis.find(s => s.is_active);
+            currentSesiId = activeSess ? activeSess.id : k.sesis[0].id;
+        }
+
+        k.sesis.forEach(s => {
+            const activeLabel = s.is_active ? ' [AKTIF / BUKA]' : '';
+            const isSelected = (currentSesiId !== 'all' && s.id == currentSesiId);
+            const opt = $(`<option value="${s.id}" ${isSelected ? 'selected' : ''}>${s.name}${activeLabel}</option>`);
+            select.append(opt);
+        });
+
+        if (k.sesis.length > 1) {
+            const isAllSelected = (currentSesiId === 'all');
+            const allOpt = $(`<option value="all" ${isAllSelected ? 'selected' : ''}>-- Rekap Semua Sesi --</option>`);
+            select.append(allOpt);
+        }
+
+        updateStatusBadge(k);
+    }
+
+    function updateStatusBadge(k) {
+        if (currentSesiId === 'all') {
+            $('#sesi-status-badge-container').html(`
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.8rem;">
+                    <i class="bi bi-calendar-range me-1"></i> Rekap Semua Sesi
+                </span>
+            `);
+        } else {
+            const s = k?.sesis?.find(item => item.id == currentSesiId);
+            if (s && s.is_active) {
+                $('#sesi-status-badge-container').html(`
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.8rem;">
+                        <i class="bi bi-broadcast me-1"></i> Sesi Aktif (Buka)
+                    </span>
+                `);
+            } else {
+                $('#sesi-status-badge-container').html(`
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.8rem;">
+                        <i class="bi bi-lock-fill me-1"></i> Sesi Ditutup
+                    </span>
+                `);
+            }
+        }
+    }
+
+    function updateHeaders(sesiTitle, isAll) {
+        if (isAll) {
+            $('#th-absen-datang').text('Datang (Semua Sesi)');
+            $('#th-absen-pulang').text('Pulang (Semua Sesi)');
+            $('#desc-tabel-sudah').html('Rangkuman presensi di seluruh sesi kepanitiaan ini.');
+            $('#desc-tabel-belum').html('Pegawai yang belum absen sama sekali di seluruh sesi kepanitiaan ini.');
             $('#label-sudah-datang').text('Presensi Datang');
             $('#label-belum-datang').text('Belum Datang');
             $('#label-sudah-pulang').text('Presensi Pulang');
             $('#label-belum-pulang').text('Belum Pulang');
         } else {
-            $('#th-absen-datang').text('Datang (H-' + currentDay + ')');
-            $('#th-absen-pulang').text('Pulang (H-' + currentDay + ')');
-            $('#desc-tabel-sudah').text('Pegawai yang telah hadir di Hari Ke-' + currentDay + '.');
-            $('#desc-tabel-belum').text('Pegawai yang belum hadir di Hari Ke-' + currentDay + '.');
+            $('#th-absen-datang').text('Absen Datang');
+            $('#th-absen-pulang').text('Absen Pulang');
+            $('#desc-tabel-sudah').html('Pegawai yang telah hadir pada sesi: <strong class="text-dark">' + sesiTitle + '</strong>');
+            $('#desc-tabel-belum').html('Pegawai yang belum hadir pada sesi: <strong class="text-dark">' + sesiTitle + '</strong>');
             $('#label-sudah-datang').text('Sudah Datang');
             $('#label-belum-datang').text('Belum Datang');
             $('#label-sudah-pulang').text('Sudah Pulang');
@@ -425,13 +498,12 @@ $(document).ready(function() {
     }
 
     function loadStats() {
-        updateHeaders();
         $.ajax({
             url: "{{ route('rekapitulasi-absensi.stats') }}",
             type: "GET",
             data: {
-                kepanitiaan: currentKepanitiaan,
-                day: currentDay
+                kepanitiaan_id: currentKepanitiaanId,
+                sesi_id: currentSesiId
             },
             success: function(res) {
                 $('#stat-total-pegawai').text(res.total_pegawai || 0);
@@ -442,12 +514,12 @@ $(document).ready(function() {
                 
                 $('#badge-total-sudah').html('<i class="bi bi-check-circle-fill me-1"></i> ' + (res.sudah_absen || 0) + ' Sudah Absen');
                 $('#badge-total-belum').html('<i class="bi bi-x-circle-fill me-1"></i> ' + (res.belum_absen || 0) + ' Belum Absen');
+
+                const title = res.sesi_nama || (currentSesiId === 'all' ? 'Semua Sesi' : 'Sesi Terpilih');
+                updateHeaders(title, res.is_all_days);
             }
         });
     }
-
-    // Inisialisasi awal statistik
-    loadStats();
 
     // 1. Inisialisasi DataTable SUDAH Absen
     let tableSudah = $('#table-sudah-absen').DataTable({
@@ -458,8 +530,8 @@ $(document).ready(function() {
         ajax: {
             url: "{{ route('rekapitulasi-absensi.data-sudah') }}",
             data: function(d) {
-                d.kepanitiaan = currentKepanitiaan;
-                d.day = currentDay;
+                d.kepanitiaan_id = currentKepanitiaanId;
+                d.sesi_id = currentSesiId;
             }
         },
         columns: [
@@ -476,7 +548,7 @@ $(document).ready(function() {
             lengthMenu: "_MENU_",
             info: "_START_ - _END_ dari _TOTAL_",
             infoEmpty: "0 pegawai",
-            zeroRecords: "Tidak ada data",
+            zeroRecords: "Tidak ada data hadir",
             paginate: {
                 first: "«",
                 last: "»",
@@ -495,8 +567,8 @@ $(document).ready(function() {
         ajax: {
             url: "{{ route('rekapitulasi-absensi.data-belum') }}",
             data: function(d) {
-                d.kepanitiaan = currentKepanitiaan;
-                d.day = currentDay;
+                d.kepanitiaan_id = currentKepanitiaanId;
+                d.sesi_id = currentSesiId;
             }
         },
         columns: [
@@ -524,37 +596,34 @@ $(document).ready(function() {
         }
     });
 
-    // Event Switch Kepanitiaan (Bootstrap button toggle)
-    $('.kepanitiaan-btn').on('click', function() {
-        $('.kepanitiaan-btn').removeClass('btn-primary shadow-sm').addClass('btn-outline-primary');
-        $(this).removeClass('btn-outline-primary').addClass('btn-primary shadow-sm');
-        currentKepanitiaan = $(this).data('kepanitiaan');
-
-        if (currentKepanitiaan === 'esq') {
-            $('#col-day-4').removeClass('d-none');
+    // Event: Ganti Kepanitiaan via Dropdown
+    $('#select-kepanitiaan').on('change', function() {
+        currentKepanitiaanId = $(this).val();
+        const k = getKepanitiaanById(currentKepanitiaanId);
+        if (k && k.sesis && k.sesis.length > 0) {
+            const activeSess = k.sesis.find(s => s.is_active);
+            currentSesiId = activeSess ? activeSess.id : k.sesis[0].id;
         } else {
-            $('#col-day-4').addClass('d-none');
-            if (currentDay === 4) {
-                currentDay = 1;
-                $('.day-btn').removeClass('btn-success shadow-sm').addClass('btn-outline-success');
-                $('#btn-day-1').removeClass('btn-outline-success').addClass('btn-success shadow-sm');
-            }
+            currentSesiId = 'all';
         }
-
+        populateSesiDropdown();
         loadStats();
         tableSudah.ajax.reload();
         tableBelum.ajax.reload();
     });
 
-    // Event Switch Hari (Bootstrap button toggle)
-    $('.day-btn').on('click', function() {
-        $('.day-btn').removeClass('btn-success shadow-sm').addClass('btn-outline-success');
-        $(this).removeClass('btn-outline-success').addClass('btn-success shadow-sm');
-        currentDay = parseInt($(this).data('day'));
+    // Event: Ganti Sesi via Dropdown
+    $('#select-sesi').on('change', function() {
+        currentSesiId = $(this).val();
+        const k = getKepanitiaanById(currentKepanitiaanId);
+        updateStatusBadge(k);
         loadStats();
         tableSudah.ajax.reload();
         tableBelum.ajax.reload();
     });
+
+    // Inisialisasi awal
+    loadStats();
 });
 </script>
 @endpush

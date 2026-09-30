@@ -81,6 +81,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('rencana-kerja', RencanaKerjaController::class);
 
     Route::get('rekapitulasi/data', [RekapitulasiController::class, 'getData'])->name('rekapitulasi.data');
+    Route::get('rekapitulasi/export-excel', [RekapitulasiController::class, 'exportExcel'])->name('rekapitulasi.export-excel');
+    Route::get('rekapitulasi/export-pdf', [RekapitulasiController::class, 'exportPdf'])->name('rekapitulasi.export-pdf');
     Route::resource('rekapitulasi', RekapitulasiController::class)->only(['index']);
 
     // Kepanitiaan Routes

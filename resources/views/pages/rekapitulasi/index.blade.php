@@ -78,8 +78,30 @@
 
     {{-- ===== SHARED FILTER ===== --}}
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header-green">
-            <i class="bi bi-filter-square me-1"></i> Filter & Diagnosis Kinerja
+        <div class="card-header-green d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <i class="bi bi-filter-square me-1"></i> Filter & Diagnosis Kinerja
+            </div>
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-light fw-bold text-success shadow-xs dropdown-toggle d-inline-flex align-items-center gap-1.5" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-file-earmark-arrow-down-fill text-success"></i>
+                    <span>Export Laporan</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 8px;">
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-success fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="excel">
+                            <i class="bi bi-file-earmark-excel-fill text-success fs-6"></i>
+                            <span>Unduh Excel (.xlsx)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="pdf">
+                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-6"></i>
+                            <span>Unduh PDF (.pdf)</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
         <div class="card-body pt-3">
             <form id="filter-form" class="row g-3 align-items-end">
@@ -131,10 +153,30 @@
                 </div>
                 @endif
 
-                <div class="col-12 col-lg-auto d-flex align-items-end">
+                <div class="col-12 col-lg-auto d-flex align-items-end gap-2">
                     <button type="button" id="btn-reset" class="btn btn-secondary btn-sm px-3">
                         <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                     </button>
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-success btn-sm px-3 fw-semibold text-white dropdown-toggle d-inline-flex align-items-center gap-1.5" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #15432d; border-color: #15432d;">
+                            <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                            <span>Export Laporan</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 8px;">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-success fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="excel">
+                                    <i class="bi bi-file-earmark-excel-fill text-success fs-6"></i>
+                                    <span>Unduh Excel (.xlsx)</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="pdf">
+                                    <i class="bi bi-file-earmark-pdf-fill text-danger fs-6"></i>
+                                    <span>Unduh PDF (.pdf)</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </form>
         </div>
@@ -663,6 +705,7 @@
 
     </div>{{-- end tab-content --}}
 </section>
+
 @endsection
 
 @push('scripts')
@@ -976,6 +1019,46 @@ $(document).ready(function() {
         $('#filter_status').val('').trigger('change');
         $('#filter_kategori').val('').trigger('change');
         $('#filter_jabatan').val('').trigger('change');
+    });
+
+    // ---- Export Rekapitulasi (Synced directly with Active Filters & Active Tab) ----
+    $(document).on('click', '.btn-export-rekap', function(e) {
+        e.preventDefault();
+        let format = $(this).data('format'); // 'excel' or 'pdf'
+
+        // Auto-detect category based on active tab or category dropdown
+        let activeTab = $('#rekapTab .nav-link.active').attr('id');
+        let kategori = '';
+        if (activeTab === 'tab-rk-btn') {
+            kategori = 'Rencana Kerja';
+        } else if (activeTab === 'tab-pan-btn') {
+            kategori = 'Kepanitiaan';
+        } else if (activeTab === 'tab-ins-btn') {
+            kategori = 'Insidentil';
+        } else {
+            kategori = $('#filter_kategori').val() || '';
+        }
+
+        let params = new URLSearchParams();
+        if ($('#filter_periode').val()) {
+            params.append('periode_akademik_id', $('#filter_periode').val());
+        }
+        if ($('#filter_status').val()) {
+            params.append('status_filter', $('#filter_status').val());
+        }
+        if (kategori) {
+            params.append('kategori', kategori);
+        }
+        if ($('#filter_jabatan').length && $('#filter_jabatan').val()) {
+            params.append('jabatan', $('#filter_jabatan').val());
+        }
+
+        let targetUrl = (format === 'excel')
+            ? "{{ route('rekapitulasi.export-excel') }}"
+            : "{{ route('rekapitulasi.export-pdf') }}";
+
+        let fullUrl = targetUrl + (params.toString() ? ('?' + params.toString()) : '');
+        window.location.href = fullUrl;
     });
 
     setTimeout(syncTopScrollbars, 300);
