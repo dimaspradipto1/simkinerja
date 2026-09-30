@@ -510,7 +510,11 @@ class KegiatanController extends Controller
     public function store(KegiatanRequest $request)
     {
         $validated = $request->validated();
-        $validated['user_id'] = $validated['user_id'] ?? Auth::id();
+        $authUser = Auth::user();
+        $isAdmin = $authUser && $authUser->isSystemAdmin();
+        if (!$isAdmin || empty($validated['user_id'])) {
+            $validated['user_id'] = Auth::id();
+        }
         $kategori = $validated['kategori'] ?? 'Rencana Kerja';
 
         if ($request->filled('jenis_absensi') && empty($validated['url_external'])) {
@@ -628,6 +632,9 @@ class KegiatanController extends Controller
         $isPimpinanOrAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
 
         $validated = $request->validated();
+        if (!$authUser || !$authUser->isSystemAdmin()) {
+            unset($validated['user_id']);
+        }
 
         $estimasiFields = [
             'estimasi_tanggal_mulai', 'estimasi_tanggal_selesai', 'estimasi_jam_mulai', 'estimasi_jam_selesai',

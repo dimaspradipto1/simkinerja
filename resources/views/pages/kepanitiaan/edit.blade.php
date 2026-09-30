@@ -23,7 +23,7 @@
                         @csrf
                         @method('PUT')
 
-                        @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->hasAnyRole(['superadmin', 'admin', 'super admin'])))
+                        @if(auth()->check() && auth()->user()->isSystemAdmin())
                         <div class="col-md-12">
                             <label for="user_id" class="form-label">Pegawai / User <span class="text-danger">*</span></label>
                             <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">

@@ -1364,11 +1364,11 @@
                         }
                     },
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center fw-semibold text-muted' },
-                    { data: 'tanggal', name: 'created_at', className: 'text-center' },
-                    { data: 'user_info', name: 'user_info' },
-                    { data: 'status_datang', name: 'hadir_datang', className: 'text-center' },
-                    { data: 'status_pulang', name: 'hadir_pulang', className: 'text-center' },
-                    { data: 'catatan_col', name: 'catatan_hadir_datang', orderable: false },
+                    { data: 'tanggal', name: 'tanggal', className: 'text-center', searchable: false },
+                    { data: 'user_info', name: 'user_info', searchable: true },
+                    { data: 'status_datang', name: 'status_datang', className: 'text-center', searchable: false },
+                    { data: 'status_pulang', name: 'status_pulang', className: 'text-center', searchable: false },
+                    { data: 'catatan_col', name: 'catatan_col', orderable: false, searchable: false },
                     { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' },
                 ],
                 order: [[3, 'asc']],
@@ -1570,6 +1570,83 @@
             });
         });
 
+        // Handler edit & hapus baris presensi individual dari dalam modal multi-select
+        if (typeof window.editPresensiRow !== 'function') {
+            window.editPresensiRow = function(data) {
+                gmpSelectedUsersMap.clear();
+                gmpSelectedUsersMap.set(String(data.user_id), data.user_name || ('Pegawai #' + data.user_id));
+                updateGmpBulkToolbarUI();
+
+                if (data.hadir_datang && data.hadir_datang !== '-') {
+                    $('#gmp_switch_update_datang').prop('checked', true).trigger('change');
+                    $('#gmp_bulk_hadir_datang').val(data.hadir_datang);
+                }
+                if (data.waktu_datang) {
+                    $('#gmp_bulk_waktu_datang').val(data.waktu_datang);
+                }
+                if (data.hadir_pulang && data.hadir_pulang !== '-') {
+                    $('#gmp_switch_update_pulang').prop('checked', true).trigger('change');
+                    $('#gmp_bulk_hadir_pulang').val(data.hadir_pulang);
+                }
+                if (data.waktu_pulang) {
+                    $('#gmp_bulk_waktu_pulang').val(data.waktu_pulang);
+                }
+                if (data.catatan && data.catatan !== '-') {
+                    $('#gmp_switch_update_catatan').prop('checked', true).trigger('change');
+                    $('#gmp_bulk_catatan').val(data.catatan);
+                }
+
+                const modalEl = document.getElementById('modalGmpBulkPresensi');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+            };
+        }
+
+        if (typeof window.deletePresensiRow !== 'function') {
+            window.deletePresensiRow = function(id) {
+                Swal.fire({
+                    title: 'Hapus data presensi?',
+                    text: 'Catatan kehadiran pegawai ini pada sesi ini akan dihapus permanen.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="bi bi-trash"></i> Ya, Hapus',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "{{ url('presensi/presensi') }}/" + id,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            dataType: 'json',
+                            success: function(res) {
+                                if (res.success) {
+                                    if (gmpTable) gmpTable.ajax.reload(null, false);
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Terhapus!',
+                                        text: res.message,
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    });
+                                } else {
+                                    Swal.fire('Gagal', res.message || 'Gagal menghapus data.', 'error');
+                                }
+                            },
+                            error: function() {
+                                Swal.fire('Error', 'Terjadi kesalahan sistem saat menghapus.', 'error');
+                            }
+                        });
+                    }
+                });
+            };
+        }
+
         // Handler Kelola Sesi Presensi Kepanitiaan (Universal Dynamic Attendance)
         let currentManageKepanitiaanId = null;
 
@@ -1648,18 +1725,18 @@
                             </div>
                         </div>
                     </td>
-                    <td class="text-center" style="vertical-align: middle;">
-                        <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-outline-primary" onclick="window.openPresensiMultiSelectModal(${s.id}, '${s.nama_sesi.replace(/'/g, "\\'")}')" title="Kelola Presensi & Multi-Select Pegawai">
-                                <i class="bi bi-check2-square me-1"></i>Multi-Select
+                    <td class="text-center text-nowrap" style="vertical-align: middle;">
+                        <div class="d-inline-flex align-items-center justify-content-center text-nowrap" style="gap: 8px !important;">
+                            <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center shadow-xs fw-semibold text-nowrap" onclick="window.openPresensiMultiSelectModal(${s.id}, '${s.nama_sesi.replace(/'/g, "\\'")}')" title="Kelola Presensi & Multi-Select Pegawai" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 0.82rem; white-space: nowrap;">
+                                <i class="bi bi-check2-square" style="margin-right: 6px; font-size: 0.95rem;"></i><span>Multi-Select</span>
                             </button>
-                            <a href="${s.detail_url}" class="btn btn-outline-secondary" title="Buka Halaman Presensi Lengkap" target="_blank">
+                            <a href="${s.detail_url}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center" title="Buka Halaman Presensi Penuh di Tab Baru" target="_blank" style="width: 32px; height: 32px; padding: 0; border-radius: 6px;">
                                 <i class="bi bi-box-arrow-up-right"></i>
                             </a>
-                            <a href="${s.export_url}" class="btn btn-outline-success" title="Download Rekap Presensi Excel" target="_blank">
+                            <a href="${s.export_url}" class="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center" title="Download Rekap Presensi Excel" target="_blank" style="width: 32px; height: 32px; padding: 0; border-radius: 6px;">
                                 <i class="bi bi-file-earmark-excel-fill"></i>
                             </a>
-                            <button type="button" class="btn btn-outline-danger btn-delete-sesi" data-id="${s.id}" data-nama="${s.nama_sesi}" title="Hapus Sesi">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-sesi d-inline-flex align-items-center justify-content-center" data-id="${s.id}" data-nama="${s.nama_sesi}" title="Hapus Sesi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px;">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -1989,7 +2066,7 @@
 
     <!-- Modal Kelola Sesi Presensi Kepanitiaan (Universal Dynamic Attendance) -->
     <div class="modal fade" id="modalKelolaSesiPresensi" tabindex="-1" aria-labelledby="modalKelolaSesiPresensiLabel" aria-hidden="true" style="z-index: 1065;">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden;">
                 <div class="modal-header bg-dark text-white py-3 px-4 d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-2">
@@ -2039,11 +2116,11 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th class="text-center" style="width: 45px;">#</th>
-                                        <th>Nama Sesi & Token</th>
-                                        <th class="text-center" style="width: 110px;">Tanggal</th>
-                                        <th class="text-center" style="width: 110px;">Kehadiran</th>
-                                        <th class="text-center" style="width: 160px;">Status Sesi</th>
-                                        <th class="text-center" style="width: 90px;">Aksi</th>
+                                        <th style="min-width: 220px;">Nama Sesi & Token</th>
+                                        <th class="text-center" style="width: 120px;">Tanggal</th>
+                                        <th class="text-center" style="width: 120px;">Kehadiran</th>
+                                        <th class="text-center" style="width: 150px;">Status Sesi</th>
+                                        <th class="text-center" style="width: 250px; min-width: 250px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableSesiPresensiBody">

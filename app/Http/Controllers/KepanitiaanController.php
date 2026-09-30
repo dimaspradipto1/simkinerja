@@ -834,7 +834,11 @@ class KepanitiaanController extends Controller
     public function store(KepanitiaanRequest $request)
     {
         $validated = $request->validated();
-        $validated['user_id'] = $validated['user_id'] ?? Auth::id();
+        $authUser = Auth::user();
+        $isAdmin = $authUser && $authUser->isSystemAdmin();
+        if (!$isAdmin || empty($validated['user_id'])) {
+            $validated['user_id'] = Auth::id();
+        }
 
         if ($request->has('jenis_absensi') || $request->filled('url_external')) {
             $jenisAbsensi = array_filter((array) $request->input('jenis_absensi', []));

@@ -23,7 +23,7 @@
                         @csrf
                         @method('PUT')
 
-                        @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit() || auth()->user()->isSuperAdmin()))
+                        @if(auth()->check() && auth()->user()->isSystemAdmin())
                         <div class="col-md-12">
                             <label for="user_id" class="form-label fw-semibold">Pegawai / User <span class="text-danger">*</span></label>
                             <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">
@@ -37,6 +37,8 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        @else
+                        <input type="hidden" name="user_id" value="{{ $kegiatan->user_id }}">
                         @endif
 
                         <div class="col-md-4">

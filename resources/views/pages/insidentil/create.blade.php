@@ -22,7 +22,7 @@
                     <form action="{{ route('insidentil.store') }}" method="POST" enctype="multipart/form-data" class="row g-3">
                         @csrf
 
-                        @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat()))
+                        @if(auth()->check() && auth()->user()->isSystemAdmin())
                         <div class="col-md-12">
                             <label for="user_id" class="form-label fw-semibold">Jabatan - Nama Pegawai <span class="text-danger">*</span></label>
                             <select class="form-select @error('user_id') is-invalid @enderror" id="user_id" name="user_id">

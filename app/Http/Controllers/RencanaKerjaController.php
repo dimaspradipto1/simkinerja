@@ -732,7 +732,11 @@ class RencanaKerjaController extends Controller
     public function store(RencanaKerjaRequest $request)
     {
         $validated = $request->validated();
-        $validated['user_id'] = $validated['user_id'] ?? Auth::id();
+        $authUser = Auth::user();
+        $isAdmin = $authUser && $authUser->isSystemAdmin();
+        if (!$isAdmin || empty($validated['user_id'])) {
+            $validated['user_id'] = Auth::id();
+        }
         $validated['kategori'] = $validated['kategori'] ?? 'Rencana Kerja';
 
         if ($request->hasFile('file')) {

@@ -326,6 +326,26 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is strictly the system admin/superadmin account (pure admin, not regular staff/pimpinan).
+     */
+    public function isSystemAdmin(): bool
+    {
+        $email = strtolower(trim($this->email ?? ''));
+        $name = strtolower(trim($this->name ?? ''));
+        $jabatan = strtoupper(trim($this->jabatan ?? ''));
+
+        if (in_array($email, ['admin@uis.ac.id', 'admin@gmail.com', 'superadmin@uis.ac.id']) || in_array($name, ['admin', 'superadmin'])) {
+            return true;
+        }
+
+        if (in_array($jabatan, ['ADMIN', 'SUPERADMIN', 'ADMIN ICT'])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Check if user is Superadmin or Admin
      */
     public function isAdmin(): bool

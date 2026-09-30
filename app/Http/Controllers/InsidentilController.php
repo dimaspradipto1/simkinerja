@@ -378,8 +378,8 @@ class InsidentilController extends Controller
     {
         $data = $request->validated();
         $authUser = Auth::user();
-
-        if (empty($data['user_id'])) {
+        $isAdmin = $authUser && $authUser->isSystemAdmin();
+        if (!$isAdmin || empty($data['user_id'])) {
             $data['user_id'] = $authUser->id;
         }
 

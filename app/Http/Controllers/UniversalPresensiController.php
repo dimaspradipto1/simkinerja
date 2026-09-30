@@ -547,6 +547,28 @@ class UniversalPresensiController extends Controller
         }
 
         return DataTables::of($query)
+            ->filter(function ($query) use ($request) {
+                if ($search = $request->input('search.value')) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('users.name', 'LIKE', "%{$search}%")
+                          ->orWhere('users.nidn', 'LIKE', "%{$search}%")
+                          ->orWhere('users.jabatan', 'LIKE', "%{$search}%")
+                          ->orWhere('users.unit', 'LIKE', "%{$search}%")
+                          ->orWhere('kepanitiaan_presensis.catatan_hadir_datang', 'LIKE', "%{$search}%")
+                          ->orWhere('kepanitiaan_presensis.catatan_hadir_pulang', 'LIKE', "%{$search}%")
+                          ->orWhere('kepanitiaan_presensis.hadir_datang', 'LIKE', "%{$search}%")
+                          ->orWhere('kepanitiaan_presensis.hadir_pulang', 'LIKE', "%{$search}%");
+                    });
+                }
+            }, true)
+            ->filterColumn('user_info', function ($query, $keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('users.name', 'LIKE', "%{$keyword}%")
+                      ->orWhere('users.nidn', 'LIKE', "%{$keyword}%")
+                      ->orWhere('users.jabatan', 'LIKE', "%{$keyword}%")
+                      ->orWhere('users.unit', 'LIKE', "%{$keyword}%");
+                });
+            })
             ->filterColumn('user_name', function ($query, $keyword) {
                 $query->where('users.name', 'LIKE', "%{$keyword}%");
             })
@@ -556,8 +578,17 @@ class UniversalPresensiController extends Controller
             ->filterColumn('status_datang', function ($query, $keyword) {
                 $query->where('kepanitiaan_presensis.hadir_datang', 'LIKE', "%{$keyword}%");
             })
+            ->filterColumn('hadir_datang', function ($query, $keyword) {
+                $query->where('kepanitiaan_presensis.hadir_datang', 'LIKE', "%{$keyword}%");
+            })
             ->filterColumn('status_pulang', function ($query, $keyword) {
                 $query->where('kepanitiaan_presensis.hadir_pulang', 'LIKE', "%{$keyword}%");
+            })
+            ->filterColumn('hadir_pulang', function ($query, $keyword) {
+                $query->where('kepanitiaan_presensis.hadir_pulang', 'LIKE', "%{$keyword}%");
+            })
+            ->orderColumn('user_info', function ($query, $direction) {
+                $query->orderBy('users.name', $direction);
             })
             ->orderColumn('status_datang', function ($query, $direction) {
                 $query->orderBy('kepanitiaan_presensis.hadir_datang', $direction);
