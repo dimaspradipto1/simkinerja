@@ -117,14 +117,14 @@
                     </select>
                 </div>
 
-                @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat()))
+                @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit()))
                 <div class="col-md-6 col-lg-3">
                     <label for="filter_jabatan" class="form-label fw-semibold text-secondary small">Pegawai / Jabatan</label>
                     <select name="jabatan" id="filter_jabatan" class="form-select select2-simple">
                         <option value="">Semua Jabatan</option>
                         @foreach($usersWithJabatan as $u)
                             <option value="{{ $u->id }}" {{ ($u->id == auth()->user()->id && !auth()->user()->isPimpinanRektorat()) ? 'selected' : '' }}>
-                                {{ $u->jabatan }} - {{ $u->name }}
+                                {{ (!empty($u->jabatan) && $u->jabatan !== '-') ? $u->jabatan . ' - ' : '' }}{{ $u->name }}{{ (!empty($u->unit) && $u->unit !== '-') ? ' (' . $u->unit . ')' : '' }}
                             </option>
                         @endforeach
                     </select>
@@ -765,8 +765,8 @@
                     <select id="export_jabatan" class="form-select bg-white">
                         <option value="">Semua Jabatan</option>
                         @foreach($usersWithJabatan as $u)
-                            <option value="{{ $u->id }}" {{ ($u->id == auth()->user()->id && !auth()->user()->isAdmin() && !auth()->user()->isPimpinanRektorat()) ? 'selected' : '' }}>
-                                {{ $u->jabatan }} - {{ $u->name }}
+                            <option value="{{ $u->id }}" {{ ($u->id == auth()->user()->id && !auth()->user()->isAdmin() && !auth()->user()->isPimpinanRektorat() && !auth()->user()->isPimpinanUnit()) ? 'selected' : '' }}>
+                                {{ (!empty($u->jabatan) && $u->jabatan !== '-') ? $u->jabatan . ' - ' : '' }}{{ $u->name }}{{ (!empty($u->unit) && $u->unit !== '-') ? ' (' . $u->unit . ')' : '' }}
                             </option>
                         @endforeach
                     </select>
@@ -810,8 +810,21 @@ $(document).ready(function() {
 
     // ---- Select2 ----
     if ($.fn.select2) {
-        $('.select2-simple').select2({ theme: 'bootstrap-5', width: '100%' });
+        $('.select2-simple').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Semua Jabatan',
+            allowClear: true,
+            minimumResultsForSearch: 0
+        });
     }
+
+    $(document).on('select2:open', () => {
+        let searchField = document.querySelector('.select2-container--open .select2-search__field');
+        if (searchField) {
+            searchField.focus();
+        }
+    });
 
     // ---- Helper: build chart ----
     function makeChart(canvasId) {
@@ -1127,6 +1140,21 @@ $(document).ready(function() {
         }
     });
 
+    function initExportModalSelect2() {
+        if ($('#export_jabatan').length && $.fn.select2) {
+            if (!$('#export_jabatan').hasClass('select2-hidden-accessible')) {
+                $('#export_jabatan').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    dropdownParent: $('#modalExportRekapitulasi'),
+                    placeholder: 'Semua Jabatan',
+                    allowClear: true,
+                    minimumResultsForSearch: 0
+                });
+            }
+        }
+    }
+
     // ---- Export Rekapitulasi Modal Handlers (Synced with Page Filter) ----
     $('#modalExportRekapitulasi').on('show.bs.modal', function() {
         let activeTab = $('#rekapTab .nav-link.active').attr('id');
@@ -1146,6 +1174,13 @@ $(document).ready(function() {
         $('#export_status').val($('#filter_status').val() || '');
         if ($('#filter_jabatan').length) {
             $('#export_jabatan').val($('#filter_jabatan').val() || '');
+        }
+    });
+
+    $('#modalExportRekapitulasi').on('shown.bs.modal', function() {
+        initExportModalSelect2();
+        if ($('#filter_jabatan').length) {
+            $('#export_jabatan').val($('#filter_jabatan').val() || '').trigger('change');
         }
     });
 

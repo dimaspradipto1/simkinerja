@@ -16,6 +16,7 @@ use App\Http\Controllers\RekapitulasiKepanitiaanController;
 use App\Http\Controllers\InsidentilController;
 use App\Http\Controllers\RekapitulasiInsidentilController;
 use App\Http\Controllers\AnalisisKeterlambatanController;
+use App\Http\Controllers\HierarchyController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\RekapitulasiAbsensiController;
 use App\Http\Controllers\ScanAbsensiController;
@@ -63,6 +64,14 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);
     Route::resource('kategori', KategoriController::class);
+
+    // Hirarki Pimpinan - Bawahan
+    Route::get('hirarki', [HierarchyController::class, 'index'])->name('hirarki.index');
+    Route::put('hirarki/{user}/update', [HierarchyController::class, 'update'])->name('hirarki.update');
+    Route::post('hirarki/bulk-assign', [HierarchyController::class, 'bulkAssign'])->name('hirarki.bulk-assign');
+    Route::post('hirarki/sync-otk', [HierarchyController::class, 'syncOtk'])->name('hirarki.sync-otk');
+    Route::post('hirarki/{user}/reset', [HierarchyController::class, 'reset'])->name('hirarki.reset');
+    Route::post('hirarki/reset-all', [HierarchyController::class, 'resetAll'])->name('hirarki.reset-all');
 
     Route::get('rencana-kerja/download-template', [RencanaKerjaController::class, 'downloadTemplate'])->name('rencana-kerja.download-template');
     Route::get('rencana-kerja/export-excel', [RencanaKerjaController::class, 'exportExcel'])->name('rencana-kerja.export-excel');

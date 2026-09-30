@@ -321,7 +321,8 @@
             @php
                 $isSettingsActive = request()->routeIs('user.*') || 
                                     request()->routeIs('periode-akademik.*') || 
-                                    request()->routeIs('kategori.*');
+                                    request()->routeIs('kategori.*') ||
+                                    request()->routeIs('hirarki.*');
             @endphp
             <li class="nav-item">
                 <a class="{{ $isSettingsActive ? 'nav-link' : 'nav-link collapsed' }}"
@@ -346,6 +347,11 @@
                     <li>
                         <a href="{{ route('kategori.index') }}" class="{{ request()->routeIs('kategori.*') ? 'active' : '' }}">
                             <i class="bi bi-circle"></i><span>Kategori Kegiatan</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('hirarki.index') }}" class="{{ request()->routeIs('hirarki.*') ? 'active' : '' }}">
+                            <i class="bi bi-diagram-3"></i><span>Struktur Hirarki</span>
                         </a>
                     </li>
                 </ul>

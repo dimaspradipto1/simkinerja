@@ -154,21 +154,24 @@
         .criteria-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
             font-size: 6.8pt;
         }
         .criteria-table th {
             background-color: #f1f5f9;
             color: #334155;
             font-weight: bold;
-            padding: 3px 5px;
+            padding: 2.5px 4px;
             border: 1px solid #cbd5e1;
             text-align: left;
+            height: 17px;
+            vertical-align: middle;
         }
         .criteria-table td {
-            padding: 3px 5px;
+            padding: 2.5px 4px;
             border: 1px solid #cbd5e1;
             vertical-align: middle;
+            height: 17px;
+            line-height: 1.2;
         }
 
         .ttd-table {
@@ -299,6 +302,71 @@
                     } elseif ($item->tanggal_selesai) {
                         $realStr = 'Selesai ' . date('d/m/Y', strtotime($item->tanggal_selesai));
                     }
+
+                    // Total waktu pengerjaan dalam jam dan menit
+                    $durasiStr = null;
+                    $durasiDetik = 0;
+                    $isBerjalan = false;
+
+                    if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
+                        $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+                        $tglS = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglM;
+                        $startTs = strtotime($tglM . ' ' . $item->waktu_mulai);
+                        $endTs = strtotime($tglS . ' ' . $item->waktu_selesai);
+                        if ($endTs > $startTs) {
+                            $durasiDetik = $endTs - $startTs;
+                        } else {
+                            $tDiff = strtotime($item->waktu_selesai) - strtotime($item->waktu_mulai);
+                            if ($tDiff > 0) $durasiDetik = $tDiff;
+                        }
+                    }
+
+                    if ($durasiDetik <= 0 && !empty($item->durasi_detik) && $item->durasi_detik > 0) {
+                        $durasiDetik = (int) $item->durasi_detik;
+                    }
+
+                    if ($durasiDetik <= 0 && in_array($item->status, ['Proses', 'Berjalan'])) {
+                        if (!empty($item->waktu_mulai)) {
+                            $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+                            $diff = time() - strtotime($tglM . ' ' . $item->waktu_mulai);
+                            if ($diff > 0) {
+                                $durasiDetik = $diff;
+                                $isBerjalan = true;
+                            }
+                        } elseif (!empty($item->last_started_at)) {
+                            $diff = now()->diffInSeconds($item->last_started_at);
+                            if ($diff > 0) {
+                                $durasiDetik = (int) $diff + (int) ($item->durasi_detik ?? 0);
+                                $isBerjalan = true;
+                            }
+                        }
+                    }
+
+                    if ($durasiDetik <= 0 && !empty($item->tanggal_mulai) && !empty($item->tanggal_selesai)) {
+                        $d1 = strtotime($item->tanggal_mulai);
+                        $d2 = strtotime($item->tanggal_selesai);
+                        if ($d2 >= $d1) {
+                            $days = floor(($d2 - $d1) / 86400) + 1;
+                            $durasiDetik = $days * 8 * 3600;
+                        }
+                    }
+
+                    if ($durasiDetik > 0) {
+                        $h = floor($durasiDetik / 3600);
+                        $m = floor(($durasiDetik % 3600) / 60);
+                        if ($h > 0 && $m > 0) {
+                            $durasiStr = $h . ' jam ' . $m . ' menit';
+                        } elseif ($h > 0) {
+                            $durasiStr = $h . ' jam';
+                        } elseif ($m > 0) {
+                            $durasiStr = $m . ' menit';
+                        } else {
+                            $durasiStr = '< 1 menit';
+                        }
+                        if ($isBerjalan) {
+                            $durasiStr .= ' (berjalan)';
+                        }
+                    }
                 @endphp
                 <tr>
                     <td class="text-center" style="padding-left: 1px; padding-right: 1px;">{{ $idx + 1 }}</td>
@@ -318,14 +386,29 @@
                     </td>
                     <td>
                         @if($item->taggedUsers && $item->taggedUsers->count() > 0)
-                            @foreach($item->taggedUsers as $tUser)
-                                <div style="{{ !$loop->first ? 'margin-top: 3px; padding-top: 3px; border-top: 0.5px dashed #cbd5e1;' : '' }}">
-                                    <strong>{{ $tUser->name }}</strong>
-                                    @if($tUser->jabatan)
-                                        <br><small style="color: #64748b;">{{ $tUser->jabatan }}</small>
-                                    @endif
-                                </div>
-                            @endforeach
+                            @php
+                                // Filter tagged users: hanya tampilkan yang merupakan bawahan unit kepala yang login
+                                // $subordinateIds = null berarti super admin/rektorat (tampilkan semua)
+                                $visibleTagged = isset($subordinateIds) && $subordinateIds !== null
+                                    ? $item->taggedUsers->filter(fn($u) => in_array($u->id, $subordinateIds))
+                                    : $item->taggedUsers;
+                            @endphp
+                            @if($visibleTagged->count() > 0)
+                                @foreach($visibleTagged as $tUser)
+                                    <div style="{{ !$loop->first ? 'margin-top: 3px; padding-top: 3px; border-top: 0.5px dashed #cbd5e1;' : '' }}">
+                                        <strong>{{ $tUser->name }}</strong>
+                                        @if($tUser->jabatan)
+                                            <br><small style="color: #64748b;">{{ $tUser->jabatan }}</small>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            @else
+                                {{-- Jika semua tagged users berasal dari unit lain, tampilkan pemilik kegiatan --}}
+                                <strong>{{ $item->user ? $item->user->name : '-' }}</strong>
+                                @if($item->user && $item->user->jabatan)
+                                    <br><small style="color: #64748b;">{{ $item->user->jabatan }}</small>
+                                @endif
+                            @endif
                         @else
                             <strong>{{ $item->user ? $item->user->name : '-' }}</strong>
                             @if($item->user && $item->user->jabatan)
@@ -334,7 +417,19 @@
                         @endif
                     </td>
                     <td class="text-center" style="font-size: 6.5pt;">{{ $estStr }}</td>
-                    <td class="text-center" style="font-size: 6.5pt;">{{ $realStr }}</td>
+                    <td class="text-center" style="font-size: 6.5pt;">
+                        @if($realStr !== '-')
+                            <div>{{ $realStr }}</div>
+                        @endif
+                        @if($durasiStr)
+                            <div style="{{ $realStr !== '-' ? 'margin-top: 3px;' : '' }} font-size: 5.8pt; line-height: 1.2;">
+                                <span style="color: #dc2626; font-weight: bold;">Lama Pengerjaan:</span><br>
+                                <span style="color: #0f766e; font-weight: bold;">{{ $durasiStr }}</span>
+                            </div>
+                        @elseif($realStr === '-')
+                            -
+                        @endif
+                    </td>
                     <td class="text-center">
                         @if($isSelesai)
                             <span class="badge badge-success">Selesai</span>
@@ -417,11 +512,12 @@
             </td>
             <td style="background-color: #f8fafc;">
                 @php
-                    $predikat = 'Kurang';
-                    $predColor = '#dc2626';
-                    if ($rekap['percent'] >= 85) { $predikat = 'Sangat Baik'; $predColor = '#15803d'; }
-                    elseif ($rekap['percent'] >= 70) { $predikat = 'Baik'; $predColor = '#16a34a'; }
-                    elseif ($rekap['percent'] >= 55) { $predikat = 'Cukup'; $predColor = '#d97706'; }
+                    $predikat = 'Sangat Kurang';
+                    $predColor = '#991b1b';
+                    if ($rekap['percent'] >= 90) { $predikat = 'Sangat Baik'; $predColor = '#15803d'; }
+                    elseif ($rekap['percent'] >= 75) { $predikat = 'Baik'; $predColor = '#16a34a'; }
+                    elseif ($rekap['percent'] >= 60) { $predikat = 'Cukup'; $predColor = '#d97706'; }
+                    elseif ($rekap['percent'] >= 40) { $predikat = 'Kurang'; $predColor = '#ea580c'; }
                 @endphp
                 <span class="kpi-val" style="color: {{ $predColor }}; font-size: 11pt;">{{ $predikat }}</span>
                 <span class="kpi-sub">Tingkat Capaian</span>
@@ -447,56 +543,61 @@
     <div class="section-title">
         3. PEDOMAN STANDAR KRITERIA PENILAIAN & KETERANGAN STATUS
     </div>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
         <tr>
-            <!-- Tabel Kriteria Predikat -->
-            <td style="width: 50%; vertical-align: top; padding-right: 5px;">
-                <div style="font-weight: bold; font-size: 7.2pt; color: #15432D; margin-bottom: 2px;">
+            <!-- Tabel Kriteria Predikat (5 Baris) -->
+            <td style="width: 49.5%; vertical-align: top; padding-right: 0.5%;">
+                <div style="font-weight: bold; font-size: 7.2pt; color: #15432D; margin-bottom: 3px; height: 13px; line-height: 13px;">
                     Matriks Standar Predikat Kinerja:
                 </div>
                 <table class="criteria-table">
                     <thead>
                         <tr>
-                            <th width="30%">PREDIKAT</th>
-                            <th width="25%">RENTANG</th>
-                            <th width="45%">STANDAR PENILAIAN</th>
+                            <th style="width: 28%;">PREDIKAT</th>
+                            <th style="width: 24%; text-align: center;">RENTANG</th>
+                            <th style="width: 48%;">STANDAR PENILAIAN</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td><strong style="color: #15803d;">Sangat Baik</strong></td>
-                            <td class="text-center"><strong>≥ 85%</strong></td>
-                            <td>Melampaui target, pengerjaan tuntas dan berkualitas.</td>
+                            <td class="text-center"><strong>90% - 100%</strong></td>
+                            <td>Melampaui target, tuntas & berkualitas prima.</td>
                         </tr>
                         <tr>
                             <td><strong style="color: #16a34a;">Baik</strong></td>
-                            <td class="text-center"><strong>70% - 84%</strong></td>
+                            <td class="text-center"><strong>75% - 89%</strong></td>
                             <td>Memenuhi target operasional dengan baik.</td>
                         </tr>
                         <tr>
                             <td><strong style="color: #d97706;">Cukup</strong></td>
-                            <td class="text-center"><strong>55% - 69%</strong></td>
-                            <td>Cukup memenuhi sasaran dasar, perlu perbaikan kendala.</td>
+                            <td class="text-center"><strong>60% - 74%</strong></td>
+                            <td>Memenuhi sasaran dasar, perlu perbaikan kendala.</td>
                         </tr>
                         <tr>
-                            <td><strong style="color: #dc2626;">Kurang</strong></td>
-                            <td class="text-center"><strong>&lt; 55%</strong></td>
-                            <td>Di bawah target minimal, memerlukan percepatan intensif.</td>
+                            <td><strong style="color: #ea580c;">Kurang</strong></td>
+                            <td class="text-center"><strong>40% - 59%</strong></td>
+                            <td>Di bawah target minimal, butuh percepatan.</td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #991b1b;">Sangat Kurang</strong></td>
+                            <td class="text-center"><strong>&lt; 40%</strong></td>
+                            <td>Jauh di bawah target, evaluasi khusus & mendalam.</td>
                         </tr>
                     </tbody>
                 </table>
             </td>
-            <!-- Tabel Keterangan Status -->
-            <td style="width: 50%; vertical-align: top; padding-left: 5px;">
-                <div style="font-weight: bold; font-size: 7.2pt; color: #15432D; margin-bottom: 2px;">
+            <!-- Tabel Keterangan Status (5 Baris) -->
+            <td style="width: 49.5%; vertical-align: top; padding-left: 0.5%;">
+                <div style="font-weight: bold; font-size: 7.2pt; color: #15432D; margin-bottom: 3px; height: 13px; line-height: 13px;">
                     Definisi Indikator Status Pelaksanaan:
                 </div>
                 <table class="criteria-table">
                     <thead>
                         <tr>
-                            <th width="25%">STATUS</th>
-                            <th width="20%">WARNA</th>
-                            <th width="55%">DEFINISI & REKOMENDASI</th>
+                            <th style="width: 25%;">STATUS</th>
+                            <th style="width: 19%;">WARNA</th>
+                            <th style="width: 56%;">DEFINISI & REKOMENDASI</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -513,7 +614,7 @@
                         <tr>
                             <td><span class="badge badge-warning">Di-pause</span></td>
                             <td>Kuning</td>
-                            <td>Dihentikan sementara karena hambatan/kendala tertentu.</td>
+                            <td>Dihentikan sementara karena hambatan tertentu.</td>
                         </tr>
                         <tr>
                             <td><span class="badge badge-secondary">Belum Mulai</span></td>
@@ -523,7 +624,7 @@
                         <tr>
                             <td><span class="badge badge-danger">Terlambat</span></td>
                             <td>Merah</td>
-                            <td>Belum selesai dan melewati estimasi tanggal selesai.</td>
+                            <td>Belum selesai dan melewati batas estimasi waktu.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -532,26 +633,40 @@
     </table>
 
     <!-- TANDA TANGAN / PENGESAHAN -->
-    <table class="ttd-table">
+    @php
+        $signerKepalaJabatan = $signer['kepalaJabatan'] ?? 'Kepala / Atasan Langsung';
+        $signerKepalaNama    = $signer['kepalaNama'] ?? '...................................';
+        $signerKepalaNidn    = $signer['kepalaNidn'] ?? '-';
+        $signerPegawaiLabel  = $signer['pegawaiLabel'] ?? (auth()->check() && (auth()->user()->isPimpinanRektorat() || auth()->user()->isAdmin()) ? 'Pimpinan Universitas Ibnu Sina' : (auth()->check() && auth()->user()->isPimpinanUnit() ? 'Kepala Unit ' . auth()->user()->unit : 'Pegawai Yang Bersangkutan'));
+        $signerPegawaiNama   = $signer['pegawaiNama'] ?? (auth()->check() ? auth()->user()->name : '...................................');
+        $signerPegawaiNidn   = $signer['pegawaiNidn'] ?? (auth()->check() && auth()->user()->nidn ? auth()->user()->nidn : '-');
+    @endphp
+    <table class="ttd-table" style="width: 100%; margin-top: 25px;">
         <tr>
-            <td width="65%"></td>
-            <td width="35%" style="text-align: center;">
+            <td style="width: 50%; text-align: center; vertical-align: top;">
+                <div>Mengetahui,</div>
+                <div style="margin-top: 4px; font-weight: bold;">
+                    {{ $signerKepalaJabatan }}
+                </div>
+                <div style="height: 48px;"></div>
+                <div style="font-weight: bold; text-decoration: underline;">
+                    {{ $signerKepalaNama }}
+                </div>
+                <div style="color: #555555; font-size: 7.5pt; margin-top: 2px;">
+                    NUP: {{ $signerKepalaNidn }}
+                </div>
+            </td>
+            <td style="width: 50%; text-align: center; vertical-align: top;">
                 <div>Batam, {{ date('d') }} {{ \Carbon\Carbon::now()->translatedFormat('F Y') }}</div>
                 <div style="margin-top: 4px; font-weight: bold;">
-                    @if(auth()->check() && (auth()->user()->isPimpinanRektorat() || auth()->user()->isAdmin()))
-                        Pimpinan Universitas Ibnu Sina
-                    @elseif(auth()->check() && auth()->user()->isPimpinanUnit())
-                        Kepala Unit {{ auth()->user()->unit }}
-                    @else
-                        Pegawai Yang Bersangkutan
-                    @endif
+                    {{ $signerPegawaiLabel }}
                 </div>
-                <div style="height: 45px;"></div>
+                <div style="height: 48px;"></div>
                 <div style="font-weight: bold; text-decoration: underline;">
-                    {{ auth()->check() ? auth()->user()->name : '...................................' }}
+                    {{ $signerPegawaiNama }}
                 </div>
-                <div style="color: #555555; font-size: 7.5pt;">
-                    NIDN/NUP: {{ auth()->check() && auth()->user()->nidn ? auth()->user()->nidn : '-' }}
+                <div style="color: #555555; font-size: 7.5pt; margin-top: 2px;">
+                    NUP: {{ $signerPegawaiNidn }}
                 </div>
             </td>
         </tr>

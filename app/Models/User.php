@@ -29,6 +29,7 @@ class User extends Authenticatable
         'jabatan',
         'jabatan_kepanitiaan',
         'status',
+        'supervisor_id',
     ];
 
     /**
@@ -465,12 +466,86 @@ class User extends Authenticatable
         return $this->belongsToMany(Insidentil::class, 'kegiatan_user', 'user_id', 'kegiatan_id')->withTimestamps();
     }
 
+    // =========================================================================
+    // HIRARKI PIMPINAN - BAWAHAN (berbasis supervisor_id di DB)
+    // =========================================================================
+
     /**
-     * Get direct supervisor(s) based on unit and role hierarchy.
+     * Relasi ke atasan langsung (supervisor).
+     */
+    public function supervisor()
+    {
+        return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    /**
+     * Relasi ke semua bawahan langsung (subordinates) berdasarkan supervisor_id.
+     */
+    public function subordinates()
+    {
+        return $this->hasMany(User::class, 'supervisor_id');
+    }
+
+    /**
+     * Dapatkan semua ID bawahan langsung dan berjenjang (recursive).
+     *
+     * @param array $visited Array untuk mencegah circular recursion
+     * @return int[]
+     */
+    public function getAllSubordinateIds(array $visited = []): array
+    {
+        $visited[] = $this->id;
+        $ids = [];
+
+        $directSubs = $this->subordinates()->where('is_active', true)->get(['id', 'supervisor_id']);
+        foreach ($directSubs as $sub) {
+            if (!in_array($sub->id, $visited, true)) {
+                $ids[] = $sub->id;
+                $ids = array_merge($ids, $sub->getAllSubordinateIds($visited));
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Ambil semua ID bawahan langsung & berjenjang dari DB hierarchy.
+     * Mengembalikan array ID termasuk ID diri sendiri jika punya bawahan, atau null jika belum di-set.
+     *
+     * @return array|null  array of user IDs, or null if not configured in DB
+     */
+    public function getSubordinateIdsFromDb(): ?array
+    {
+        $ids = $this->getAllSubordinateIds();
+        if (!empty($ids)) {
+            // Sertakan ID diri sendiri agar pimpinan juga muncul di laporannya
+            array_unshift($ids, $this->id);
+            return array_values(array_unique($ids));
+        }
+
+        // Jika user adalah pegawai biasa yang memiliki supervisor tetapi tidak memiliki bawahan
+        if ($this->supervisor_id) {
+            return [$this->id];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get direct supervisor(s) based on DB hierarchy first, then unit/role fallback.
      */
     public function getDirectSupervisors()
     {
-        $allPimpinan = self::where('is_active', 1)
+        // Prioritas: gunakan supervisor dari DB jika ada
+        if ($this->supervisor_id) {
+            $dbSupervisor = self::where('id', '=', $this->supervisor_id)->where('is_active', '=', 1)->get();
+            if ($dbSupervisor->isNotEmpty()) {
+                return $dbSupervisor;
+            }
+        }
+
+        // Fallback: cari berdasarkan unit & role (legacy behavior)
+        $allPimpinan = self::where('is_active', '=', 1)
             ->where('id', '!=', $this->id)
             ->get()
             ->filter(function ($u) {

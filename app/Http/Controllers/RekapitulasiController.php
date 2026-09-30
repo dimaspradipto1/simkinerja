@@ -32,19 +32,7 @@ class RekapitulasiController extends Controller
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
-        $usersWithJabatan = [];
-        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
-            $usersWithJabatan = User::whereNotNull('jabatan')
-                ->where('jabatan', '!=', '')
-                ->orderBy('jabatan', 'asc')
-                ->get();
-        } elseif ($authUser->isPimpinanUnit()) {
-            $usersWithJabatan = User::whereNotNull('jabatan')
-                ->where('jabatan', '!=', '')
-                ->where('unit', $authUser->unit)
-                ->orderBy('jabatan', 'asc')
-                ->get();
-        }
+        $usersWithJabatan = $this->getDirectSubordinatesQuery($authUser)->get();
 
         return view('pages.rekapitulasi.index', compact('periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan'));
     }
@@ -57,21 +45,16 @@ class RekapitulasiController extends Controller
         $authUser = Auth::user();
         $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers']);
 
-        if (!$request->filled('jabatan') && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
-            if ($authUser->isPimpinanUnit()) {
-                $query->whereHas('user', function ($qu) use ($authUser) {
-                    $qu->where('unit', $authUser->unit);
-                });
-            } else {
-                $query->where(function ($q) use ($authUser) {
-                    $q->whereHas('taggedUsers', function ($qu) use ($authUser) {
-                        $qu->where('users.id', $authUser->id);
-                    })->orWhere(function ($sub) use ($authUser) {
-                        $sub->doesntHave('taggedUsers')
-                            ->where('user_id', $authUser->id);
-                    });
-                });
-            }
+        $isPureAdminOrRektorat = $this->isPureAdminOrRektorat($authUser);
+
+        if (!$request->filled('jabatan') && !$isPureAdminOrRektorat) {
+            $subordinateIds = $this->getDirectSubordinatesQuery($authUser)->pluck('id')->toArray();
+            $query->where(function ($q) use ($subordinateIds) {
+                $q->whereIn('user_id', $subordinateIds)
+                  ->orWhereHas('taggedUsers', function ($qu) use ($subordinateIds) {
+                      $qu->whereIn('users.id', $subordinateIds);
+                  });
+            });
         }
 
         $filterType = $request->input('filter_type', 'periode');
@@ -175,13 +158,15 @@ class RekapitulasiController extends Controller
             ->count();
         $percent = $total > 0 ? round(($selesai / $total) * 100) : 0;
 
-        $predikat = 'Kurang';
-        if ($percent >= 85) {
+        $predikat = 'Sangat Kurang';
+        if ($percent >= 90) {
             $predikat = 'Sangat Baik';
-        } elseif ($percent >= 70) {
+        } elseif ($percent >= 75) {
             $predikat = 'Baik';
-        } elseif ($percent >= 55) {
+        } elseif ($percent >= 60) {
             $predikat = 'Cukup';
+        } elseif ($percent >= 40) {
+            $predikat = 'Kurang';
         }
 
         return [
@@ -207,24 +192,17 @@ class RekapitulasiController extends Controller
 
         $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers']);
 
-        if (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
-            if ($authUser->isPimpinanUnit()) {
-                $query->where(function ($q) use ($authUser) {
-                    $q->whereHas('user', function ($qu) use ($authUser) {
-                        $qu->where('unit', $authUser->unit);
-                    })->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                        $qu->where('unit', $authUser->unit);
-                    });
+        $isPureAdminOrRektorat = $this->isPureAdminOrRektorat($authUser);
+
+        if (!$isPureAdminOrRektorat) {
+            $subordinateIds = $this->getDirectSubordinatesQuery($authUser)->pluck('id')->toArray();
+            if (!$request->filled('jabatan')) {
+                $query->where(function ($q) use ($subordinateIds) {
+                    $q->whereIn('user_id', $subordinateIds)
+                      ->orWhereHas('taggedUsers', function ($qu) use ($subordinateIds) {
+                          $qu->whereIn('users.id', $subordinateIds);
+                      });
                 });
-            } else {
-                if (!$request->filled('jabatan')) {
-                    $query->where(function ($q) use ($authUser) {
-                        $q->where('user_id', $authUser->id)
-                          ->orWhereHas('taggedUsers', function ($qu) use ($authUser) {
-                              $qu->where('users.id', $authUser->id);
-                          });
-                    });
-                }
             }
         }
 
@@ -263,12 +241,27 @@ class RekapitulasiController extends Controller
             ->count();
         $percent = $total > 0 ? round(($selesai / $total) * 100) : 0;
 
+        // Tentukan subIds untuk filter tampilan kolom pembuat (reuse dari subordinateIds di atas)
+        if ($isPureAdminOrRektorat) {
+            $subIds = null; // null = tampilkan semua
+        } elseif ($request->filled('jabatan') && is_numeric($request->jabatan)) {
+            $subIds = [(int) $request->jabatan];
+        } else {
+            // $subordinateIds sudah dihitung di atas (baris filter query), reuse
+            $subIds = $subordinateIds ?? $this->getDirectSubordinatesQuery($authUser)->pluck('id')->toArray();
+        }
+
         return DataTables::of($query)
-            ->addColumn('pembuat', function ($row) {
+            ->addColumn('pembuat', function ($row) use ($subIds) {
                 if ($row->taggedUsers && $row->taggedUsers->count() > 0) {
-                    return $row->taggedUsers->map(function ($u) {
-                        return $u->name . ($u->jabatan ? ' (' . $u->jabatan . ')' : '');
-                    })->implode(', ');
+                    $visible = $subIds !== null
+                        ? $row->taggedUsers->filter(fn($u) => in_array($u->id, $subIds))
+                        : $row->taggedUsers;
+                    if ($visible->count() > 0) {
+                        return $visible->map(function ($u) {
+                            return $u->name . ($u->jabatan ? ' (' . $u->jabatan . ')' : '');
+                        })->implode(', ');
+                    }
                 }
                 return $row->user ? $row->user->name . ' (' . ($row->user->jabatan ?? '-') . ')' : '-';
             })
@@ -296,6 +289,77 @@ class RekapitulasiController extends Controller
                 'percent' => $percent
             ])
             ->make(true);
+    }
+
+    /**
+     * Format total duration of a task in hours and minutes.
+     */
+    private function formatDurasiPengerjaan($item)
+    {
+        $durasiDetik = 0;
+        $isBerjalan = false;
+
+        if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
+            $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+            $tglS = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglM;
+            $startTs = strtotime($tglM . ' ' . $item->waktu_mulai);
+            $endTs = strtotime($tglS . ' ' . $item->waktu_selesai);
+            if ($endTs > $startTs) {
+                $durasiDetik = $endTs - $startTs;
+            } else {
+                $tDiff = strtotime($item->waktu_selesai) - strtotime($item->waktu_mulai);
+                if ($tDiff > 0) $durasiDetik = $tDiff;
+            }
+        }
+
+        if ($durasiDetik <= 0 && !empty($item->durasi_detik) && $item->durasi_detik > 0) {
+            $durasiDetik = (int) $item->durasi_detik;
+        }
+
+        if ($durasiDetik <= 0 && in_array($item->status, ['Proses', 'Berjalan'])) {
+            if (!empty($item->waktu_mulai)) {
+                $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+                $diff = time() - strtotime($tglM . ' ' . $item->waktu_mulai);
+                if ($diff > 0) {
+                    $durasiDetik = $diff;
+                    $isBerjalan = true;
+                }
+            } elseif (!empty($item->last_started_at)) {
+                $diff = now()->diffInSeconds($item->last_started_at);
+                if ($diff > 0) {
+                    $durasiDetik = (int) $diff + (int) ($item->durasi_detik ?? 0);
+                    $isBerjalan = true;
+                }
+            }
+        }
+
+        if ($durasiDetik <= 0 && !empty($item->tanggal_mulai) && !empty($item->tanggal_selesai)) {
+            $d1 = strtotime($item->tanggal_mulai);
+            $d2 = strtotime($item->tanggal_selesai);
+            if ($d2 >= $d1) {
+                $days = floor(($d2 - $d1) / 86400) + 1;
+                $durasiDetik = $days * 8 * 3600;
+            }
+        }
+
+        if ($durasiDetik <= 0) {
+            return null;
+        }
+
+        $h = floor($durasiDetik / 3600);
+        $m = floor(($durasiDetik % 3600) / 60);
+
+        if ($h > 0 && $m > 0) {
+            $str = $h . ' jam ' . $m . ' menit';
+        } elseif ($h > 0) {
+            $str = $h . ' jam';
+        } elseif ($m > 0) {
+            $str = $m . ' menit';
+        } else {
+            $str = '< 1 menit';
+        }
+
+        return $isBerjalan ? $str . ' (berjalan)' : $str;
     }
 
     /**
@@ -346,8 +410,12 @@ class RekapitulasiController extends Controller
             } else {
                 $staffText = strtoupper($request->jabatan);
             }
-        } elseif (!Auth::user()->isAdmin() && !Auth::user()->isPimpinanRektorat() && !Auth::user()->isPimpinanUnit()) {
-            $staffText = strtoupper(Auth::user()->name . ' (' . (Auth::user()->jabatan ?? '-') . ')');
+        } elseif (!$this->isPureAdminOrRektorat(Auth::user())) {
+            if (Auth::user()->isPimpinanUnit() && !empty(Auth::user()->unit)) {
+                $staffText = 'SEMUA PEGAWAI UNIT ' . strtoupper(Auth::user()->unit);
+            } else {
+                $staffText = strtoupper(Auth::user()->name . ' (' . (Auth::user()->jabatan ?? '-') . ')');
+            }
         }
 
         return [$periodeText, $kategoriText, $statusFilterText, $staffText];
@@ -358,11 +426,22 @@ class RekapitulasiController extends Controller
      */
     public function exportExcel(Request $request)
     {
+        $authUser = Auth::user();
         $query = $this->buildRekapQuery($request);
         $rekap = $this->calculateRekapStats($query);
         $items = $query->latest()->get();
 
         [$periodeText, $kategoriText, $statusFilterText, $staffText] = $this->resolveMetaTexts($request);
+
+        // Tentukan subordinateIds agar Excel hanya menampilkan tagged users dari unit yang relevan
+        $isPureAdminOrRektorat = $this->isPureAdminOrRektorat($authUser);
+        if ($isPureAdminOrRektorat) {
+            $excelSubIds = null;
+        } elseif ($request->filled('jabatan') && is_numeric($request->jabatan)) {
+            $excelSubIds = [(int) $request->jabatan];
+        } else {
+            $excelSubIds = $this->getDirectSubordinatesQuery($authUser)->pluck('id')->toArray();
+        }
 
         $spreadsheet = new Spreadsheet();
 
@@ -437,7 +516,12 @@ class RekapitulasiController extends Controller
 
             if ($item->taggedUsers && $item->taggedUsers->count() > 0) {
                 $staffParts = [];
-                foreach ($item->taggedUsers as $tUser) {
+                // Filter tagged users: hanya tampilkan bawahan unit kepala yang login
+                $visibleTaggedExcel = $excelSubIds !== null
+                    ? $item->taggedUsers->filter(fn($u) => in_array($u->id, $excelSubIds))
+                    : $item->taggedUsers;
+                $sourceUsers = $visibleTaggedExcel->count() > 0 ? $visibleTaggedExcel : collect([$item->user])->filter();
+                foreach ($sourceUsers as $tUser) {
                     $part = $tUser->name;
                     if (!empty($tUser->jabatan)) {
                         $part .= "\n(" . $tUser->jabatan . ')';
@@ -466,6 +550,15 @@ class RekapitulasiController extends Controller
                 $realFormatted = 'Mulai ' . date('d/m/Y', strtotime($item->tanggal_mulai));
             } elseif ($item->tanggal_selesai) {
                 $realFormatted = 'Selesai ' . date('d/m/Y', strtotime($item->tanggal_selesai));
+            }
+
+            $durasiStr = $this->formatDurasiPengerjaan($item);
+            if ($durasiStr) {
+                if ($realFormatted === '-') {
+                    $realFormatted = "Lama Pengerjaan:\n" . $durasiStr;
+                } else {
+                    $realFormatted .= "\nLama Pengerjaan:\n" . $durasiStr;
+                }
             }
 
             $statusText = $item->status ?? 'Belum Dimulai';
@@ -562,7 +655,7 @@ class RekapitulasiController extends Controller
 
         $legRow2 = $legRow1 + 1;
         $sheet1->mergeCells('A' . $legRow2 . ':H' . $legRow2);
-        $sheet1->setCellValue('A' . $legRow2, 'Kriteria Predikat: Sangat Baik (Capaian ≥ 85%)  |  Baik (70% - 84%)  |  Cukup (55% - 69%)  |  Kurang (< 55%).  (Detail matriks diagnosis lengkap tersedia pada Sheet "Analisis Kinerja")');
+        $sheet1->setCellValue('A' . $legRow2, 'Kriteria Predikat: Sangat Baik (90% - 100%)  |  Baik (75% - 89%)  |  Cukup (60% - 74%)  |  Kurang (40% - 59%)  |  Sangat Kurang (< 40%).  (Detail matriks diagnosis lengkap tersedia pada Sheet "Analisis Kinerja")');
         $sheet1->getStyle('A' . $legRow2)->getFont()->setSize(8.5)->getColor()->setARGB('FF334155');
         $sheet1->getStyle('A' . $legRow2 . ':H' . $legRow2)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFCBD5E1');
 
@@ -711,16 +804,16 @@ class RekapitulasiController extends Controller
             [
                 'no' => 1,
                 'predikat' => 'Sangat Baik',
-                'rentang' => '≥ 85%',
+                'rentang' => '90% - 100%',
                 'kategori' => 'Melampaui Target',
-                'deskripsi' => 'Capaian kinerja sangat memuaskan, seluruh tugas utama terlaksana secara tepat waktu dan berkualitas.',
+                'deskripsi' => 'Capaian kinerja sangat memuaskan, seluruh tugas utama terlaksana secara tepat waktu dan berkualitas prima.',
                 'color' => 'FF15803D',
                 'fill' => 'FFDCFCE7'
             ],
             [
                 'no' => 2,
                 'predikat' => 'Baik',
-                'rentang' => '70% - 84%',
+                'rentang' => '75% - 89%',
                 'kategori' => 'Memenuhi Target',
                 'deskripsi' => 'Capaian kinerja memenuhi target operasional dengan baik, sebagian besar sasaran tercapai.',
                 'color' => 'FF16A34A',
@@ -729,20 +822,29 @@ class RekapitulasiController extends Controller
             [
                 'no' => 3,
                 'predikat' => 'Cukup',
-                'rentang' => '55% - 69%',
+                'rentang' => '60% - 74%',
                 'kategori' => 'Perlu Evaluasi',
-                'deskripsi' => 'Capaian kinerja cukup memenuhi kebutuhan dasar, memerlukan monitoring dan tindak lanjut percepatan.',
+                'deskripsi' => 'Capaian kinerja cukup memenuhi sasaran dasar, memerlukan monitoring dan tindak lanjut perbaikan kendala.',
                 'color' => 'FFD97706',
                 'fill' => 'FFFEF3C7'
             ],
             [
                 'no' => 4,
                 'predikat' => 'Kurang',
-                'rentang' => '< 55%',
+                'rentang' => '40% - 59%',
                 'kategori' => 'Di Bawah Target',
-                'deskripsi' => 'Capaian kinerja belum memenuhi standar minimal, memerlukan evaluasi kendala mendalam dan bimbingan.',
-                'color' => 'FFDC2626',
-                'fill' => 'FFFEF2F2'
+                'deskripsi' => 'Capaian kinerja di bawah target minimal, memerlukan percepatan intensif dan pendampingan.',
+                'color' => 'FFEA580C',
+                'fill' => 'FFFFEDD5'
+            ],
+            [
+                'no' => 5,
+                'predikat' => 'Sangat Kurang',
+                'rentang' => '< 40%',
+                'kategori' => 'Evaluasi Khusus',
+                'deskripsi' => 'Capaian kinerja jauh di bawah target standar, memerlukan evaluasi kendala mendalam dan bimbingan terfokus.',
+                'color' => 'FF991B1B',
+                'fill' => 'FFFEE2E2'
             ],
         ];
 
@@ -843,15 +945,117 @@ class RekapitulasiController extends Controller
     }
 
     /**
+     * Resolve signers (Kepala/Atasan di kiri, Pegawai di kanan) for PDF export.
+     */
+    private function resolveSigners(Request $request, $items)
+    {
+        $authUser = Auth::user();
+        $targetPegawai = null;
+
+        if ($request->filled('jabatan')) {
+            if (is_numeric($request->jabatan)) {
+                $targetPegawai = User::find($request->jabatan);
+            } else {
+                $targetPegawai = User::where('jabatan', $request->jabatan)->first();
+            }
+        }
+
+        if (!$targetPegawai && $authUser) {
+            if (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat()) {
+                $targetPegawai = $authUser;
+            } elseif ($items->isNotEmpty()) {
+                $userIds = $items->pluck('user_id')->unique();
+                if ($userIds->count() === 1) {
+                    $targetPegawai = User::find($userIds->first());
+                }
+            }
+        }
+
+        if (!$targetPegawai) {
+            $targetPegawai = $authUser;
+        }
+
+        // Tentukan Kepala / Atasan di sebelah kiri
+        $unit = $targetPegawai ? $targetPegawai->unit : ($authUser ? $authUser->unit : null);
+        $kepala = null;
+
+        if ($targetPegawai && ($targetPegawai->isPimpinanRektorat() || str_contains(strtoupper($targetPegawai->jabatan ?? ''), 'REKTOR'))) {
+            $kepalaJabatan = 'Ketua Yayasan Pendidikan Ibnu Sina Batam';
+            $kepalaNama = 'H. Andi Ibrahim, B.A.';
+            $kepalaNidn = '-';
+        } else {
+            if (!empty($unit) && $unit !== '-') {
+                $kepala = User::where('unit', $unit)
+                    ->when($targetPegawai, fn($q) => $q->where('id', '!=', $targetPegawai->id))
+                    ->where(function ($q) {
+                        $q->where('roles', 'LIKE', '%pimpinan%')
+                          ->orWhere('jabatan', 'LIKE', '%KEPALA%')
+                          ->orWhere('jabatan', 'LIKE', '%KA.%')
+                          ->orWhere('jabatan', 'LIKE', '%DEKAN%')
+                          ->orWhere('jabatan', 'LIKE', '%KETUA%')
+                          ->orWhere('jabatan', 'LIKE', '%KAPRODI%');
+                    })
+                    ->first();
+            }
+
+            if (!$kepala) {
+                // Cari pimpinan universitas / Rektor
+                $kepala = User::where('jabatan', 'LIKE', '%REKTOR%')
+                    ->where('jabatan', 'NOT LIKE', '%WAKIL%')
+                    ->where('jabatan', 'NOT LIKE', '%KASIR%')
+                    ->first();
+            }
+
+            if ($kepala) {
+                $kepalaJabatan = $kepala->jabatan ?: 'Kepala Unit / Atasan Langsung';
+                $kepalaNama = $kepala->name;
+                $kepalaNidn = $kepala->nidn ?: '-';
+            } else {
+                $kepalaJabatan = !empty($unit) && $unit !== '-' ? 'Kepala ' . $unit : 'Kepala / Atasan Langsung';
+                $kepalaNama = '...................................';
+                $kepalaNidn = '-';
+            }
+        }
+
+        $pegawaiLabel = 'Pegawai Yang Bersangkutan';
+        if ($targetPegawai && ($targetPegawai->isPimpinanRektorat() || $targetPegawai->isAdmin())) {
+            $pegawaiLabel = 'Pimpinan Universitas Ibnu Sina';
+        } elseif ($targetPegawai && $targetPegawai->isPimpinanUnit()) {
+            $pegawaiLabel = $targetPegawai->jabatan ?: ('Kepala Unit ' . $targetPegawai->unit);
+        }
+
+        return [
+            'kepalaJabatan' => $kepalaJabatan,
+            'kepalaNama'    => $kepalaNama,
+            'kepalaNidn'    => $kepalaNidn,
+            'pegawaiLabel'  => $pegawaiLabel,
+            'pegawaiNama'   => $targetPegawai ? $targetPegawai->name : ($authUser ? $authUser->name : '...................................'),
+            'pegawaiNidn'   => $targetPegawai && $targetPegawai->nidn ? $targetPegawai->nidn : ($authUser && $authUser->nidn ? $authUser->nidn : '-'),
+        ];
+    }
+
+    /**
      * Export Rekapitulasi Capaian & Analisis Kendala to PDF.
      */
     public function exportPdf(Request $request)
     {
+        $authUser = Auth::user();
         $query = $this->buildRekapQuery($request);
         $rekap = $this->calculateRekapStats($query);
         $items = $query->latest()->get();
 
         [$periodeText, $kategoriText, $statusFilterText, $staffText] = $this->resolveMetaTexts($request);
+        $signer = $this->resolveSigners($request, $items);
+
+        // Tentukan subordinateIds agar PDF hanya menampilkan tagged users dari unit yang relevan
+        $isPureAdminOrRektorat = $this->isPureAdminOrRektorat($authUser);
+        if ($isPureAdminOrRektorat) {
+            $subordinateIds = null; // null = tampilkan semua
+        } elseif ($request->filled('jabatan') && is_numeric($request->jabatan)) {
+            $subordinateIds = [(int) $request->jabatan]; // filter ke 1 user spesifik
+        } else {
+            $subordinateIds = $this->getDirectSubordinatesQuery($authUser)->pluck('id')->toArray();
+        }
 
         $data = [
             'items' => $items,
@@ -860,6 +1064,8 @@ class RekapitulasiController extends Controller
             'kategoriText' => $kategoriText,
             'statusFilterText' => $statusFilterText,
             'staffText' => $staffText,
+            'signer' => $signer,
+            'subordinateIds' => $subordinateIds, // null = semua; array = filter ke IDs tersebut
         ];
 
         $pdf = Pdf::loadView('pages.rekapitulasi.pdf', $data);
@@ -870,5 +1076,84 @@ class RekapitulasiController extends Controller
         $filename = 'rekapitulasi_kinerja_' . strtolower(str_replace(' ', '_', $safeKategori ?: 'semua')) . '_' . strtolower(str_replace(' ', '_', $safePeriode ?: 'periode')) . '.pdf';
 
         return $pdf->stream($filename);
+    }
+
+    /**
+     * Check if user is pure system admin or rektorat leader (overseeing all units).
+     */
+    private function isPureAdminOrRektorat($authUser): bool
+    {
+        if (!$authUser) {
+            return false;
+        }
+
+        // Jika user adalah Kepala/Pimpinan Unit (Kepala LPTI, Dekan, Kaprodi, Ka Biro, dll),
+        // maka otoritas operasionalnya dibatasi ke unit/bawahannya sendiri
+        if ($authUser->isPimpinanUnit()) {
+            return false;
+        }
+
+        // Pimpinan Rektorat murni (Rektor / Wakil Rektor di unit REKTORAT)
+        if ($authUser->isPimpinanRektorat() && $authUser->unit === 'REKTORAT') {
+            return true;
+        }
+
+        // Super Admin murni
+        if (in_array(strtolower(trim($authUser->email ?? '')), ['admin@uis.ac.id', 'superadmin@uis.ac.id', 'admin@gmail.com'])
+            || in_array($authUser->id, [1, 2])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get query for users directly reporting to / under the given leader (Kepala).
+     */
+    private function getDirectSubordinatesQuery($authUser)
+    {
+        $ids = $this->resolveSubordinateIds($authUser);
+        return User::whereIn('id', $ids)->where('is_active', true)->orderBy('name', 'asc');
+    }
+
+    /**
+     * Ambil subordinate IDs untuk seorang user.
+     * Prioritas: dari DB hierarchy (supervisor_id) yang berjenjang. Fallback: unit sendiri.
+     *
+     * @return int[]
+     */
+    private function resolveSubordinateIds($authUser): array
+    {
+        if (!$authUser) {
+            return [];
+        }
+
+        // 1. Jika Super Admin murni atau Pimpinan Rektorat: seluruh civitas
+        if ($this->isPureAdminOrRektorat($authUser)) {
+            return User::where('is_active', true)->pluck('id')->toArray();
+        }
+
+        // 2. Prioritas utama: gunakan DB hierarchy (recursive)
+        $dbIds = $authUser->getSubordinateIdsFromDb();
+        if ($dbIds !== null && count($dbIds) > 0) {
+            return $dbIds;
+        }
+
+        // 3. Fallback jika pimpinan unit belum di-set di DB
+        if ($authUser->isPimpinanUnit()) {
+            $unit = trim($authUser->unit ?? '');
+            return User::where('is_active', true)
+                ->where(function ($q) use ($authUser, $unit) {
+                    $q->where('id', $authUser->id);
+                    if (!empty($unit) && $unit !== '-') {
+                        $q->orWhere('unit', $unit);
+                    }
+                })
+                ->pluck('id')
+                ->toArray();
+        }
+
+        // 4. Jika Staff Biasa: hanya diri sendiri
+        return [$authUser->id];
     }
 }
