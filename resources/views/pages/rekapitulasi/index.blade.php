@@ -78,30 +78,8 @@
 
     {{-- ===== SHARED FILTER ===== --}}
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header-green d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div>
-                <i class="bi bi-filter-square me-1"></i> Filter & Diagnosis Kinerja
-            </div>
-            <div class="dropdown">
-                <button type="button" class="btn btn-sm btn-light fw-bold text-success shadow-xs dropdown-toggle d-inline-flex align-items-center gap-1.5" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-file-earmark-arrow-down-fill text-success"></i>
-                    <span>Export Laporan</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 8px;">
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-success fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="excel">
-                            <i class="bi bi-file-earmark-excel-fill text-success fs-6"></i>
-                            <span>Unduh Excel (.xlsx)</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="pdf">
-                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-6"></i>
-                            <span>Unduh PDF (.pdf)</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
+        <div class="card-header-green">
+            <i class="bi bi-filter-square me-1"></i> Filter & Diagnosis Kinerja
         </div>
         <div class="card-body pt-3">
             <form id="filter-form" class="row g-3 align-items-end">
@@ -157,26 +135,10 @@
                     <button type="button" id="btn-reset" class="btn btn-secondary btn-sm px-3">
                         <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                     </button>
-                    <div class="dropdown">
-                        <button type="button" class="btn btn-success btn-sm px-3 fw-semibold text-white dropdown-toggle d-inline-flex align-items-center gap-1.5" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #15432d; border-color: #15432d;">
-                            <i class="bi bi-file-earmark-arrow-down-fill"></i>
-                            <span>Export Laporan</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 8px;">
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-success fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="excel">
-                                    <i class="bi bi-file-earmark-excel-fill text-success fs-6"></i>
-                                    <span>Unduh Excel (.xlsx)</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold btn-export-rekap" href="javascript:void(0)" data-format="pdf">
-                                    <i class="bi bi-file-earmark-pdf-fill text-danger fs-6"></i>
-                                    <span>Unduh PDF (.pdf)</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
+                    <button type="button" class="btn btn-success btn-sm px-3 fw-semibold text-white d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#modalExportRekapitulasi" style="background-color: #15432d; border-color: #15432d;">
+                        <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                        <span>Export Laporan</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -704,7 +666,140 @@
         </div>{{-- end tab-ins --}}
 
     </div>{{-- end tab-content --}}
-</section>
+<!-- Modal Export Rekapitulasi Kinerja (Synced with Page Filter) -->
+<div class="modal fade" id="modalExportRekapitulasi" tabindex="-1" aria-labelledby="modalExportRekapitulasiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header text-white px-4 py-3" style="background-color: #15432d;">
+                <h5 class="modal-title fw-bold fs-6 d-flex align-items-center gap-2" id="modalExportRekapitulasiLabel">
+                    <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                    <span>Export Rekapitulasi Capaian & Diagnosis Kinerja</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label for="export_kategori" class="form-label fw-bold text-dark small mb-1">
+                        Kategori Kegiatan <span class="text-danger">*</span>
+                    </label>
+                    <select id="export_kategori" class="form-select bg-white">
+                        <option value="">Semua Kategori (Diagnosis Lengkap)</option>
+                        <option value="Rencana Kerja">Rencana Kerja Utama</option>
+                        <option value="Kepanitiaan">Kepanitiaan</option>
+                        <option value="Insidentil">Insidentil</option>
+                    </select>
+                    <small class="text-muted" style="font-size: 0.78rem;">Otomatis mengikuti tab aktif atau filter kategori di halaman.</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark small mb-1">
+                        Pilihan Filter Waktu <span class="text-danger">*</span>
+                    </label>
+                    <div class="d-flex gap-3 p-2 bg-light rounded border">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input export-filter-choice" type="radio" name="export_filter_type" id="export_filter_periode" value="periode" checked>
+                            <label class="form-check-label fw-semibold text-dark cursor-pointer small" for="export_filter_periode">
+                                <i class="bi bi-mortarboard me-1 text-success"></i> Periode Akademik
+                            </label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input export-filter-choice" type="radio" name="export_filter_type" id="export_filter_range" value="range">
+                            <label class="form-check-label fw-semibold text-dark cursor-pointer small" for="export_filter_range">
+                                <i class="bi bi-calendar-range me-1 text-primary"></i> Rentang Tanggal
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opsi 1: Periode Akademik -->
+                <div class="mb-3" id="wrapper_export_periode">
+                    <label for="export_periode" class="form-label fw-bold text-dark small mb-1">
+                        Periode Akademik <span class="text-danger">*</span>
+                    </label>
+                    <select id="export_periode" class="form-select bg-white">
+                        <option value="">Semua Periode</option>
+                        @foreach($periodeAkademiks as $p)
+                            <option value="{{ $p->id }}" {{ $p->id == $defaultPeriodeId ? 'selected' : '' }}>
+                                {{ $p->nama_periode }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Opsi 2: Rentang Tanggal (Custom Date Range) -->
+                <div class="mb-3 d-none" id="wrapper_export_range">
+                    <label class="form-label fw-bold text-dark small mb-1">
+                        Rentang Tanggal <span class="text-danger">*</span>
+                    </label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label for="export_tanggal_mulai" class="form-label small text-muted mb-1" style="font-size: 0.78rem;">Tanggal Mulai</label>
+                            <input type="date" id="export_tanggal_mulai" class="form-control bg-white">
+                        </div>
+                        <div class="col-6">
+                            <label for="export_tanggal_selesai" class="form-label small text-muted mb-1" style="font-size: 0.78rem;">Tanggal Selesai</label>
+                            <input type="date" id="export_tanggal_selesai" class="form-control bg-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="export_status" class="form-label fw-bold text-dark small mb-1">
+                        Filter Status / Kendala
+                    </label>
+                    <select id="export_status" class="form-select bg-white">
+                        <option value="">Semua Status</option>
+                        <option value="belum_selesai">⚠️ Belum Selesai (Semua Kendala)</option>
+                        <option value="terlambat">🚨 Terlambat (Lewat Estimasi)</option>
+                        <option value="proses">▶️ Sedang Proses</option>
+                        <option value="belum_dimulai">⏳ Belum Dimulai</option>
+                        <option value="selesai">✅ Sudah Selesai</option>
+                    </select>
+                </div>
+
+                @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit()))
+                <div class="mb-3">
+                    <label for="export_jabatan" class="form-label fw-bold text-dark small mb-1">
+                        Pegawai / Jabatan
+                    </label>
+                    <select id="export_jabatan" class="form-select bg-white">
+                        <option value="">Semua Jabatan</option>
+                        @foreach($usersWithJabatan as $u)
+                            <option value="{{ $u->id }}" {{ ($u->id == auth()->user()->id && !auth()->user()->isAdmin() && !auth()->user()->isPimpinanRektorat()) ? 'selected' : '' }}>
+                                {{ $u->jabatan }} - {{ $u->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                @else
+                    <input type="hidden" id="export_jabatan" value="{{ auth()->user()->id }}">
+                @endif
+
+                <div class="p-2.5 rounded bg-light border text-muted small d-flex align-items-start gap-2 mt-3">
+                    <i class="bi bi-info-circle-fill text-success fs-5 mt-n0.5"></i>
+                    <span style="font-size: 0.8rem; line-height: 1.4;">
+                        Berkas unduhan mencakup ringkasan <strong>Hasil Analisis & Diagnosis Kinerja</strong> (Total, Selesai, Proses, Terlambat, % Capaian) serta tabel rincian kegiatan lengkap sesuai filter di atas.
+                    </span>
+                </div>
+            </div>
+            <div class="modal-footer bg-light px-4 py-3 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">
+                    Batal
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" id="btn-modal-export-excel" class="btn btn-success px-3 fw-bold text-white shadow-xs d-inline-flex align-items-center gap-1.5" style="background-color: #15432d; border-color: #15432d;">
+                        <i class="bi bi-file-earmark-excel-fill"></i>
+                        <span>Unduh Excel</span>
+                    </button>
+                    <button type="button" id="btn-modal-export-pdf" class="btn btn-danger px-3 fw-bold text-white shadow-xs d-inline-flex align-items-center gap-1.5">
+                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                        <span>Unduh PDF</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 
@@ -1021,44 +1116,118 @@ $(document).ready(function() {
         $('#filter_jabatan').val('').trigger('change');
     });
 
-    // ---- Export Rekapitulasi (Synced directly with Active Filters & Active Tab) ----
-    $(document).on('click', '.btn-export-rekap', function(e) {
-        e.preventDefault();
-        let format = $(this).data('format'); // 'excel' or 'pdf'
-
-        // Auto-detect category based on active tab or category dropdown
-        let activeTab = $('#rekapTab .nav-link.active').attr('id');
-        let kategori = '';
-        if (activeTab === 'tab-rk-btn') {
-            kategori = 'Rencana Kerja';
-        } else if (activeTab === 'tab-pan-btn') {
-            kategori = 'Kepanitiaan';
-        } else if (activeTab === 'tab-ins-btn') {
-            kategori = 'Insidentil';
+    // Toggle Opsi Filter Export (Periode Akademik vs Range Tanggal)
+    $('.export-filter-choice').on('change', function() {
+        if ($(this).val() === 'periode') {
+            $('#wrapper_export_periode').removeClass('d-none');
+            $('#wrapper_export_range').addClass('d-none');
         } else {
-            kategori = $('#filter_kategori').val() || '';
+            $('#wrapper_export_periode').addClass('d-none');
+            $('#wrapper_export_range').removeClass('d-none');
+        }
+    });
+
+    // ---- Export Rekapitulasi Modal Handlers (Synced with Page Filter) ----
+    $('#modalExportRekapitulasi').on('show.bs.modal', function() {
+        let activeTab = $('#rekapTab .nav-link.active').attr('id');
+        let defaultKat = '';
+        if (activeTab === 'tab-rk-btn') {
+            defaultKat = 'Rencana Kerja';
+        } else if (activeTab === 'tab-pan-btn') {
+            defaultKat = 'Kepanitiaan';
+        } else if (activeTab === 'tab-ins-btn') {
+            defaultKat = 'Insidentil';
+        } else {
+            defaultKat = $('#filter_kategori').val() || '';
         }
 
+        $('#export_kategori').val(defaultKat);
+        $('#export_periode').val($('#filter_periode').val() || '');
+        $('#export_status').val($('#filter_status').val() || '');
+        if ($('#filter_jabatan').length) {
+            $('#export_jabatan').val($('#filter_jabatan').val() || '');
+        }
+    });
+
+    function executeModalExport(format) {
         let params = new URLSearchParams();
-        if ($('#filter_periode').val()) {
-            params.append('periode_akademik_id', $('#filter_periode').val());
+        let filterType = $('input[name="export_filter_type"]:checked').val() || 'periode';
+        params.append('filter_type', filterType);
+
+        if (filterType === 'range') {
+            let startTgl = $('#export_tanggal_mulai').val();
+            let endTgl = $('#export_tanggal_selesai').val();
+
+            if (!startTgl && !endTgl) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Perhatian',
+                        text: 'Silakan tentukan minimal tanggal mulai atau tanggal selesai.',
+                        confirmButtonColor: '#15432d'
+                    });
+                } else {
+                    alert('Silakan tentukan minimal tanggal mulai atau tanggal selesai.');
+                }
+                return;
+            }
+
+            if (startTgl && endTgl && startTgl > endTgl) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Perhatian',
+                        text: 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai.',
+                        confirmButtonColor: '#15432d'
+                    });
+                } else {
+                    alert('Tanggal mulai tidak boleh lebih besar dari tanggal selesai.');
+                }
+                return;
+            }
+
+            if (startTgl) params.append('tanggal_mulai', startTgl);
+            if (endTgl) params.append('tanggal_selesai', endTgl);
+        } else {
+            if ($('#export_periode').val()) {
+                params.append('periode_akademik_id', $('#export_periode').val());
+            }
         }
-        if ($('#filter_status').val()) {
-            params.append('status_filter', $('#filter_status').val());
+
+        if ($('#export_status').val()) {
+            params.append('status_filter', $('#export_status').val());
         }
-        if (kategori) {
-            params.append('kategori', kategori);
+        if ($('#export_kategori').val()) {
+            params.append('kategori', $('#export_kategori').val());
         }
-        if ($('#filter_jabatan').length && $('#filter_jabatan').val()) {
-            params.append('jabatan', $('#filter_jabatan').val());
+        if ($('#export_jabatan').length && $('#export_jabatan').val()) {
+            params.append('jabatan', $('#export_jabatan').val());
         }
 
         let targetUrl = (format === 'excel')
             ? "{{ route('rekapitulasi.export-excel') }}"
             : "{{ route('rekapitulasi.export-pdf') }}";
 
+        let modalEl = document.getElementById('modalExportRekapitulasi');
+        let modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+
         let fullUrl = targetUrl + (params.toString() ? ('?' + params.toString()) : '');
-        window.location.href = fullUrl;
+        if (format === 'pdf') {
+            window.open(fullUrl, '_blank');
+        } else {
+            window.location.href = fullUrl;
+        }
+    }
+
+    $('#btn-modal-export-excel').on('click', function() {
+        executeModalExport('excel');
+    });
+
+    $('#btn-modal-export-pdf').on('click', function() {
+        executeModalExport('pdf');
     });
 
     setTimeout(syncTopScrollbars, 300);

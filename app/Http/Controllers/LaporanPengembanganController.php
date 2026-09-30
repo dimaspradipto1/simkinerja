@@ -168,7 +168,7 @@ class LaporanPengembanganController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Metrik Pengembangan UIS');
 
-        $sheet->setCellValue('A1', 'UNIVERSITAS IBNU SINA - YAYASAN PENDIDIKAN IBNU SINA BATAM');
+        $sheet->setCellValue('A1', 'UNIVERSITAS IBNU SINA');
         $sheet->setCellValue('A2', strtoupper($laporan->judul));
         $sheet->setCellValue('A3', 'Tahun Akademik: ' . ($laporan->tahun_akademik ?: '-'));
         $sheet->getStyle('A1:A3')->getFont()->setBold(true);

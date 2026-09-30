@@ -485,7 +485,7 @@ class LaporanKinerjaPegawaiController extends Controller
         $sheet1->setTitle('Capaian Kinerja Pegawai');
 
         // Header Title
-        $sheet1->setCellValue('A1', 'UNIVERSITAS IBNU SINA - YAYASAN PENDIDIKAN IBNU SINA BATAM');
+        $sheet1->setCellValue('A1', 'UNIVERSITAS IBNU SINA');
         $sheet1->setCellValue('A2', 'LAPORAN KINERJA PEGAWAI - PERIODE ' . strtoupper($periodeText));
         $sheet1->mergeCells('A1:J1');
         $sheet1->mergeCells('A2:J2');

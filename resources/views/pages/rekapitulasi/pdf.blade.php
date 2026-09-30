@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4 landscape;
-            margin: 8mm 8mm 10mm 8mm;
+            margin: 2.54cm;
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
@@ -16,7 +16,7 @@
             padding: 0;
         }
         .kop-table {
-            width: 100%;
+            margin: 0 auto;
             border-collapse: collapse;
             margin-bottom: 4px;
         }
@@ -25,12 +25,13 @@
             padding: 0;
         }
         .kop-logo {
-            width: 75px;
-            text-align: left;
+            text-align: right;
+            padding-right: 16px;
+            vertical-align: middle;
         }
         .kop-text {
             text-align: center;
-            padding-right: 75px;
+            vertical-align: middle;
         }
         .kop-line {
             border-top: 2.5px solid #15432D;
@@ -61,20 +62,67 @@
             padding: 3px 6px;
         }
 
-        /* KPI Analysis Summary Section */
-        .kpi-title {
+        .section-title {
             font-size: 8.5pt;
             font-weight: bold;
             color: #15432D;
-            margin-top: 6px;
+            margin-top: 8px;
             margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            border-bottom: 1.5px solid #15432D;
+            padding-bottom: 2px;
         }
+
+        /* Detail Data Table */
+        table.data-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 7pt;
+        }
+        table.data-table th {
+            background-color: #15432D;
+            color: #ffffff;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            padding: 5px 3px;
+            border: 1px solid #0d2c1d;
+            font-size: 6.8pt;
+            word-wrap: break-word;
+        }
+        table.data-table td {
+            border: 1px solid #cccccc;
+            padding: 4px 3px;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 5px;
+            font-size: 6.5pt;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .badge-success { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .badge-primary { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+        .badge-danger  { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .badge-secondary { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .badge-info    { background-color: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+
+        /* KPI Analysis Summary Section (Dipindahkan ke Bawah) */
         .kpi-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .kpi-table th {
             padding: 4px 6px;
@@ -102,49 +150,26 @@
             text-transform: uppercase;
         }
 
-        /* Detail Data Table */
-        table.data-table {
+        /* Criteria & Legend Tables */
+        .criteria-table {
             width: 100%;
-            table-layout: fixed;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            font-size: 7pt;
-        }
-        table.data-table th {
-            background-color: #15432D;
-            color: #ffffff;
-            font-weight: bold;
-            text-align: center;
-            vertical-align: middle;
-            padding: 4px 3px;
-            border: 1px solid #0d2c1d;
+            margin-bottom: 8px;
             font-size: 6.8pt;
-            word-wrap: break-word;
         }
-        table.data-table td {
-            border: 1px solid #cccccc;
-            padding: 4px 3px;
-            vertical-align: top;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        .text-center { text-align: center; }
-        .text-left { text-align: left; }
-        .text-right { text-align: right; }
-        
-        .badge {
-            display: inline-block;
-            padding: 1px 4px;
-            font-size: 6.5pt;
-            border-radius: 2px;
+        .criteria-table th {
+            background-color: #f1f5f9;
+            color: #334155;
             font-weight: bold;
+            padding: 3px 5px;
+            border: 1px solid #cbd5e1;
+            text-align: left;
         }
-        .badge-success { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-        .badge-primary { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
-        .badge-danger  { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-        .badge-warning { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-        .badge-secondary { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-        .badge-info    { background-color: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+        .criteria-table td {
+            padding: 3px 5px;
+            border: 1px solid #cbd5e1;
+            vertical-align: middle;
+        }
 
         .ttd-table {
             width: 100%;
@@ -159,7 +184,7 @@
         }
         .footer-note {
             position: fixed;
-            bottom: -5mm;
+            bottom: -15mm;
             left: 0;
             right: 0;
             font-size: 6.5pt;
@@ -172,7 +197,7 @@
 <body>
 
     <!-- KOP RESMI UNIVERSITAS IBNU SINA -->
-    <table class="kop-table">
+    <table class="kop-table" align="center">
         <tr>
             <td class="kop-logo">
                 @if(file_exists(public_path('assets/img/logouis.png')))
@@ -208,7 +233,7 @@
     <!-- METADATA FILTER -->
     <table class="meta-info">
         <tr>
-            <td width="15%"><strong>Periode Akademik</strong></td>
+            <td width="15%"><strong>Periode / Waktu</strong></td>
             <td width="35%">: {{ $periodeText }}</td>
             <td width="15%"><strong>Kategori Laporan</strong></td>
             <td width="35%">: {{ $kategoriText }}</td>
@@ -227,9 +252,133 @@
         </tr>
     </table>
 
-    <!-- HASIL ANALISIS KINERJA SECTION -->
-    <div class="kpi-title">
-        HASIL ANALISIS & DIAGNOSIS KINERJA
+    <!-- 1. DETAIL DATA TABLE (DI ATAS AGAR LANGSUNG TERLIHAT) -->
+    <div class="section-title">
+        1. DAFTAR RINCIAN KEGIATAN & REALISASI KINERJA
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 2.5%; padding-left: 1px; padding-right: 1px;">NO</th>
+                <th style="width: 8.5%;">KATEGORI</th>
+                <th style="width: 27%;">URAIAN KEGIATAN / TUGAS</th>
+                <th style="width: 14%;">PEGAWAI / JABATAN</th>
+                <th style="width: 11%;">ESTIMASI WAKTU</th>
+                <th style="width: 11%;">REALISASI WAKTU</th>
+                <th style="width: 7%;">STATUS</th>
+                <th style="width: 19%;">ANALISIS KENDALA & TINDAK LANJUT</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($items as $idx => $item)
+                @php
+                    $isSelesai = $item->status === 'Selesai';
+                    $isTerlambat = false;
+                    if (!$isSelesai && !empty($item->estimasi_tanggal_selesai)) {
+                        $endTime = $item->estimasi_jam_selesai ?: '23:59:59';
+                        try {
+                            $estimasiEnd = \Carbon\Carbon::parse($item->estimasi_tanggal_selesai . ' ' . $endTime);
+                            if (\Carbon\Carbon::now()->gt($estimasiEnd)) {
+                                $isTerlambat = true;
+                            }
+                        } catch (\Throwable $e) {}
+                    }
+                    
+                    $estStr = '-';
+                    if ($item->estimasi_tanggal_mulai && $item->estimasi_tanggal_selesai) {
+                        $estStr = date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) . ' - ' . date('d/m/Y', strtotime($item->estimasi_tanggal_selesai));
+                    } elseif ($item->estimasi_tanggal_selesai) {
+                        $estStr = 's/d ' . date('d/m/Y', strtotime($item->estimasi_tanggal_selesai));
+                    }
+
+                    $realStr = '-';
+                    if ($item->tanggal_mulai && $item->tanggal_selesai) {
+                        $realStr = date('d/m/Y', strtotime($item->tanggal_mulai)) . ' - ' . date('d/m/Y', strtotime($item->tanggal_selesai));
+                    } elseif ($item->tanggal_mulai) {
+                        $realStr = 'Mulai ' . date('d/m/Y', strtotime($item->tanggal_mulai));
+                    } elseif ($item->tanggal_selesai) {
+                        $realStr = 'Selesai ' . date('d/m/Y', strtotime($item->tanggal_selesai));
+                    }
+                @endphp
+                <tr>
+                    <td class="text-center" style="padding-left: 1px; padding-right: 1px;">{{ $idx + 1 }}</td>
+                    <td class="text-center">
+                        @php
+                            $kat = $item->kategori ?: 'Rencana Kerja';
+                            $katBadge = match($kat) {
+                                'Kepanitiaan' => 'badge-info',
+                                'Insidentil' => 'badge-warning',
+                                default => 'badge-success'
+                            };
+                        @endphp
+                        <span class="badge {{ $katBadge }}">{{ $kat }}</span>
+                    </td>
+                    <td>
+                        <strong style="color: #1e293b;">{{ $item->uraian_tugas ?: '-' }}</strong>
+                    </td>
+                    <td>
+                        @if($item->taggedUsers && $item->taggedUsers->count() > 0)
+                            @foreach($item->taggedUsers as $tUser)
+                                <div style="{{ !$loop->first ? 'margin-top: 3px; padding-top: 3px; border-top: 0.5px dashed #cbd5e1;' : '' }}">
+                                    <strong>{{ $tUser->name }}</strong>
+                                    @if($tUser->jabatan)
+                                        <br><small style="color: #64748b;">{{ $tUser->jabatan }}</small>
+                                    @endif
+                                </div>
+                            @endforeach
+                        @else
+                            <strong>{{ $item->user ? $item->user->name : '-' }}</strong>
+                            @if($item->user && $item->user->jabatan)
+                                <br><small style="color: #64748b;">{{ $item->user->jabatan }}</small>
+                            @endif
+                        @endif
+                    </td>
+                    <td class="text-center" style="font-size: 6.5pt;">{{ $estStr }}</td>
+                    <td class="text-center" style="font-size: 6.5pt;">{{ $realStr }}</td>
+                    <td class="text-center">
+                        @if($isSelesai)
+                            <span class="badge badge-success">Selesai</span>
+                        @elseif($item->status === 'Berjalan' || $item->status === 'Proses')
+                            <span class="badge badge-primary">Proses</span>
+                        @elseif($item->status === 'Di-pause')
+                            <span class="badge badge-warning">Di-pause</span>
+                        @else
+                            <span class="badge badge-secondary">Belum Mulai</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($isTerlambat)
+                            <div style="color: #b91c1c; font-weight: bold; margin-bottom: 2px;">
+                                ⚠️ Terlambat (Lewat Estimasi)
+                            </div>
+                        @endif
+                        @if($item->alasan_pause)
+                            <div style="color: #b45309; margin-bottom: 2px;">
+                                <strong>Alasan Pause:</strong> {{ $item->alasan_pause }}
+                            </div>
+                        @endif
+                        @if($item->rencana_tindak_lanjut)
+                            <div>
+                                <strong>Tindak Lanjut:</strong> {{ trim(strip_tags($item->rencana_tindak_lanjut)) }}
+                            </div>
+                        @elseif(!$isTerlambat && !$item->alasan_pause)
+                            <span style="color: #94a3b8;">-</span>
+                        @endif
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 12px; color: #64748b;">
+                        Tidak ada data kegiatan yang sesuai dengan filter yang dipilih.
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <!-- 2. HASIL ANALISIS & DIAGNOSIS KINERJA (DIPINDAHKAN KE BAWAH TABEL) -->
+    <div class="section-title">
+        2. HASIL ANALISIS & DIAGNOSIS KINERJA
     </div>
     <table class="kpi-table">
         <tr>
@@ -294,120 +443,92 @@
         </tr>
     </table>
 
-    <!-- DETAIL DATA TABLE -->
-    <div class="kpi-title" style="margin-top: 10px;">
-        RINCIAN KEGIATAN & ANALISIS STATUS
+    <!-- 3. PEDOMAN STANDAR KRITERIA PENILAIAN & KETERANGAN STATUS -->
+    <div class="section-title">
+        3. PEDOMAN STANDAR KRITERIA PENILAIAN & KETERANGAN STATUS
     </div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th style="width: 25px;">NO</th>
-                <th style="width: 65px;">KATEGORI</th>
-                <th style="width: 170px;">URAIAN KEGIATAN / TUGAS</th>
-                <th style="width: 95px;">PEGAWAI / JABATAN</th>
-                <th style="width: 85px;">ESTIMASI WAKTU</th>
-                <th style="width: 85px;">REALISASI WAKTU</th>
-                <th style="width: 65px;">STATUS</th>
-                <th style="width: 155px;">ANALISIS KENDALA & TINDAK LANJUT</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($items as $idx => $item)
-                @php
-                    $isSelesai = $item->status === 'Selesai';
-                    $isTerlambat = false;
-                    if (!$isSelesai && !empty($item->estimasi_tanggal_selesai)) {
-                        $endTime = $item->estimasi_jam_selesai ?: '23:59:59';
-                        try {
-                            $estimasiEnd = \Carbon\Carbon::parse($item->estimasi_tanggal_selesai . ' ' . $endTime);
-                            if (\Carbon\Carbon::now()->gt($estimasiEnd)) {
-                                $isTerlambat = true;
-                            }
-                        } catch (\Throwable $e) {}
-                    }
-                    
-                    $estStr = '-';
-                    if ($item->estimasi_tanggal_mulai && $item->estimasi_tanggal_selesai) {
-                        $estStr = date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) . ' - ' . date('d/m/Y', strtotime($item->estimasi_tanggal_selesai));
-                    } elseif ($item->estimasi_tanggal_selesai) {
-                        $estStr = 's/d ' . date('d/m/Y', strtotime($item->estimasi_tanggal_selesai));
-                    }
-
-                    $realStr = '-';
-                    if ($item->tanggal_mulai && $item->tanggal_selesai) {
-                        $realStr = date('d/m/Y', strtotime($item->tanggal_mulai)) . ' - ' . date('d/m/Y', strtotime($item->tanggal_selesai));
-                    } elseif ($item->tanggal_mulai) {
-                        $realStr = 'Mulai ' . date('d/m/Y', strtotime($item->tanggal_mulai));
-                    } elseif ($item->tanggal_selesai) {
-                        $realStr = 'Selesai ' . date('d/m/Y', strtotime($item->tanggal_selesai));
-                    }
-                @endphp
-                <tr>
-                    <td class="text-center">{{ $idx + 1 }}</td>
-                    <td class="text-center">
-                        @php
-                            $kat = $item->kategori ?: 'Rencana Kerja';
-                            $katBadge = match($kat) {
-                                'Kepanitiaan' => 'badge-info',
-                                'Insidentil' => 'badge-warning',
-                                default => 'badge-success'
-                            };
-                        @endphp
-                        <span class="badge {{ $katBadge }}">{{ $kat }}</span>
-                    </td>
-                    <td>
-                        <strong style="color: #1e293b;">{{ $item->uraian_tugas ?: '-' }}</strong>
-                    </td>
-                    <td>
-                        <strong>{{ $item->user ? $item->user->name : '-' }}</strong>
-                        @if($item->user && $item->user->jabatan)
-                            <br><small style="color: #64748b;">{{ $item->user->jabatan }}</small>
-                        @endif
-                        @if($item->taggedUsers && $item->taggedUsers->count() > 0)
-                            <br><small style="color: #0284c7;">+ {{ $item->taggedUsers->pluck('name')->implode(', ') }}</small>
-                        @endif
-                    </td>
-                    <td class="text-center" style="font-size: 6.5pt;">{{ $estStr }}</td>
-                    <td class="text-center" style="font-size: 6.5pt;">{{ $realStr }}</td>
-                    <td class="text-center">
-                        @if($isSelesai)
-                            <span class="badge badge-success">Selesai</span>
-                        @elseif($item->status === 'Berjalan' || $item->status === 'Proses')
-                            <span class="badge badge-primary">Proses</span>
-                        @elseif($item->status === 'Di-pause')
-                            <span class="badge badge-warning">Di-pause</span>
-                        @else
-                            <span class="badge badge-secondary">Belum Mulai</span>
-                        @endif
-                    </td>
-                    <td>
-                        @if($isTerlambat)
-                            <div style="color: #b91c1c; font-weight: bold; margin-bottom: 2px;">
-                                ⚠️ Terlambat (Melewati batas estimasi)
-                            </div>
-                        @endif
-                        @if($item->alasan_pause)
-                            <div style="color: #b45309; margin-bottom: 2px;">
-                                <strong>Alasan Pause:</strong> {{ $item->alasan_pause }}
-                            </div>
-                        @endif
-                        @if($item->rencana_tindak_lanjut)
-                            <div>
-                                <strong>Tindak Lanjut:</strong> {{ trim(strip_tags($item->rencana_tindak_lanjut)) }}
-                            </div>
-                        @elseif(!$isTerlambat && !$item->alasan_pause)
-                            <span style="color: #94a3b8;">-</span>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="8" class="text-center" style="padding: 12px; color: #64748b;">
-                        Tidak ada data kegiatan yang sesuai dengan filter yang dipilih.
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+        <tr>
+            <!-- Tabel Kriteria Predikat -->
+            <td style="width: 50%; vertical-align: top; padding-right: 5px;">
+                <div style="font-weight: bold; font-size: 7.2pt; color: #15432D; margin-bottom: 2px;">
+                    Matriks Standar Predikat Kinerja:
+                </div>
+                <table class="criteria-table">
+                    <thead>
+                        <tr>
+                            <th width="30%">PREDIKAT</th>
+                            <th width="25%">RENTANG</th>
+                            <th width="45%">STANDAR PENILAIAN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong style="color: #15803d;">Sangat Baik</strong></td>
+                            <td class="text-center"><strong>≥ 85%</strong></td>
+                            <td>Melampaui target, pengerjaan tuntas dan berkualitas.</td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #16a34a;">Baik</strong></td>
+                            <td class="text-center"><strong>70% - 84%</strong></td>
+                            <td>Memenuhi target operasional dengan baik.</td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #d97706;">Cukup</strong></td>
+                            <td class="text-center"><strong>55% - 69%</strong></td>
+                            <td>Cukup memenuhi sasaran dasar, perlu perbaikan kendala.</td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #dc2626;">Kurang</strong></td>
+                            <td class="text-center"><strong>&lt; 55%</strong></td>
+                            <td>Di bawah target minimal, memerlukan percepatan intensif.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+            <!-- Tabel Keterangan Status -->
+            <td style="width: 50%; vertical-align: top; padding-left: 5px;">
+                <div style="font-weight: bold; font-size: 7.2pt; color: #15432D; margin-bottom: 2px;">
+                    Definisi Indikator Status Pelaksanaan:
+                </div>
+                <table class="criteria-table">
+                    <thead>
+                        <tr>
+                            <th width="25%">STATUS</th>
+                            <th width="20%">WARNA</th>
+                            <th width="55%">DEFINISI & REKOMENDASI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td>Hijau</td>
+                            <td>Kegiatan tuntas dilaporkan dan terverifikasi.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">Proses</span></td>
+                            <td>Biru</td>
+                            <td>Kegiatan aktif berjalan dalam tahap pelaksanaan.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-warning">Di-pause</span></td>
+                            <td>Kuning</td>
+                            <td>Dihentikan sementara karena hambatan/kendala tertentu.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-secondary">Belum Mulai</span></td>
+                            <td>Abu-abu</td>
+                            <td>Telah dijadwalkan, belum dimulai pengerjaannya.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-danger">Terlambat</span></td>
+                            <td>Merah</td>
+                            <td>Belum selesai dan melewati estimasi tanggal selesai.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
     </table>
 
     <!-- TANDA TANGAN / PENGESAHAN -->
@@ -425,7 +546,7 @@
                         Pegawai Yang Bersangkutan
                     @endif
                 </div>
-                <div style="height: 50px;"></div>
+                <div style="height: 45px;"></div>
                 <div style="font-weight: bold; text-decoration: underline;">
                     {{ auth()->check() ? auth()->user()->name : '...................................' }}
                 </div>
