@@ -253,6 +253,14 @@
                 </ul>
             </li>
 
+            <li class="nav-item">
+                <a class="{{ request()->routeIs('absensi-kinerja.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                    href="{{ route('absensi-kinerja.index') }}">
+                    <i class="bi bi-person-lines-fill text-primary"></i>
+                    <span>Absensi Kinerja</span>
+                </a>
+            </li>
+
             @php
                 $isPresensiAdminActive = request()->routeIs('pengaturan-absensi.*') || 
                                          request()->routeIs('rekapitulasi-absensi.*');
@@ -304,6 +312,14 @@
             @endif
 
             <li class="nav-item">
+                <a class="{{ request()->routeIs('absensi-kinerja.*') ? 'nav-link' : 'nav-link collapsed' }}"
+                    href="{{ route('absensi-kinerja.index') }}">
+                    <i class="bi bi-person-lines-fill text-primary"></i>
+                    <span>Absensi Kinerja</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a class="{{ request()->routeIs('rekapitulasi-absensi.*') ? 'nav-link' : 'nav-link collapsed' }}"
                     href="{{ route('rekapitulasi-absensi.index') }}">
                     <i class="bi bi-person-check-fill text-success"></i>
@@ -322,7 +338,8 @@
                 $isSettingsActive = request()->routeIs('user.*') || 
                                     request()->routeIs('periode-akademik.*') || 
                                     request()->routeIs('kategori.*') ||
-                                    request()->routeIs('hirarki.*');
+                                    request()->routeIs('hirarki.*') ||
+                                    request()->routeIs('sk-kepanitiaan.*');
             @endphp
             <li class="nav-item">
                 <a class="{{ $isSettingsActive ? 'nav-link' : 'nav-link collapsed' }}"
@@ -334,6 +351,11 @@
                 <ul id="pengaturan-sistem-nav"
                     class="nav-content collapse {{ $isSettingsActive ? 'show' : '' }}"
                     data-bs-parent="#sidebar-nav">
+                    <li>
+                        <a href="{{ route('sk-kepanitiaan.index') }}" class="{{ request()->routeIs('sk-kepanitiaan.*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-pdf"></i><span>SK Kepanitiaan</span>
+                        </a>
+                    </li>
                     <li>
                         <a href="{{ route('user.index') }}" class="{{ request()->routeIs('user.*') ? 'active' : '' }}">
                             <i class="bi bi-circle"></i><span>Kelola Pengguna</span>

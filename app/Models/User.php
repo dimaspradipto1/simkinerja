@@ -159,7 +159,7 @@ class User extends Authenticatable
     /**
      * Check if user is Sekretaris Panitia / Pengelola Kepanitiaan
      */
-    public function isSekretarisPanitia(?\App\Models\Kepanitiaan $kepanitiaan = null): bool
+    public function isSekretarisPanitia(?\App\Models\Kegiatan $kepanitiaan = null): bool
     {
         if ($this->isAdmin() || $this->isSuperAdmin()) {
             return true;
@@ -239,6 +239,55 @@ class User extends Authenticatable
         }
 
         return [];
+    }
+
+    /**
+     * Add or update dynamic kepanitiaan entry for user
+     */
+    public function addJabatanKepanitiaan(string $nama, string $jabatan): void
+    {
+        $current = is_array($this->jabatan_kepanitiaan) ? $this->jabatan_kepanitiaan : [];
+        $found = false;
+        foreach ($current as &$item) {
+            if (strcasecmp(trim($item['nama'] ?? ''), trim($nama)) === 0) {
+                $item['jabatan'] = trim($jabatan);
+                $found = true;
+                break;
+            }
+        }
+        unset($item);
+
+        if (!$found) {
+            $current[] = [
+                'nama' => trim($nama),
+                'jabatan' => trim($jabatan),
+            ];
+        }
+
+        $this->jabatan_kepanitiaan = array_values($current);
+
+        // Ensure roles includes 'kepanitiaan'
+        if (!$this->hasRole('kepanitiaan')) {
+            $existingRoles = $this->roles_array;
+            $existingRoles[] = 'kepanitiaan';
+            $this->roles = implode(', ', array_unique($existingRoles));
+        }
+
+        $this->save();
+    }
+
+    /**
+     * Remove specific kepanitiaan entry from user
+     */
+    public function removeJabatanKepanitiaan(string $nama): void
+    {
+        $current = is_array($this->jabatan_kepanitiaan) ? $this->jabatan_kepanitiaan : [];
+        $filtered = array_values(array_filter($current, function ($item) use ($nama) {
+            return strcasecmp(trim($item['nama'] ?? ''), trim($nama)) !== 0;
+        }));
+
+        $this->jabatan_kepanitiaan = $filtered;
+        $this->save();
     }
 
     /**

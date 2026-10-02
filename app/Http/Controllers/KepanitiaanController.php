@@ -178,32 +178,6 @@ class KepanitiaanController extends Controller
                         $html .= '</div>';
                     }
 
-                    // 2.6 Card Status Kehadiran Absensi (Khusus Pengguna yang Sedang Login)
-                    $absensiSessionsList = $this->resolveAbsensiSessions($row);
-                    if (!empty($absensiSessionsList)) {
-                        foreach ($absensiSessionsList as $absensiInfo) {
-                            // Jika sesi dikunci / tidak aktif, tidak perlu ditampilkan sama sekali
-                            if (empty($absensiInfo['is_active'])) {
-                                continue;
-                            }
-
-                            $myAtt = null;
-                            if (!empty($absensiInfo['id'])) {
-                                $myAtt = \App\Models\KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $absensiInfo['id'])
-                                    ->where('user_id', auth()->id())
-                                    ->first();
-                            }
-                            if (!$myAtt) {
-                                $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug'] ?? null);
-                                if ($modelClass && class_exists($modelClass)) {
-                                    $myAtt = $modelClass::where('user_id', auth()->id())->first();
-                                }
-                            }
-
-                            $html .= \App\Models\AbsensiSetting::renderAttendanceTable($absensiInfo, $myAtt);
-                        }
-                    }
-
                     // 3. Time Details Card Box
                     $estFormatted = '-';
                     if ($row->estimasi_jam_mulai || $row->estimasi_tanggal_mulai) {
@@ -551,10 +525,8 @@ class KepanitiaanController extends Controller
         $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
         $isTaggedOnly = !$isOwner && !$isLeader;
 
-        // Hanya ambil sesi yang AKTIF (tidak dikunci oleh admin)
-        $absensiSessions = array_values(array_filter($this->resolveAbsensiSessions($row), function ($s) {
-            return !empty($s['is_active']);
-        }));
+        // Absensi harian: tidak perlu resolve sesi per tugas lagi (1 record per hari per user)
+        $absensiSessions = [];
 
         // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
         if ($isTaggedOnly) {
@@ -899,6 +871,7 @@ class KepanitiaanController extends Controller
             $kepanitiaan->taggedUsers()->sync($request->input('tagged_users'));
             $kepanitiaan->syncToKegiatan();
         }
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($kepanitiaan);
 
         Alert::success('Berhasil', 'Kepanitiaan berhasil ditambahkan')
             ->toToast()
@@ -1012,6 +985,7 @@ class KepanitiaanController extends Controller
 
         $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
         $kepanitiaan->syncToKegiatan();
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($kepanitiaan);
 
         Alert::success('Berhasil', 'Kepanitiaan berhasil diperbarui')
             ->toToast()
@@ -1573,6 +1547,7 @@ class KepanitiaanController extends Controller
 
         $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
         $kepanitiaan->syncToKegiatan();
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($kepanitiaan);
 
         return response()->json([
             'success' => true,

@@ -43,7 +43,7 @@ class KepanitiaanSesiAbsensi extends Model
 
     public function kepanitiaan()
     {
-        return $this->belongsTo(Kepanitiaan::class, 'kepanitiaan_id');
+        return $this->belongsTo(Kegiatan::class, 'kepanitiaan_id');
     }
 
     public function presensis()

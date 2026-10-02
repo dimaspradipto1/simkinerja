@@ -25,6 +25,8 @@ use App\Http\Controllers\LpjController;
 use App\Http\Controllers\LaporanKinerjaPegawaiController;
 use App\Http\Controllers\LaporanPengembanganController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SkKepanitiaanController;
+use App\Http\Controllers\AbsensiKinerjaController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -64,6 +66,12 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);
     Route::resource('kategori', KategoriController::class);
+
+    // SK Kepanitiaan (Upload & Ekstraksi Personel - Superadmin & Admin)
+    Route::post('sk-kepanitiaan/{id}/link-user', [SkKepanitiaanController::class, 'linkUser'])->name('sk-kepanitiaan.link-user');
+    Route::post('sk-kepanitiaan/{id}/unlink-user', [SkKepanitiaanController::class, 'unlinkUser'])->name('sk-kepanitiaan.unlink-user');
+    Route::post('sk-kepanitiaan/{id}/re-extract', [SkKepanitiaanController::class, 'reExtract'])->name('sk-kepanitiaan.re-extract');
+    Route::resource('sk-kepanitiaan', SkKepanitiaanController::class);
 
     // Hirarki Pimpinan - Bawahan
     Route::get('hirarki', [HierarchyController::class, 'index'])->name('hirarki.index');
@@ -199,6 +207,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('rekapitulasi-absensi/data-sudah', [RekapitulasiAbsensiController::class, 'getDataSudah'])->name('rekapitulasi-absensi.data-sudah');
     Route::get('rekapitulasi-absensi/data-belum', [RekapitulasiAbsensiController::class, 'getDataBelum'])->name('rekapitulasi-absensi.data-belum');
     Route::get('rekapitulasi-absensi/stats', [RekapitulasiAbsensiController::class, 'getStats'])->name('rekapitulasi-absensi.stats');
+
+    // Absensi Kinerja Harian
+    Route::get('absensi-kinerja', [AbsensiKinerjaController::class, 'index'])->name('absensi-kinerja.index');
 
     // Pengaturan Status Sesi Absensi (is_active)
     Route::get('pengaturan-absensi', [AbsensiSettingController::class, 'index'])->name('pengaturan-absensi.index');

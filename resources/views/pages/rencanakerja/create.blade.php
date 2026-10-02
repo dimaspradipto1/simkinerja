@@ -145,9 +145,17 @@
                             @enderror
                         </div>
 
-                        <div class="col-12 mt-4">
-                            <button type="submit" class="btn text-white px-4 fw-bold" style="background-color: #15432d;"><i class="bi bi-save me-1"></i> Simpan Rencana Kerja</button>
-                            <a href="{{ route('rencana-kerja.index') }}" class="btn btn-secondary px-3"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0">
+                                Absensi harian dikelola melalui menu
+                                <a href="{{ route('absensi-kinerja.index') }}" class="alert-link">Absensi Kinerja</a>.
+                                Setelah tugas dimulai, uraian dan statusnya otomatis masuk ke keterangan pada tanggal kerja yang sama.
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-4 d-flex align-items-center gap-2">
+                            <button type="submit" class="btn text-white px-4 fw-bold shadow-sm" style="background-color: #15432d; border-radius: 8px; min-height: 40px;"><i class="bi bi-save me-1"></i> Simpan Rencana Kerja</button>
+                            <a href="{{ route('rencana-kerja.index') }}" class="btn btn-secondary px-3" style="border-radius: 8px; min-height: 40px;"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
                         </div>
                     </form>
 
@@ -174,6 +182,7 @@
             placeholder: "Cari & pilih rekan kerja...",
             allowClear: true
         });
+
     });
 </script>
 @endpush

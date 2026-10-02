@@ -21,6 +21,24 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Application Scheduler
+
+Absensi Kinerja mencatat waktu datang saat pegawai memulai tugas. Waktu pulang ditetapkan otomatis setelah 8 jam kerja dan 1 jam istirahat. Agar pemulangan otomatis berjalan tanpa menunggu halaman dibuka, jalankan scheduler Laravel terus-menerus:
+
+```bash
+php artisan schedule:work
+```
+
+Untuk server produksi, jalankan `php artisan schedule:run` setiap menit melalui scheduler sistem operasi.
+
+Untuk mengisi ulang Absensi Kinerja dari tugas Rencana Kerja, Kepanitiaan, dan Insidentil yang sudah berjalan atau selesai, jalankan:
+
+```bash
+php artisan absensi-kinerja:sync-kegiatan
+```
+
+Perubahan berikutnya pada tugas tetap disinkronkan otomatis saat data tugas disimpan.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.

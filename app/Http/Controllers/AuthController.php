@@ -100,7 +100,7 @@ class AuthController extends Controller
             'nidn' => $request->nidn ?? '-',
             'unit' => $request->unit ?? '-',
             'jabatan' => $request->jabatan ?? '-',
-            'roles' => $request->roles ?? 'Standar',
+            'roles' => 'Standar',
             'status' => 'Aktif',
             'is_active' => true,
         ]);

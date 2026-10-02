@@ -72,7 +72,24 @@ class Kegiatan extends Model
     {
         parent::boot();
 
+        static::saved(function ($kegiatan) {
+            if (in_array($kegiatan->kategori, ['Rencana Kerja', 'Kepanitiaan', 'Insidentil'], true)) {
+                \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($kegiatan);
+            }
+        });
+
         static::deleting(function ($kegiatan) {
+            if (in_array($kegiatan->kategori, ['Rencana Kerja', 'Kepanitiaan', 'Insidentil'], true)) {
+                \App\Helpers\AbsensiKinerjaHelper::removeTaskKeterangan(
+                    (int) $kegiatan->id,
+                    match ($kegiatan->kategori) {
+                        'Rencana Kerja' => 'rencana_kerja',
+                        'Kepanitiaan' => 'kepanitiaan',
+                        'Insidentil' => 'insidentil',
+                    }
+                );
+            }
+
             // 1. Delete uploaded file
             if ($kegiatan->file && Storage::disk('public')->exists($kegiatan->file)) {
                 Storage::disk('public')->delete($kegiatan->file);

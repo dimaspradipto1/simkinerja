@@ -228,6 +228,31 @@
         font-size: 0.84rem;
         border-radius: 8px;
     }
+    .filter-status-modern {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0 10px;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-filter-pill {
+        transition: all 0.2s ease-in-out;
+        font-size: 0.8rem !important;
+        padding: 5px 14px !important;
+        border-radius: 20px !important;
+    }
+    .btn-filter-pill.active {
+        background-color: #15432d !important;
+        color: #ffffff !important;
+        border-color: #15432d !important;
+    }
+    .btn-filter-pill:hover:not(.active) {
+        background-color: #f1f5f9;
+    }
 
     @media (max-width: 767.98px) {
         .card-header-green {
@@ -259,8 +284,12 @@
             box-sizing: border-box !important;
             margin: 0 !important;
         }
-        .header-action-group #btn-bulk-delete:not(.d-none) {
+        .header-action-group #btn-bulk-delete:not(.d-none),
+        .header-action-group .filter-status-modern {
             grid-column: 1 / -1 !important;
+            width: 100% !important;
+        }
+        .header-action-group .filter-status-modern select {
             width: 100% !important;
         }
         .dataTables_wrapper .dataTables_length,
@@ -630,6 +659,16 @@
                         </span>
                     </div>
                     <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-xl-0">
+                        <div class="filter-status-modern" title="Filter checklist berdasarkan status">
+                            <i class="bi bi-funnel-fill text-success" style="font-size: 0.85rem;"></i>
+                            <span class="small fw-semibold text-secondary text-nowrap d-none d-xxl-inline" style="font-size: 0.78rem;">Status:</span>
+                            <select id="filter-status" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark p-0 pe-3 shadow-none">
+                                <option value="">Semua Status</option>
+                                <option value="Selesai">Selesai</option>
+                                <option value="Proses">Proses / Berjalan</option>
+                                <option value="Belum Dimulai">Belum Dimulai</option>
+                            </select>
+                        </div>
                         <button type="button" id="btn-toggle-all-cards" class="btn btn-header-action btn-light-modern" title="Buka atau tutup semua rincian">
                             <i class="bi bi-arrows-expand me-1.5 text-secondary"></i>
                             <span id="toggle-all-text">Buka Semua</span>
@@ -649,6 +688,24 @@
                     </div>
                 </div>
                 <div class="card-body p-3">
+                    <!-- Quick Status Filter Pills -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+                        <div class="d-flex flex-wrap align-items-center gap-2" id="filter-status-pills">
+                            <button type="button" class="btn btn-sm btn-filter-pill active fw-semibold shadow-2xs" data-status="">
+                                <i class="bi bi-grid-fill me-1"></i> Semua (<span id="count-status-all">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-success" data-status="Selesai">
+                                <i class="bi bi-check-circle-fill me-1 text-success"></i> Selesai (<span id="count-status-selesai">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-warning" data-status="Proses">
+                                <i class="bi bi-hourglass-split me-1 text-warning"></i> Proses / Berjalan (<span id="count-status-proses">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-secondary" data-status="Belum Dimulai">
+                                <i class="bi bi-dash-circle me-1 text-secondary"></i> Belum Dimulai (<span id="count-status-belum">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Toolbar Pilih Semua (Select All) & Hapus Terpilih -->
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 px-3 mb-3 rounded-3 border border-light-subtle shadow-2xs" id="selectAllToolbar" style="background: #f8fafc; border-left: 4px solid #15432d !important;">
                         <div class="d-flex align-items-center gap-2">
@@ -729,7 +786,7 @@
                         <select name="periode_akademik_id" id="export_periode_akademik_id" class="form-select bg-white" required>
                             <option value="">-- Pilih Periode Akademik --</option>
                             @foreach($periodeAkademiks as $p)
-                                <option value="{{ $p->id }}" {{ $p->id == $defaultPeriodeId ? 'selected' : '' }}>
+                                <option value="{{ $p->id }}" {{ ($defaultPeriodeId ?? null) == $p->id ? 'selected' : '' }}>
                                     {{ $p->nama_periode }}
                                 </option>
                             @endforeach
@@ -1175,6 +1232,9 @@
                     if ($('#filter-jabatan').length) {
                         d.jabatan = $('#filter-jabatan').val();
                     }
+                    if ($('#filter-status').length) {
+                        d.status = $('#filter-status').val();
+                    }
                 }
             },
             columns: [
@@ -1197,7 +1257,28 @@
         table.on('xhr.dt', function(e, settings, json, xhr) {
             if (json && json.overall_rekap) {
                 window.latestOverallRekap = json.overall_rekap;
+                $('#count-status-all').text(json.overall_rekap.total || 0);
+                $('#count-status-selesai').text(json.overall_rekap.selesai || 0);
+                $('#count-status-proses').text(json.overall_rekap.proses || 0);
+                $('#count-status-belum').text(json.overall_rekap.belum || 0);
             }
+        });
+
+        // Filter Status Dropdown Change
+        $('#filter-status').on('change', function() {
+            var val = $(this).val();
+            $('.btn-filter-pill').removeClass('active');
+            $('.btn-filter-pill[data-status="' + val + '"]').addClass('active');
+            table.ajax.reload();
+        });
+
+        // Filter Status Pills Click
+        $('.btn-filter-pill').on('click', function() {
+            var status = $(this).data('status');
+            $('.btn-filter-pill').removeClass('active');
+            $(this).addClass('active');
+            $('#filter-status').val(status);
+            table.ajax.reload();
         });
 
         if ($('#filter-jabatan').length) {

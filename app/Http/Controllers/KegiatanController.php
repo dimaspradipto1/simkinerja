@@ -162,17 +162,8 @@ class KegiatanController extends Controller
                         $html .= '</div>';
                     }
 
-                    // 2.6 Card Status Kehadiran Absensi (Khusus Pengguna yang Sedang Login)
-                    $absensiInfo = $this->resolveAbsensiSession($row);
-                    if ($absensiInfo) {
-                        $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug']);
-                        $myAtt = null;
-                        if ($modelClass && class_exists($modelClass)) {
-                            $myAtt = $modelClass::where('user_id', auth()->id())->first();
-                        }
-
-                        $html .= \App\Models\AbsensiSetting::renderAttendanceTable($absensiInfo, $myAtt);
-                    }
+                    // 2.6 Card Status Kehadiran Absensi Kinerja Harian
+                    $html .= \App\Helpers\AbsensiKinerjaHelper::renderKartuAbsensiHarian($row, auth()->id() ?: $row->user_id, 'kegiatan');
 
                     // 3. Time Details Card Box
                     $estFormatted = '-';
@@ -339,9 +330,10 @@ class KegiatanController extends Controller
         $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
         $isTaggedOnly = !$isOwner && !$isLeader;
 
-        $absensiInfo = $this->resolveAbsensiSession($row);
-        $absensiUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.index') ? route($absensiInfo['slug'] . '.index') : url($absensiInfo['slug'])) : '';
-        $scanUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.scan') ? route($absensiInfo['slug'] . '.scan') . '?start=1' : url($absensiInfo['slug'] . '/scan?start=1')) : '';
+        // Absensi harian: tidak perlu resolve sesi per tugas lagi (1 record per hari per user)
+        $absensiInfo = null;
+        $absensiUrl  = '';
+        $scanUrl     = '';
 
         // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
         if ($isTaggedOnly) {

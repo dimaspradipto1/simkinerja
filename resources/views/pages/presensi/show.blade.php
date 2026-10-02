@@ -301,11 +301,32 @@
                     <span class="badge bg-primary px-3 py-2 fs-6 fw-normal rounded-pill shadow-sm text-white">
                         <i class="bi bi-check-square me-1"></i><span id="selected-rows-count" class="fw-bold">0</span> pegawai dipilih
                     </span>
-                    <button type="button" class="btn btn-warning btn-sm fw-bold d-inline-flex align-items-center gap-1 shadow-sm text-dark" onclick="window.openBulkPresensiModal()" style="border-radius: 6px;">
+                    <button type="button" class="btn btn-outline-primary btn-sm fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm" id="btn-select-all-dataset" style="border-radius: 6px; min-height: 34px;">
+                        <i class="bi bi-check2-all"></i> <span id="label-btn-select-all">Pilih Semua Data (<span id="toolbar-total-count">{{ $totalUsers ?? 0 }}</span>)</span>
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm text-dark" onclick="window.openBulkPresensiModal()" style="border-radius: 6px; min-height: 34px;">
                         <i class="bi bi-pencil-square"></i> Ubah Presensi Terpilih
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.clearSelectedRows()" title="Batal Pilih Semua" style="border-radius: 6px;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" onclick="window.clearSelectedRows()" title="Batal Pilih Semua" style="border-radius: 6px; min-height: 34px;">
                         <i class="bi bi-x-lg me-1"></i>Batal
+                    </button>
+                </div>
+            </div>
+
+            <!-- Banner Notifikasi Pilih Semua Data Lintas Halaman -->
+            <div id="select-all-data-banner" class="alert alert-primary py-2.5 px-3 mb-3 d-none align-items-center justify-content-between flex-wrap gap-2 shadow-xs" style="border-radius: 8px; border-left: 4px solid #0d6efd;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                    <span id="select-banner-text" class="small text-dark">
+                        Semua <strong><span id="count-page-selected">0</span></strong> pegawai di halaman ini telah dipilih.
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-primary fw-semibold px-3 py-1 shadow-xs" id="btn-select-all-pages" style="border-radius: 6px; font-size: 0.82rem;">
+                        <i class="bi bi-check-all me-1"></i> Pilih Seluruh <span id="banner-total-dataset-count">{{ $totalUsers ?? 0 }}</span> Pegawai
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-2.5 py-1 d-none" id="btn-undo-select-all-pages" style="border-radius: 6px; font-size: 0.82rem;">
+                        Batal Pilih Semua Data
                     </button>
                 </div>
             </div>
@@ -523,6 +544,21 @@
                             <textarea class="form-control form-control-sm" id="bulk_catatan" name="catatan" rows="2" placeholder="Catatan massal (misal: Hadir tugas kepanitiaan, izin tugas dinas luar, dll)..." style="border-radius: 6px;"></textarea>
                         </div>
                     </div>
+
+                    <!-- Section Terapkan ke Semua Absensi Aktif -->
+                    <div class="card border shadow-none mt-3" style="border-radius: 10px; background-color: #f0fdf4; border: 1px solid #86efac !important;">
+                        <div class="card-body p-3">
+                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="switch_apply_all_active" name="apply_to_all_active" value="1" style="cursor: pointer; width: 34px; height: 18px;">
+                                <label class="form-check-label fw-bold text-dark small" for="switch_apply_all_active" style="cursor: pointer;">
+                                    <i class="bi bi-broadcast text-success me-1"></i> Terapkan Perubahan ke Seluruh Sesi Absensi yang Sedang Aktif
+                                </label>
+                            </div>
+                            <div class="form-text text-muted mt-1.5" style="font-size: 0.77rem; line-height: 1.4;">
+                                Jika diaktifkan, status kehadiran datang dan pulang ini akan disimpan serentak ke <strong>semua sesi absensi yang berstatus Aktif</strong>, bukan hanya sesi ini saja.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer bg-light border-top py-2.5 px-4 d-flex justify-content-between align-items-center">
@@ -558,34 +594,58 @@ $(document).ready(function() {
 
     // State Filter Aktif & Map Multi-Select Pegawai Terpilih
     let currentFilter = 'all';
+    let isAllDataSelected = false;
     const selectedUsersMap = new Map(); // userId => userName
 
+    function getTotalDatasetCount() {
+        if (presensiTable && presensiTable.page.info()) {
+            return presensiTable.page.info().recordsDisplay;
+        }
+        return {{ $totalUsers ?? 0 }};
+    }
+
     function updateBulkToolbarUI() {
-        const count = selectedUsersMap.size;
+        const totalDataset = getTotalDatasetCount();
+        const count = isAllDataSelected ? totalDataset : selectedUsersMap.size;
+
         $('#selected-rows-count').text(count);
         $('#bulk-modal-count').text(count);
         $('#bulk-names-count').text(count);
         $('#bulk-btn-count').text(count);
+        $('#toolbar-total-count').text(totalDataset);
+        $('#banner-total-dataset-count').text(totalDataset);
 
-        if (count > 0) {
+        if (count > 0 || isAllDataSelected) {
             $('#bulk-action-toolbar').attr('style', 'display: flex !important;');
         } else {
             $('#bulk-action-toolbar').attr('style', 'display: none !important;');
+            $('#select-all-data-banner').addClass('d-none').removeClass('d-flex');
         }
 
-        // Update preview nama pegawai di modal
-        if (count > 0) {
-            const names = Array.from(selectedUsersMap.values()).map(n => `<span class="badge bg-white text-dark border me-1 mb-1 shadow-xs">${n}</span>`).join(' ');
-            $('#bulk-names-preview').html(names);
+        if (isAllDataSelected) {
+            $('#bulk-names-preview').html('<span class="badge bg-primary text-white py-1 px-2.5 rounded-pill"><i class="bi bi-people-fill me-1"></i> Seluruh data pegawai (' + totalDataset + ' Pegawai) terpilih</span>');
+            $('#btn-select-all-dataset').addClass('active btn-primary text-white').removeClass('btn-outline-primary');
+            $('#label-btn-select-all').text('Semua Data Terpilih (' + totalDataset + ')');
         } else {
-            $('#bulk-names-preview').html('<span class="text-muted fst-italic">Tidak ada pegawai yang dipilih.</span>');
+            $('#btn-select-all-dataset').removeClass('active btn-primary text-white').addClass('btn-outline-primary');
+            $('#label-btn-select-all').text('Pilih Semua Data (' + totalDataset + ')');
+            if (count > 0) {
+                const names = Array.from(selectedUsersMap.values()).map(n => `<span class="badge bg-white text-dark border me-1 mb-1 shadow-xs">${n}</span>`).join(' ');
+                $('#bulk-names-preview').html(names);
+            } else {
+                $('#bulk-names-preview').html('<span class="text-muted fst-italic">Tidak ada pegawai yang dipilih.</span>');
+            }
         }
     }
 
     window.clearSelectedRows = function() {
+        isAllDataSelected = false;
         selectedUsersMap.clear();
         $('#check-all-rows').prop('checked', false);
         $('.check-row-presensi').prop('checked', false);
+        $('#select-all-data-banner').addClass('d-none').removeClass('d-flex');
+        $('#btn-select-all-pages').removeClass('d-none');
+        $('#btn-undo-select-all-pages').addClass('d-none');
         updateBulkToolbarUI();
     };
 
@@ -612,25 +672,46 @@ $(document).ready(function() {
         order: [[3, 'asc']],
         pageLength: 25,
         drawCallback: function(settings) {
-            // Sinkronisasi status checkbox pada baris yang sedang tampil
-            let allChecked = true;
             let countInPage = 0;
+            let checkedInPage = 0;
 
             $('.check-row-presensi').each(function() {
                 countInPage++;
                 const uId = $(this).val();
-                if (selectedUsersMap.has(uId)) {
+                if (isAllDataSelected || selectedUsersMap.has(uId)) {
                     $(this).prop('checked', true);
+                    checkedInPage++;
                 } else {
                     $(this).prop('checked', false);
-                    allChecked = false;
                 }
             });
 
-            if (countInPage === 0 || !allChecked) {
-                $('#check-all-rows').prop('checked', false);
-            } else {
+            const totalDisplay = settings.fnRecordsDisplay ? settings.fnRecordsDisplay() : getTotalDatasetCount();
+            $('#toolbar-total-count').text(totalDisplay);
+            $('#banner-total-dataset-count').text(totalDisplay);
+
+            if (countInPage > 0 && checkedInPage === countInPage) {
                 $('#check-all-rows').prop('checked', true);
+                // Jika total data lebih besar dari data per halaman saat ini dan belum select all
+                if (totalDisplay > countInPage && !isAllDataSelected) {
+                    $('#count-page-selected').text(countInPage);
+                    $('#select-banner-text').html('Semua <strong>' + countInPage + '</strong> pegawai di halaman ini telah dipilih.');
+                    $('#btn-select-all-pages').removeClass('d-none');
+                    $('#btn-undo-select-all-pages').addClass('d-none');
+                    $('#select-all-data-banner').removeClass('d-none').addClass('d-flex');
+                } else if (isAllDataSelected) {
+                    $('#select-banner-text').html('<strong>Seluruh ' + totalDisplay + ' data pegawai</strong> dalam sesi ini telah dipilih.');
+                    $('#btn-select-all-pages').addClass('d-none');
+                    $('#btn-undo-select-all-pages').removeClass('d-none');
+                    $('#select-all-data-banner').removeClass('d-none').addClass('d-flex');
+                } else {
+                    $('#select-all-data-banner').addClass('d-none').removeClass('d-flex');
+                }
+            } else {
+                $('#check-all-rows').prop('checked', false);
+                if (!isAllDataSelected) {
+                    $('#select-all-data-banner').addClass('d-none').removeClass('d-flex');
+                }
             }
 
             updateBulkToolbarUI();
@@ -652,6 +733,9 @@ $(document).ready(function() {
     // Check-all checkbox di header tabel
     $('#check-all-rows').on('change', function() {
         const isChecked = $(this).is(':checked');
+        if (!isChecked) {
+            isAllDataSelected = false;
+        }
         $('.check-row-presensi').each(function() {
             const uId = $(this).val();
             const uName = $(this).data('user-name') || ('Pegawai #' + uId);
@@ -662,11 +746,56 @@ $(document).ready(function() {
                 selectedUsersMap.delete(uId);
             }
         });
+
+        const totalDisplay = getTotalDatasetCount();
+        const countInPage = $('.check-row-presensi').length;
+        if (isChecked && totalDisplay > countInPage) {
+            $('#count-page-selected').text(countInPage);
+            $('#banner-total-dataset-count').text(totalDisplay);
+            $('#select-banner-text').html('Semua <strong>' + countInPage + '</strong> pegawai di halaman ini telah dipilih.');
+            $('#btn-select-all-pages').removeClass('d-none');
+            $('#btn-undo-select-all-pages').addClass('d-none');
+            $('#select-all-data-banner').removeClass('d-none').addClass('d-flex');
+        } else {
+            $('#select-all-data-banner').addClass('d-none').removeClass('d-flex');
+        }
+
+        updateBulkToolbarUI();
+    });
+
+    // Tombol Pilih Seluruh Data Pegawai Lintas Halaman
+    $('#btn-select-all-pages, #btn-select-all-dataset').on('click', function() {
+        isAllDataSelected = true;
+        const totalDisplay = getTotalDatasetCount();
+        $('.check-row-presensi').prop('checked', true);
+        $('#check-all-rows').prop('checked', true);
+
+        $('#select-banner-text').html('<strong>Seluruh ' + totalDisplay + ' data pegawai</strong> dalam sesi ini telah dipilih.');
+        $('#btn-select-all-pages').addClass('d-none');
+        $('#btn-undo-select-all-pages').removeClass('d-none');
+        $('#select-all-data-banner').removeClass('d-none').addClass('d-flex');
+
+        updateBulkToolbarUI();
+    });
+
+    // Tombol Batal Pilih Semua Data (Kembali ke pilihan per halaman saja)
+    $('#btn-undo-select-all-pages').on('click', function() {
+        isAllDataSelected = false;
+        const countInPage = $('.check-row-presensi').length;
+        $('#select-banner-text').html('Semua <strong>' + countInPage + '</strong> pegawai di halaman ini telah dipilih.');
+        $('#btn-select-all-pages').removeClass('d-none');
+        $('#btn-undo-select-all-pages').addClass('d-none');
         updateBulkToolbarUI();
     });
 
     // Individual row checkbox
     $('#presensi-session-table').on('change', '.check-row-presensi', function() {
+        if (isAllDataSelected) {
+            isAllDataSelected = false;
+            $('#btn-select-all-pages').removeClass('d-none');
+            $('#btn-undo-select-all-pages').addClass('d-none');
+        }
+
         const uId = $(this).val();
         const uName = $(this).data('user-name') || ('Pegawai #' + uId);
         if ($(this).is(':checked')) {
@@ -681,6 +810,10 @@ $(document).ready(function() {
             if (!$(this).is(':checked')) allChecked = false;
         });
         $('#check-all-rows').prop('checked', allChecked);
+
+        if (!allChecked) {
+            $('#select-all-data-banner').addClass('d-none').removeClass('d-flex');
+        }
 
         updateBulkToolbarUI();
     });
@@ -703,6 +836,7 @@ $(document).ready(function() {
         }
 
         currentFilter = filterVal;
+        window.clearSelectedRows();
         presensiTable.ajax.reload();
     });
 
@@ -715,6 +849,7 @@ $(document).ready(function() {
         $('#label-filter-khusus').text($(this).text().trim());
 
         currentFilter = filterVal;
+        window.clearSelectedRows();
         presensiTable.ajax.reload();
     });
 
@@ -749,7 +884,8 @@ $(document).ready(function() {
 
     // Buka Modal Bulk Presensi
     window.openBulkPresensiModal = function() {
-        if (selectedUsersMap.size === 0) {
+        const count = isAllDataSelected ? getTotalDatasetCount() : selectedUsersMap.size;
+        if (count === 0) {
             Swal.fire('Info', 'Silakan pilih setidaknya satu pegawai terlebih dahulu melalui kotak centang tabel.', 'info');
             return;
         }
@@ -767,8 +903,8 @@ $(document).ready(function() {
     // Submit Bulk Presensi
     $('#formBulkPresensi').on('submit', function(e) {
         e.preventDefault();
-        const userIds = Array.from(selectedUsersMap.keys());
-        if (userIds.length === 0) {
+        const userIds = isAllDataSelected ? [] : Array.from(selectedUsersMap.keys());
+        if (!isAllDataSelected && userIds.length === 0) {
             Swal.fire('Peringatan', 'Tidak ada pegawai yang dipilih.', 'warning');
             return;
         }
@@ -776,6 +912,7 @@ $(document).ready(function() {
         const isDatang = $('#switch_update_datang').is(':checked');
         const isPulang = $('#switch_update_pulang').is(':checked');
         const isCatatan = $('#switch_update_catatan').is(':checked');
+        const applyToAllActive = $('#switch_apply_all_active').is(':checked') ? 1 : 0;
 
         if (!isDatang && !isPulang && !isCatatan) {
             Swal.fire('Peringatan', 'Silakan aktifkan setidaknya satu opsi perubahan (Datang, Pulang, atau Catatan).', 'warning');
@@ -783,11 +920,15 @@ $(document).ready(function() {
         }
 
         const btn = $('#btnSubmitBulkPresensi');
+        const countLabel = isAllDataSelected ? getTotalDatasetCount() : userIds.length;
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menerapkan Perubahan...');
 
         const payload = {
             _token: '{{ csrf_token() }}',
+            select_all: isAllDataSelected ? 1 : 0,
+            filter: currentFilter,
             user_ids: userIds,
+            apply_to_all_active: applyToAllActive,
             update_datang: isDatang ? 1 : 0,
             hadir_datang: $('#bulk_hadir_datang').val(),
             waktu_datang: $('#bulk_waktu_datang').val(),
@@ -804,7 +945,7 @@ $(document).ready(function() {
             data: payload,
             dataType: 'json',
             success: function(res) {
-                btn.prop('disabled', false).html('<i class="bi bi-check2-all me-1"></i> Terapkan Perubahan (' + userIds.length + ' Pegawai)');
+                btn.prop('disabled', false).html('<i class="bi bi-check2-all me-1"></i> Terapkan Perubahan (' + countLabel + ' Pegawai)');
                 if (res.success) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalBulkPresensi'));
                     if (modal) modal.hide();
@@ -836,7 +977,7 @@ $(document).ready(function() {
                         icon: 'success',
                         title: 'Berhasil Diperbarui!',
                         text: res.message,
-                        timer: 2000,
+                        timer: 2500,
                         showConfirmButton: false
                     });
                 } else {
@@ -844,7 +985,7 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                btn.prop('disabled', false).html('<i class="bi bi-check2-all me-1"></i> Terapkan Perubahan (' + userIds.length + ' Pegawai)');
+                btn.prop('disabled', false).html('<i class="bi bi-check2-all me-1"></i> Terapkan Perubahan (' + countLabel + ' Pegawai)');
                 const errMsg = xhr.responseJSON?.message || 'Terjadi kesalahan sistem saat memperbarui presensi massal.';
                 Swal.fire('Error', errMsg, 'error');
             }

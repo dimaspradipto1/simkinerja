@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use RealRashid\SweetAlert\Facades\Alert;
 use Yajra\DataTables\Facades\DataTables;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -63,9 +64,24 @@ class InsidentilController extends Controller
 
             $totalCount = (clone $query)->count();
             $selesaiCount = (clone $query)->where('status', 'Selesai')->count();
-            $prosesCount = (clone $query)->whereIn('status', ['Proses', 'Berjalan'])->count();
-            $belumCount = (clone $query)->where('status', 'Belum Dimulai')->count();
+            $prosesCount = (clone $query)->whereIn('status', ['Proses', 'Berjalan', 'Di-pause'])->count();
+            $belumCount = (clone $query)->where(function($q) {
+                $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+            })->count();
             $percent = $totalCount > 0 ? round(($selesaiCount / $totalCount) * 100) : 0;
+
+            if ($request->filled('status')) {
+                $statusFilter = $request->status;
+                if ($statusFilter === 'Selesai') {
+                    $query->where('status', 'Selesai');
+                } elseif ($statusFilter === 'Proses') {
+                    $query->whereIn('status', ['Proses', 'Berjalan', 'Di-pause']);
+                } elseif ($statusFilter === 'Belum Dimulai') {
+                    $query->where(function($q) {
+                        $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+                    });
+                }
+            }
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -95,32 +111,183 @@ class InsidentilController extends Controller
                           });
                     });
                 })
-                ->addColumn('task_details', function ($row) {
-                    $html = '<div class="d-flex align-items-start">';
-                    $html .= '<div class="me-2 mt-1"><i class="bi bi-card-checklist text-primary fs-5"></i></div>';
-                    $html .= '<div>';
-                    $html .= '<div class="fw-bold text-dark mb-1" style="font-size: 1rem;">' . e($row->uraian_tugas) . '</div>';
+                ->addColumn('task_details', function ($row) use ($authUser) {
+                    $html = '<div class="d-flex flex-column gap-2 py-1 w-100" style="max-width: 100%; box-sizing: border-box;">';
                     
-                    if ($row->user) {
-                        $html .= '<div class="small text-muted mb-1"><i class="bi bi-person-circle me-1"></i><strong>Pembuat:</strong> ' . e($row->user->name) . ' <span class="badge bg-light text-dark border ms-1">' . e($row->user->jabatan ?? '-') . '</span></div>';
-                    }
+                    // 1. Task Title & Action Buttons Bar (Responsive Mobile Optimized)
+                    $collapseId = 'collapseInsidentil_' . $row->id;
+                    $actionBtns = $this->renderActionButtons($row, $authUser, 'insidentil', 'deleteInsidentil', $collapseId);
+
+                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">';
+                    $html .= '  <div class="d-flex align-items-center justify-content-between gap-2 pb-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
+                    $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.95rem;">';
+                    $html .= '          <i class="bi bi-card-checklist text-success fs-5 flex-shrink-0"></i>';
+                    $html .= '          <span class="text-break">' . e($row->uraian_tugas) . '</span>';
+                    $html .= '      </div>';
+                    $html .= '      <i class="bi bi-chevron-down text-secondary fs-6 transition-transform toggle-icon flex-shrink-0"></i>';
+                    $html .= '  </div>';
+                    $html .= '  <div class="mt-2 pt-2.5 border-top task-action-container">';
+                    $html .= '      <span class="text-secondary small fw-semibold task-action-label"><i class="bi bi-gear-fill me-1"></i>Aksi & Status:</span>';
+                    $html .=        $actionBtns;
+                    $html .= '  </div>';
+                    $html .= '</div>';
+
+                    // Collapsible Content Container (Dropdown section)
+                    $html .= '<div class="collapse" id="' . $collapseId . '">';
+                    $html .= '  <div class="d-flex flex-column gap-2 pt-1">';
+
+                    // 2. Metadata Chips (Kategori, Periode, Hari, Pegawai)
+                    $chips = [];
+                    $kat = $row->kategori ?: 'Rencana Kerja Insidentil';
+                    $chips[] = '<span class="badge px-2 py-1" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-tag-fill me-1"></i>' . e($kat) . '</span>';
 
                     if ($row->periodeAkademik) {
                         $taLabel = $row->periodeAkademik->formatted_ta ?? ('T.A. ' . $row->periodeAkademik->nama_periode);
-                        $html .= '<div class="mb-1"><span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-mortarboard-fill me-1"></i>' . e($taLabel) . '</span></div>';
+                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-mortarboard-fill me-1"></i>' . e($taLabel) . '</span>';
                     }
-                    
-                    if ($row->taggedUsers->count() > 0) {
-                        $html .= '<div class="small text-muted"><i class="bi bi-people-fill me-1 text-info"></i><strong>Rekan Kerja:</strong> ';
-                        $tags = [];
-                        foreach ($row->taggedUsers as $tu) {
-                            $tags[] = '<span class="badge bg-info text-white me-1">' . e($tu->name) . '</span>';
+
+                    if ($row->user) {
+                        $chips[] = '<span class="badge px-2 py-1 bg-light text-dark border fw-normal" style="font-size: 0.78rem;"><i class="bi bi-person-fill text-secondary me-1"></i>' . e($row->user->name) . ' <span class="text-muted">(' . e($row->user->jabatan ?? '-') . ')</span></span>';
+                    }
+
+                    if ($row->hari) {
+                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-calendar-day me-1"></i>' . e($row->hari) . '</span>';
+                    }
+
+                    if (!empty($chips)) {
+                        $html .= '<div class="d-flex flex-wrap align-items-center gap-2 mb-1">' . implode('', $chips) . '</div>';
+                    }
+
+                    // 2.5 Special Card for Tagged Users (Rekan Kerja) - Kartu Tersendiri
+                    if ($row->taggedUsers && $row->taggedUsers->count() > 0) {
+                        $html .= '<div class="mt-1 p-2 px-3 bg-white rounded border shadow-sm d-flex flex-column gap-1" style="border-left: 4px solid #0284c7 !important; word-break: break-word; overflow-wrap: break-word;">';
+                        $html .= '<span class="text-secondary small fw-bold mb-1 d-inline-flex align-items-center"><i class="bi bi-people-fill text-info me-2" style="margin-right: 8px !important;"></i>Rekan Kerja:</span>';
+                        $html .= '<div class="d-flex flex-column gap-1 ps-1 ps-sm-2">';
+
+                        $sortedUsers = $row->taggedUsers->sortByDesc(function ($u) {
+                            $name = $u->name;
+                            if (preg_match('/^Prof\./i', $name)) return 100;
+                            if (preg_match('/^Assoc\./i', $name)) return 90;
+                            if (preg_match('/^Dr\./i', $name)) return 80;
+                            if (preg_match('/^dr\./i', $name)) return 70;
+                            if (preg_match('/^Ir\./i', $name)) return 60;
+                            if (preg_match('/,\s*M\.[A-Za-z]/i', $name)) return 40;
+                            if (preg_match('/,\s*S\.[A-Za-z]/i', $name)) return 20;
+                            return 0;
+                        });
+
+                        $idx = 1;
+                        foreach ($sortedUsers as $tu) {
+                            $html .= '<div class="fw-semibold text-dark text-break" style="font-size: 0.83rem; line-height: 1.35;">' . $idx . '. ' . e($tu->name) . ' <span class="text-muted fw-normal d-block d-sm-inline" style="font-size: 0.76rem;">(' . e($tu->jabatan ?? '-') . ')</span></div>';
+                            $idx++;
                         }
-                        $html .= implode('', $tags) . '</div>';
+                        $html .= '</div>';
+                        $html .= '</div>';
                     }
+
+                    // 3. Time Details Card Box (Kiri: Estimasi & Mulai | Kanan: Selesai & Durasi)
+                    $estFormatted = '-';
+                    if ($row->estimasi_jam_mulai || $row->estimasi_tanggal_mulai) {
+                        $tglEstMulai = $row->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '';
+                        $tglEstSelesai = $row->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) : '';
+                        $jamEstMulai = $row->estimasi_jam_mulai ? substr($row->estimasi_jam_mulai, 0, 5) : '';
+                        $jamEstSelesai = $row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '';
+
+                        if ($tglEstMulai && $tglEstSelesai && $tglEstMulai === $tglEstSelesai) {
+                            $jamPart = '';
+                            if ($jamEstMulai && $jamEstSelesai) {
+                                $jamPart = ' (' . $jamEstMulai . ' - ' . $jamEstSelesai . ' WIB)';
+                            } elseif ($jamEstMulai) {
+                                $jamPart = ' (' . $jamEstMulai . ' WIB)';
+                            } elseif ($jamEstSelesai) {
+                                $jamPart = ' (' . $jamEstSelesai . ' WIB)';
+                            }
+                            $estFormatted = $tglEstMulai . $jamPart;
+                        } else {
+                            $startPart = trim($tglEstMulai . ($jamEstMulai ? ' (' . $jamEstMulai . ' WIB)' : ''));
+                            $endPart = trim($tglEstSelesai . ($jamEstSelesai ? ' (' . $jamEstSelesai . ' WIB)' : ''));
+                            $estFormatted = trim($startPart . ($endPart ? ' - ' . $endPart : ''));
+                        }
+                    }
+
+                    $mulaiFormatted = '-';
+                    if ($row->waktu_mulai) {
+                        $tglMulai = $row->tanggal_mulai ? date('d/m/Y', strtotime($row->tanggal_mulai)) : '';
+                        $jamMulai = substr($row->waktu_mulai, 0, 5);
+                        $mulaiFormatted = $tglMulai ? ($tglMulai . ' (' . $jamMulai . ' WIB)') : '(' . $jamMulai . ' WIB)';
+                    }
+
+                    $selesaiFormatted = '-';
+                    if ($row->waktu_selesai && $row->waktu_selesai !== '00:00:00') {
+                        $tglSelesai = $row->tanggal_selesai ? date('d/m/Y', strtotime($row->tanggal_selesai)) : '';
+                        $jamSelesai = substr($row->waktu_selesai, 0, 5);
+                        $selesaiFormatted = $tglSelesai ? ($tglSelesai . ' (' . $jamSelesai . ' WIB)') : '(' . $jamSelesai . ' WIB)';
+                    }
+
+                    $durasiStr = '-';
+                    if (!empty($row->waktu_mulai) && !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') {
+                        try {
+                            $tglMulaiStr = !empty($row->tanggal_mulai) ? $row->tanggal_mulai : now()->format('Y-m-d');
+                            $tglSelesaiStr = !empty($row->tanggal_selesai) ? $row->tanggal_selesai : $tglMulaiStr;
+
+                            $startTs = strtotime($tglMulaiStr . ' ' . $row->waktu_mulai);
+                            $endTs = strtotime($tglSelesaiStr . ' ' . $row->waktu_selesai);
+
+                            $diffInSeconds = max(0, $endTs - $startTs);
+
+                            $days = floor($diffInSeconds / 86400);
+                            $hours = floor(($diffInSeconds % 86400) / 3600);
+                            $minutes = floor(($diffInSeconds % 3600) / 60);
+                            $seconds = $diffInSeconds % 60;
+
+                            $durasiParts = [];
+                            if ($days > 0) $durasiParts[] = $days . 'h';
+                            if ($hours > 0) $durasiParts[] = $hours . 'j';
+                            if ($minutes > 0) $durasiParts[] = $minutes . 'm';
+                            if ($seconds > 0 || empty($durasiParts)) $durasiParts[] = $seconds . 's';
+
+                            $durasiStr = implode(' ', $durasiParts);
+                        } catch (\Exception $e) {
+                            $durasiStr = '-';
+                        }
+                    }
+
+                    $html .= '<div class="mt-2 p-2 p-sm-3 bg-light rounded border shadow-sm" style="word-break: break-word;">';
+                    $html .= '<div class="row g-2 align-items-center">';
                     
+                    // Left Column: Estimasi & Mulai
+                    $html .= '<div class="col-12 col-md-6">';
+                    
+                    $html .= '<div class="mb-2">';
+                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-clock-history me-1"></i>Estimasi Pelaksanaan:</label>';
+                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($estFormatted) . '</div>';
+                    $html .= '</div>';
+
+                    $html .= '<div>';
+                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-play-circle-fill text-primary me-1"></i>Waktu Mulai:</label>';
+                    $html .= '<div class="fw-semibold text-primary ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($mulaiFormatted) . '</div>';
+                    $html .= '</div>';
+
+                    $html .= '</div>'; // end col left
+
+                    // Right Column: Selesai & Durasi
+                    $html .= '<div class="col-12 col-md-6">';
+
+                    $html .= '<div class="mb-2">';
+                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-check-circle-fill text-success me-1"></i>Waktu Selesai:</label>';
+                    $html .= '<div class="fw-semibold text-success ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($selesaiFormatted) . '</div>';
+                    $html .= '</div>';
+
+                    $html .= '<div>';
+                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-hourglass-split me-1"></i>Total Durasi:</label>';
+                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($durasiStr) . '</div>';
+                    $html .= '</div>';
+
+                    $html .= '</div>'; // end col right
+
                     if ($row->status === 'Di-pause') {
-                        $html .= '<div class="mt-2 p-2 px-3 rounded-2 border" style="background-color: #fffbeb; border-color: #fde68a !important;">';
+                        $html .= '<div class="col-12 mt-2 pt-2 border-top">';
+                        $html .= '<div class="p-2 px-3 rounded-2 border" style="background-color: #fffbeb; border-color: #fde68a !important;">';
                         $html .= '<div class="d-flex align-items-center justify-content-between mb-1">';
                         $html .= '<label class="form-label mb-0 text-warning-emphasis fw-bold small d-flex align-items-center gap-1">';
                         $html .= '<i class="bi bi-pause-circle-fill text-warning"></i> Penyebab Di-pause:';
@@ -136,185 +303,183 @@ class InsidentilController extends Controller
                         $html .= '</button>';
                         $html .= '</div>';
                         $html .= '</div>';
-                    }
-
-                    $html .= \App\Helpers\MilestoneHelper::renderWidget($row->milestones, $row->id, \App\Models\Insidentil::class);
-                    
-                    // Render Form Upload Berkas, Link External, Hasil Kerja, dan Rencana Tindak Lanjut
-                    $html .= '<div class="mt-3 p-2 bg-light rounded border">';
-                    $html .= '<form class="form-inline-upload" data-id="' . $row->id . '" enctype="multipart/form-data">';
-                    $html .= '<div class="row g-2 mb-2">';
-                    $html .= '<div class="col-md-6">';
-                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-paperclip me-1"></i> Unggah Berkas Kinerja</label>';
-                    $html .= '<input type="file" name="file" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.rar">';
-                    $html .= '</div>';
-                    $html .= '<div class="col-md-6">';
-                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-link-45deg me-1"></i> Tautan Google Drive / External</label>';
-                    $html .= '<input type="url" name="url_external" class="form-control form-control-sm" value="' . e($row->url_external ?? '') . '" placeholder="https://drive.google.com/...">';
-                    $html .= '</div>';
-                    $html .= '</div>';
-
-                    if ($row->status === 'Di-pause') {
-                        $html .= '<div class="mb-2">';
-                        $html .= '<label class="form-label small fw-semibold text-warning-emphasis mb-1"><i class="bi bi-pause-circle-fill text-warning me-1"></i> Penyebab Di-pause</label>';
-                        $html .= '<textarea name="alasan_pause" class="form-control form-control-sm" rows="2" placeholder="Masukkan alasan / kendala pekerjaan di-pause...">' . e($row->alasan_pause ?? '') . '</textarea>';
                         $html .= '</div>';
                     }
 
-                    // TinyMCE Hasil Kerja & Rencana Tindak Lanjut
-                    $html .= '<div class="mb-2">';
-                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-journal-text me-1 text-success"></i> Hasil Kerja</label>';
-                    $html .= '<textarea name="hasil_kerja" class="form-control form-control-sm tinymce-editor" rows="2" placeholder="Masukkan rincian hasil kerja...">' . e($row->hasil_kerja ?? '') . '</textarea>';
-                    $html .= '</div>';
-                    $html .= '<div class="mb-2">';
-                    $html .= '<label class="form-label small fw-semibold text-muted mb-1"><i class="bi bi-arrow-right-circle me-1 text-primary"></i> Rencana Tindak Lanjut</label>';
-                    $html .= '<textarea name="rencana_tindak_lanjut" class="form-control form-control-sm tinymce-editor" rows="2" placeholder="Masukkan rencana tindak lanjut...">' . e($row->rencana_tindak_lanjut ?? '') . '</textarea>';
+                    $html .= '</div>'; // end row
+                    $html .= '</div>'; // end card
+
+                    // Milestone Points Widget Section
+                    $html .= \App\Helpers\MilestoneHelper::renderWidget($row->milestones, $row->id, \App\Models\Insidentil::class);
+
+                    // Form Inline Upload Berkas, Link, Hasil Kerja, & Rencana Tindak Lanjut di bawah Milestone
+                    $html .= '<form class="form-inline-upload mt-2 p-3 bg-light rounded border shadow-sm" data-id="' . $row->id . '" enctype="multipart/form-data">';
+                    $html .= '<div class="row g-2">';
+                    
+                    if ($row->status === 'Di-pause') {
+                        $html .= '<div class="col-12 mb-2">';
+                        $html .= '<label class="form-label mb-1 text-warning-emphasis small fw-bold"><i class="bi bi-pause-circle-fill text-warning me-1"></i>Penyebab Di-pause:</label>';
+                        $html .= '<textarea name="alasan_pause" class="form-control form-control-sm" rows="2" placeholder="Isikan penyebab atau kendala pekerjaan di-pause...">' . e($row->alasan_pause ?? '') . '</textarea>';
+                        $html .= '</div>';
+                    }
+
+                    // Field TinyMCE Hasil Kerja
+                    $html .= '<div class="col-12 col-md-6 mb-2">';
+                    $html .= '<label class="form-label mb-1 text-dark small fw-bold"><i class="bi bi-file-earmark-text-fill text-success me-1"></i>Hasil Kerja:</label>';
+                    $html .= '<textarea name="hasil_kerja" class="form-control form-control-sm tinymce-editor" id="hasil_kerja_' . $row->id . '" rows="3" placeholder="Isikan rincian hasil kerja...">' . e($row->hasil_kerja ?? '') . '</textarea>';
                     $html .= '</div>';
 
-                    $html .= '<div class="d-flex justify-content-end">';
-                    $html .= '<button type="submit" class="btn btn-sm btn-success btn-simpan-inline"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Tindak Lanjut</button>';
+                    // Field TinyMCE Rencana Tindak Lanjut
+                    $html .= '<div class="col-12 col-md-6 mb-2">';
+                    $html .= '<label class="form-label mb-1 text-dark small fw-bold"><i class="bi bi-arrow-right-circle-fill text-primary me-1"></i>Rencana Tindak Lanjut:</label>';
+                    $html .= '<textarea name="rencana_tindak_lanjut" class="form-control form-control-sm tinymce-editor" id="tindak_lanjut_' . $row->id . '" rows="3" placeholder="Isikan rencana tindak lanjut...">' . e($row->rencana_tindak_lanjut ?? '') . '</textarea>';
                     $html .= '</div>';
+
+                    // Upload Berkas & External Link
+                    $html .= '<div class="col-12 col-md-6 inline-upload-left">';
+                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold d-block"><i class="bi bi-paperclip me-1"></i>Unggah Berkas Kinerja:</label>';
+                    $html .= '<input type="file" name="file" class="form-control form-control-sm bg-white input-file-inline">';
+                    $html .= '</div>';
+
+                    $html .= '<div class="col-12 col-md-6 inline-upload-right">';
+                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold d-block"><i class="bi bi-link-45deg me-1"></i>Tautan Google Drive / External:</label>';
+                    $html .= '<input type="url" name="url_external" class="form-control form-control-sm bg-white input-url-inline" placeholder="https://drive.google.com/..." value="' . e($row->url_external ?? '') . '">';
+                    $html .= '</div>';
+
+                    $html .= '<div class="col-12 mt-3 text-start">';
+                    $html .= '<button type="submit" class="btn btn-sm text-white px-4 fw-bold btn-simpan-inline" style="background-color: #15432d; border-color: #15432d; height: 34px;"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Tindak Lanjut</button>';
+                    $html .= '</div>';
+
+                    // Hasil Tersimpan (Di bawah Tombol Simpan)
+                    $html .= '<div class="col-12 mt-3 pt-2 border-top">';
+                    $html .= '<div class="d-flex align-items-center flex-wrap gap-2 mb-1">';
+                    $html .= '<span class="text-dark small fw-bold me-2"><i class="bi bi-folder-check me-1"></i>Hasil Tersimpan:</span>';
+                    
+                    $hasResult = false;
+                    if ($row->file) {
+                        $hasResult = true;
+                        $fileUrl = asset('storage/' . $row->file);
+                        $html .= '<a href="' . $fileUrl . '" target="_blank" class="btn btn-sm btn-outline-success text-nowrap fw-semibold px-3 d-inline-flex align-items-center" style="font-size: 0.8rem; height: 30px;"><i class="bi bi-file-earmark-check-fill me-1"></i> Unduh / Lihat Berkas</a>';
+                    }
+
+                    if ($row->url_external) {
+                        $hasResult = true;
+                        $html .= '<a href="' . e($row->url_external) . '" target="_blank" class="btn btn-sm btn-outline-primary text-nowrap fw-semibold px-3 d-inline-flex align-items-center" style="font-size: 0.8rem; height: 30px;"><i class="bi bi-box-arrow-up-right me-1"></i> Buka Link Eksternal</a>';
+                    }
+                    $html .= '</div>'; // end flex header
+
+                    if (!empty($row->hasil_kerja)) {
+                        $hasResult = true;
+                        $html .= '<div class="w-100 p-2 mt-2 rounded bg-white border small text-dark"><strong class="text-success d-block mb-1"><i class="bi bi-file-earmark-text-fill me-1"></i>Hasil Kerja:</strong><div>' . $row->hasil_kerja . '</div></div>';
+                    }
+
+                    if (!empty($row->rencana_tindak_lanjut)) {
+                        $hasResult = true;
+                        $html .= '<div class="w-100 p-2 mt-2 rounded bg-white border small text-dark"><strong class="text-primary d-block mb-1"><i class="bi bi-arrow-right-circle-fill me-1"></i>Rencana Tindak Lanjut:</strong><div>' . $row->rencana_tindak_lanjut . '</div></div>';
+                    }
+
+                    if (!$hasResult) {
+                        $html .= '<span class="text-muted small fst-italic">Belum ada berkas, link, atau hasil tersimpan</span>';
+                    }
+
+                    $html .= '</div>'; // end col-12
+                    $html .= '</div>'; // end row
                     $html .= '</form>';
 
-                    // Display saved results preview if available
-                    if (!empty($row->hasil_kerja) || !empty($row->rencana_tindak_lanjut)) {
-                        $html .= '<div class="mt-2 p-2 bg-white rounded border border-success-subtle shadow-sm">';
-                        if (!empty($row->hasil_kerja)) {
-                            $html .= '<div class="small mb-1"><strong><i class="bi bi-check2-circle text-success me-1"></i>Hasil Kerja Tersimpan:</strong><div class="text-dark border-start border-success border-2 ps-2 mt-1">' . $row->hasil_kerja . '</div></div>';
-                        }
-                        if (!empty($row->rencana_tindak_lanjut)) {
-                            $html .= '<div class="small"><strong><i class="bi bi-arrow-right-short text-primary me-1"></i>Tindak Lanjut Tersimpan:</strong><div class="text-dark border-start border-primary border-2 ps-2 mt-1">' . $row->rencana_tindak_lanjut . '</div></div>';
-                        }
-                        $html .= '</div>';
-                    }
+                    $html .= '  </div>'; // end collapse inner d-flex
+                    $html .= '</div>'; // end collapse
 
                     $html .= '</div>';
-                    $html .= '</div></div>';
                     return $html;
-                })
-                ->addColumn('estimasi_waktu', function ($row) {
-                    $tglMulai = $row->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '-';
-                    $tglSelesai = $row->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) : '-';
-                    $jamMulai = $row->estimasi_jam_mulai ? date('H:i', strtotime($row->estimasi_jam_mulai)) : '-';
-                    $jamSelesai = $row->estimasi_jam_selesai ? date('H:i', strtotime($row->estimasi_jam_selesai)) : '-';
-
-                    return '<div class="small">' .
-                           '<div><i class="bi bi-calendar-event me-1 text-secondary"></i>' . $tglMulai . ' s/d ' . $tglSelesai . '</div>' .
-                           '<div><i class="bi bi-clock me-1 text-secondary"></i>' . $jamMulai . ' - ' . $jamSelesai . ' WIB</div>' .
-                           '</div>';
-                })
-                ->addColumn('waktu_realisasi', function ($row) {
-                    $tglMulai = $row->tanggal_mulai ? date('d/m/Y', strtotime($row->tanggal_mulai)) : '-';
-                    $tglSelesai = $row->tanggal_selesai ? date('d/m/Y', strtotime($row->tanggal_selesai)) : '-';
-                    $jamMulai = $row->waktu_mulai ? date('H:i', strtotime($row->waktu_mulai)) : '-';
-                    $jamSelesai = $row->waktu_selesai ? date('H:i', strtotime($row->waktu_selesai)) : '-';
-
-                    return '<div class="small">' .
-                           '<div><i class="bi bi-calendar-check me-1 text-success"></i>' . $tglMulai . ' s/d ' . $tglSelesai . '</div>' .
-                           '<div><i class="bi bi-stopwatch me-1 text-success"></i>' . $jamMulai . ' - ' . $jamSelesai . ' WIB</div>' .
-                           '</div>';
-                })
-                ->addColumn('attachment', function ($row) {
-                    $html = '';
-                    if ($row->file) {
-                        $url = asset('storage/' . $row->file);
-                        $html .= '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-outline-primary mb-1 d-block"><i class="bi bi-file-earmark-text me-1"></i>Lihat Berkas</a>';
-                    }
-                    if ($row->url_external) {
-                        $html .= '<a href="' . e($row->url_external) . '" target="_blank" class="btn btn-sm btn-outline-info d-block"><i class="bi bi-link-45deg me-1"></i>Tautan Luar</a>';
-                    }
-                    if (!$row->file && !$row->url_external) {
-                        $html = '<span class="text-muted small">Tidak ada</span>';
-                    }
-                    return $html;
-                })
-                ->addColumn('status_badge', function ($row) {
-                    $hasMilestones = $row->relationLoaded('milestones') ? ($row->milestones && $row->milestones->count() > 0) : ($row->milestones()->count() > 0);
-                    $allMilestonesSelesai = false;
-                    if ($hasMilestones) {
-                        $uncompleted = $row->relationLoaded('milestones')
-                            ? $row->milestones->where('status', '!=', 'Selesai')->count()
-                            : $row->milestones()->where('status', '!=', 'Selesai')->count();
-                        $allMilestonesSelesai = ($uncompleted === 0);
-                    }
-
-                    if ($row->status === 'Selesai' || $allMilestonesSelesai) {
-                        return '<span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Selesai</span>';
-                    } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
-                        return '<span class="badge bg-primary px-2 py-1"><i class="bi bi-play-circle me-1"></i>Proses</span>';
-                    }
-                    return '<span class="badge bg-secondary px-2 py-1"><i class="bi bi-x-circle me-1"></i>Belum Dimulai</span>';
                 })
                 ->addColumn('action', function ($row) use ($authUser) {
-                    $btn = '<div class="btn-group" role="group">';
-                    
-                    $hasMilestones = $row->relationLoaded('milestones') ? ($row->milestones && $row->milestones->count() > 0) : ($row->milestones()->count() > 0);
-                    $allMilestonesSelesai = false;
-                    if ($hasMilestones) {
-                        $uncompleted = $row->relationLoaded('milestones')
-                            ? $row->milestones->where('status', '!=', 'Selesai')->count()
-                            : $row->milestones()->where('status', '!=', 'Selesai')->count();
-                        $allMilestonesSelesai = ($uncompleted === 0);
-                    }
-
-                    $isExpired = false;
-                    if ($row->status !== 'Selesai' && !empty($row->estimasi_tanggal_selesai)) {
-                        $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
-                        $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
-                        if (\Carbon\Carbon::now()->gt($estimasiEnd)) {
-                            $isExpired = true;
-                        }
-                    }
-
-                    $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
-
-                    // Start/Pause/Stop Timer buttons
-                    if ($row->status === 'Selesai' || $allMilestonesSelesai) {
-                        $btn .= '<button type="button" class="btn btn-sm text-white fw-bold disabled me-1" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
-                        // Tombol buka kunci HANYA ada di role admin dan pimpinan. Di role sendiri (staff) tidak ada.
-                        if ($authUser && $authUser->canUnlockTasks()) {
-                            $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1 btn-reopen-task" data-id="' . $row->id . '" data-type="insidentil" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="" onclick="window.reopenTask(this)" style="height: 32px;" title="Buka kunci tugas yang sudah selesai agar dapat dikerjakan lagi"><i class="bi bi-unlock-fill me-1"></i> Buka Kunci</button>';
-                        }
-                    } elseif ($isExpired) {
-                        $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
-                        if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
-                            if ($isLeader) {
-                                $btn .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap px-2 me-1" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($row->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . route('insidentil.approve-extension', $row->id) . '" onclick="window.openApproveExtensionModal(this)" style="height: 32px;" title="Permohonan perpanjangan waktu diajukan pegawai. Klik untuk setujui & beri waktu baru"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
-                            } else {
-                                $btn .= '<span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center me-1" style="height: 32px; font-size: 0.8rem;" title="Permohonan perpanjangan waktu sedang menunggu persetujuan pimpinan"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>';
-                            }
-                        } else {
-                            $btn .= '<button type="button" class="btn btn-sm btn-danger text-white fw-bold text-nowrap px-2 me-1 btn-request-extension" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-route="' . route('insidentil.request-unlock-estimasi', $row->id) . '" onclick="window.openExtensionModal(this)" style="height: 32px;" title="Tugas gagal karena melewati estimasi waktu. Klik untuk minta perpanjangan waktu ke pimpinan"><i class="bi bi-clock-history me-1"></i> Tugas Gagal - Minta Perpanjangan Waktu</button>';
-                        }
-                    } elseif ($row->status === 'Belum Dimulai') {
-                        $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Mulai Pekerjaan"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
-                    } elseif ($row->status === 'Di-pause') {
-                        $btn .= '<button type="button" class="btn btn-success btn-sm btn-start" data-id="' . $row->id . '" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
-                        $btn .= '<button type="button" class="btn btn-danger btn-sm btn-stop" data-id="' . $row->id . '" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
-                    } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
-                        $btn .= '<button type="button" class="btn btn-warning btn-sm text-dark fw-bold" onclick="window.pauseTaskTimer(' . $row->id . ', \'insidentil\')" title="Jeda Pekerjaan"><i class="bi bi-pause-fill me-1"></i> Pause</button>';
-                        $btn .= '<button type="button" class="btn btn-danger btn-sm btn-stop" data-id="' . $row->id . '" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
-                    }
-
-                    // Edit & Delete Buttons based on permissions
-                    $canManage = false;
-                    if ($authUser) {
-                        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit() || $row->user_id === $authUser->id) {
-                            $canManage = true;
-                        }
-                    }
-
-                    if ($canManage) {
-                        $btn .= '<a href="' . route('insidentil.edit', $row->id) . '" class="btn btn-warning btn-sm text-white" title="Edit"><i class="bi bi-pencil"></i></a>';
-                        $btn .= '<button type="button" class="btn btn-primary btn-sm btn-tag-user" data-id="' . $row->id . '" data-tags=\'' . json_encode($row->taggedUsers->pluck('id')->toArray()) . '\' title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i></button>';
-                        $btn .= '<button type="button" class="btn btn-outline-primary btn-sm btn-upload-file" data-id="' . $row->id . '" title="Upload Berkas"><i class="bi bi-upload"></i></button>';
-                        $btn .= '<button type="button" class="btn btn-danger btn-sm btn-delete" data-id="' . $row->id . '" title="Hapus"><i class="bi bi-trash"></i></button>';
-                    }
-
-                    $btn .= '</div>';
-                    return $btn;
+                    return '';
                 })
-                ->rawColumns(['checkbox', 'task_details', 'estimasi_waktu', 'waktu_realisasi', 'attachment', 'status_badge', 'action'])
+                ->addColumn('voice_narration', function ($row) {
+                    $uraian = e($row->uraian_tugas);
+
+                    // Estimasi
+                    $estMulai = !empty($row->estimasi_tanggal_mulai) ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '';
+                    $estJamMulai = !empty($row->estimasi_jam_mulai) ? substr($row->estimasi_jam_mulai, 0, 5) : '';
+                    $estSelesai = !empty($row->estimasi_tanggal_selesai) ? date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) : '';
+                    $estJamSelesai = !empty($row->estimasi_jam_selesai) ? substr($row->estimasi_jam_selesai, 0, 5) : '';
+
+                    $estStr = 'Estimasi pelaksanaan: ';
+                    if ($estMulai && $estSelesai && $estMulai === $estSelesai) {
+                        $estStr .= 'Tanggal ' . $estMulai;
+                        if ($estJamMulai && $estJamSelesai) {
+                            $estStr .= ' mulai jam ' . $estJamMulai . ' sampai ' . $estJamSelesai . ' WIB';
+                        }
+                    } else {
+                        if ($estMulai) $estStr .= 'Mulai ' . $estMulai . ($estJamMulai ? ' jam ' . $estJamMulai . ' WIB ' : ' ');
+                        if ($estSelesai) $estStr .= 'sampai ' . $estSelesai . ($estJamSelesai ? ' jam ' . $estJamSelesai . ' WIB' : '');
+                    }
+                    $estStr .= '. ';
+
+                    // Waktu Mulai
+                    $tglM = !empty($row->tanggal_mulai) ? date('d/m/Y', strtotime($row->tanggal_mulai)) . ' ' : '';
+                    $mulaiStr = 'Waktu mulai: ' . (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00' ? $tglM . 'jam ' . substr($row->waktu_mulai, 0, 5) . ' WIB' : 'Belum dimulai') . '. ';
+
+                    // Waktu Selesai
+                    $tglS = !empty($row->tanggal_selesai) ? date('d/m/Y', strtotime($row->tanggal_selesai)) . ' ' : '';
+                    $selesaiStr = 'Waktu selesai: ' . (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00' ? $tglS . 'jam ' . substr($row->waktu_selesai, 0, 5) . ' WIB' : 'Belum selesai') . '. ';
+
+                    // Durasi
+                    $durasiStr = 'Durasi: ';
+                    if (!empty($row->waktu_mulai) && !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') {
+                        try {
+                            $tglMulaiStr = !empty($row->tanggal_mulai) ? $row->tanggal_mulai : now()->format('Y-m-d');
+                            $tglSelesaiStr = !empty($row->tanggal_selesai) ? $row->tanggal_selesai : $tglMulaiStr;
+                            $startTs = strtotime($tglMulaiStr . ' ' . $row->waktu_mulai);
+                            $endTs = strtotime($tglSelesaiStr . ' ' . $row->waktu_selesai);
+                            $diffInSeconds = max(0, $endTs - $startTs);
+                            $hours = floor($diffInSeconds / 3600);
+                            $minutes = floor(($diffInSeconds % 3600) / 60);
+                            $seconds = $diffInSeconds % 60;
+                            $dParts = [];
+                            if ($hours > 0) $dParts[] = $hours . ' jam';
+                            if ($minutes > 0) $dParts[] = $minutes . ' menit';
+                            if ($seconds > 0 || empty($dParts)) $dParts[] = $seconds . ' detik';
+                            $durasiStr .= implode(' ', $dParts);
+                        } catch (\Exception $e) {
+                            $durasiStr .= 'Belum ada';
+                        }
+                    } else {
+                        $durasiStr .= 'Belum ada';
+                    }
+                    $durasiStr .= '. ';
+
+                    $analisisStr = '';
+                    if (!empty($row->hasil_kerja)) {
+                        $analisisStr .= 'Hasil kerja: ' . strip_tags($row->hasil_kerja) . '. ';
+                    }
+                    if (!empty($row->rencana_tindak_lanjut)) {
+                        $analisisStr .= 'Rencana tindak lanjut: ' . strip_tags($row->rencana_tindak_lanjut) . '. ';
+                    }
+
+                    $linkStr = '';
+                    if (!empty($row->file)) {
+                        $linkStr .= 'Berkas lampiran tersedia untuk diunduh. ';
+                    }
+                    if (!empty($row->url_external)) {
+                        $linkStr .= 'Tautan eksternal Google Drive tersedia. ';
+                    }
+
+                    return $uraian . '|||' . $estStr . $mulaiStr . $selesaiStr . $durasiStr . $analisisStr . $linkStr;
+                })
+                ->addColumn('attachment_status', function ($row) {
+                    $hasFile = !empty($row->file) ? 1 : 0;
+                    $hasUrl = !empty($row->url_external) ? 1 : 0;
+                    return ($hasFile || $hasUrl) ? 1 : 0;
+                })
+                ->rawColumns(['checkbox', 'task_details', 'action'])
+                ->with('overall_rekap', [
+                    'total' => $totalCount,
+                    'selesai' => $selesaiCount,
+                    'proses' => $prosesCount,
+                    'belum' => $belumCount,
+                    'percent' => $percent
+                ])
                 ->with('stats', [
                     'total' => $totalCount,
                     'selesai' => $selesaiCount,
@@ -329,11 +494,14 @@ class InsidentilController extends Controller
         $users = User::orderBy('name', 'asc')->get();
 
         $usersWithJabatan = [];
+        $extensionSupervisors = collect();
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
                 $usersWithJabatan = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->orderBy('jabatan', 'asc')->get();
             } elseif ($authUser->isPimpinanUnit()) {
                 $usersWithJabatan = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->where('unit', $authUser->unit)->orderBy('jabatan', 'asc')->get();
+            } else {
+                $extensionSupervisors = $authUser->getDirectSupervisors();
             }
         }
 
@@ -351,19 +519,154 @@ class InsidentilController extends Controller
                     })->orWhere('estimasi_unlock_reason', 'like', '%[Tujuan: ' . $authUser->name . '%');
                 });
             } else {
-                // Regular staff does not see incoming requests banner
                 $pendingRequestsQuery->whereRaw('1 = 0');
             }
 
             $pendingRequests = $pendingRequestsQuery->with(['user', 'periodeAkademik'])->latest('estimasi_unlock_requested_at')->get();
         }
 
-        return view('pages.insidentil.index', compact('periodeAkademiks', 'users', 'usersWithJabatan', 'pendingRequests'));
+        $defaultPeriode = PeriodeAkademik::first();
+        $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
+
+        return view('pages.insidentil.index', compact('periodeAkademiks', 'users', 'usersWithJabatan', 'extensionSupervisors', 'pendingRequests', 'defaultPeriodeId'));
     }
 
     /**
      * Show the form for creating a new resource.
      */
+    
+
+    /**
+     * Helper to render action buttons for task row (at top header and action column).
+     */
+    private function renderActionButtons($row, $authUser, $routePrefix = 'insidentil', $deleteJsFunc = 'deleteInsidentil', $collapseId = null)
+    {
+        $btn = '<div class="action-buttons-wrap d-flex align-items-center flex-wrap gap-2">';
+
+        $waktuMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
+        $waktuSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
+        $status = $row->status ?? 'Belum Dimulai';
+
+        $hasMilestones = $row->relationLoaded('milestones') ? ($row->milestones && $row->milestones->count() > 0) : ($row->milestones()->count() > 0);
+        $allMilestonesSelesai = false;
+        if ($hasMilestones) {
+            $uncompleted = $row->relationLoaded('milestones')
+                ? $row->milestones->where('status', '!=', 'Selesai')->count()
+                : $row->milestones()->where('status', '!=', 'Selesai')->count();
+            $allMilestonesSelesai = ($uncompleted === 0);
+        }
+
+        if ($allMilestonesSelesai) {
+            $status = 'Selesai';
+            $waktuSelesai = true;
+        }
+
+        $isExpired = false;
+        if ($status !== 'Selesai' && !empty($row->estimasi_tanggal_selesai)) {
+            $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
+            $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
+            if (\Carbon\Carbon::now()->gt($estimasiEnd)) {
+                $isExpired = true;
+            }
+        }
+
+        $isOwner = $authUser && ($row->user_id === $authUser->id);
+        $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
+        $isTaggedOnly = !$isOwner && !$isLeader;
+
+        // Absensi harian: tidak perlu resolve sesi per tugas lagi (1 record per hari per user)
+        $absensiInfo = null;
+        $absensiUrl  = '';
+        $scanUrl     = '';
+
+        // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
+        if ($isTaggedOnly) {
+            $btn .= '<div class="badge-status-group d-inline-flex align-items-center gap-2">';
+            if ($status === 'Selesai' || $waktuSelesai) {
+                $btn .= '<span class="badge bg-success text-white py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</span>';
+            } elseif ($status === 'Berjalan' || $status === 'Proses') {
+                $btn .= '<span class="badge bg-primary text-white py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-play-circle-fill me-1"></i> Berjalan</span>';
+            } elseif ($status === 'Di-pause') {
+                $btn .= '<span class="badge bg-warning text-dark py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-pause-circle-fill me-1"></i> Di-pause</span>';
+            } else {
+                $btn .= '<span class="badge bg-secondary text-white py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-hourglass me-1"></i> Belum Dimulai</span>';
+            }
+
+            $btn .= '<span class="badge bg-info-subtle text-info border border-info-subtle py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 8px; min-height: 38px;" title="Anda ditugaskan sebagai Rekan Kerja pada tugas ini"><i class="bi bi-person-check-fill me-1"></i> Rekan Kerja</span>';
+            $btn .= '</div>';
+
+            // Tombol Presensi & Scan Barcode Khusus Rekan Kerja yang Di-tag
+            if ($absensiInfo) {
+                if (!empty($absensiInfo['id'])) {
+                    $btn .= '<a href="' . route('presensi.sesi.show', $absensiInfo['id']) . '" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center gap-1 shadow-2xs" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Presensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-calendar2-check"></i> <span class="d-none d-md-inline">Presensi</span></a>';
+                }
+                $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
+            }
+
+            if ($collapseId) {
+                $btn .= '<button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 shadow-2xs btn-task-toggle btn-mobile-stack" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-weight: 600; border-radius: 8px; padding: 8px 14px; font-size: 0.84rem; min-height: 38px;" title="Buka / Tutup Rincian"><span class="toggle-text">Rincian</span><i class="bi bi-chevron-down toggle-icon transition-transform"></i></button>';
+            }
+
+            $btn .= '</div>';
+            return $btn;
+        }
+
+        $btn .= '<div class="timer-status-group d-inline-flex align-items-center gap-2">';
+        if ($status === 'Selesai' || $waktuSelesai) {
+            $btn .= '<button type="button" class="btn text-white fw-bold disabled" style="background-color: #2d6a4f; border-color: #2d6a4f; opacity: 1; cursor: default; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-check-circle-fill me-1"></i> Selesai</button>';
+            if ($authUser && $authUser->canUnlockTasks()) {
+                $btn .= '<button type="button" class="btn btn-warning text-dark fw-bold btn-reopen-task" data-id="' . $row->id . '" data-type="' . $routePrefix . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="" onclick="window.reopenTask(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka kunci tugas yang sudah selesai agar dapat dikerjakan lagi"><i class="bi bi-unlock-fill me-1"></i> Buka Kunci</button>';
+            }
+        } elseif ($isExpired) {
+            if (!empty($row->estimasi_unlock_reason) && !empty($row->estimasi_unlock_requested_at)) {
+                if ($isLeader) {
+                    $btn .= '<button type="button" class="btn btn-warning text-dark fw-bold" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-pegawai="' . e($row->user->name ?? '-') . '" data-reason="' . e($row->estimasi_unlock_reason) . '" data-tgl-selesai="' . e($row->estimasi_tanggal_selesai ?? date('Y-m-d')) . '" data-jam-selesai="' . e($row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '23:59') . '" data-route="' . route($routePrefix . '.approve-extension', $row->id) . '" onclick="window.openApproveExtensionModal(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Permohonan perpanjangan waktu diajukan pegawai. Klik untuk setujui & beri waktu baru"><i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu</button>';
+                } else {
+                    $btn .= '<span class="badge bg-warning text-dark py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 6px; min-height: 38px;" title="Permohonan perpanjangan waktu sedang menunggu persetujuan pimpinan"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Pimpinan</span>';
+                }
+            } else {
+                $btn .= '<button type="button" class="btn btn-danger text-white fw-bold btn-request-extension" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-route="' . route($routePrefix . '.request-unlock-estimasi', $row->id) . '" onclick="window.openExtensionModal(this)" style="padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Tugas gagal karena melewati estimasi waktu. Klik untuk minta perpanjangan waktu ke pimpinan"><i class="bi bi-clock-history me-1"></i> Tugas Gagal - Minta Perpanjangan Waktu</button>';
+            }
+        } elseif (!$waktuMulai && $status !== 'Di-pause') {
+            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn text-white fw-bold btn-start-timer" style="background-color: #15432d; border-color: #15432d; cursor: pointer; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;"><i class="bi bi-play-fill me-1"></i> Mulai</button>';
+        } else {
+            if ($status === 'Di-pause') {
+                $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.startTimer(' . $row->id . ')" class="btn btn-success text-white fw-bold btn-resume-timer" style="cursor: pointer; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Lanjut Pekerjaan"><i class="bi bi-play-fill me-1"></i> Lanjut</button>';
+            } else {
+                $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.pauseTaskTimer(' . $row->id . ', \'' . $routePrefix . '\')" class="btn btn-warning text-dark fw-bold btn-pause-timer" style="cursor: pointer; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Jeda Pekerjaan"><i class="bi bi-pause-fill me-1"></i> Pause</button>';
+            }
+            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.stopTimer(' . $row->id . ')" class="btn btn-danger text-white fw-bold btn-stop-timer" style="background-color: #8b0000; border-color: #8b0000; cursor: pointer; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Selesaikan Pekerjaan"><i class="bi bi-stop-fill me-1"></i> Berhenti</button>';
+        }
+        $btn .= '</div>';
+
+        // Presensi & Barcode Absensi Button untuk Pemilik Tugas / Pimpinan
+        if ($absensiInfo) {
+            if (!empty($absensiInfo['id'])) {
+                $btn .= '<a href="' . route('presensi.sesi.show', $absensiInfo['id']) . '" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center gap-1 shadow-2xs" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Presensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-calendar2-check"></i> <span class="d-none d-md-inline">Presensi</span></a>';
+            }
+            $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
+            $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
+        }
+
+        $canEditDelete = $isLeader || $isOwner;
+
+        if ($canEditDelete) {
+            $editUrl = route($routePrefix . '.edit', $row->id);
+            $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-2">';
+            $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span class="d-none d-md-inline">Tag</span></button>';
+            $btn .= '<a href="' . $editUrl . '" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Edit Tugas"><i class="bi bi-pencil"></i> <span class="d-none d-md-inline">Edit</span></a>';
+            $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.' . $deleteJsFunc . '(' . $row->id . ')" class="btn btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Hapus Tugas"><i class="bi bi-trash"></i> <span class="d-none d-md-inline">Hapus</span></button>';
+            $btn .= '</div>';
+        }
+
+        if ($collapseId) {
+            $btn .= '<button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 shadow-2xs btn-task-toggle btn-mobile-stack" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" style="font-weight: 600; border-radius: 8px; padding: 8px 14px; font-size: 0.84rem; min-height: 38px;" title="Buka / Tutup Rincian"><span class="toggle-text">Rincian</span><i class="bi bi-chevron-down toggle-icon transition-transform"></i></button>';
+        }
+
+        $btn .= '</div>';
+        return $btn;
+    }
+
     public function create()
     {
         $periodeAkademiks = PeriodeAkademik::orderBy('nama_periode', 'desc')->get();
@@ -387,7 +690,15 @@ class InsidentilController extends Controller
             $data['file'] = $request->file('file')->store('insidentils', 'public');
         }
 
-        $data['status'] = 'Belum Dimulai';
+        $isStartNow = $request->has('start_now') && $request->start_now;
+        if ($isStartNow) {
+            $data['status'] = 'Proses';
+            $data['tanggal_mulai'] = date('Y-m-d');
+            $data['waktu_mulai'] = date('H:i:s');
+            $data['last_started_at'] = now();
+        } else {
+            $data['status'] = 'Belum Dimulai';
+        }
 
         $insidentil = Insidentil::create($data);
 
@@ -395,6 +706,7 @@ class InsidentilController extends Controller
             $insidentil->taggedUsers()->sync($request->tagged_users);
             $insidentil->syncToKegiatan();
         }
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($insidentil);
 
         Alert::success('Berhasil', 'Data Rencana Kerja Insidentil berhasil ditambahkan.');
         return redirect()->route('insidentil.index');
@@ -478,6 +790,7 @@ class InsidentilController extends Controller
             $insidentil->taggedUsers()->sync($request->tagged_users ?? []);
             $insidentil->syncToKegiatan();
         }
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($insidentil);
 
         Alert::success('Berhasil', 'Data Rencana Kerja Insidentil berhasil diperbarui.');
         return redirect()->route('insidentil.index');
@@ -505,13 +818,24 @@ class InsidentilController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk tugas ini.');
         }
 
-        $request->validate([
+        $requiresPimpinan = !$authUser->isPimpinanUnit() && !$authUser->isAdmin();
+        $supervisorIds = $requiresPimpinan
+            ? $authUser->getDirectSupervisors()->modelKeys()
+            : [];
+
+        $validated = $request->validate([
             'estimasi_unlock_reason' => 'required|string|max:1000',
+            'pimpinan_id' => [
+                $requiresPimpinan ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('users', 'id')->where('is_active', true),
+                ...($requiresPimpinan ? [Rule::in($supervisorIds)] : []),
+            ],
         ]);
 
-        $reason = $request->input('estimasi_unlock_reason');
-        if ($request->filled('pimpinan_id')) {
-            $pimpinan = \App\Models\User::find($request->input('pimpinan_id'));
+        $reason = $validated['estimasi_unlock_reason'];
+        if (!empty($validated['pimpinan_id'])) {
+            $pimpinan = User::findOrFail($validated['pimpinan_id']);
             if ($pimpinan) {
                 $reason = "[Tujuan: " . $pimpinan->name . " - " . ($pimpinan->jabatan ?: $pimpinan->roles) . "] " . $reason;
             }
@@ -1017,6 +1341,7 @@ class InsidentilController extends Controller
 
         $insidentil->taggedUsers()->sync($request->tagged_users ?? []);
         $insidentil->syncToKegiatan();
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($insidentil);
 
         return response()->json(['status' => 'success', 'message' => 'Rekan kerja berhasil diperbarui.']);
     }
@@ -1461,4 +1786,6 @@ class InsidentilController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
+
+    // End of InsidentilController
 }

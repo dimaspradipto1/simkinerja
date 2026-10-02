@@ -764,9 +764,67 @@ class UniversalPresensiController extends Controller
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
 
+        $selectAll = filter_var($request->input('select_all'), FILTER_VALIDATE_BOOLEAN);
+        $filter = $request->input('filter', 'all');
+
+        if ($selectAll) {
+            $userQuery = User::query();
+            // Apply filtering logic identical to DataTables query
+            if ($filter === 'sudah') {
+                $attendedUserIds = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesi->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('hadir_datang')->orWhereNotNull('hadir_pulang');
+                    })->pluck('user_id')->toArray();
+                $userQuery->whereIn('id', $attendedUserIds);
+            } elseif ($filter === 'belum') {
+                $attendedUserIds = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesi->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('hadir_datang')->orWhereNotNull('hadir_pulang');
+                    })->pluck('user_id')->toArray();
+                $userQuery->whereNotIn('id', $attendedUserIds);
+            } elseif ($filter === 'sudah_lengkap') {
+                $ids = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesi->id)
+                    ->whereNotNull('hadir_datang')->whereNotNull('hadir_pulang')
+                    ->pluck('user_id')->toArray();
+                $userQuery->whereIn('id', $ids);
+            } elseif ($filter === 'sudah_datang') {
+                $ids = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesi->id)
+                    ->whereNotNull('hadir_datang')
+                    ->pluck('user_id')->toArray();
+                $userQuery->whereIn('id', $ids);
+            } elseif ($filter === 'sudah_pulang') {
+                $ids = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesi->id)
+                    ->whereNotNull('hadir_pulang')
+                    ->pluck('user_id')->toArray();
+                $userQuery->whereIn('id', $ids);
+            } elseif ($filter === 'belum_pulang') {
+                $ids = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesi->id)
+                    ->whereNotNull('hadir_datang')->whereNull('hadir_pulang')
+                    ->pluck('user_id')->toArray();
+                $userQuery->whereIn('id', $ids);
+            } elseif ($filter === 'belum_datang') {
+                $ids = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $sesi->id)
+                    ->whereNull('hadir_datang')->whereNotNull('hadir_pulang')
+                    ->pluck('user_id')->toArray();
+                $userQuery->whereIn('id', $ids);
+            }
+
+            $userIds = $userQuery->pluck('id')->toArray();
+            if (empty($userIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada data pegawai yang sesuai dengan kriteria filter saat ini.'
+                ], 422);
+            }
+        } else {
+            $request->validate([
+                'user_ids' => 'required|array|min:1',
+                'user_ids.*' => 'required|exists:users,id',
+            ]);
+            $userIds = $request->user_ids;
+        }
+
         $request->validate([
-            'user_ids' => 'required|array|min:1',
-            'user_ids.*' => 'required|exists:users,id',
             'update_datang' => 'nullable',
             'hadir_datang' => 'nullable|string|in:Hadir,Izin,Sakit,Alpha,reset',
             'waktu_datang' => 'nullable|string',
@@ -777,11 +835,10 @@ class UniversalPresensiController extends Controller
             'catatan' => 'nullable|string|max:500',
         ]);
 
-        $userIds = $request->user_ids;
-
         $updateDatang = filter_var($request->input('update_datang'), FILTER_VALIDATE_BOOLEAN);
         $updatePulang = filter_var($request->input('update_pulang'), FILTER_VALIDATE_BOOLEAN);
         $updateCatatan = filter_var($request->input('update_catatan'), FILTER_VALIDATE_BOOLEAN);
+        $applyToAllActive = filter_var($request->input('apply_to_all_active'), FILTER_VALIDATE_BOOLEAN);
 
         if (!$updateDatang && !$updatePulang && !$updateCatatan) {
             return response()->json([
@@ -797,39 +854,49 @@ class UniversalPresensiController extends Controller
         $waktuPulang = $request->input('waktu_pulang') ?: $nowTime;
         $catatan = $request->input('catatan');
 
+        $targetSessions = $applyToAllActive 
+            ? KepanitiaanSesiAbsensi::where('is_active', true)->get()
+            : collect([$sesi]);
+
+        if ($targetSessions->isEmpty()) {
+            $targetSessions = collect([$sesi]);
+        }
+
         DB::beginTransaction();
         try {
-            foreach ($userIds as $uId) {
-                $presensi = KepanitiaanPresensi::firstOrNew([
-                    'kepanitiaan_sesi_absensi_id' => $sesi->id,
-                    'user_id' => $uId,
-                ]);
+            foreach ($targetSessions as $targetSess) {
+                foreach ($userIds as $uId) {
+                    $presensi = KepanitiaanPresensi::firstOrNew([
+                        'kepanitiaan_sesi_absensi_id' => $targetSess->id,
+                        'user_id' => $uId,
+                    ]);
 
-                if ($updateDatang) {
-                    if ($hadirDatang === 'reset' || empty($hadirDatang)) {
-                        $presensi->hadir_datang = null;
-                        $presensi->waktu_datang = null;
-                    } else {
-                        $presensi->hadir_datang = $hadirDatang;
-                        $presensi->waktu_datang = $waktuDatang;
+                    if ($updateDatang) {
+                        if ($hadirDatang === 'reset' || empty($hadirDatang)) {
+                            $presensi->hadir_datang = null;
+                            $presensi->waktu_datang = null;
+                        } else {
+                            $presensi->hadir_datang = $hadirDatang;
+                            $presensi->waktu_datang = $waktuDatang;
+                        }
                     }
-                }
 
-                if ($updatePulang) {
-                    if ($hadirPulang === 'reset' || empty($hadirPulang)) {
-                        $presensi->hadir_pulang = null;
-                        $presensi->waktu_pulang = null;
-                    } else {
-                        $presensi->hadir_pulang = $hadirPulang;
-                        $presensi->waktu_pulang = $waktuPulang;
+                    if ($updatePulang) {
+                        if ($hadirPulang === 'reset' || empty($hadirPulang)) {
+                            $presensi->hadir_pulang = null;
+                            $presensi->waktu_pulang = null;
+                        } else {
+                            $presensi->hadir_pulang = $hadirPulang;
+                            $presensi->waktu_pulang = $waktuPulang;
+                        }
                     }
-                }
 
-                if ($updateCatatan) {
-                    $presensi->catatan_hadir_datang = $catatan;
-                }
+                    if ($updateCatatan) {
+                        $presensi->catatan_hadir_datang = $catatan;
+                    }
 
-                $presensi->save();
+                    $presensi->save();
+                }
             }
 
             DB::commit();
@@ -838,7 +905,7 @@ class UniversalPresensiController extends Controller
             return response()->json(['success' => false, 'message' => 'Gagal memperbarui presensi massal: ' . $e->getMessage()], 500);
         }
 
-        // Fresh statistics calculation
+        // Fresh statistics calculation for current session
         $totalUsers = User::count();
         $attendedUserIds = KepanitiaanPresensi::where('kepanitiaan_sesi_absensi_id', $id)
             ->where(function ($q) {
@@ -870,9 +937,13 @@ class UniversalPresensiController extends Controller
             ->whereNull('hadir_datang')
             ->whereNotNull('hadir_pulang')->count();
 
+        $msg = $applyToAllActive
+            ? 'Berhasil memperbarui data presensi untuk ' . count($userIds) . ' pegawai serentak pada ' . $targetSessions->count() . ' sesi absensi yang aktif.'
+            : 'Berhasil memperbarui data presensi untuk ' . count($userIds) . ' pegawai terpilih.';
+
         return response()->json([
             'success' => true,
-            'message' => 'Berhasil memperbarui data presensi untuk ' . count($userIds) . ' pegawai terpilih.',
+            'message' => $msg,
             'stats' => [
                 'total_presensi' => $totalPresensi,
                 'hadir_datang' => $totalHadirDatang,

@@ -177,18 +177,6 @@ class RencanaKerjaController extends Controller
                         $html .= '</div>';
                     }
 
-                    // 2.6 Card Status Kehadiran Absensi (Khusus Pengguna yang Sedang Login)
-                    $absensiInfo = $this->resolveAbsensiSession($row);
-                    if ($absensiInfo) {
-                        $modelClass = \App\Models\AbsensiSetting::getModelClass($absensiInfo['slug']);
-                        $myAtt = null;
-                        if ($modelClass && class_exists($modelClass)) {
-                            $myAtt = $modelClass::where('user_id', auth()->id())->first();
-                        }
-
-                        $html .= \App\Models\AbsensiSetting::renderAttendanceTable($absensiInfo, $myAtt);
-                    }
-
                     // 3. Time Details Card Box (Kiri: Estimasi & Mulai | Kanan: Selesai & Durasi)
                     $estFormatted = '-';
                     if ($row->estimasi_jam_mulai || $row->estimasi_tanggal_mulai) {
@@ -566,9 +554,10 @@ class RencanaKerjaController extends Controller
         $isLeader = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
         $isTaggedOnly = !$isOwner && !$isLeader;
 
-        $absensiInfo = $this->resolveAbsensiSession($row);
-        $absensiUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.index') ? route($absensiInfo['slug'] . '.index') : url($absensiInfo['slug'])) : '';
-        $scanUrl = $absensiInfo ? (\Illuminate\Support\Facades\Route::has($absensiInfo['slug'] . '.scan') ? route($absensiInfo['slug'] . '.scan') . '?start=1' : url($absensiInfo['slug'] . '/scan?start=1')) : '';
+        // Absensi harian: tidak perlu resolve sesi per tugas lagi (1 record per hari per user)
+        $absensiInfo = null;
+        $absensiUrl  = '';
+        $scanUrl     = '';
 
         // KHUSUS PENGGUNA YANG DI-TAG (READ ONLY): Tidak ada tombol timer/edit/delete, tampilkan tombol Scan Barcode
         if ($isTaggedOnly) {
@@ -586,8 +575,11 @@ class RencanaKerjaController extends Controller
             $btn .= '<span class="badge bg-info-subtle text-info border border-info-subtle py-2 px-3 d-inline-flex align-items-center justify-content-center" style="font-size: 0.82rem; border-radius: 8px; min-height: 38px;" title="Anda ditugaskan sebagai Rekan Kerja pada tugas ini"><i class="bi bi-person-check-fill me-1"></i> Rekan Kerja</span>';
             $btn .= '</div>';
 
-            // Tombol Scan Barcode Khusus Rekan Kerja yang Di-tag (Hanya Scan Barcode, Barcode Absensi disembunyikan)
+            // Tombol Presensi & Scan Barcode Khusus Rekan Kerja yang Di-tag
             if ($absensiInfo) {
+                if (!empty($absensiInfo['id'])) {
+                    $btn .= '<a href="' . route('presensi.sesi.show', $absensiInfo['id']) . '" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center gap-1 shadow-2xs" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Presensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-calendar2-check"></i> <span class="d-none d-md-inline">Presensi</span></a>';
+                }
                 $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
             }
 
@@ -628,8 +620,11 @@ class RencanaKerjaController extends Controller
         }
         $btn .= '</div>';
 
-        // Barcode Absensi Button untuk Pemilik Tugas / Pimpinan
+        // Presensi & Barcode Absensi Button untuk Pemilik Tugas / Pimpinan
         if ($absensiInfo) {
+            if (!empty($absensiInfo['id'])) {
+                $btn .= '<a href="' . route('presensi.sesi.show', $absensiInfo['id']) . '" class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center gap-1 shadow-2xs" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Presensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-calendar2-check"></i> <span class="d-none d-md-inline">Presensi</span></a>';
+            }
             $btn .= '<button type="button" class="btn btn-primary text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-scan-barcode-modal btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" onclick="window.openScanBarcodeModal(this)" style="background-color: #0d6efd; border-color: #0d6efd; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Scan Barcode Kehadiran ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code-scan"></i> Scan Barcode</button>';
             $btn .= '<button type="button" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm btn-barcode-absensi btn-mobile-stack" data-slug="' . e($absensiInfo['slug']) . '" data-title="' . e($absensiInfo['nama']) . '" data-url="' . $absensiUrl . '" onclick="window.openBarcodeModal(this)" style="background-color: #0f172a; border-color: #0f172a; padding: 8px 14px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Buka Barcode Absensi ' . e($absensiInfo['nama']) . '"><i class="bi bi-qr-code"></i> Barcode Absensi</button>';
         }
@@ -651,65 +646,6 @@ class RencanaKerjaController extends Controller
 
         $btn .= '</div>';
         return $btn;
-    }
-
-    /**
-     * Helper to resolve attendance session from task data (url_external or keywords in uraian_tugas).
-     */
-    private function resolveAbsensiSession($row): ?array
-    {
-        $defaults = \App\Models\AbsensiSetting::defaults();
-
-        // 1. Cek dari url_external
-        if (!empty($row->url_external)) {
-            foreach ($defaults as $slug => $cfg) {
-                if (str_contains($row->url_external, $slug)) {
-                    return $cfg;
-                }
-            }
-        }
-
-        // 2. Deteksi cerdas dari uraian_tugas jika memuat nama kegiatan kepanitiaan
-        $text = strtolower($row->uraian_tugas ?? '');
-
-        // PKKMB
-        if (str_contains($text, 'pkkmb')) {
-            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga') || str_contains($text, '3 hari')) {
-                return $defaults['absensi-pkkmb-ketiga'] ?? $defaults['absensi-pkkmb-pertama'];
-            } elseif (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
-                return $defaults['absensi-pkkmb-kedua'] ?? $defaults['absensi-pkkmb-pertama'];
-            }
-            return $defaults['absensi-pkkmb-pertama'];
-        }
-
-        // MILAD
-        if (str_contains($text, 'milad')) {
-            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
-                return $defaults['absensi-milad-kedua'] ?? $defaults['absensi-milad-pertama'];
-            }
-            return $defaults['absensi-milad-pertama'];
-        }
-
-        // ESQ
-        if (str_contains($text, 'esq')) {
-            if (str_contains($text, 'hari 4') || str_contains($text, 'hari ke-4') || str_contains($text, 'hari keempat')) {
-                return $defaults['absensi-esq-keempat'] ?? $defaults['absensi-esq-pertama'];
-            }
-            if (str_contains($text, 'hari 3') || str_contains($text, 'hari ke-3') || str_contains($text, 'hari ketiga')) {
-                return $defaults['absensi-esq-ketiga'] ?? $defaults['absensi-esq-pertama'];
-            }
-            if (str_contains($text, 'hari 2') || str_contains($text, 'hari ke-2') || str_contains($text, 'hari kedua')) {
-                return $defaults['absensi-esq-kedua'] ?? $defaults['absensi-esq-pertama'];
-            }
-            return $defaults['absensi-esq-pertama'];
-        }
-
-        // Kuliah Umum
-        if (str_contains($text, 'kuliah umum')) {
-            return $defaults['absensi-kuliah-umum-pertama'];
-        }
-
-        return null;
     }
 
     /**
@@ -757,6 +693,7 @@ class RencanaKerjaController extends Controller
             $rencanaKerja->taggedUsers()->sync($request->input('tagged_users'));
             $rencanaKerja->syncToKegiatan();
         }
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($rencanaKerja);
 
         Alert::success('Berhasil', 'Rencana Kerja berhasil ditambahkan')
             ->toToast()
@@ -834,6 +771,7 @@ class RencanaKerjaController extends Controller
 
         $rencanaKerja->taggedUsers()->sync($request->input('tagged_users', []));
         $rencanaKerja->syncToKegiatan();
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($rencanaKerja);
 
         Alert::success('Berhasil', 'Rencana Kerja berhasil diperbarui')
             ->toToast()
@@ -1108,6 +1046,19 @@ class RencanaKerjaController extends Controller
      */
     public function start(Request $request, RencanaKerja $rencanaKerja)
     {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $canAccess = ($rencanaKerja->user_id === $authUser->id)
+            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
+            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
+
+        if (!$canAccess) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Anda tidak memiliki izin untuk mengoperasikan tugas ini.'], 403);
+        }
+
         $now = \Carbon\Carbon::now();
 
         if ($rencanaKerja->status !== 'Selesai' && !empty($rencanaKerja->estimasi_tanggal_selesai)) {
@@ -1151,6 +1102,19 @@ class RencanaKerjaController extends Controller
      */
     public function pause(Request $request, RencanaKerja $rencanaKerja)
     {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $canAccess = ($rencanaKerja->user_id === $authUser->id)
+            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
+            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
+
+        if (!$canAccess) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
         $now = \Carbon\Carbon::now();
 
         if ($rencanaKerja->status === 'Berjalan' && $rencanaKerja->last_started_at) {
@@ -1180,6 +1144,19 @@ class RencanaKerjaController extends Controller
      */
     public function stop(Request $request, RencanaKerja $rencanaKerja)
     {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $canAccess = ($rencanaKerja->user_id === $authUser->id)
+            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
+            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
+
+        if (!$canAccess) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
         $now = \Carbon\Carbon::now();
 
         if ($rencanaKerja->status !== 'Selesai' && !empty($rencanaKerja->estimasi_tanggal_selesai)) {
@@ -1210,6 +1187,9 @@ class RencanaKerjaController extends Controller
         ];
 
         if ($request->hasFile('file')) {
+            $request->validate([
+                'file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar|max:20480',
+            ]);
             if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
                 Storage::disk('public')->delete($rencanaKerja->file);
             }
@@ -1236,6 +1216,24 @@ class RencanaKerjaController extends Controller
      */
     public function uploadAttachment(Request $request, RencanaKerja $rencanaKerja)
     {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $canAccess = ($rencanaKerja->user_id === $authUser->id)
+            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
+            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
+
+        if (!$canAccess) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $request->validate([
+            'file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar|max:20480',
+            'url_external' => 'nullable|url|max:500',
+        ]);
+
         $updateData = [];
 
         if ($request->hasFile('file')) {
@@ -1678,7 +1676,7 @@ class RencanaKerjaController extends Controller
                     }
                 }
 
-                RencanaKerja::create([
+                $createdRk = RencanaKerja::create([
                     'user_id' => $targetUserId,
                     'periode_akademik_id' => $rowPeriodeId,
                     'kategori' => 'Rencana Kerja',
@@ -2399,6 +2397,7 @@ class RencanaKerjaController extends Controller
 
         $rencanaKerja->taggedUsers()->sync($request->input('tagged_users', []));
         $rencanaKerja->syncToKegiatan();
+        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($rencanaKerja);
 
         return response()->json([
             'success' => true,
