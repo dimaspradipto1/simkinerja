@@ -3,119 +3,133 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class HierarchyOtkSeeder extends Seeder
 {
+    private const ACCOUNT_NAME_ALIASES = [
+        'ANDI AULIYA RAMADHANY' => ['ANDI AULYA RAMADHANY'],
+        'META NILA SARI' => ['MEITA NILA SARI'],
+        'NISRUL NURHAYANTI' => ['NISRUL NURBAYANTI', 'NISHFU NURBAYANTI'],
+        'ANDI NURMAN TEGUH' => ['ANDI NURIMAN TEGUH'],
+        'ANDI HIDAYATULLAH AZIZAH' => ['ANDI HIDAYATUL FADILAH', 'ANDI HIDAYATUL FADLILAH'],
+        'NURMAYUNITA' => ['NURMAIYUNITA'],
+        'RAGA PRASANDI' => ['BAGA PRASANDI'],
+        'MARDA USA' => ['MARDA LISA'],
+        'YANDRA IRVIALDO' => ['YANDRA RIVALDO'],
+        'DEWI PERMATA SARI' => ['DEWI PERMASARI'],
+        'OKTAVESA' => ['OKTA VEZA', 'OKTA VESA'],
+        'RIZKY PRAKASA HASIBUAN' => ['RIZKI PRAKASA HASIBUAN'],
+        'LUTHFI A' => ['LUTFIA', 'LUTHFIA'],
+        'M ISRA NUR ABDULLAH YUZUL' => ['M. ISRA NUR ABDULLAH YUZUK'],
+        'ANDI AMIN AMRUL MUKMININ' => ['ANDI AMIN AMIRUL MUKMININ'],
+        'ELUSI MARTHA' => ['ELSUSI MARTHA'],
+        'TRISNA DEWITA' => ['IRISNA DEWITA'],
+        'TRISNA JAYATI' => ['IRISNA JAYATI'],
+        'ANITA PRAMAWATI' => ['ANITA PRAMAWARI'],
+        'PERAWATY SELFIA NASUTION' => ['PURWANTY SELVIA NASUTION'],
+        'UJANG AMIR HAMZAH' => ['UDANG AMIR HAMZAH'],
+        'AL HAFEZ HUSEIN' => ['ALFIAN TRILESIN'],
+    ];
+
     /**
      * Run the database seeds according to OTK UIS 2024-2029.
      */
     public function run(): void
     {
-        // 1. Sinkronisasi nama unit 'FAKULTAS TEKNIK' -> 'FAKULTAS SAINS DAN TEKNOLOGI'
-        DB::statement("UPDATE users SET unit = 'FAKULTAS SAINS DAN TEKNOLOGI' WHERE unit = 'FAKULTAS TEKNIK' OR unit = 'FST'");
-        DB::statement("UPDATE users SET unit = 'BAAK - FST' WHERE unit = 'BAAK - FT'");
-        DB::statement("UPDATE users SET unit = 'BAUK - FST' WHERE unit = 'BAUK - FT'");
-        DB::statement("UPDATE users SET unit = 'LABORATORIUM FST' WHERE unit = 'LABORATORIUM FT'");
-        DB::statement("UPDATE users SET jabatan = REPLACE(jabatan, 'FAKULTAS TEKNIK', 'FAKULTAS SAINS DAN TEKNOLOGI') WHERE jabatan LIKE '%FAKULTAS TEKNIK%'");
-        DB::statement("UPDATE users SET jabatan = REPLACE(jabatan, ' PUBLIKASI FT', ' PUBLIKASI FST') WHERE jabatan LIKE '% PUBLIKASI FT%'");
-
-        // 2. Koreksi nama, jabatan, dan unit pegawai agar 100% presisi sesuai dokumen fisik OTK UIS
-        $directCorrections = [
-            4   => ['name' => 'FITRI SARI DEWI, SKM., M.KKK', 'jabatan' => 'WAKIL REKTOR I', 'unit' => 'REKTORAT'],
-            5   => ['name' => 'ANDI AULYA RAMADHANY, SE., M.Akt', 'jabatan' => 'WAKIL REKTOR II', 'unit' => 'REKTORAT'],
-            11  => ['name' => 'JUHANDA KARTIKA WIJAYA, SKI.,M.KM', 'jabatan' => 'STAFF AKADEMIK FAKULTAS ILMU KESEHATAN', 'unit' => 'BAAK - FIKES'],
-            13  => ['name' => 'MEITA NILA SARI', 'jabatan' => 'STAFF - SUPPORT LAYANAN NILAI DAN PERKULIAHAN', 'unit' => 'BAAK'],
-            17  => ['name' => 'NISRUL NURHAYANTI', 'jabatan' => 'PUSTAKAWAN', 'unit' => 'PERPUSTAKAAN'],
-            18  => ['name' => 'NURMAIYUNITA, SE., MM', 'jabatan' => 'KABID. SDM DAN UMUM', 'unit' => 'SDM & UMUM'],
-            22  => ['name' => 'SHINTA WAHYUNI, SE., MM', 'jabatan' => 'STAFF KEUANGAN FAKULTAS EKONOMI DAN BISNIS', 'unit' => 'BAUK - FEB'],
-            24  => ['name' => 'ANDI HUMAIMAH, S. Km', 'jabatan' => 'STAFF KEUANGAN FAKULTAS SAINS DAN TEKNOLOGI', 'unit' => 'BAUK - FST'],
-            25  => ['jabatan' => 'STAFF KEUANGAN FAKULTAS SAINS DAN TEKNOLOGI', 'unit' => 'BAUK - FST'],
-            35  => ['name' => 'ANDI AWALUDDIN, ST', 'jabatan' => 'TATA USAHA BAUK', 'unit' => 'BAUK'],
-            43  => ['name' => 'NOPAN ASWANDI, S.Kom', 'jabatan' => 'STAFF DOKUMENTASI', 'unit' => 'HUMAS'],
-            44  => ['name' => 'BAGA PRASANDI, S.E', 'jabatan' => 'STAFF HUMAS', 'unit' => 'HUMAS'],
-            49  => ['name' => 'MARDA USA, S.Ak', 'jabatan' => 'STAFF KERJASAMA - NASIONAL', 'unit' => 'KERJASAMA'],
-            51  => ['name' => 'RASMIN NUR JADING, SKM., M.Kes', 'jabatan' => 'STAFF KEMAHASISWAAN - KIP', 'unit' => 'BIRO KEMAHASISWAAN'],
-            52  => ['name' => 'ANDI MAHDI SYAHRAINI', 'jabatan' => 'STAFF KEMAHASISWAAN - PRESTASI OLAH RAGA', 'unit' => 'BIRO KEMAHASISWAAN'],
-            53  => ['name' => 'AZMIL FAUZI FARISKA, SH., MH', 'jabatan' => 'STAFF KEMAHASISWAAN - PRESTASI SENI', 'unit' => 'BIRO KEMAHASISWAAN'],
-            54  => ['name' => 'Dr. AHMADI, SKM., M.KL', 'jabatan' => 'KABID. PUSAT KARIR, ALUMNI DAN KEWIRAUSAHAAN', 'unit' => 'PUSAT KARIR'],
-            58  => ['name' => 'Dr. ICE IRAWATI, SKM., M.Kes', 'jabatan' => 'KA. LPPM', 'unit' => 'LPPM'],
-            59  => ['name' => 'YANDRA IRVIALDO, SE., MM', 'jabatan' => 'KABID. PENELITIAN', 'unit' => 'LPPM'],
-            60  => ['name' => 'KHOERUN NISA SAFITRI, ST., MT', 'jabatan' => 'KABID. PENGABDIAN KEPADA MASYARAKAT', 'unit' => 'LPPM'],
-            62  => ['name' => 'NANDA JARTI, M.Kom', 'jabatan' => 'KABID. HAKI DAN PUBLIKASI', 'unit' => 'LPPM'],
-            65  => ['name' => 'Ir. INDAH KUSUMA DEWI, S.Kom., M.Kom', 'jabatan' => 'KABID. SOSIALISASI SPMI DAN KERJASAMA SPMI', 'unit' => 'LPMI'],
-            66  => ['name' => 'CHINTA YOLANDA SARI, SKM., M.KM', 'jabatan' => 'KABID. AKREDITASI DAN DOKUMENTASI', 'unit' => 'LPMI'],
-            67  => ['name' => 'WAN INTAN PARISMA, S.ST., M.KM', 'jabatan' => 'KABID. EVALUASI DAN AUDIT MUTU', 'unit' => 'LPMI'],
-            69  => ['name' => 'MULYADI, S.E., MM', 'jabatan' => 'WAKIL DEKAN I (Akademik, Kemahasiswaan dan Pusat Karir)', 'unit' => 'FAKULTAS EKONOMI DAN BISNIS'],
-            72  => ['name' => 'INA KURNIATI, SE., MM', 'jabatan' => 'SEKRETARIS PRODI S1 MANAJEMEN', 'unit' => 'PRODI S1 MANAJEMEN'],
-            74  => ['name' => 'KHADIJAH, SE., M.Ak', 'jabatan' => 'SEKRETARIS PRODI S1 AKUNTANSI', 'unit' => 'PRODI S1 AKUNTANSI'],
-            77  => ['name' => 'Dr. ANDIKA PRASETYA NUGRAHA, SE., MM', 'jabatan' => 'UPMI FEB', 'unit' => 'FAKULTAS EKONOMI DAN BISNIS'],
-            78  => ['name' => 'DEWI PERMATA SARI, S.E., MM', 'jabatan' => 'UPPM FEB', 'unit' => 'FAKULTAS EKONOMI DAN BISNIS'],
-            79  => ['name' => 'MUHAMMAD GUNAWAN, S.KL., MM', 'jabatan' => 'TATA USAHA SARJANA FEB', 'unit' => 'FAKULTAS EKONOMI DAN BISNIS'],
-            82  => ['name' => 'Ir. SANUSI, ST., M.Eng., Ph.D., IPM', 'jabatan' => 'DEKAN FAKULTAS SAINS DAN TEKNOLOGI', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI'],
-            84  => ['jabatan' => 'WAKIL DEKAN II (Administrasi dan SDM)', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI'],
-            85  => ['name' => 'Ir. HERMAN, ST., MT', 'jabatan' => 'KETUA PROGRAM STUDI TEKNIK INDUSTRI', 'unit' => 'PRODI TEKNIK INDUSTRI'],
-            86  => ['name' => 'RIZKY PRAKASA HASIBUAN, S.T., M.T', 'jabatan' => 'SEKRETARIS PROGRAM STUDI TEKNIK INDUSTRI', 'unit' => 'PRODI TEKNIK INDUSTRI'],
-            91  => ['name' => 'Ansar, S.E., M.M', 'jabatan' => 'TATA USAHA FST', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI'],
-            92  => ['unit' => 'FAKULTAS SAINS DAN TEKNOLOGI', 'jabatan' => 'UPMI FST'],
-            93  => ['name' => 'Ir. ERY SUGITO, S.T., M.T', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI', 'jabatan' => 'KA. UPPM FST'],
-            94  => ['name' => 'NOFRI YUDI, S.Kom, M.Kom', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI', 'jabatan' => 'STAFF UPPM FST'],
-            96  => ['name' => 'LUTHFI A, S.T', 'jabatan' => 'STAFF LABOR TEKNIK INDUSTRI', 'unit' => 'LABORATORIUM FST'],
-            98  => ['name' => 'M. ISRA NUR ABDULLAH YUZUK, S.T', 'jabatan' => 'STAFF LABOR TEKNIK PROSES PRODUKSI', 'unit' => 'LABORATORIUM FST'],
-            99  => ['jabatan' => 'KA. HUMAS DAN PUBLIKASI FST', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI'],
-            102 => ['name' => 'dr. Hj. ELUSI MARTHA, M.KM', 'jabatan' => 'WAKIL DEKAN I (Akademik, Kemahasiswaan dan Pusat Karir)', 'unit' => 'FAKULTAS ILMU KESEHATAN'],
-            103 => ['name' => 'RIZQI ULLA AMALIAH, S.KM., M.KKK', 'jabatan' => 'WAKIL DEKAN II (Administrasi dan SDM)', 'unit' => 'FAKULTAS ILMU KESEHATAN'],
-            104 => ['name' => 'IRISNA DEWITA, S.KM., M.Kes', 'jabatan' => 'KETUA PROGRAM STUDI K3', 'unit' => 'PRODI K3'],
-            105 => ['name' => 'IRISNA JAYATI, M.KM', 'jabatan' => 'SEKRETARIS PRODI K3', 'unit' => 'PRODI K3'],
-            107 => ['name' => 'ALFIAN TRILESIN, S.KM., M.KL', 'jabatan' => 'SEKRETARIS PRODI KESLING', 'unit' => 'PRODI KESLING'],
-            108 => ['name' => 'NOVELA SARI, SKM., M.Kes', 'jabatan' => 'UPMI FIKES', 'unit' => 'FAKULTAS ILMU KESEHATAN'],
-            110 => ['name' => 'ANITA PRAMAWARI, S.KM., M.Si', 'jabatan' => 'UPPM FIKES', 'unit' => 'FAKULTAS ILMU KESEHATAN'],
-            111 => ['name' => 'JAMAL, S.KL., M.KM', 'jabatan' => 'LABORAN FIKES', 'unit' => 'FAKULTAS ILMU KESEHATAN'],
-            112 => ['name' => 'PURWANTY SELVIA NASUTION, Amd., KL', 'jabatan' => 'TATA USAHA FIKES', 'unit' => 'FAKULTAS ILMU KESEHATAN'],
-            113 => ['name' => 'UDANG AMIR HAMZAH, S.Kom', 'jabatan' => 'HUMAS DAN PUBLIKASI WEB FIKES', 'unit' => 'FAKULTAS ILMU KESEHATAN'],
-            124 => ['name' => 'Dr. OKTAVESA, S.Kom., M.Kom', 'jabatan' => 'WAKIL DEKAN I (Akademik, Kemahasiswaan dan Pusat Karir)', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI'],
-            126 => ['name' => 'AGUS SURYADI, S.Kom., M.Kom', 'jabatan' => 'KABID. PERENCANAAN DAN PENGEMBANGAN', 'unit' => 'PERENCANAAN'],
-            130 => ['name' => 'ANDI HIDAYATULLAH AZIZAH, S.T., M.Si., Ak.', 'jabatan' => 'KA. BIRO ADMINISTRASI UMUM DAN KEUANGAN (BAUK)', 'unit' => 'BAUK'],
-            132 => ['name' => 'ITA MUSTIKA, S.E., M.Ak', 'jabatan' => 'WAKIL DEKAN II (Administrasi dan SDM)', 'unit' => 'FAKULTAS EKONOMI DAN BISNIS'],
-            136 => ['name' => 'MUHAMMAD ALBAR, ST', 'jabatan' => 'STAFF AKADEMIK FAKULTAS SAINS DAN TEKNOLOGI', 'unit' => 'BAAK - FST'],
-            145 => ['name' => 'ANDI AULIA VITRIZKY, A.md. Ak', 'jabatan' => 'STAFF KEUANGAN FAKULTAS ILMU KESEHATAN', 'unit' => 'BAUK - FIKES'],
-            231 => ['name' => 'ANDI AMIN AMRUL MUKMININ, S.Kom', 'jabatan' => 'STAFF HUMAS DAN PUBLIKASI FST', 'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI'],
-            260 => ['name' => 'ANDI NURIMAN TEGUH, S.I', 'jabatan' => 'PUSTAKAWAN', 'unit' => 'PERPUSTAKAAN'],
-            275 => ['jabatan' => 'KA. LABORATORIUM FAKULTAS SAINS DAN TEKNOLOGI', 'unit' => 'LABORATORIUM FST'],
-        ];
-
-        foreach ($directCorrections as $uid => $attr) {
-            User::where('id', $uid)->update($attr);
-        }
-
-        // 3. Terapkan pemetaan hirarki atasan-bawahan sesuai OTK
         $tree = self::getOtkTree();
+        $users = User::query()->get(['id', 'name']);
+        $assignments = [];
+        $otkUserIds = [];
+        $missingUsers = [];
 
         foreach ($tree as $group => $data) {
-            $leader = self::findUser($data['leader']);
+            $leader = self::findUniqueUser($data['leader'], $users, "{$group} (atasan)");
             if (!$leader) {
+                $missingUsers[] = "{$group}: {$data['leader']}";
                 continue;
             }
+            $otkUserIds[$leader->id] = true;
 
             foreach ($data['subordinates'] as $subTerm) {
-                $sub = self::findUser($subTerm);
-                if ($sub && $sub->id !== $leader->id) {
-                    $sub->supervisor_id = $leader->id;
-                    $sub->save();
+                $subordinate = self::findUniqueUser($subTerm, $users, "{$group} (bawahan)");
+                if (!$subordinate) {
+                    $missingUsers[] = "{$group}: {$subTerm}";
+                    continue;
                 }
+
+                $otkUserIds[$subordinate->id] = true;
+                if ($subordinate->is($leader)) {
+                    throw new RuntimeException("Pemetaan OTK tidak valid: {$subTerm} menjadi atasan bagi dirinya sendiri.");
+                }
+
+                if (isset($assignments[$subordinate->id]) && $assignments[$subordinate->id] !== $leader->id) {
+                    throw new RuntimeException("Pemetaan OTK ambigu: {$subTerm} tercantum di lebih dari satu atasan.");
+                }
+
+                $assignments[$subordinate->id] = $leader->id;
             }
+        }
+
+        if ($missingUsers !== []) {
+            throw new RuntimeException('Sinkronisasi OTK dibatalkan karena nama akun tidak ditemukan atau tidak unik: ' . implode('; ', $missingUsers));
+        }
+
+        DB::transaction(function () use ($assignments, $otkUserIds): void {
+            User::whereIn('id', array_keys($otkUserIds))->update(['supervisor_id' => null]);
+
+            foreach ($assignments as $userId => $supervisorId) {
+                User::whereKey($userId)->update(['supervisor_id' => $supervisorId]);
+            }
+        });
+    }
+
+    private static function findUniqueUser(string $term, EloquentCollection $users, string $context): ?User
+    {
+        try {
+            return self::resolveUserByOtkName($term, $users);
+        } catch (RuntimeException $exception) {
+            throw new RuntimeException("Nama \"{$term}\" pada {$context} cocok dengan lebih dari satu akun. Pemetaan dihentikan agar tidak salah orang.", previous: $exception);
         }
     }
 
-    /**
-     * Helper to find user by name or email keyword.
-     */
-    public static function findUser(string $term): ?User
+    public static function resolveUserByOtkName(string $name, EloquentCollection $users): ?User
     {
-        return User::where('name', 'LIKE', "%{$term}%")
-            ->orWhere('email', 'LIKE', "%{$term}%")
-            ->first();
+        $normalizedName = self::normalizeName($name);
+        $acceptedNames = [$normalizedName];
+
+        foreach (self::ACCOUNT_NAME_ALIASES as $canonicalName => $aliases) {
+            $normalizedCanonical = self::normalizeName($canonicalName);
+            $normalizedAliases = array_map(self::normalizeName(...), $aliases);
+            if ($normalizedName === $normalizedCanonical || in_array($normalizedName, $normalizedAliases, true)) {
+                $acceptedNames = array_merge([$normalizedCanonical], $normalizedAliases);
+                break;
+            }
+        }
+
+        $matches = $users->filter(fn (User $user): bool => in_array(
+            self::normalizeName($user->name),
+            $acceptedNames,
+            true
+        ));
+
+        if ($matches->count() > 1) {
+            throw new RuntimeException("Nama \"{$name}\" cocok dengan lebih dari satu akun.");
+        }
+
+        return $matches->first();
+    }
+
+    private static function normalizeName(string $name): string
+    {
+        $name = preg_split('/,/', $name, 2)[0] ?? $name;
+        $name = mb_strtoupper(trim($name));
+        $name = preg_replace('/^(?:(?:ASSOC(?:IATE)?|PROF(?:ESSOR)?|DR|DRG|IR|HJ|H)\\.?\\s+)+/u', '', $name) ?? $name;
+
+        return trim(preg_replace('/[^A-Z0-9]+/u', ' ', $name) ?? $name);
     }
 
     /**
@@ -134,8 +148,6 @@ class HierarchyOtkSeeder extends Seeder
                     'SABRI',                  // Dekan FEB
                     'SANUSI',                 // Dekan Fakultas Sains dan Teknologi
                     'HENGKY OKTARIZAL',       // Dekan FIKES
-                    'ICE IRAWATI',            // Ka LPPM
-                    'RONI SAPUTRA',           // Ka LPMI
                 ],
             ],
 
@@ -230,6 +242,8 @@ class HierarchyOtkSeeder extends Seeder
                 'subordinates' => [
                     'MUHAMMAD ROPIANTO',     // Ka. UPT ICT / LPTI
                     'HERDIANTI',             // Ka. Biro Kemahasiswaan, Alumni, Kerjasama, dsb.
+                    'ICE IRAWATI',           // Ka. LPPM
+                    'RONI SAPUTRA',          // Ka. LPMI
                 ],
             ],
             // UPT ICT / LPTI (Dr. MUHAMMAD ROPIANTO)
@@ -238,7 +252,6 @@ class HierarchyOtkSeeder extends Seeder
                 'subordinates' => [
                     'ANDI MUAMAR',           // Divisi Pengembangan Sistem Informasi & Aplikasi
                     'DICKY ASHRUL IBRAHIM',  // Divisi Infrastruktur, Jaringan, dan Layanan Troubleshooting
-                    'Dimas Pradipto',        // Programmer LPTI
                     'Rusdiyanto',            // Staff Troubleshooting
                 ],
             ],
@@ -266,7 +279,7 @@ class HierarchyOtkSeeder extends Seeder
                 'subordinates' => [
                     'AGUS SUTIANDI',         // Staff Kerjasama - Internasional
                     'ANDI RUSLAN',           // Staff Kerjasama - Nasional
-                    'MARDA LISA',            // Staff Kerjasama - Nasional
+                    'MARDA USA',             // Staff Kerjasama - Nasional
                 ],
             ],
             'KEMAHASISWAAN' => [
@@ -294,7 +307,7 @@ class HierarchyOtkSeeder extends Seeder
             'LPPM' => [
                 'leader' => 'ICE IRAWATI',
                 'subordinates' => [
-                    'YANDRA RIVALDO',        // Kabid. Penelitian
+                    'YANDRA IRVIALDO',       // Kabid. Penelitian
                     'Khoerun Nisa Safitri',  // Kabid. Pengabdian Kepada Masyarakat
                     'MARLINA UMAR',          // Staff Administrasi Penelitian & PKM
                     'NANDA JARTI',           // Kabid. HAKI dan Publikasi
@@ -326,7 +339,6 @@ class HierarchyOtkSeeder extends Seeder
                     'MUHAMMAD GUNAWAN',      // Tata Usaha Sarjana
                     'RAHMAN SYAHPUTRA',      // Tata Usaha Pascasarjana
                     'MUHAMMAD FIRNANDA',     // Humas dan Publikasi Web
-                    'MUKHIRZIN',             // CS FEB
                 ],
             ],
             'PRODI_MANAJEMEN' => [
@@ -393,7 +405,7 @@ class HierarchyOtkSeeder extends Seeder
                 'subordinates' => [
                     'LUTHFI A',               // Staff Labor Teknik Industri
                     'MARDINUR',               // Staff Labor Teknik Komputer
-                    'M. ISRA NUR ABDULLAH YUZUK', // Staff Labor Teknik Proses Produksi
+                    'M. ISRA NUR ABDULLAH YUZUL', // Staff Labor Teknik Proses Produksi
                 ],
             ],
             'HUMAS_FST' => [
@@ -409,26 +421,26 @@ class HierarchyOtkSeeder extends Seeder
                 'subordinates' => [
                     'ELUSI MARTHA',          // Wakil Dekan I (Akademik, Kemahasiswaan dan Pusat Karir)
                     'RIZQI ULLA AMALIAH',     // Wakil Dekan II (Administrasi dan SDM)
-                    'IRISNA DEWITA',          // Ketua Program Studi K3
-                    'KAFIT',                  // Ketua Program Studi Kesling
+                    'TRISNA DEWITA',          // Ketua Program Studi K3
+                    'M. KAFIT',               // Ketua Program Studi Kesling
                     'NOVELA SARI',            // UPMI FIKES
                     'FAJAR',                  // GKM FIKES
-                    'ANITA PRAMAWARI',        // UPPM FIKES
+                    'ANITA PRAMAWATI',        // UPPM FIKES
                     'JAMAL',                  // Laboran FIKES
-                    'PURWANTY SELVIA NASUTION', // Tata Usaha FIKES
-                    'UDANG AMIR HAMZAH',      // Humas dan Publikasi Web FIKES
+                    'PERAWATY SELFIA NASUTION', // Tata Usaha FIKES
+                    'UJANG AMIR HAMZAH',      // Humas dan Publikasi Web FIKES
                 ],
             ],
             'PRODI_K3' => [
-                'leader' => 'IRISNA DEWITA',
+                'leader' => 'TRISNA DEWITA',
                 'subordinates' => [
-                    'IRISNA JAYATI',          // Sekretaris Prodi K3
+                    'TRISNA JAYATI',          // Sekretaris Prodi K3
                 ],
             ],
             'PRODI_KESLING' => [
-                'leader' => 'KAFIT',
+                'leader' => 'M. KAFIT',
                 'subordinates' => [
-                    'ALFIAN TRILESIN',        // Sekretaris Prodi Kesling
+                    'AL HAFEZ HUSEIN',        // Sekretaris Prodi Kesling
                 ],
             ],
         ];

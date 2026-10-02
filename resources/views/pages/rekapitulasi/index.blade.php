@@ -1,68 +1,10 @@
 @extends('layouts.dashboard.template')
 
+@section('page-style-class', 'menu-page-rekapitulasi')
 @section('title', 'Rekapitulasi Capaian & Diagnosis Kendala')
 
 @section('content')
-<style>
-    .card-header-green {
-        background-color: #15432d;
-        color: #ffffff;
-        padding: 10px 16px;
-        border-top-left-radius: 6px;
-        border-top-right-radius: 6px;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-    .rekap-card {
-        transition: transform 0.2s;
-    }
-    .rekap-card:hover {
-        transform: translateY(-2px);
-    }
-    .rekap-tab-nav .nav-link {
-        border-radius: 10px 10px 0 0;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: #6c757d;
-        border: 2px solid transparent;
-        padding: 10px 22px;
-        transition: all 0.2s;
-    }
-    .rekap-tab-nav .nav-link.active {
-        color: #15432d;
-        border-color: #15432d #15432d #fff;
-        background: #fff;
-    }
-    .rekap-tab-nav .nav-link:not(.active):hover {
-        color: #15432d;
-        background: #f0f8f4;
-    }
-    .tab-icon { font-size: 1rem; margin-right: 6px; }
-    /* Top Horizontal Scrollbar */
-    .top-scrollbar-wrapper {
-        overflow-x: auto;
-        overflow-y: hidden;
-        width: 100%;
-        height: 14px;
-        margin-bottom: 8px;
-        background-color: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-    }
-    .top-scrollbar-wrapper::-webkit-scrollbar {
-        height: 10px;
-    }
-    .top-scrollbar-wrapper::-webkit-scrollbar-thumb {
-        background: #198754;
-        border-radius: 5px;
-    }
-    .top-scrollbar-wrapper::-webkit-scrollbar-thumb:hover {
-        background: #15432d;
-    }
-    .top-scrollbar-content {
-        height: 1px;
-    }
-</style>
+
 
 <div class="pagetitle">
     <h1><i class="bi bi-pie-chart-fill text-success me-2"></i>Rekapitulasi Capaian & Analisis Kendala Kinerja</h1>

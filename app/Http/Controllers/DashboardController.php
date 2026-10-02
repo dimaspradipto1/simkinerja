@@ -163,7 +163,9 @@ class DashboardController extends Controller
 
         $totalPegawai = $usersQuery->count();
 
-        // Ambil hanya kepanitiaan yang memiliki sesi absensi AKTIF (sesuai dengan yang tampil di sidebar)
+        \App\Models\KepanitiaanSesiAbsensi::deleteWithoutKepanitiaan();
+
+        // Ambil hanya sesi milik rencana kerja kepanitiaan yang masih ada.
         $dynamicKepanitiaanList = Kepanitiaan::whereHas('sesiAbsensis', function ($query) {
                 $query->where('is_active', true);
             })
@@ -175,6 +177,7 @@ class DashboardController extends Controller
 
         // Ambil semua sesi absensi aktif secara flat untuk tab switcher monitoring
         $activeSessions = \App\Models\KepanitiaanSesiAbsensi::where('is_active', true)
+            ->whereHas('kepanitiaan', fn ($query) => $query->where('kategori', 'Kepanitiaan'))
             ->with('kepanitiaan')
             ->orderBy('tanggal', 'desc')
             ->orderBy('id', 'asc')
@@ -211,12 +214,14 @@ class DashboardController extends Controller
      */
     public function getAttendanceData(Request $request)
     {
+        \App\Models\KepanitiaanSesiAbsensi::deleteWithoutKepanitiaan();
         $sesiId = $request->query('sesi_id');
 
         if ($sesiId) {
             $sesi = \App\Models\KepanitiaanSesiAbsensi::find($sesiId);
         } else {
             $sesi = \App\Models\KepanitiaanSesiAbsensi::where('is_active', true)
+                ->whereHas('kepanitiaan', fn ($query) => $query->where('kategori', 'Kepanitiaan'))
                 ->orderBy('tanggal', 'desc')
                 ->orderBy('id', 'asc')
                 ->first();
@@ -224,7 +229,9 @@ class DashboardController extends Controller
 
         // Fallback jika tidak ada sesi aktif
         if (!$sesi) {
-            $sesi = \App\Models\KepanitiaanSesiAbsensi::latest('id')->first();
+            $sesi = \App\Models\KepanitiaanSesiAbsensi::whereHas('kepanitiaan', fn ($query) => $query->where('kategori', 'Kepanitiaan'))
+                ->latest('id')
+                ->first();
         }
 
         $sesiActiveId = $sesi ? $sesi->id : 0;

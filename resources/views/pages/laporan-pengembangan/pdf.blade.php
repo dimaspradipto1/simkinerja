@@ -405,24 +405,7 @@
         </p>
     </div>
 
-    <!-- LEMBAR PENGESAHAN DOKUMEN -->
-    <table style="width: 100%; margin-top: 30px; border-collapse: collapse; font-size: 8.5pt;">
-        <tr>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
-                Menyetujui / Mengetahui,<br>
-                <strong>Ketua Yayasan Pendidikan Ibnu Sina Batam</strong>
-                <br><br><br><br><br>
-                <strong><u>( H. Andi Ibrahim, B.A. )</u></strong>
-            </td>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
-                Batam, {{ date('d F Y') }}<br>
-                <strong>Rektor Universitas Ibnu Sina</strong>
-                <br><br><br><br><br>
-                <strong><u>( Assoc. Prof. Dr. Ir. Larisang, M.T., IPU )</u></strong><br>
-                NIDN. 1010046901
-            </td>
-        </tr>
-    </table>
+    @include('pages.partials.pdf-signature')
 
     <div class="footer-note">
         Laporan Pencapaian Pengembangan Universitas Ibnu Sina diterbitkan secara resmi melalui SIM Kinerja UIS. Dicetak pada: {{ date('d/m/Y H:i:s') }}.

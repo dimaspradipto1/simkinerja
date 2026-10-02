@@ -15,27 +15,48 @@
             margin: 0;
             padding: 0;
         }
-        .kop-table {
-            margin: 0 auto;
+        .letterhead {
+            width: 100%;
             border-collapse: collapse;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
-        .kop-table td {
-            vertical-align: middle;
-            padding: 0;
-        }
-        .kop-logo {
-            text-align: right;
-            padding-right: 16px;
+        .letterhead td {
             vertical-align: middle;
         }
-        .kop-text {
+        .logo {
+            width: 18%;
             text-align: center;
-            vertical-align: middle;
+            padding-right: 10px;
+        }
+        .logo img {
+            width: 76px;
+            height: 76px;
+        }
+        .institution {
+            text-align: center;
+            line-height: 1.2;
+            color: #326641;
+        }
+        .institution .foundation {
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            font-size: 16pt;
+            white-space: nowrap;
+        }
+        .institution .university {
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            font-size: 25pt;
+            white-space: nowrap;
+        }
+        .institution .contact {
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            white-space: nowrap;
         }
         .kop-line {
-            border-top: 2.5px solid #15432D;
-            border-bottom: 1px solid #15432D;
+            border-top: 2px solid #15432d;
+            border-bottom: 1px solid #15432d;
             height: 2px;
             margin-bottom: 8px;
         }
@@ -174,17 +195,6 @@
             line-height: 1.2;
         }
 
-        .ttd-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            page-break-inside: avoid;
-        }
-        .ttd-table td {
-            vertical-align: top;
-            padding: 0;
-            font-size: 8pt;
-        }
         .footer-note {
             position: fixed;
             bottom: -15mm;
@@ -200,30 +210,28 @@
 <body>
 
     <!-- KOP RESMI UNIVERSITAS IBNU SINA -->
-    <table class="kop-table" align="center">
+    <table class="letterhead">
         <tr>
-            <td class="kop-logo">
+            <td class="logo">
                 @if(file_exists(public_path('assets/img/logouis.png')))
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/img/logouis.png'))) }}" style="height: 60px; width: auto;">
+                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/img/logouis.png'))) }}" alt="Logo Universitas Ibnu Sina">
                 @endif
             </td>
-            <td class="kop-text">
-                <div style="font-size: 10pt; font-weight: bold; color: #15432D; text-transform: uppercase;">
+            <td class="institution">
+                <div class="foundation">
                     YAYASAN PENDIDIKAN IBNU SINA BATAM (YAPISTA)
                 </div>
-                <div style="font-size: 7.5pt; font-style: italic; color: #555555; margin-bottom: 2px;">
-                    AVICENNA EDUCATIONAL FOUNDATION
+                <div class="university">
+                    UNIVERSITAS IBNU SINA (UIS)
                 </div>
-                <div style="font-size: 14pt; font-weight: bold; color: #15432D; text-transform: uppercase; letter-spacing: 0.5px;">
-                    UNIVERSITAS IBNU SINA
+                <div class="contact">
+                    Jl. Teuku Umar Lubuk Baja, Kota Batam-Indonesia Telp. 0778-408 3113
                 </div>
-                <div style="font-size: 7.5pt; color: #333333;">
-                    Jalan Teuku Umar, Kec. Lubuk Baja. Lubuk Baja Kota Telp. (0778) 4881714 / 408 3113
-                </div>
-                <div style="font-size: 7.5pt; color: #333333;">
-                    Website: uis.ac.id | Email: info@uis.ac.id | Kota Batam - Kepulauan Riau
+                <div class="contact">
+                    Email : <span style="color: #3333cc; text-decoration: underline;">info@uis.ac.id/ibnusina@gmail.com</span> Website : uis.ac.id
                 </div>
             </td>
+            <td class="logo"></td>
         </tr>
     </table>
     <div class="kop-line"></div>
@@ -632,45 +640,14 @@
         </tr>
     </table>
 
-    <!-- TANDA TANGAN / PENGESAHAN -->
-    @php
-        $signerKepalaJabatan = $signer['kepalaJabatan'] ?? 'Kepala / Atasan Langsung';
-        $signerKepalaNama    = $signer['kepalaNama'] ?? '...................................';
-        $signerKepalaNidn    = $signer['kepalaNidn'] ?? '-';
-        $signerPegawaiLabel  = $signer['pegawaiLabel'] ?? (auth()->check() && (auth()->user()->isPimpinanRektorat() || auth()->user()->isAdmin()) ? 'Pimpinan Universitas Ibnu Sina' : (auth()->check() && auth()->user()->isPimpinanUnit() ? 'Kepala Unit ' . auth()->user()->unit : 'Pegawai Yang Bersangkutan'));
-        $signerPegawaiNama   = $signer['pegawaiNama'] ?? (auth()->check() ? auth()->user()->name : '...................................');
-        $signerPegawaiNidn   = $signer['pegawaiNidn'] ?? (auth()->check() && auth()->user()->nidn ? auth()->user()->nidn : '-');
-    @endphp
-    <table class="ttd-table" style="width: 100%; margin-top: 25px;">
-        <tr>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
-                <div>Mengetahui,</div>
-                <div style="margin-top: 4px; font-weight: bold;">
-                    {{ $signerKepalaJabatan }}
-                </div>
-                <div style="height: 48px;"></div>
-                <div style="font-weight: bold; text-decoration: underline;">
-                    {{ $signerKepalaNama }}
-                </div>
-                <div style="color: #555555; font-size: 7.5pt; margin-top: 2px;">
-                    NUP: {{ $signerKepalaNidn }}
-                </div>
-            </td>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
-                <div>Batam, {{ date('d') }} {{ \Carbon\Carbon::now()->translatedFormat('F Y') }}</div>
-                <div style="margin-top: 4px; font-weight: bold;">
-                    {{ $signerPegawaiLabel }}
-                </div>
-                <div style="height: 48px;"></div>
-                <div style="font-weight: bold; text-decoration: underline;">
-                    {{ $signerPegawaiNama }}
-                </div>
-                <div style="color: #555555; font-size: 7.5pt; margin-top: 2px;">
-                    NUP: {{ $signerPegawaiNidn }}
-                </div>
-            </td>
-        </tr>
-    </table>
+    @include('pages.partials.pdf-signature', [
+        'leaderLabel' => $signer['kepalaJabatan'] ?? 'Pimpinan Universitas Ibnu Sina',
+        'leaderName' => $signer['kepalaNama'] ?? 'Dr. MUHAMMAD ROPIANTO, S.Kom., M.Kom',
+        'leaderNup' => $signer['kepalaNidn'] ?? '1028067804',
+        'employeeLabel' => $signer['pegawaiLabel'] ?? 'Pegawai Yang Bersangkutan',
+        'employeeName' => $signer['pegawaiNama'] ?? (auth()->user()?->name ?? '...................................'),
+        'employeeNup' => $signer['pegawaiNidn'] ?? (auth()->user()?->nidn ?: '-'),
+    ])
 
     <div class="footer-note">
         Dokumen ini diterbitkan secara otomatis oleh SIMKINERJA Universitas Ibnu Sina pada {{ date('d/m/Y H:i') }} WIB.

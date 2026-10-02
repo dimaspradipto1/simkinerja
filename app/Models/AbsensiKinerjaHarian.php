@@ -10,7 +10,7 @@ class AbsensiKinerjaHarian extends Model
 {
     use HasFactory;
 
-    public const STANDARD_WORK_HOURS = 8;
+    public const STANDARD_WORK_HOURS = 7;
     public const BREAK_HOURS = 1;
 
     protected $table = 'absensi_kinerja_harians';

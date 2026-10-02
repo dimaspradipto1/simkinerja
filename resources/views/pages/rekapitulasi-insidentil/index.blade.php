@@ -1,23 +1,8 @@
 @extends('layouts.dashboard.template')
 
+@section('page-style-class', 'menu-page-rekapitulasi-insidentil')
 @section('content')
-<style>
-    .card-header-green {
-        background-color: #15432d;
-        color: #ffffff;
-        padding: 10px 16px;
-        border-top-left-radius: 6px;
-        border-top-right-radius: 6px;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-    .rekap-card {
-        transition: transform 0.2s;
-    }
-    .rekap-card:hover {
-        transform: translateY(-2px);
-    }
-</style>
+
 
 <div class="pagetitle">
     <h1>Rekapitulasi Capaian Insidentil</h1>

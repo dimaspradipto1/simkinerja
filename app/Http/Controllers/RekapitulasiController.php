@@ -467,15 +467,20 @@ class RekapitulasiController extends Controller
         $sheet1->getStyle('A2:H2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
         $sheet1->getRowDimension(2)->setRowHeight(28);
 
-        // Row 4: Filter Meta Banner
-        $sheet1->mergeCells('A4:H4');
-        $metaBannerText = 'PERIODE / WAKTU: ' . $periodeText . '  |  KATEGORI: ' . $kategoriText . '  |  STATUS: ' . $statusFilterText . '  |  PEGAWAI: ' . $staffText;
-        $sheet1->setCellValue('A4', $metaBannerText);
-        $sheet1->getStyle('A4:H4')->getFont()->setName('Arial')->setSize(9.5)->setBold(true)->getColor()->setARGB('FF15432D');
-        $sheet1->getStyle('A4:H4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF0FDF4');
-        $sheet1->getStyle('A4:H4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-        $sheet1->getStyle('A4:H4')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FF86EFAC');
+        // Rows 4-5: Compact filter metadata
+        foreach (['A4:B4', 'C4:D4', 'E4:F4', 'G4:H4', 'A5:B5', 'C5:D5', 'E5:F5', 'G5:H5'] as $range) {
+            $sheet1->mergeCells($range);
+        }
+        $sheet1->fromArray([
+            ['PERIODE / WAKTU :', null, $periodeText, null, 'STATUS :', null, $statusFilterText, null],
+            ['KATEGORI :', null, $kategoriText, null, 'PEGAWAI :', null, $staffText, null],
+        ], null, 'A4');
+        $sheet1->getStyle('A4:H5')->getFont()->setName('Arial')->setSize(9.5)->setBold(true)->getColor()->setARGB('FF15432D');
+        $sheet1->getStyle('A4:H5')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF0FDF4');
+        $sheet1->getStyle('A4:H5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
+        $sheet1->getStyle('A4:H5')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FF86EFAC');
         $sheet1->getRowDimension(4)->setRowHeight(22);
+        $sheet1->getRowDimension(5)->setRowHeight(30);
 
         // Row 6: Data Table Headers
         $tableHeaders = [
@@ -696,14 +701,20 @@ class RekapitulasiController extends Controller
         $sheet2->getStyle('A2:H2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
         $sheet2->getRowDimension(2)->setRowHeight(28);
 
-        // Row 4: Meta Banner
-        $sheet2->mergeCells('A4:H4');
-        $sheet2->setCellValue('A4', $metaBannerText);
-        $sheet2->getStyle('A4:H4')->getFont()->setName('Arial')->setSize(9.5)->setBold(true)->getColor()->setARGB('FF15432D');
-        $sheet2->getStyle('A4:H4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF0FDF4');
-        $sheet2->getStyle('A4:H4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-        $sheet2->getStyle('A4:H4')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FF86EFAC');
+        // Rows 4-5: Compact filter metadata
+        foreach (['A4:B4', 'C4:D4', 'E4:F4', 'G4:H4', 'A5:B5', 'C5:D5', 'E5:F5', 'G5:H5'] as $range) {
+            $sheet2->mergeCells($range);
+        }
+        $sheet2->fromArray([
+            ['PERIODE / WAKTU :', null, $periodeText, null, 'STATUS :', null, $statusFilterText, null],
+            ['KATEGORI :', null, $kategoriText, null, 'PEGAWAI :', null, $staffText, null],
+        ], null, 'A4');
+        $sheet2->getStyle('A4:H5')->getFont()->setName('Arial')->setSize(9.5)->setBold(true)->getColor()->setARGB('FF15432D');
+        $sheet2->getStyle('A4:H5')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF0FDF4');
+        $sheet2->getStyle('A4:H5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
+        $sheet2->getStyle('A4:H5')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FF86EFAC');
         $sheet2->getRowDimension(4)->setRowHeight(22);
+        $sheet2->getRowDimension(5)->setRowHeight(30);
 
         // Row 6: KPI Header
         $sheet2->mergeCells('A6:H6');

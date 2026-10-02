@@ -1,25 +1,8 @@
 @extends('layouts.dashboard.template')
 
+@section('page-style-class', 'menu-page-laporan-pengembangan-form')
 @section('content')
-<style>
-    .nav-pills-uis .nav-link {
-        color: #475569;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 8px 16px;
-        transition: all 0.2s ease;
-        border: 1px solid transparent;
-    }
-    .nav-pills-uis .nav-link:hover {
-        background-color: #f1f5f9;
-        color: #15432D;
-    }
-    .nav-pills-uis .nav-link.active {
-        background-color: #15432D !important;
-        color: #ffffff !important;
-        box-shadow: 0 2px 5px rgba(21, 67, 45, 0.25);
-    }
-</style>
+
 
 <div class="pagetitle mb-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">

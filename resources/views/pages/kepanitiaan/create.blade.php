@@ -77,7 +77,7 @@
                                         <label class="form-label fw-bold text-primary d-flex align-items-center gap-2 mb-0">
                                             <i class="bi bi-qr-code-scan text-primary fs-5"></i> Sesi Presensi Kepanitiaan (Opsional)
                                         </label>
-                                        <div class="text-muted small">Tambahkan satu atau lebih sesi absensi (contoh: <em>Hari Ke-1</em>, <em>Hari Ke-2</em>, <em>Rapat Koordinasi</em>). Anda juga dapat menambahkannya nanti kapan saja lewat tombol <strong>Presensi</strong>.</div>
+                                        <div class="text-muted small">Tentukan satu jenis absen untuk setiap sesi. Sesi rapat hanya mencatat satu kali kehadiran, bukan datang dan pulang.</div>
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" id="btnTambahBarisSesi">
                                         <i class="bi bi-plus-circle me-1"></i> Tambah Sesi
@@ -177,7 +177,7 @@
 
         // Dynamic Sesi Presensi Repeater
         let sesiCount = 0;
-        function tambahBarisSesi(nama = '', tgl = '') {
+        function tambahBarisSesi(nama = '', tgl = '', jenisAbsen = 'datang') {
             sesiCount++;
             const tglVal = tgl || ($('#tanggal_mulai').val() || new Date().toISOString().split('T')[0]);
             const html = `
@@ -185,19 +185,27 @@
                 <div class="col-12 col-md-7">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light text-muted"><i class="bi bi-tag-fill"></i></span>
-                        <input type="text" name="nama_sesi_presensi[]" class="form-control" placeholder="Nama Sesi Presensi (misal: Absensi Hari Ke-${sesiCount})" value="${nama}" required>
+                        <input type="text" name="nama_sesi_presensi[${sesiCount - 1}]" class="form-control" placeholder="Nama Sesi Presensi (misal: Absensi Hari Ke-${sesiCount})" value="${nama}" required>
                     </div>
                 </div>
                 <div class="col-9 col-md-4">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light text-muted"><i class="bi bi-calendar-event"></i></span>
-                        <input type="date" name="tanggal_sesi_presensi[]" class="form-control" value="${tglVal}">
+                        <input type="date" name="tanggal_sesi_presensi[${sesiCount - 1}]" class="form-control" value="${tglVal}">
                     </div>
                 </div>
                 <div class="col-3 col-md-1 text-end">
                     <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="$('#baris-sesi-${sesiCount}').remove()" title="Hapus Baris Sesi">
                         <i class="bi bi-trash"></i>
                     </button>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex flex-wrap align-items-center gap-3 small">
+                        <span class="fw-semibold text-secondary">Jenis absen:</span>
+                        <label class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="jenis_absen_presensi[${sesiCount - 1}]" value="datang" ${jenisAbsen === 'datang' ? 'checked' : ''}> Datang</label>
+                        <label class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="jenis_absen_presensi[${sesiCount - 1}]" value="pulang" ${jenisAbsen === 'pulang' ? 'checked' : ''}> Pulang</label>
+                        <label class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="jenis_absen_presensi[${sesiCount - 1}]" value="rapat" ${jenisAbsen === 'rapat' ? 'checked' : ''}> Rapat (1 kali absen)</label>
+                    </div>
                 </div>
             </div>`;
             $('#sesiPresensiContainer').append(html);

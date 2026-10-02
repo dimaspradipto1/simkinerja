@@ -334,24 +334,7 @@
         </ol>
     </div>
 
-    <!-- LEMBAR PENGESAHAN -->
-    <table style="width: 100%; margin-top: 25px; border-collapse: collapse; font-size: 8pt;">
-        <tr>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
-                Mengetahui,<br>
-                <strong>Ketua Yayasan Pendidikan Ibnu Sina Batam</strong>
-                <br><br><br><br><br>
-                <strong><u>( H. Andi Ibrahim, B.A. )</u></strong>
-            </td>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
-                Batam, {{ date('d F Y') }}<br>
-                <strong>Rektor Universitas Ibnu Sina</strong>
-                <br><br><br><br><br>
-                <strong><u>( Assoc. Prof. Dr. Ir. Larisang, M.T., IPU )</u></strong><br>
-                NIDN. 1010046901
-            </td>
-        </tr>
-    </table>
+    @include('pages.partials.pdf-signature')
 
     <div class="footer-note">
         Dokumen ini diterbitkan secara resmi melalui Sistem Informasi Manajemen Kinerja (SIM Kinerja) Universitas Ibnu Sina Batam. Dicetak pada: {{ date('d/m/Y H:i:s') }}.

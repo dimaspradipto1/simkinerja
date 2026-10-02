@@ -9,7 +9,7 @@ class AutoPulangAbsensiKinerja extends Command
 {
     protected $signature = 'absensi-kinerja:auto-pulang';
 
-    protected $description = 'Set waktu pulang otomatis setelah jam kerja dan istirahat terpenuhi';
+    protected $description = 'Set waktu pulang otomatis setelah 7 jam kerja dan 1 jam istirahat';
 
     public function handle(): int
     {

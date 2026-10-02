@@ -17,7 +17,7 @@
 
     <div class="d-flex align-items-center gap-2 flex-wrap">
         @if(isset($allSesis) && $allSesis->count() > 1)
-        <div class="dropdown">
+        <div class="dropdown d-none">
             <button class="btn btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm font-medium" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 8px; font-size: 0.86rem; padding: 7px 14px;">
                 <i class="bi bi-arrow-left-right text-primary"></i> Ganti Sesi
             </button>
@@ -64,6 +64,7 @@
                                 <i class="bi bi-calendar3 me-1 text-primary"></i>{{ date('d M Y', strtotime($sesi->tanggal)) }}
                             </span>
                         @endif
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fw-bold" style="font-size: 0.78rem;">{{ $attendanceLabel }}</span>
                     </div>
                     <h3 class="fw-bold mb-1 text-white">{{ $sesi->nama_sesi }}</h3>
                     <p class="text-white-50 mb-0" style="font-size: 0.92rem;">
@@ -100,6 +101,73 @@
         </div>
     </div>
 
+    @if($sesi->jenis_absen === 'rapat')
+        @if($isSekretarisOrAdmin)
+            @if(!$linkedSk)
+                <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    SK Kepanitiaan yang cocok dengan nama kegiatan tidak ditemukan secara unik. Daftar peserta rapat dikosongkan sampai nama kegiatan atau SK diperbaiki.
+                </div>
+            @elseif($linkedMemberCount === 0)
+                <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+                    <i class="bi bi-person-exclamation me-2"></i>
+                    SK <strong>{{ $linkedSk->nama_kepanitiaan }}</strong> ditemukan, tetapi belum ada anggota SK yang tertaut ke akun pegawai.
+                </div>
+            @else
+                <div class="alert alert-info border-0 shadow-sm mb-3 py-2" role="status">
+                    <i class="bi bi-people-fill me-2"></i>
+                    {{ $linkedMemberCount }} dari {{ $totalSkMembers }} personel SK
+                    <strong>{{ $linkedSk->nama_kepanitiaan }}</strong> sudah tertaut ke akun SIMKINERJA dan muncul di tabel absensi.
+                </div>
+            @endif
+            @if($linkedSk && $unmatchedSkMembers->isNotEmpty())
+                <div class="alert alert-warning border-0 shadow-sm mb-4 py-2" role="alert">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                        <span>
+                            <i class="bi bi-person-exclamation me-2"></i>
+                            {{ $unmatchedSkMembers->count() }} nama SK belum tertaut ke akun pegawai. Nama-nama ini belum bisa melakukan absensi dengan akun SIMKINERJA.
+                        </span>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-warning text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#unmatchedSkMembers" aria-expanded="false" aria-controls="unmatchedSkMembers">
+                                Lihat nama
+                            </button>
+                            <a class="btn btn-sm btn-warning text-dark" href="{{ route('sk-kepanitiaan.show', $linkedSk->id) }}">
+                                Tautkan akun
+                            </a>
+                        </div>
+                    </div>
+                    <div class="collapse mt-3" id="unmatchedSkMembers">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered bg-white mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 60px;">No.</th>
+                                        <th>Nama pada SK</th>
+                                        <th>Posisi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($unmatchedSkMembers as $member)
+                                        <tr>
+                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ $member['nama_sk'] ?? '-' }}</td>
+                                            <td>{{ $member['posisi'] ?? 'Anggota' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @else
+            <div class="alert {{ $isEligibleMember ? 'alert-info' : 'alert-warning' }} border-0 shadow-sm mb-4 py-2" role="status">
+                <i class="bi {{ $isEligibleMember ? 'bi-people-fill' : 'bi-person-exclamation' }} me-2"></i>
+                {{ $isEligibleMember ? 'Daftar peserta rapat dibatasi pada anggota SK Kepanitiaan terkait.' : 'Akun Anda tidak tercantum sebagai peserta pada SK Kepanitiaan untuk rapat ini.' }}
+            </div>
+        @endif
+    @endif
+
     <!-- KPI Metric Summary Cards -->
     <div class="row g-3 mb-4">
         @if($isSekretarisOrAdmin)
@@ -107,8 +175,10 @@
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #0d6efd !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Total Kehadiran</div>
-                        <div class="fs-4 fw-bold text-dark mt-1" id="stat-total-presensi">{{ $totalPresensi }}</div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">
+                            {{ $sesi->jenis_absen === 'rapat' && $linkedSk ? 'Total Personel SK' : 'Total Kehadiran' }}
+                        </div>
+                        <div class="fs-4 fw-bold text-dark mt-1" id="stat-total-presensi">{{ $sesi->jenis_absen === 'rapat' && $linkedSk ? $totalSkMembers : $totalPresensi }}</div>
                     </div>
                     <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
                         <i class="bi bi-people-fill fs-5"></i>
@@ -121,7 +191,7 @@
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #198754 !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Hadir Datang</div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">{{ $attendanceLabel }}</div>
                         <div class="fs-4 fw-bold text-success mt-1" id="stat-hadir-datang">{{ $totalHadirDatang }}</div>
                     </div>
                     <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
@@ -131,7 +201,7 @@
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-3 d-none">
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #0dcaf0 !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
@@ -160,7 +230,7 @@
         </div>
         @else
         <!-- Kartu Kehadiran Khusus Pengguna Sendiri -->
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-3 d-none">
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid {{ $totalSudahAbsen ? '#198754' : '#dc3545' }} !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
@@ -181,7 +251,7 @@
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #198754 !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Presensi Datang</div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">{{ $attendanceLabel }}</div>
                         <div class="fs-5 fw-bold {{ $totalHadirDatang ? 'text-success' : 'text-secondary' }} mt-1">
                             {{ $totalHadirDatang ? 'Tercatat Hadir' : 'Belum Absen' }}
                         </div>
@@ -193,7 +263,7 @@
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-3 d-none">
             <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid {{ $totalHadirPulang ? '#0dcaf0' : ($totalHadirDatang ? '#ffc107' : '#dc3545') }} !important;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
@@ -215,7 +285,7 @@
                     <div>
                         <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Kelengkapan</div>
                         <div class="fs-6 fw-bold text-dark mt-1">
-                            {{ $totalLengkap ? 'Lengkap (Datang & Pulang)' : ($totalBelumPulang ? 'Belum Presensi Pulang' : ($totalSudahAbsen ? 'Izin / Sakit' : 'Belum Absen')) }}
+                            {{ $totalSudahAbsen ? 'Absen tercatat' : 'Belum Absen' }}
                         </div>
                     </div>
                     <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
@@ -348,8 +418,7 @@
                             <th class="text-center" style="width: 45px;">No</th>
                             <th class="text-center" style="width: 120px;">Tanggal</th>
                             <th>Pegawai</th>
-                            <th class="text-center" style="width: 150px;">Presensi Datang</th>
-                            <th class="text-center" style="width: 150px;">Presensi Pulang</th>
+                            <th class="text-center" style="width: 150px;">{{ $attendanceLabel }}</th>
                             <th>Keterangan / Bukti</th>
                             <th class="text-center" style="width: 85px;">Aksi</th>
                         </tr>
@@ -386,7 +455,7 @@
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="manual_hadir_datang" class="form-label fw-semibold" style="font-size: 0.85rem;">Status Datang</label>
+                            <label for="manual_hadir_datang" class="form-label fw-semibold" style="font-size: 0.85rem;">Status {{ $attendanceLabel }}</label>
                             <select class="form-select" id="manual_hadir_datang" name="hadir_datang" style="border-radius: 8px;">
                                 <option value="">-- Pilih Status --</option>
                                 <option value="Hadir">Hadir</option>
@@ -397,26 +466,8 @@
                             </select>
                         </div>
                         <div class="col-6">
-                            <label for="manual_waktu_datang" class="form-label fw-semibold" style="font-size: 0.85rem;">Waktu Datang (WIB)</label>
+                            <label for="manual_waktu_datang" class="form-label fw-semibold" style="font-size: 0.85rem;">Waktu Absen (WIB)</label>
                             <input type="time" class="form-control" id="manual_waktu_datang" name="waktu_datang" style="border-radius: 8px;">
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label for="manual_hadir_pulang" class="form-label fw-semibold" style="font-size: 0.85rem;">Status Pulang</label>
-                            <select class="form-select" id="manual_hadir_pulang" name="hadir_pulang" style="border-radius: 8px;">
-                                <option value="">-- Pilih Status --</option>
-                                <option value="Hadir">Hadir</option>
-                                <option value="Izin">Izin</option>
-                                <option value="Sakit">Sakit</option>
-                                <option value="Alpha">Alpha</option>
-                                <option value="reset">Belum Absen (Reset)</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label for="manual_waktu_pulang" class="form-label fw-semibold" style="font-size: 0.85rem;">Waktu Pulang (WIB)</label>
-                            <input type="time" class="form-control" id="manual_waktu_pulang" name="waktu_pulang" style="border-radius: 8px;">
                         </div>
                     </div>
 
@@ -472,14 +523,14 @@
                                     <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
                                         <input class="form-check-input" type="checkbox" role="switch" id="switch_update_datang" name="update_datang" value="1" checked style="cursor: pointer; width: 34px; height: 17px;">
                                         <label class="form-check-label fw-bold text-dark small" for="switch_update_datang" style="cursor: pointer;">
-                                            <i class="bi bi-box-arrow-in-right text-success me-1"></i>Ubah Absensi Datang
+                                            <i class="bi bi-box-arrow-in-right text-success me-1"></i>Ubah {{ $attendanceLabel }}
                                         </label>
                                     </div>
                                     <span class="badge bg-success-subtle text-success small" id="badge-datang-status">Diubah</span>
                                 </div>
                                 <div class="card-body p-3" id="wrapper_fields_datang">
                                     <div class="mb-3">
-                                        <label for="bulk_hadir_datang" class="form-label fw-semibold small">Status Kehadiran Datang</label>
+                                        <label for="bulk_hadir_datang" class="form-label fw-semibold small">Status {{ $attendanceLabel }}</label>
                                         <select class="form-select form-select-sm" id="bulk_hadir_datang" name="hadir_datang" style="border-radius: 6px;">
                                             <option value="Hadir" selected>🟢 Hadir</option>
                                             <option value="Izin">🟡 Izin</option>
@@ -489,7 +540,7 @@
                                         </select>
                                     </div>
                                     <div class="mb-1">
-                                        <label for="bulk_waktu_datang" class="form-label fw-semibold small">Waktu Datang (WIB)</label>
+                                        <label for="bulk_waktu_datang" class="form-label fw-semibold small">Waktu Absen (WIB)</label>
                                         <input type="time" class="form-control form-control-sm" id="bulk_waktu_datang" name="waktu_datang" style="border-radius: 6px;">
                                         <div class="form-text" style="font-size: 0.74rem;">Kosongkan bila ingin otomatis sesuai jam saat ini.</div>
                                     </div>
@@ -498,13 +549,13 @@
                         </div>
 
                         <!-- Section Presensi Pulang -->
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none">
                             <div class="card h-100 border shadow-none" style="border-radius: 10px; background-color: #f8fafc;">
                                 <div class="card-header bg-white border-bottom py-2 px-3 d-flex align-items-center justify-content-between">
                                     <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="switch_update_pulang" name="update_pulang" value="1" checked style="cursor: pointer; width: 34px; height: 17px;">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="switch_update_pulang" name="update_pulang" value="1" disabled style="cursor: pointer; width: 34px; height: 17px;">
                                         <label class="form-check-label fw-bold text-dark small" for="switch_update_pulang" style="cursor: pointer;">
-                                            <i class="bi bi-box-arrow-right text-info me-1"></i>Ubah Absensi Pulang
+                                            <i class="bi bi-box-arrow-right text-info me-1"></i>Absen kedua tidak digunakan
                                         </label>
                                     </div>
                                     <span class="badge bg-info-subtle text-info small" id="badge-pulang-status">Diubah</span>
@@ -665,7 +716,6 @@ $(document).ready(function() {
             { data: 'tanggal', name: 'tanggal', className: 'text-center', searchable: false },
             { data: 'user_info', name: 'user_info', searchable: true },
             { data: 'status_datang', name: 'status_datang', className: 'text-center', searchable: false },
-            { data: 'status_pulang', name: 'status_pulang', className: 'text-center', searchable: false },
             { data: 'catatan_col', name: 'catatan_col', orderable: false, searchable: false },
             { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' },
         ],
@@ -952,7 +1002,9 @@ $(document).ready(function() {
 
                     // Update live KPI cards
                     if (res.stats) {
-                        $('#stat-total-presensi').text(res.stats.total_presensi);
+                        if (@json($sesi->jenis_absen !== 'rapat' || !$linkedSk)) {
+                            $('#stat-total-presensi').text(res.stats.total_presensi);
+                        }
                         $('#stat-hadir-datang').text(res.stats.hadir_datang);
                         $('#stat-hadir-pulang').text(res.stats.hadir_pulang);
                         $('#stat-izin-sakit').text(res.stats.izin_sakit);

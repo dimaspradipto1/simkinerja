@@ -851,14 +851,24 @@ class KepanitiaanController extends Controller
 
         // Simpan sesi presensi baru jika diisi dari form
         if ($request->filled('nama_sesi_presensi')) {
+            $request->validate([
+                'nama_sesi_presensi' => ['array'],
+                'nama_sesi_presensi.*' => ['nullable', 'string', 'max:255'],
+                'tanggal_sesi_presensi' => ['nullable', 'array'],
+                'tanggal_sesi_presensi.*' => ['nullable', 'date'],
+                'jenis_absen_presensi' => ['required', 'array'],
+                'jenis_absen_presensi.*' => ['required', 'in:datang,pulang,rapat'],
+            ]);
             $sesiNames = (array) $request->input('nama_sesi_presensi');
             $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+            $sesiTypes = (array) $request->input('jenis_absen_presensi', []);
             foreach ($sesiNames as $idx => $sName) {
                 $trimmed = trim((string)$sName);
                 if (!empty($trimmed)) {
                     \App\Models\KepanitiaanSesiAbsensi::create([
                         'kepanitiaan_id' => $kepanitiaan->id,
                         'nama_sesi' => $trimmed,
+                        'jenis_absen' => $sesiTypes[$idx] ?? 'datang',
                         'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kepanitiaan->tanggal_mulai ?: date('Y-m-d')),
                         'token' => \Illuminate\Support\Str::random(24),
                         'is_active' => true,
@@ -967,14 +977,24 @@ class KepanitiaanController extends Controller
 
         // Simpan sesi presensi baru jika ditambahkan dari form edit
         if ($request->filled('nama_sesi_presensi')) {
+            $request->validate([
+                'nama_sesi_presensi' => ['array'],
+                'nama_sesi_presensi.*' => ['nullable', 'string', 'max:255'],
+                'tanggal_sesi_presensi' => ['nullable', 'array'],
+                'tanggal_sesi_presensi.*' => ['nullable', 'date'],
+                'jenis_absen_presensi' => ['required', 'array'],
+                'jenis_absen_presensi.*' => ['required', 'in:datang,pulang,rapat'],
+            ]);
             $sesiNames = (array) $request->input('nama_sesi_presensi');
             $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+            $sesiTypes = (array) $request->input('jenis_absen_presensi', []);
             foreach ($sesiNames as $idx => $sName) {
                 $trimmed = trim((string)$sName);
                 if (!empty($trimmed)) {
                     \App\Models\KepanitiaanSesiAbsensi::create([
                         'kepanitiaan_id' => $kepanitiaan->id,
                         'nama_sesi' => $trimmed,
+                        'jenis_absen' => $sesiTypes[$idx] ?? 'datang',
                         'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kepanitiaan->tanggal_mulai ?: date('Y-m-d')),
                         'token' => \Illuminate\Support\Str::random(24),
                         'is_active' => true,
@@ -1456,16 +1476,14 @@ class KepanitiaanController extends Controller
             }
         }
 
-        if ($kepanitiaan->file && Storage::disk('public')->exists($kepanitiaan->file)) {
-            Storage::disk('public')->delete($kepanitiaan->file);
-        }
-
+        $deletedSessionIds = $kepanitiaan->sesiAbsensis()->pluck('id')->all();
         $kepanitiaan->delete();
 
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Kepanitiaan berhasil dihapus'
+                'message' => 'Kepanitiaan berhasil dihapus',
+                'deleted_session_ids' => $deletedSessionIds,
             ]);
         }
 
@@ -1502,19 +1520,11 @@ class KepanitiaanController extends Controller
 
         $items = $query->get();
         $count = 0;
+        $deletedSessionIds = [];
 
         foreach ($items as $item) {
-            if ($item->file && Storage::disk('public')->exists($item->file)) {
-                Storage::disk('public')->delete($item->file);
-            }
-            // Hapus sesi presensi & presensi jika ada
-            if ($item->sesiAbsensis()->exists()) {
-                foreach ($item->sesiAbsensis as $sesi) {
-                    $sesi->presensis()->delete();
-                    $sesi->delete();
-                }
-            }
-            $item->taggedUsers()->detach();
+            // Model deletion removes linked files, attendance sessions, and attendance records.
+            $deletedSessionIds = array_merge($deletedSessionIds, $item->sesiAbsensis()->pluck('id')->all());
             $item->delete();
             $count++;
         }
@@ -1522,6 +1532,7 @@ class KepanitiaanController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Berhasil menghapus {$count} rencana kerja kepanitiaan terpilih.",
+            'deleted_session_ids' => $deletedSessionIds,
         ]);
     }
 

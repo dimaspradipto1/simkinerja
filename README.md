@@ -23,7 +23,7 @@ Laravel is accessible, powerful, and provides tools required for large, robust a
 
 ## Application Scheduler
 
-Absensi Kinerja mencatat waktu datang saat pegawai memulai tugas. Waktu pulang ditetapkan otomatis setelah 8 jam kerja dan 1 jam istirahat. Agar pemulangan otomatis berjalan tanpa menunggu halaman dibuka, jalankan scheduler Laravel terus-menerus:
+Absensi Kinerja mencatat waktu datang saat pegawai memulai tugas. Targetnya 7 jam kerja efektif ditambah 1 jam istirahat (total 8 jam sejak datang); waktu pulang ditetapkan otomatis setelah rentang tersebut. Agar pemulangan otomatis berjalan tanpa menunggu halaman dibuka, jalankan scheduler Laravel terus-menerus:
 
 ```bash
 php artisan schedule:work

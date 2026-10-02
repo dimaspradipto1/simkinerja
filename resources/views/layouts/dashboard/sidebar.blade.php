@@ -11,10 +11,13 @@
             $isStaffOrDosen = $u && !$isAdmin && !$u->isPimpinanRektorat() && !$isPimpinanUnit && !$u->isOnlyKepanitiaan();
             $isOnlyPanitia = $u && $u->isOnlyKepanitiaan();
 
+            \App\Models\KepanitiaanSesiAbsensi::deleteWithoutKepanitiaan();
+
             // Ambil sesi presensi aktif untuk admin, pimpinan, atau panitia
             $activeSessions = collect();
             if ($isAdmin || ($u && $u->canAccessAbsensi())) {
                 $activeSessions = \App\Models\KepanitiaanSesiAbsensi::where('is_active', true)
+                    ->whereHas('kepanitiaan', fn ($query) => $query->where('kategori', 'Kepanitiaan'))
                     ->with('kepanitiaan')
                     ->orderBy('id', 'asc')
                     ->get();
@@ -294,14 +297,14 @@
                 <li class="nav-item">
                     <a class="{{ request()->routeIs('presensi.*') ? 'nav-link' : 'nav-link collapsed' }}"
                         data-bs-target="#presensi-user-nav" data-bs-toggle="collapse" href="#">
-                        <i class="bi bi-qr-code-scan text-success"></i><span>Sesi Aktif ({{ $activeSessions->count() }})</span>
+                        <i class="bi bi-qr-code-scan text-success"></i><span>Sesi Aktif (<span id="sidebar-user-active-sessions-badge">{{ $activeSessions->count() }}</span>)</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <ul id="presensi-user-nav"
                         class="nav-content collapse {{ request()->routeIs('presensi.*') ? 'show' : '' }}"
                         data-bs-parent="#sidebar-nav">
                         @foreach($activeSessions as $activeSess)
-                            <li>
+                            <li id="sidebar-sesi-item-{{ $activeSess->id }}">
                                 <a href="{{ route('presensi.sesi.show', $activeSess->id) }}" class="{{ request()->routeIs('presensi.sesi.show') && request()->route('id') == $activeSess->id ? 'active' : '' }}">
                                     <i class="bi bi-circle"></i><span class="text-truncate">{{ $activeSess->nama_sesi }}</span>
                                 </a>
@@ -339,7 +342,8 @@
                                     request()->routeIs('periode-akademik.*') || 
                                     request()->routeIs('kategori.*') ||
                                     request()->routeIs('hirarki.*') ||
-                                    request()->routeIs('sk-kepanitiaan.*');
+                                    request()->routeIs('sk-kepanitiaan.*') ||
+                                    request()->routeIs('database-backup.*');
             @endphp
             <li class="nav-item">
                 <a class="{{ $isSettingsActive ? 'nav-link' : 'nav-link collapsed' }}"
@@ -373,7 +377,12 @@
                     </li>
                     <li>
                         <a href="{{ route('hirarki.index') }}" class="{{ request()->routeIs('hirarki.*') ? 'active' : '' }}">
-                            <i class="bi bi-diagram-3"></i><span>Struktur Hirarki</span>
+                            <i class="bi bi-diagram-3"></i><span>Struktur OTK</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('database-backup.index') }}" class="{{ request()->routeIs('database-backup.*') ? 'active' : '' }}">
+                            <i class="bi bi-database-down"></i><span>Backup Database &amp; Storage</span>
                         </a>
                     </li>
                 </ul>

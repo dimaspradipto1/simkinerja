@@ -28,6 +28,7 @@ class AbsensiSettingController extends Controller
     public function index()
     {
         $this->checkAdmin();
+        KepanitiaanSesiAbsensi::deleteWithoutKepanitiaan();
 
         $kepanitiaans = Kepanitiaan::with(['sesiAbsensis' => function ($q) {
             $q->withCount('presensis')
@@ -39,8 +40,7 @@ class AbsensiSettingController extends Controller
         ->orderBy('id', 'desc')
         ->get();
 
-        $activeCount = KepanitiaanSesiAbsensi::where('is_active', true)->count();
-        $totalCount = KepanitiaanSesiAbsensi::count();
+        [$activeCount, $totalCount] = $this->sessionCounts();
         $closedCount = $totalCount - $activeCount;
 
         return view('pages.pengaturan-absensi.index', compact('kepanitiaans', 'activeCount', 'totalCount', 'closedCount'));
@@ -52,6 +52,7 @@ class AbsensiSettingController extends Controller
     public function toggle(Request $request, $slug)
     {
         $this->checkAdmin();
+        KepanitiaanSesiAbsensi::deleteWithoutKepanitiaan();
 
         $session = null;
         if (is_numeric($slug)) {
@@ -79,8 +80,7 @@ class AbsensiSettingController extends Controller
             $statusText = $session->is_active ? 'Aktif (Tampil di Sidebar)' : 'Nonaktif (Tutup)';
             $message = "Status sesi \"{$session->nama_sesi}\" berhasil diubah menjadi {$statusText}.";
 
-            $activeCount = KepanitiaanSesiAbsensi::where('is_active', true)->count();
-            $totalCount = KepanitiaanSesiAbsensi::count();
+            [$activeCount, $totalCount] = $this->sessionCounts();
             $closedCount = $totalCount - $activeCount;
 
             if ($request->ajax() || $request->wantsJson()) {
@@ -105,8 +105,7 @@ class AbsensiSettingController extends Controller
         $statusText = $setting->is_active ? 'Aktif (Tampil di Sidebar)' : 'Nonaktif (Tutup)';
         $message = "Status {$setting->nama} berhasil diubah menjadi {$statusText}.";
 
-        $activeCount = KepanitiaanSesiAbsensi::where('is_active', true)->count();
-        $totalCount = KepanitiaanSesiAbsensi::count();
+        [$activeCount, $totalCount] = $this->sessionCounts();
         $closedCount = $totalCount - $activeCount;
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -123,5 +122,17 @@ class AbsensiSettingController extends Controller
 
         Alert::success('Berhasil', $message);
         return redirect()->back();
+    }
+
+    private function sessionCounts(): array
+    {
+        $sessions = KepanitiaanSesiAbsensi::whereHas('kepanitiaan', function ($query) {
+            $query->where('kategori', 'Kepanitiaan');
+        });
+
+        $total = (clone $sessions)->count();
+        $active = (clone $sessions)->where('is_active', true)->count();
+
+        return [$active, $total];
     }
 }

@@ -1,201 +1,25 @@
 @extends('layouts.dashboard.template')
 
+@section('page-style-class', 'menu-page-hierarchy-legacy')
 @section('content')
 <div class="pagetitle">
-    <h1><i class="bi bi-diagram-3-fill me-2"></i>Struktur Hirarki</h1>
+    <h1><i class="bi bi-diagram-3-fill me-2"></i>Struktur OTK</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
             <li class="breadcrumb-item">Pengaturan Sistem</li>
-            <li class="breadcrumb-item active">Struktur Hirarki</li>
+            <li class="breadcrumb-item active">Struktur OTK</li>
         </ol>
     </nav>
 </div>
 
-<style>
-    .page-header-banner {
-        background: linear-gradient(135deg, #15432D 0%, #1a6b42 60%, #27ae60 100%);
-        border-radius: 16px; padding: 26px 30px; margin-bottom: 22px; color: white;
-        position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(21, 67, 45, 0.2);
-    }
-    .page-header-banner::before {
-        content:''; position:absolute; top:-40px; right:-40px;
-        width:220px; height:220px; background:rgba(255,255,255,0.06); border-radius:50%;
-    }
-    .page-header-banner h2 { font-size:1.35rem; font-weight:700; margin:0; }
-    .page-header-banner p { opacity:.88; margin:5px 0 0; font-size:.86rem; }
-    .stat-pill { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); border-radius:20px; padding:5px 14px; font-size:.78rem; font-weight:600; }
-    
-    .nav-tabs-custom {
-        border-bottom: 2px solid #e5e7eb;
-        gap: 6px;
-        margin-bottom: 18px;
-    }
-    .nav-tabs-custom .nav-link {
-        border: none;
-        border-radius: 10px 10px 0 0;
-        color: #4b5563;
-        font-weight: 600;
-        font-size: 0.84rem;
-        padding: 9px 16px;
-        transition: all 0.2s;
-        background: #f9fafb;
-    }
-    .nav-tabs-custom .nav-link:hover {
-        background: #f0fdf4;
-        color: #15432D;
-    }
-    .nav-tabs-custom .nav-link.active {
-        background: #15432D;
-        color: white;
-        box-shadow: 0 4px 12px rgba(21, 67, 45, 0.25);
-    }
-    .nav-tabs-custom .badge-tab {
-        background: rgba(255,255,255,0.25);
-        color: white;
-        padding: 2px 7px;
-        border-radius: 12px;
-        font-size: 0.72rem;
-        margin-left: 6px;
-    }
-    .nav-tabs-custom .nav-link:not(.active) .badge-tab {
-        background: #e5e7eb;
-        color: #4b5563;
-    }
 
-    .leader-card { 
-        background:white; border-radius:14px; border:1.5px solid #e5e7eb; 
-        box-shadow:0 2px 10px rgba(0,0,0,.04); overflow:hidden; margin-bottom:18px; 
-        transition:all .2s ease; 
-    }
-    .leader-card:hover { 
-        box-shadow:0 6px 20px rgba(21,67,45,.12); 
-        border-color:#a7f3d0;
-    }
-    .leader-header { 
-        background:linear-gradient(135deg,#15432D,#1e5e3b); 
-        padding:13px 18px; display:flex; align-items:center; gap:12px; 
-        cursor:pointer; user-select:none; 
-    }
-    .leader-avatar { 
-        width:42px; height:42px; border-radius:50%; 
-        background:rgba(255,255,255,.2); display:flex; align-items:center; 
-        justify-content:center; font-size:1.1rem; font-weight:700; color:white; 
-        border:2px solid rgba(255,255,255,.3); flex-shrink:0; 
-    }
-    .leader-info { flex:1; min-width:0; }
-    .leader-name { color:white; font-weight:700; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .leader-jabatan { color:rgba(255,255,255,.8); font-size:.76rem; }
-    .leader-unit-badge { 
-        background:rgba(255,255,255,.18); color:white; border-radius:8px; 
-        padding:3px 9px; font-size:.7rem; font-weight:600; 
-        border:1px solid rgba(255,255,255,.28); white-space:nowrap; 
-    }
-    .leader-count { 
-        background:#27ae60; color:white; border-radius:12px; 
-        padding:3px 10px; font-size:.78rem; font-weight:700; min-width:30px; text-align:center; 
-    }
-    .leader-toggle { color:rgba(255,255,255,.8); transition:transform .3s; }
-    .leader-toggle.collapsed { transform:rotate(-90deg); }
-    .leader-body { padding:14px; }
-    
-    .sub-item { 
-        display:flex; align-items:center; gap:10px; padding:9px 12px; 
-        border-radius:10px; background:#f9fafb; border:1px solid #e5e7eb; 
-        margin-bottom:7px; transition:all .2s; 
-    }
-    .sub-item:hover { background:#f0fdf4; border-color:#d1fae5; transform:translateX(3px); }
-    .sub-avatar { 
-        width:32px; height:32px; border-radius:50%; 
-        background:linear-gradient(135deg,#27ae60,#1a5c3a); display:flex; 
-        align-items:center; justify-content:center; font-size:.82rem; font-weight:700; 
-        color:white; flex-shrink:0; 
-    }
-    .sub-info { flex:1; min-width:0; }
-    .sub-name { font-weight:600; font-size:.85rem; color:#1f2937; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .sub-jabatan { font-size:.74rem; color:#4b5563; }
-    .sub-unit { font-size:.7rem; color:#9ca3af; }
-    .btn-remove-sub { 
-        background:none; border:1px solid #fecaca; color:#ef4444; 
-        border-radius:8px; padding:4px 9px; font-size:.72rem; cursor:pointer; 
-        transition:all .2s; white-space:nowrap; 
-    }
-    .btn-remove-sub:hover { background:#fef2f2; border-color:#ef4444; }
-    
-    .add-sub-area { 
-        border:2px dashed #d1fae5; border-radius:10px; padding:10px 14px; 
-        display:flex; align-items:center; gap:10px; background:#f0fdf4; 
-        cursor:pointer; transition:all .2s; margin-top:10px; 
-    }
-    .add-sub-area:hover { border-color:#27ae60; background:#dcfce7; }
-    .add-sub-text { color:#16a34a; font-size:.84rem; font-weight:600; }
-    
-    .unassigned-card { 
-        background:white; border-radius:14px; border:1.5px solid #fde68a; 
-        box-shadow:0 2px 10px rgba(0,0,0,.04); overflow:hidden; 
-    }
-    .unassigned-header { 
-        background:linear-gradient(135deg,#d97706,#f59e0b); 
-        padding:13px 18px; color:white; display:flex; align-items:center; gap:10px; 
-    }
-    .unassigned-item { 
-        display:flex; align-items:center; gap:10px; padding:9px 14px; 
-        border-bottom:1px solid #fef3c7; transition:background .15s; 
-    }
-    .unassigned-item:last-child { border-bottom:none; }
-    .unassigned-item:hover { background:#fffbeb; }
-    .unassigned-avatar { 
-        width:32px; height:32px; border-radius:50%; 
-        background:linear-gradient(135deg,#f59e0b,#d97706); display:flex; 
-        align-items:center; justify-content:center; font-size:.82rem; font-weight:700; 
-        color:white; flex-shrink:0; 
-    }
-    
-    .modal-assign .modal-header { background:linear-gradient(135deg,#15432D,#1a6b42); }
-    .modal-assign .modal-title { color:white; font-weight:700; }
-    .modal-assign .btn-close { filter:invert(1); }
-    
-    .summary-bar { 
-        background:white; border-radius:12px; border:1px solid #e5e7eb; 
-        padding:14px 20px; margin-bottom:20px; display:flex; gap:20px; 
-        flex-wrap:wrap; align-items:center; box-shadow:0 1px 4px rgba(0,0,0,.04); 
-    }
-    .summary-stat { text-align:center; }
-    .summary-stat .num { font-size:1.5rem; font-weight:800; color:#15432D; line-height:1; }
-    .summary-stat .lbl { font-size:.7rem; color:#6b7280; font-weight:500; margin-top:2px; }
-    .summary-divider { width:1px; height:36px; background:#e5e7eb; }
-    
-    .search-box-wrap {
-        position: relative;
-        margin-bottom: 16px;
-    }
-    .search-box-wrap i {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #9ca3af;
-    }
-    .search-box-wrap input {
-        padding-left: 38px;
-        border-radius: 10px;
-        border: 1.5px solid #e5e7eb;
-        font-size: 0.86rem;
-    }
-    .search-box-wrap input:focus {
-        border-color: #27ae60;
-        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.15);
-    }
-    
-    .toast-custom { position:fixed; bottom:24px; right:24px; z-index:9999; min-width:280px; }
-    @keyframes fadeInUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-</style>
 
 <section class="section">
     <div class="page-header-banner">
         <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
             <div>
-                <h2><i class="bi bi-diagram-3-fill me-2"></i>Pengaturan Struktur Hirarki (OTK 2024-2029)</h2>
+                <h2><i class="bi bi-diagram-3-fill me-2"></i>Pengaturan Struktur OTK (2024-2029)</h2>
                 <p>Mengatur hierarki resmi Universitas Ibnu Sina: atasan langsung mengevaluasi dan memantau bawahannya sesuai bidang.</p>
             </div>
             <div class="d-flex gap-2 flex-wrap align-items-center">
@@ -593,7 +417,7 @@ function confirmAssign() {
 }
 
 function removeSub(userId, userName, leaderId) {
-    if (!confirm(`Lepas ${userName} dari hirarki pimpinan ini?`)) return;
+    if (!confirm(`Lepas ${userName} dari struktur OTK ini?`)) return;
 
     fetch(`/hirarki/${userId}/update`, {
         method: 'PUT',
@@ -652,7 +476,7 @@ function confirmSupervisorAssign() {
 }
 
 function confirmResetAll() {
-    if (!confirm('Ini akan MENGHAPUS semua pengaturan hirarki!\n\nLanjutkan?')) return;
+    if (!confirm('Ini akan MENGHAPUS semua pengaturan OTK!\n\nLanjutkan?')) return;
 
     fetch('{{ route("hirarki.reset-all") }}', {
         method: 'POST',

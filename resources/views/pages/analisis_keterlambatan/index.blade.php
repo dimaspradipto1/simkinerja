@@ -23,7 +23,7 @@
                 <ul class="nav nav-pills nav-fill gap-2 flex-grow-1" id="filterTab" role="tablist" style="max-width: 600px;">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active py-1 px-3 small fw-bold" id="mode-hirarki-tab" data-bs-toggle="pill" data-bs-target="#mode-hirarki" type="button" role="tab">
-                            <i class="bi bi-diagram-3-fill me-1"></i> Mode 1: Hirarki Bertingkat
+                            <i class="bi bi-diagram-3-fill me-1"></i> Mode 1: OTK Bertingkat
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -35,10 +35,10 @@
 
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-sm btn-outline-primary shadow-sm rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalTreeHirarki">
-                        <i class="bi bi-diagram-3-fill me-1 text-primary"></i> 🌳 Pohon Organisasi UIS
+                        <i class="bi bi-diagram-3-fill me-1 text-primary"></i> 🌳 Pohon OTK UIS
                     </button>
                     <span id="active_hirarki_badge" class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 d-none align-items-center">
-                        <i class="bi bi-funnel-fill me-1"></i><span id="active_hirarki_text">Filter Hirarki Aktif</span>
+                        <i class="bi bi-funnel-fill me-1"></i><span id="active_hirarki_text">Filter OTK Aktif</span>
                         <button type="button" class="btn-close ms-2" id="btn-clear-hirarki" style="font-size: 0.6rem;" title="Reset Filter"></button>
                     </span>
                 </div>
@@ -47,7 +47,7 @@
 
             <form id="filterForm">
                 <div class="tab-content" id="filterTabContent">
-                    <!-- Tab Mode 1: Hirarki Bertingkat -->
+                    <!-- Tab Mode 1: OTK Bertingkat -->
                     <div class="tab-pane fade show active" id="mode-hirarki" role="tabpanel">
                         <div class="row g-3 align-items-center mb-3">
                             <div class="col-md-3">
@@ -342,13 +342,13 @@
     </div>
 </div>
 
-<!-- Modal Tree Hirarki Organisasi UIS -->
+<!-- Modal Tree OTK UIS -->
 <div class="modal fade" id="modalTreeHirarki" tabindex="-1" aria-labelledby="modalTreeHirarkiLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white py-3">
                 <h5 class="modal-title fw-bold fs-6" id="modalTreeHirarkiLabel">
-                    <i class="bi bi-diagram-3-fill me-2"></i>Pohon Hirarki Jabatan & Organisasi Universitas Ibnu Sina
+                    <i class="bi bi-diagram-3-fill me-2"></i>Pohon OTK Jabatan & Organisasi Universitas Ibnu Sina
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>

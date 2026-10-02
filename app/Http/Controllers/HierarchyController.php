@@ -6,17 +6,18 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class HierarchyController extends Controller
 {
     /**
-     * Tampilkan halaman pengaturan struktur hirarki.
+     * Tampilkan halaman pengaturan struktur OTK.
      */
     public function index()
     {
         $authUser = Auth::user();
         if (!$authUser || !$authUser->isAdmin()) {
-            abort(403, 'Akses ditolak. Hanya Admin yang dapat mengatur hirarki.');
+            abort(403, 'Akses ditolak. Hanya Admin yang dapat mengatur OTK.');
         }
 
         // Ambil semua user aktif beserta supervisor mereka
@@ -24,6 +25,24 @@ class HierarchyController extends Controller
             ->orderBy('unit')
             ->orderBy('name')
             ->get(['id', 'name', 'jabatan', 'unit', 'roles', 'supervisor_id']);
+        $otkSyncState = DB::table('otk_sync_state')->where('id', 1)->value('synced_at');
+        $otkTitles = DB::table('otk_sync_state')
+            ->where('id', 1)
+            ->first(['title_line_1', 'title_line_2']);
+        $otkOrderById = DB::table('otk_members')->pluck('sort_order', 'user_id')->all();
+        $otkMemberIds = array_keys($otkOrderById);
+        $availableUsers = $otkSyncState !== null
+            ? User::query()
+                ->where('is_active', true)
+                ->whereNotIn('id', $otkMemberIds)
+                ->orderBy('name')
+                ->get(['id', 'name', 'jabatan', 'unit'])
+            : collect();
+        if ($otkSyncState !== null) {
+            $allUsers = $allUsers->whereIn('id', $otkMemberIds)
+                ->sortBy(fn ($user) => $otkOrderById[$user->id] ?? PHP_INT_MAX)
+                ->values();
+        }
 
         // Helper untuk kategorisasi OTK
         $categorizeLeader = function ($leader) {
@@ -60,7 +79,11 @@ class HierarchyController extends Controller
         });
 
         // Helper bobot peringkat jabatan sesuai struktur OTK UIS
-        $rankWeight = function ($u) {
+        $rankWeight = function ($u) use ($otkSyncState, $otkOrderById) {
+            if ($otkSyncState !== null && isset($otkOrderById[$u->id])) {
+                return $otkOrderById[$u->id];
+            }
+
             $jab = strtoupper($u->jabatan ?? '');
             $unit = strtoupper($u->unit ?? '');
 
@@ -77,7 +100,8 @@ class HierarchyController extends Controller
             // 3. Kepala Biro & Lembaga Rektorat
             if (str_contains($jab, 'KA. BIRO ADMINISTRASI AKADEMIK') || str_contains($jab, 'BAAK')) return 301;
             if (str_contains($jab, 'KEPALA PERPUSTAKAAN') || str_contains($unit, 'PERPUSTAKAAN')) return 302;
-            if (str_contains($jab, 'KA. BIRO ADMINISTRASI UMUM') || str_contains($jab, 'BAUK')) return 303;
+            if (str_contains($jab, 'KA. BIRO ADMINISTRASI UMUM')
+                || (str_contains($jab, 'BAUK') && !str_contains($jab, 'TATA USAHA'))) return 303;
             if (str_contains($jab, 'KEPALA LPTI') || str_contains($jab, 'KEPALA ICT')) return 304;
             if (str_contains($jab, 'BIRO KEMAHASISWAAN') || str_contains($jab, 'KA. BIRO KEMAHASISWAAN')) return 305;
             if (str_contains($jab, 'KA. LPPM')) return 306;
@@ -96,8 +120,19 @@ class HierarchyController extends Controller
             if (str_contains($jab, 'WAKIL DEKAN II')) return 502;
             if (str_contains($jab, 'WAKIL DEKAN')) return 503;
 
+            if (str_contains($jab, 'KABID. AKADEMIK')) return 601;
+            if (str_contains($jab, 'KABID. ADMINISTRASI')) return 602;
+            if (str_contains($jab, 'KABID. KEUANGAN')) return 603;
+            if (str_contains($jab, 'KABID. SDM')) return 604;
+            if (str_contains($jab, 'KABID. SARANA')) return 605;
+
             // 6. Kabid-kabid
-            if (str_contains($jab, 'KABID')) return 600;
+            if (str_contains($jab, 'KABID. HUMAS')) return 610;
+            if (str_contains($jab, 'KABID. KERJASAMA')) return 620;
+            if (str_contains($jab, 'KABID. KEMAHASISWAAN')) return 630;
+            if (str_contains($jab, 'PUSAT KARIR')) return 640;
+            if (str_contains($jab, 'PERENCANAAN DAN PENGEMBANGAN')) return 650;
+            if (str_contains($jab, 'KABID')) return 660;
 
             // 7. Ketua Program Studi (Kaprodi)
             if (str_contains($jab, 'KETUA PROGRAM STUDI') || str_contains($jab, 'KAPRODI')) return 700;
@@ -145,11 +180,243 @@ class HierarchyController extends Controller
             return is_null($u->supervisor_id) && !$isTopLeader && !$u->isAdmin() && !$u->isSuperAdmin() && $hasJabatanStruktural;
         })->values();
 
-        return view('pages.hirarki.index', compact(
+        $isReportableUser = fn ($user) => !in_array(strtolower(trim($user->email ?? '')), [
+                'admin@uis.ac.id',
+                'admin@gmail.com',
+                'superadmin@uis.ac.id',
+            ], true)
+            && !in_array(strtolower(trim($user->name ?? '')), ['admin', 'superadmin'], true)
+            && !empty($user->jabatan) && $user->jabatan !== '-';
+
+        $findPosition = fn (string $position) => $allUsers->first(
+            fn ($user) => strtoupper(trim($user->jabatan ?? '')) === strtoupper($position)
+        );
+
+        $descendantsOf = function ($leader) use ($allUsers, $rankWeight) {
+            $descendants = collect();
+            $visitedIds = [$leader->id => true];
+            $walk = function ($parentId) use (&$walk, &$visitedIds, $descendants, $allUsers, $rankWeight) {
+                foreach ($allUsers->where('supervisor_id', $parentId)->sortBy($rankWeight) as $child) {
+                    if (isset($visitedIds[$child->id])) {
+                        continue;
+                    }
+
+                    $visitedIds[$child->id] = true;
+                    $descendants->push($child);
+                    $walk($child->id);
+                }
+            };
+            $walk($leader->id);
+
+            return $descendants;
+        };
+
+        $childrenGroups = function ($leader) use ($allUsers, $descendantsOf, $rankWeight, $isReportableUser) {
+            return $allUsers->where('supervisor_id', $leader->id)
+                ->sortBy($rankWeight)
+                ->map(function ($child) use ($descendantsOf, $rankWeight, $isReportableUser) {
+                    return [
+                        'label' => $child->unit ?: $child->jabatan,
+                        'employees' => collect([$child])
+                            ->merge($descendantsOf($child))
+                            ->filter($isReportableUser)
+                            ->unique('id')
+                            ->values(),
+                    ];
+                })
+                ->values();
+        };
+
+        $rektor = $findPosition('REKTOR');
+        $viceRectors = $allUsers
+            ->filter(fn ($user) => preg_match('/^WAKIL REKTOR (I|II|III)$/i', trim($user->jabatan ?? '')))
+            ->sortBy($rankWeight)
+            ->values();
+
+        $organizationSections = [[
+            'number' => 1,
+            'unit' => 'PIMPINAN UNIVERSITAS IBNU SINA (UIS)',
+            'responsibility' => null,
+            'coordinators' => [[
+                'label' => null,
+                'implementers' => [[
+                    'label' => null,
+                    'employees' => collect([$rektor])->filter()->merge($viceRectors)->filter($isReportableUser)->values(),
+                ]],
+            ]],
+        ]];
+
+        $centralCoordinators = [];
+        foreach (['I', 'II', 'III'] as $number) {
+            $coordinator = $findPosition("WAKIL REKTOR {$number}");
+            if (!$coordinator) {
+                continue;
+            }
+
+            $implementers = $childrenGroups($coordinator);
+            $implementers = $implementers
+                ->groupBy(function ($group) {
+                    $unit = strtoupper($group['label'] ?? '');
+
+                    return match (true) {
+                        str_contains($unit, 'PERPUSTAKAAN') => 'PERPUSTAKAAN',
+                        str_contains($unit, 'LPPM') => 'LEMBAGA PENELITIAN DAN PENGABDIAN KEPADA MASYARAKAT',
+                        str_contains($unit, 'LPMI') => 'SISTEM PENJAMINAN MUTU INTERNAL',
+                        str_contains($unit, 'LPTI'), str_contains($unit, 'ICT') => 'UPT TEKNIK INFORMASI DAN KOMUNIKASI',
+                        default => 'UNSUR PELAKSANA ADMINISTRASI',
+                    };
+                })
+                ->map(fn ($groups, $label) => [
+                    'label' => $label,
+                    'employees' => $groups->flatMap(fn ($group) => $group['employees'])
+                        ->unique('id')
+                        ->values(),
+                ])
+                ->values();
+
+            if ($implementers->isNotEmpty()) {
+                $centralCoordinators[] = [
+                    'label' => "WAKIL REKTOR {$number}",
+                    'implementers' => $implementers,
+                ];
+            }
+        }
+
+        $organizationSections[] = [
+            'number' => null,
+            'unit' => 'REKTORAT UIS',
+            'responsibility' => null,
+            'coordinators' => $centralCoordinators,
+        ];
+
+        $facultyDefinitions = [
+            [
+                'number' => 2,
+                'unit' => 'FAKULTAS EKONOMI DAN BISNIS',
+                'match' => ['FAKULTAS EKONOMI DAN BISNIS', 'PRODI S1 MANAJEMEN', 'PRODI S1 AKUNTANSI', 'PRODI S2 MANAJEMEN'],
+                'order' => [
+                    'DEKAN' => 10,
+                    'WAKIL DEKAN I' => 20,
+                    'WAKIL DEKAN II' => 30,
+                    'KETUA PROGRAM STUDI S1 MANAJEMEN' => 40,
+                    'SEKRETARIS PRODI S1 MANAJEMEN' => 41,
+                    'KETUA PROGRAM STUDI S1 AKUNTANSI' => 50,
+                    'SEKRETARIS PRODI S1 AKUNTANSI' => 51,
+                    'KETUA PROGRAM STUDI PASCASARJANA' => 60,
+                    'SEKRETARIS PRODI PASCASARJANA' => 61,
+                    'UPMI' => 70,
+                    'UPPM' => 80,
+                    'TATA USAHA SARJANA' => 90,
+                    'TATA USAHA PASCASARJANA' => 100,
+                    'HUMAS DAN PUBLIKASI' => 110,
+                ],
+            ],
+            [
+                'number' => 3,
+                'unit' => 'FAKULTAS SAINS DAN TEKNOLOGI',
+                'match' => [
+                    'FAKULTAS SAINS DAN TEKNOLOGI',
+                    'FAKULTAS TEKNIK',
+                    'PRODI TEKNIK INDUSTRI',
+                    'PRODI TEKNIK INFORMATIKA',
+                    'PRODI TEKNIK LOGISTIK',
+                    'PRODI TEKNIK LOGISTIK DAN PERKAPALAN',
+                    'LABORATORIUM FST',
+                ],
+                'order' => [
+                    'DEKAN' => 10,
+                    'WAKIL DEKAN I' => 20,
+                    'WAKIL DEKAN II' => 30,
+                    'KETUA PROGRAM STUDI TEKNIK INDUSTRI' => 40,
+                    'SEKRETARIS PROGRAM STUDI TEKNIK INDUSTRI' => 41,
+                    'KETUA PROGRAM STUDI TEKNIK INFORMATIKA' => 50,
+                    'SEKRETARIS PROGRAM STUDI TEKNIK INFORMATIKA' => 51,
+                    'KETUA PROGRAM STUDI TEKNIK LOGISTIK' => 60,
+                    'SEKRETARIS PROGRAM STUDI TEKNIK LOGISTIK' => 61,
+                    'TATA USAHA' => 70,
+                    'UPMI' => 80,
+                    'KA. UPPM' => 90,
+                    'STAFF UPPM' => 91,
+                    'KA. LABORATORIUM' => 100,
+                    'KA. LAB' => 100,
+                    'STAFF LABOR' => 101,
+                    'KA. HUMAS' => 110,
+                    'STAFF HUMAS' => 111,
+                ],
+            ],
+            [
+                'number' => 4,
+                'unit' => 'FAKULTAS ILMU KESEHATAN',
+                'match' => ['FAKULTAS ILMU KESEHATAN', 'PRODI K3', 'PRODI KESLING'],
+                'order' => [
+                    'DEKAN' => 10,
+                    'WAKIL DEKAN I' => 20,
+                    'WAKIL DEKAN II' => 30,
+                    'KETUA PROGRAM STUDI K3' => 40,
+                    'SEKRETARIS PRODI K3' => 41,
+                    'KETUA PROGRAM STUDI KESLING' => 50,
+                    'SEKRETARIS PRODI KESLING' => 51,
+                    'UPMI' => 60,
+                    'GKM' => 70,
+                    'UPPM' => 80,
+                    'LABORAN' => 90,
+                    'TATA USAHA' => 100,
+                    'HUMAS' => 110,
+                ],
+            ],
+        ];
+
+        foreach ($facultyDefinitions as $faculty) {
+            $dean = $allUsers->first(fn ($user) => str_contains(strtoupper($user->jabatan ?? ''), 'DEKAN')
+                && !str_contains(strtoupper($user->jabatan ?? ''), 'WAKIL')
+                && in_array(strtoupper(trim($user->unit ?? '')), $faculty['match'], true));
+            $employees = collect([$dean])
+                ->filter()
+                ->merge($dean ? $descendantsOf($dean) : collect())
+                ->filter($isReportableUser)
+                ->unique('id')
+                ->sortBy(function ($user) use ($faculty, $otkSyncState, $otkOrderById) {
+                    if ($otkSyncState !== null && isset($otkOrderById[$user->id])) {
+                        return $otkOrderById[$user->id];
+                    }
+
+                    $position = strtoupper($user->jabatan ?? '');
+                    $priority = 999;
+                    foreach ($faculty['order'] as $marker => $weight) {
+                        if (str_contains($position, $marker)
+                            && !($marker === 'DEKAN' && str_contains($position, 'WAKIL'))
+                            && !($marker === 'WAKIL DEKAN I' && str_contains($position, 'WAKIL DEKAN II'))) {
+                            $priority = $weight;
+                            break;
+                        }
+                    }
+
+                    return $priority * 1000 + $user->id;
+                })
+                ->values();
+
+            $organizationSections[] = [
+                'number' => $faculty['number'],
+                'unit' => $faculty['unit'],
+                'responsibility' => 'TANGGUNG JAWAB REKTOR',
+                'coordinators' => [[
+                    'label' => 'KOORDINASI MELALUI WAKIL REKTOR I',
+                    'implementers' => [[
+                        'label' => 'UNSUR PELAKSANA AKADEMIK',
+                        'employees' => $employees,
+                    ]],
+                ]],
+            ];
+        }
+
+        return view('pages.hirarki.otk-table', compact(
             'allUsers',
+            'availableUsers',
             'pimpinan',
             'hierarchyTree',
-            'unassigned'
+            'unassigned',
+            'organizationSections',
+            'otkTitles'
         ));
     }
 
@@ -169,12 +436,46 @@ class HierarchyController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Struktur Hirarki berhasil disinkronisasi sesuai OTK UIS 2024-2029! ({$assignedCount} pegawai terhubung).",
+                'message' => "Struktur OTK berhasil disinkronisasi sesuai OTK UIS 2024-2029! ({$assignedCount} pegawai terhubung).",
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal sinkronisasi OTK: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function uploadOtk(Request $request, \App\Services\OtkPdfSyncService $otkPdfSyncService)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || !$authUser->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $validated = $request->validate([
+            'file_sk' => 'required|file|mimes:pdf|max:30720',
+        ], [
+            'file_sk.required' => 'File SK OTK wajib diunggah.',
+            'file_sk.mimes' => 'Format file SK OTK harus PDF.',
+            'file_sk.max' => 'Ukuran file maksimal 30 MB.',
+        ]);
+
+        try {
+            $result = $otkPdfSyncService->sync($validated['file_sk']->getRealPath());
+
+            return response()->json([
+                'success' => true,
+                'message' => "SK OTK berhasil disinkronkan. {$result['updated_count']} data jabatan, unit, dan anggota OTK diperbarui.",
+            ]);
+        } catch (\RuntimeException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyinkronkan SK OTK. Periksa log aplikasi untuk detail kesalahan.',
             ], 500);
         }
     }
@@ -190,15 +491,21 @@ class HierarchyController extends Controller
         }
 
         $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'jabatan' => 'sometimes|required|string|max:255',
+            'unit' => 'sometimes|required|string|max:255',
             'supervisor_id' => 'nullable|exists:users,id',
         ]);
 
-        // Cegah circular reference: supervisor tidak boleh menjadi bawahan dari user itu sendiri
         $newSupervisorId = $request->input('supervisor_id');
-        if ($newSupervisorId && (int)$newSupervisorId === $user->id) {
-            return response()->json(['success' => false, 'message' => 'User tidak dapat menjadi atasan dirinya sendiri.'], 422);
+        if ($this->supervisorWouldCreateCycle($user, $newSupervisorId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Atasan yang dipilih akan membuat siklus dalam struktur OTK.',
+            ], 422);
         }
 
+        $user->fill($request->only(['name', 'jabatan', 'unit']));
         $user->supervisor_id = $newSupervisorId ?: null;
         $user->save();
 
@@ -208,8 +515,119 @@ class HierarchyController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Atasan langsung {$user->name} berhasil diperbarui menjadi: {$supervisorName}",
+            'message' => "Data OTK dan akun Pengguna {$user->name} berhasil diperbarui. Atasan langsung: {$supervisorName}.",
         ]);
+    }
+
+    public function addExistingUserToOtk(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || !$authUser->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'jabatan' => 'required|string|max:255',
+            'unit' => 'required|string|max:255',
+            'supervisor_id' => 'required|integer|exists:users,id',
+        ]);
+
+        $user = User::query()
+            ->whereKey($validated['user_id'])
+            ->where('is_active', true)
+            ->first();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun tidak ditemukan atau tidak aktif.',
+            ], 422);
+        }
+
+        if (DB::table('otk_members')->where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengguna tersebut sudah terdaftar sebagai anggota OTK.',
+            ], 422);
+        }
+
+        $supervisor = User::query()
+            ->whereKey($validated['supervisor_id'])
+            ->where('is_active', true)
+            ->first();
+        if (!$supervisor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Atasan tidak ditemukan atau tidak aktif.',
+            ], 422);
+        }
+
+        if ($this->supervisorWouldCreateCycle($user, $supervisor->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Atasan yang dipilih akan membuat siklus dalam struktur OTK.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($user, $supervisor, $validated): void {
+            $user->jabatan = $validated['jabatan'];
+            $user->unit = $validated['unit'];
+            $user->supervisor_id = $supervisor->id;
+            $user->save();
+
+            DB::table('otk_members')->insert([
+                'user_id' => $user->id,
+                'sort_order' => (int) DB::table('otk_members')->max('sort_order') + 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$user->name} berhasil ditambahkan ke OTK dan data Pengguna diperbarui.",
+        ]);
+    }
+
+    public function updateOtkTitles(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || !$authUser->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $validated = $request->validate([
+            'title_line_1' => 'required|string|max:255',
+            'title_line_2' => 'required|string|max:255',
+        ]);
+
+        DB::table('otk_sync_state')
+            ->where('id', 1)
+            ->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Judul OTK berhasil diperbarui.',
+        ]);
+    }
+
+    private function supervisorWouldCreateCycle(User $user, ?int $supervisorId): bool
+    {
+        $ancestorIds = [];
+        $currentSupervisorId = (int) $supervisorId;
+        while ($currentSupervisorId !== 0) {
+            if ($currentSupervisorId === $user->id) {
+                return true;
+            }
+            if (isset($ancestorIds[$currentSupervisorId])) {
+                return false;
+            }
+
+            $ancestorIds[$currentSupervisorId] = true;
+            $currentSupervisorId = (int) User::whereKey($currentSupervisorId)->value('supervisor_id');
+        }
+
+        return false;
     }
 
     /**
@@ -259,12 +677,12 @@ class HierarchyController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Hirarki atasan langsung {$user->name} berhasil direset.",
+            'message' => "Relasi atasan langsung OTK {$user->name} berhasil direset.",
         ]);
     }
 
     /**
-     * Reset semua hirarki (AJAX - hati-hati!).
+     * Reset semua relasi OTK (AJAX - hati-hati!).
      */
     public function resetAll()
     {
@@ -277,7 +695,7 @@ class HierarchyController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Seluruh data hirarki berhasil direset.',
+            'message' => 'Seluruh data OTK berhasil direset.',
         ]);
     }
 }

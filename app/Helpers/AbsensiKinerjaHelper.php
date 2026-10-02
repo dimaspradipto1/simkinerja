@@ -253,8 +253,8 @@ class AbsensiKinerjaHelper
             ->where('tanggal', $date)
             ->first();
 
-        $standar = 8;
-        $istirahat = 1;
+        $standar = AbsensiKinerjaHarian::STANDARD_WORK_HOURS;
+        $istirahat = AbsensiKinerjaHarian::BREAK_HOURS;
         $durasiTarget = $standar + $istirahat;
 
         // Status datang
@@ -349,7 +349,8 @@ class AbsensiKinerjaHelper
                . 'Absensi Kinerja Harian &mdash; <span class="text-success">' . $tanggalFormatted . '</span>'
                . '</span>';
         $html .= '    <small class="text-muted" style="font-size:0.72rem;">'
-               . '<i class="bi bi-clock me-1"></i>Standar: ' . $standar . ' jam kerja, ' . $istirahat . ' jam istirahat'
+               . '<i class="bi bi-clock me-1"></i>Target: ' . $standar . ' jam kerja + '
+               . $istirahat . ' jam istirahat (total ' . $durasiTarget . ' jam)'
                . '</small>';
         $html .= '  </div>';
 

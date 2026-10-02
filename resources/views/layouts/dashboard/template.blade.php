@@ -35,217 +35,9 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 
-    <style>
-        /* Table Symmetrical Alignment & Responsive Container */
-        .card-body {
-            overflow-x: auto;
-        }
-
-        .table-responsive,
-        .dataTables_wrapper,
-        .dataTables_scroll,
-        .dataTables_scrollHead,
-        .dataTables_scrollBody {
-            display: block;
-            width: 100% !important;
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: thin;
-        }
-
-        .table-responsive table {
-            width: 100% !important;
-            margin-bottom: 0;
-        }
-
-        /* Pending Extension Alert Styling */
-        .btn-approve-ext {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 8px 18px !important;
-            font-size: 0.83rem !important;
-            white-space: nowrap !important;
-            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.22) !important;
-            transition: all 0.2s ease-in-out !important;
-            width: auto;
-        }
-        .btn-approve-ext:hover {
-            background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
-            color: #ffffff !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35) !important;
-        }
-        @media (max-width: 991.98px) {
-            .btn-approve-ext {
-                width: 100% !important;
-            }
-        }
-
-        .dataTables_scrollHeadInner,
-        .dataTables_scrollHeadInner > table,
-        .dataTables_scrollBody > table {
-            width: 100% !important;
-            min-width: 100%;
-        }
-
-        .dataTables_wrapper {
-            max-width: 100% !important;
-            clear: both;
-        }
-
-        .dataTables_wrapper .row {
-            max-width: 100%;
-            margin-left: 0;
-            margin-right: 0;
-        }
-
-        /* Table cell styling */
-        .table th, .table td {
-            vertical-align: middle !important;
-            box-sizing: border-box;
-        }
-
-        /* Task Dropdown/Collapse Toggle Animation & Button Styling */
-        .transition-transform {
-            transition: transform 0.2s ease-in-out;
-        }
-        .btn-task-toggle[aria-expanded="true"] .toggle-icon {
-            transform: rotate(180deg);
-        }
-        .btn-task-toggle[aria-expanded="true"] {
-            background-color: #15432d !important;
-            color: #ffffff !important;
-            border-color: #15432d !important;
-        }
-        .btn-task-toggle[aria-expanded="true"]:hover {
-            background-color: #0f3121 !important;
-            color: #ffffff !important;
-        }
-
-        /* Mobile specific horizontal scroll polish */
-        @media (max-width: 991.98px) {
-            .table-responsive table:not(#kepanitiaan-table):not(#kegiatan-table):not(#rencanakerja-table):not(#rencana-kerja-table),
-            table.dataTable:not(#kepanitiaan-table):not(#kegiatan-table):not(#rencanakerja-table):not(#rencana-kerja-table) {
-                min-width: 750px !important;
-            }
-            #kepanitiaan-table,
-            #kegiatan-table,
-            #rencanakerja-table,
-            #rencana-kerja-table {
-                min-width: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-            .dataTables_scrollBody {
-                overflow-x: auto !important;
-                -webkit-overflow-scrolling: touch !important;
-            }
-        }
-
-        /* Keep action buttons neatly aligned */
-        .table td .btn-group,
-        .table td .d-inline-flex {
-            flex-wrap: nowrap;
-        }
-
-        .absensi-mobile-banner {
-            width: 100%;
-            max-width: none;
-        }
-
-        /* Mobile Spacing & Layout Polish */
-        @media (max-width: 767.98px) {
-            #main.main {
-                padding: 12px 10px !important;
-            }
-            .pagetitle {
-                padding: 0 4px !important;
-                margin-bottom: 12px !important;
-            }
-            .section {
-                padding: 0 !important;
-            }
-            .owner-actions-group .btn span {
-                display: none !important;
-            }
-            .owner-actions-group .btn i {
-                margin: 0 !important;
-                font-size: 1.1rem !important;
-            }
-            .card {
-                border-radius: 12px !important;
-                margin-left: 0 !important;
-                margin-right: 0 !important;
-                margin-bottom: 14px !important;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                overflow: hidden !important;
-            }
-            .card-body {
-                padding: 12px 10px !important;
-            }
-            .card-header-green {
-                border-radius: 12px 12px 0 0 !important;
-                padding: 12px 14px !important;
-            }
-            .absensi-mobile-banner {
-                width: 100% !important;
-                max-width: 100% !important;
-                margin-left: 0 !important;
-                margin-right: 0 !important;
-                border-radius: 12px !important;
-            }
-            .absensi-mobile-banner .card-body {
-                padding: 14px 12px !important;
-            }
-            .absensi-mobile-banner .btn {
-                width: 100% !important;
-                justify-content: center !important;
-            }
-        }
-
-        /* Modal QR Camera Scanner Styling */
-        #modal-scanner-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 320px;
-            aspect-ratio: 1 / 1;
-            margin: 0 auto;
-            border-radius: 1rem;
-            overflow: hidden;
-            background: #000;
-        }
-        #modal-reader {
-            width: 100% !important;
-            height: 100% !important;
-            border: none !important;
-        }
-        #modal-reader video {
-            object-fit: cover !important;
-            width: 100% !important;
-            height: 100% !important;
-            border-radius: 1rem !important;
-        }
-        #modal-reader img[alt="Info icon"] { 
-            display: none !important; 
-        }
-        .session-choice-item {
-            transition: all 0.18s ease-in-out;
-            border: 1px solid #e2e8f0;
-        }
-        .session-choice-item:hover {
-            border-color: #0d6efd !important;
-            background-color: #f0f7ff !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.12) !important;
-        }
-    </style>
 </head>
 
-<body>
+<body class="@yield('page-style-class')">
 
     @include('layouts.dashboard.header')
     @include('layouts.dashboard.sidebar')
@@ -962,6 +754,31 @@
             }
         };
 
+        window.removeSidebarActiveSessions = function(sessionIds) {
+            (sessionIds || []).forEach(function(id) {
+                $('#sidebar-sesi-item-' + id).remove();
+            });
+
+            [
+                {
+                    list: $('#presensi-kepanitiaan-nav'),
+                    container: $('#sidebar-presensi-active-item'),
+                    badge: $('#sidebar-active-sessions-badge')
+                },
+                {
+                    list: $('#presensi-user-nav'),
+                    container: $('#presensi-user-nav').closest('.nav-item'),
+                    badge: $('#sidebar-user-active-sessions-badge')
+                }
+            ].forEach(function(sidebar) {
+                if (!sidebar.list.length) return;
+
+                const remaining = sidebar.list.children('li').length;
+                sidebar.badge.text(remaining);
+                sidebar.container.toggle(remaining > 0);
+            });
+        };
+
         $(document).on('click', '.btn-scan-barcode-modal', function(e) {
             e.preventDefault();
             window.openScanBarcodeModal(this);
@@ -1657,6 +1474,7 @@
             $('#btnToggleTambahSesi').html('<i class="bi bi-plus-circle me-1"></i> Tambah Sesi Baru');
             $('#input_nama_sesi').val('');
             $('#input_tanggal_sesi').val(new Date().toISOString().split('T')[0]);
+            $('#input_jenis_absen').val('datang');
 
             loadSesiPresensiList(kepanitiaanId);
 
@@ -1704,6 +1522,7 @@
                     <td class="text-center fw-semibold text-muted" style="vertical-align: middle;">${idx + 1}</td>
                     <td style="vertical-align: middle;">
                         <a href="${s.detail_url}" class="fw-bold text-primary text-decoration-none d-block">${s.nama_sesi}</a>
+                        <small class="text-muted">${s.jenis_absen_label}</small>
                     </td>
                     <td class="text-center" style="vertical-align: middle;">
                         <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.78rem;">${s.tanggal || '-'}</span>
@@ -1868,6 +1687,9 @@
                         dataType: 'json',
                         success: function(res) {
                             if (res.success) {
+                                if (window.removeSidebarActiveSessions) {
+                                    window.removeSidebarActiveSessions(res.deleted_session_ids || [sesiId]);
+                                }
                                 $('#row-manage-sesi-' + sesiId).fadeOut(300, function() { $(this).remove(); });
                                 if (window.LaravelDataTables && window.LaravelDataTables["kepanitiaan-table"]) {
                                     window.LaravelDataTables["kepanitiaan-table"].ajax.reload(null, false);
@@ -1920,7 +1742,7 @@
                         </div>
                         <hr class="my-3">
                         <div class="row g-2 mb-3">
-                            <div class="col-12 col-md-7">
+                            <div class="col-12 col-md-4">
                                 <label for="appr_tgl" class="form-label fw-bold small text-dark"><i class="bi bi-calendar-event me-1 text-primary"></i>Tanggal Estimasi Baru <span class="text-danger">*</span></label>
                                 <input type="date" name="estimasi_tanggal_selesai" id="appr_tgl" class="form-control form-control-sm" required>
                             </div>
@@ -2092,13 +1914,21 @@
                         <h6 class="fw-bold text-dark mb-2 small"><i class="bi bi-calendar-plus me-1 text-primary"></i> Form Tambah Sesi Presensi Baru</h6>
                         <form id="formTambahSesiPresensi">
                             <div class="row g-2 align-items-end">
-                                <div class="col-12 col-md-7">
+                                <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold text-secondary mb-1">Nama Sesi Presensi <span class="text-danger">*</span></label>
                                     <input type="text" name="nama_sesi" id="input_nama_sesi" class="form-control form-control-sm" placeholder="Contoh: Absensi Hari Ke-1, Rapat Panitia..." required>
                                 </div>
                                 <div class="col-12 col-md-3">
                                     <label class="form-label small fw-semibold text-secondary mb-1">Tanggal Pelaksanaan</label>
                                     <input type="date" name="tanggal" id="input_tanggal_sesi" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label class="form-label small fw-semibold text-secondary mb-1">Jenis Absen</label>
+                                    <select name="jenis_absen" id="input_jenis_absen" class="form-select form-select-sm" required>
+                                        <option value="datang">Absen Datang</option>
+                                        <option value="pulang">Absen Pulang</option>
+                                        <option value="rapat">Absen Rapat (1 kali)</option>
+                                    </select>
                                 </div>
                                 <div class="col-12 col-md-2">
                                     <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold">

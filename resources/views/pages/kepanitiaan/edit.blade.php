@@ -101,7 +101,7 @@
                                             <tbody>
                                                 @foreach($kepanitiaan->sesiAbsensis as $s)
                                                     <tr>
-                                                        <td class="fw-semibold text-dark">{{ $s->nama_sesi }}</td>
+                                                        <td class="fw-semibold text-dark">{{ $s->nama_sesi }}<br><small class="text-muted">{{ ['datang' => 'Absen Datang', 'pulang' => 'Absen Pulang', 'rapat' => 'Absen Rapat (1 kali)'][$s->jenis_absen] ?? 'Absen Datang' }}</small></td>
                                                         <td class="text-center">{{ $s->tanggal ? date('d/m/Y', strtotime($s->tanggal)) : '-' }}</td>
                                                         <td class="text-center"><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ $s->presensis->count() }} Hadir</span></td>
                                                         <td class="text-center">
@@ -349,7 +349,7 @@
 
         // Dynamic Sesi Presensi Repeater (Edit)
         let sesiCountEdit = 0;
-        function tambahBarisSesiEdit(nama = '', tgl = '') {
+        function tambahBarisSesiEdit(nama = '', tgl = '', jenisAbsen = 'datang') {
             sesiCountEdit++;
             const tglVal = tgl || ($('#tanggal_mulai').val() || new Date().toISOString().split('T')[0]);
             const html = `
@@ -357,19 +357,27 @@
                 <div class="col-12 col-md-7">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light text-muted"><i class="bi bi-tag-fill"></i></span>
-                        <input type="text" name="nama_sesi_presensi[]" class="form-control" placeholder="Nama Sesi Baru..." value="${nama}" required>
+                        <input type="text" name="nama_sesi_presensi[${sesiCountEdit - 1}]" class="form-control" placeholder="Nama Sesi Baru..." value="${nama}" required>
                     </div>
                 </div>
                 <div class="col-9 col-md-4">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light text-muted"><i class="bi bi-calendar-event"></i></span>
-                        <input type="date" name="tanggal_sesi_presensi[]" class="form-control" value="${tglVal}">
+                        <input type="date" name="tanggal_sesi_presensi[${sesiCountEdit - 1}]" class="form-control" value="${tglVal}">
                     </div>
                 </div>
                 <div class="col-3 col-md-1 text-end">
                     <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="$('#baris-sesi-edit-${sesiCountEdit}').remove()" title="Hapus Baris Sesi">
                         <i class="bi bi-trash"></i>
                     </button>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex flex-wrap align-items-center gap-3 small">
+                        <span class="fw-semibold text-secondary">Jenis absen:</span>
+                        <label class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="jenis_absen_presensi[${sesiCountEdit - 1}]" value="datang" ${jenisAbsen === 'datang' ? 'checked' : ''}> Datang</label>
+                        <label class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="jenis_absen_presensi[${sesiCountEdit - 1}]" value="pulang" ${jenisAbsen === 'pulang' ? 'checked' : ''}> Pulang</label>
+                        <label class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="jenis_absen_presensi[${sesiCountEdit - 1}]" value="rapat" ${jenisAbsen === 'rapat' ? 'checked' : ''}> Rapat (1 kali absen)</label>
+                    </div>
                 </div>
             </div>`;
             $('#sesiPresensiContainerEdit').append(html);

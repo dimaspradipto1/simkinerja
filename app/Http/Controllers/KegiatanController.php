@@ -540,14 +540,24 @@ class KegiatanController extends Controller
 
             // Simpan sesi presensi baru jika diisi dari form
             if ($request->filled('nama_sesi_presensi')) {
+                $request->validate([
+                    'nama_sesi_presensi' => ['array'],
+                    'nama_sesi_presensi.*' => ['nullable', 'string', 'max:255'],
+                    'tanggal_sesi_presensi' => ['nullable', 'array'],
+                    'tanggal_sesi_presensi.*' => ['nullable', 'date'],
+                    'jenis_absen_presensi' => ['required', 'array'],
+                    'jenis_absen_presensi.*' => ['required', 'in:datang,pulang,rapat'],
+                ]);
                 $sesiNames = (array) $request->input('nama_sesi_presensi');
                 $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+                $sesiTypes = (array) $request->input('jenis_absen_presensi', []);
                 foreach ($sesiNames as $idx => $sName) {
                     $trimmed = trim((string)$sName);
                     if (!empty($trimmed)) {
                         \App\Models\KepanitiaanSesiAbsensi::create([
                             'kepanitiaan_id' => $record->id,
                             'nama_sesi' => $trimmed,
+                            'jenis_absen' => $sesiTypes[$idx] ?? 'datang',
                             'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($record->tanggal_mulai ?: date('Y-m-d')),
                             'token' => \Illuminate\Support\Str::random(24),
                             'is_active' => true,
@@ -653,14 +663,24 @@ class KegiatanController extends Controller
 
         // Jika kegiatan bertipe Kepanitiaan dan ada input sesi presensi baru
         if (trim($kegiatan->kategori) === 'Kepanitiaan' && $request->filled('nama_sesi_presensi')) {
+            $request->validate([
+                'nama_sesi_presensi' => ['array'],
+                'nama_sesi_presensi.*' => ['nullable', 'string', 'max:255'],
+                'tanggal_sesi_presensi' => ['nullable', 'array'],
+                'tanggal_sesi_presensi.*' => ['nullable', 'date'],
+                'jenis_absen_presensi' => ['required', 'array'],
+                'jenis_absen_presensi.*' => ['required', 'in:datang,pulang,rapat'],
+            ]);
             $sesiNames = (array) $request->input('nama_sesi_presensi');
             $sesiTgls = (array) $request->input('tanggal_sesi_presensi', []);
+            $sesiTypes = (array) $request->input('jenis_absen_presensi', []);
             foreach ($sesiNames as $idx => $sName) {
                 $trimmed = trim((string)$sName);
                 if (!empty($trimmed)) {
                     \App\Models\KepanitiaanSesiAbsensi::create([
                         'kepanitiaan_id' => $kegiatan->id,
                         'nama_sesi' => $trimmed,
+                        'jenis_absen' => $sesiTypes[$idx] ?? 'datang',
                         'tanggal' => !empty($sesiTgls[$idx]) ? $sesiTgls[$idx] : ($kegiatan->tanggal_mulai ?: date('Y-m-d')),
                         'token' => \Illuminate\Support\Str::random(24),
                         'is_active' => true,

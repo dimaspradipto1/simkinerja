@@ -1,5 +1,6 @@
 @extends('layouts.dashboard.template')
 
+@section('page-style-class', 'menu-page-pengaturan-absensi')
 @section('content')
 <div class="pagetitle">
     <h1 class="fw-bold text-dark">Pengaturan Status Absensi</h1>
@@ -256,64 +257,7 @@
     </div>
 </section>
 
-<style>
-/* Filter Pills Styling */
-.btn-filter-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.45rem 0.95rem;
-    border-radius: 50rem;
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
-    color: #475569;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-    user-select: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-.btn-filter-pill:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #0f172a;
-}
-.btn-filter-pill.active {
-    background: #0f172a;
-    color: #ffffff;
-    border-color: #0f172a;
-    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2);
-}
-.btn-filter-pill.active .badge {
-    background: rgba(255, 255, 255, 0.25) !important;
-    color: #ffffff !important;
-}
 
-/* Pulsing dot for active status */
-.pulse-dot-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #198754;
-    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
-    animation: pulse-green 2s infinite;
-    display: inline-block;
-    margin-right: 6px;
-    flex-shrink: 0;
-}
-.status-dot-closed {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #94a3b8;
-    display: inline-block;
-    margin-right: 6px;
-    flex-shrink: 0;
-}
-@keyframes pulse-green {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(25, 135, 84, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
-}
-</style>
 @endsection
 
 @push('scripts')

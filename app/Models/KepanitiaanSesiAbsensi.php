@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class KepanitiaanSesiAbsensi extends Model
 {
@@ -15,6 +16,7 @@ class KepanitiaanSesiAbsensi extends Model
     protected $fillable = [
         'kepanitiaan_id',
         'nama_sesi',
+        'jenis_absen',
         'tanggal',
         'waktu_mulai_datang',
         'waktu_selesai_datang',
@@ -39,6 +41,28 @@ class KepanitiaanSesiAbsensi extends Model
                 $model->token = Str::random(24);
             }
         });
+
+        static::deleting(function (self $sesi) {
+            foreach ($sesi->presensis as $presensi) {
+                if ($presensi->bukti_izin && Storage::disk('public')->exists($presensi->bukti_izin)) {
+                    Storage::disk('public')->delete($presensi->bukti_izin);
+                }
+                $presensi->delete();
+            }
+        });
+    }
+
+    public static function deleteWithoutKepanitiaan(): int
+    {
+        $orphanedSessions = self::whereDoesntHave('kepanitiaan', function ($query) {
+            $query->where('kategori', 'Kepanitiaan');
+        })->get();
+
+        foreach ($orphanedSessions as $sesi) {
+            $sesi->delete();
+        }
+
+        return $orphanedSessions->count();
     }
 
     public function kepanitiaan()

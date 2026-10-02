@@ -66,6 +66,12 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);
     Route::resource('kategori', KategoriController::class);
+    Route::get('database-backup', [\App\Http\Controllers\DatabaseBackupController::class, 'index'])
+        ->name('database-backup.index');
+    Route::get('database-backup/export', [\App\Http\Controllers\DatabaseBackupController::class, 'export'])
+        ->name('database-backup.export');
+    Route::get('database-backup/storage-public', [\App\Http\Controllers\DatabaseBackupController::class, 'exportPublicStorage'])
+        ->name('database-backup.storage-public');
 
     // SK Kepanitiaan (Upload & Ekstraksi Personel - Superadmin & Admin)
     Route::post('sk-kepanitiaan/{id}/link-user', [SkKepanitiaanController::class, 'linkUser'])->name('sk-kepanitiaan.link-user');
@@ -78,6 +84,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::put('hirarki/{user}/update', [HierarchyController::class, 'update'])->name('hirarki.update');
     Route::post('hirarki/bulk-assign', [HierarchyController::class, 'bulkAssign'])->name('hirarki.bulk-assign');
     Route::post('hirarki/sync-otk', [HierarchyController::class, 'syncOtk'])->name('hirarki.sync-otk');
+    Route::post('hirarki/upload-otk', [HierarchyController::class, 'uploadOtk'])->name('hirarki.upload-otk');
+    Route::post('hirarki/add-user', [HierarchyController::class, 'addExistingUserToOtk'])->name('hirarki.add-user');
+    Route::put('hirarki/update-titles', [HierarchyController::class, 'updateOtkTitles'])->name('hirarki.update-titles');
     Route::post('hirarki/{user}/reset', [HierarchyController::class, 'reset'])->name('hirarki.reset');
     Route::post('hirarki/reset-all', [HierarchyController::class, 'resetAll'])->name('hirarki.reset-all');
 
@@ -210,6 +219,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     // Absensi Kinerja Harian
     Route::get('absensi-kinerja', [AbsensiKinerjaController::class, 'index'])->name('absensi-kinerja.index');
+    Route::get('absensi-kinerja/export', [AbsensiKinerjaController::class, 'export'])->name('absensi-kinerja.export');
+    Route::get('absensi-kinerja/export-pdf', [AbsensiKinerjaController::class, 'exportPdf'])->name('absensi-kinerja.export-pdf');
 
     // Pengaturan Status Sesi Absensi (is_active)
     Route::get('pengaturan-absensi', [AbsensiSettingController::class, 'index'])->name('pengaturan-absensi.index');

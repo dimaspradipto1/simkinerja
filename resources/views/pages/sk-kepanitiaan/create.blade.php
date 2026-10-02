@@ -1,5 +1,6 @@
 @extends('layouts.dashboard.template')
 
+@section('page-style-class', 'menu-page-sk-kepanitiaan-create')
 @section('content')
 <div class="pagetitle">
     <h1>Upload SK Kepanitiaan</h1>
@@ -192,23 +193,7 @@
 </section>
 @endsection
 
-@push('styles')
-<style>
-    .sk-dropzone {
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .sk-dropzone:hover {
-        border-color: #3b82f6 !important;
-        background-color: #f0f7ff !important;
-    }
-    .sk-dropzone.drag-active {
-        border-color: #2563eb !important;
-        background-color: #ebf5ff !important;
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
-        transform: scale(1.005);
-    }
-</style>
-@endpush
+
 
 @push('scripts')
 <script>

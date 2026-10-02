@@ -259,6 +259,8 @@
         </tbody>
     </table>
 
+    @include('pages.partials.pdf-signature')
+
     <div class="footer-info">
         <table style="width: 100%;">
             <tr>

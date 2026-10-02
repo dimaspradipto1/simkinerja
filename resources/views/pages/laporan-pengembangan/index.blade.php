@@ -1,68 +1,8 @@
 @extends('layouts.dashboard.template')
 
+@section('page-style-class', 'menu-page-laporan-pengembangan-index')
 @section('content')
-<style>
-    .banner-hero-uis {
-        background: linear-gradient(135deg, #15432D 0%, #1c583b 50%, #15432D 100%);
-        color: #ffffff;
-        border: none;
-        position: relative;
-        overflow: hidden;
-    }
-    .banner-hero-uis::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 350px;
-        height: 350px;
-        background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-    .glass-metric-card {
-        background: rgba(255, 255, 255, 0.12);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(6px);
-        border-radius: 12px;
-        padding: 14px 16px;
-        transition: all 0.2s ease;
-    }
-    .glass-metric-card:hover {
-        background: rgba(255, 255, 255, 0.18);
-        transform: translateY(-2px);
-    }
-    .btn-action-table {
-        width: 32px;
-        height: 32px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        transition: all 0.15s ease-in-out;
-        font-size: 0.85rem;
-    }
-    .btn-action-table:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.12);
-    }
-    .table-modern thead th {
-        background-color: #f8fafc;
-        color: #475569;
-        font-size: 0.76rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 2px solid #e2e8f0;
-        padding: 12px 14px;
-        white-space: nowrap;
-    }
-    .table-modern tbody td {
-        padding: 14px 14px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-    }
-</style>
+
 
 <!-- Page Header -->
 <div class="pagetitle mb-4">
