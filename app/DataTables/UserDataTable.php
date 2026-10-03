@@ -170,6 +170,7 @@ class UserDataTable extends DataTable
                 ->addClass('text-center align-middle'),
             Column::make('name')->title('Nama Pegawai')->addClass('text-nowrap align-middle'),
             Column::make('email')->title('Email')->addClass('text-nowrap align-middle'),
+            Column::make('nomor_wa')->title('Nomor WhatsApp')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('nidn')->title('NUP')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('unit')->title('Unit')->addClass('text-nowrap align-middle')->defaultContent('-'),
             Column::make('jabatan')->title('Jabatan')->addClass('text-nowrap align-middle')->defaultContent('-'),

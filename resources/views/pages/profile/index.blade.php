@@ -39,6 +39,10 @@
                             <span class="fw-semibold text-dark">{{ $user->jabatan ?: '-' }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Nomor WhatsApp:</span>
+                            <span class="fw-semibold text-dark">{{ $user->nomor_wa ?: '-' }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">NIDN:</span>
                             <span class="fw-semibold text-dark">{{ $user->nidn ?: '-' }}</span>
                         </div>
@@ -86,6 +90,11 @@
                             <div class="row mb-3">
                                 <div class="col-lg-4 col-md-4 text-muted fw-semibold">Email Resmi</div>
                                 <div class="col-lg-8 col-md-8 text-dark">{{ $user->email }}</div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-lg-4 col-md-4 text-muted fw-semibold">Nomor WhatsApp</div>
+                                <div class="col-lg-8 col-md-8 text-dark">{{ $user->nomor_wa ?: '-' }}</div>
                             </div>
 
                             <div class="row mb-3">
@@ -155,6 +164,16 @@
                                     <div class="col-md-8 col-lg-9">
                                         <input name="email" type="email" class="form-control @error('email') is-invalid @enderror" id="email" value="{{ old('email', $user->email) }}" required>
                                         @error('email')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label for="nomor_wa" class="col-md-4 col-lg-3 col-form-label fw-semibold">Nomor WhatsApp</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        <input name="nomor_wa" type="tel" class="form-control @error('nomor_wa') is-invalid @enderror" id="nomor_wa" value="{{ old('nomor_wa', $user->nomor_wa) }}" placeholder="Contoh: +6281234567890">
+                                        @error('nomor_wa')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>

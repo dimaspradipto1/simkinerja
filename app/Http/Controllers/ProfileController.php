@@ -31,6 +31,7 @@ class ProfileController extends Controller
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'nomor_wa' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9\s().-]{8,30}$/'],
             'nidn' => ['nullable', 'string', 'max:50'],
             'unit' => ['nullable', 'string', 'max:100'],
             'jabatan' => ['nullable', 'string', 'max:150'],

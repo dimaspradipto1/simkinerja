@@ -21,6 +21,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'nomor_wa',
         'password',
         'roles',
         'is_active',
@@ -617,4 +618,3 @@ class User extends Authenticatable
         return $allPimpinan;
     }
 }
-

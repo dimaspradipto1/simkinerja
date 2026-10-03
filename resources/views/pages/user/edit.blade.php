@@ -40,6 +40,14 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label for="nomor_wa" class="form-label">Nomor WhatsApp</label>
+                            <input type="tel" class="form-control @error('nomor_wa') is-invalid @enderror" id="nomor_wa" name="nomor_wa" value="{{ old('nomor_wa', $user->nomor_wa) }}" placeholder="Contoh: +6281234567890">
+                            @error('nomor_wa')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
                             <label for="roles" class="form-label">Role Akses <span class="text-danger">*</span> <small class="text-muted">(Boleh pilih lebih dari satu)</small></label>
                             <select class="form-select select2 @error('roles') is-invalid @enderror" id="roles" name="roles[]" multiple="multiple">
                                 @php

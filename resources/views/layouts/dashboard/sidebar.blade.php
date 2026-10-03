@@ -343,6 +343,7 @@
                                     request()->routeIs('kategori.*') ||
                                     request()->routeIs('hirarki.*') ||
                                     request()->routeIs('sk-kepanitiaan.*') ||
+                                    request()->routeIs('pengaturan-pesan-whatsapp.*') ||
                                     request()->routeIs('database-backup.*');
             @endphp
             <li class="nav-item">
@@ -373,6 +374,11 @@
                     <li>
                         <a href="{{ route('kategori.index') }}" class="{{ request()->routeIs('kategori.*') ? 'active' : '' }}">
                             <i class="bi bi-circle"></i><span>Kategori Kegiatan</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('pengaturan-pesan-whatsapp.create') }}" class="{{ request()->routeIs('pengaturan-pesan-whatsapp.*') ? 'active' : '' }}">
+                            <i class="bi bi-whatsapp"></i><span>Pesan WhatsApp</span>
                         </a>
                     </li>
                     <li>

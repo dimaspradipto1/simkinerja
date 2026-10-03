@@ -262,13 +262,14 @@ class UserController extends Controller
             'E1' => 'nup',
             'F1' => 'unit',
             'G1' => 'jabatan',
+            'H1' => 'nomor_wa',
         ];
 
         foreach ($headers as $cell => $val) {
             $sheet->setCellValue($cell, $val);
         }
 
-        $headerRange = 'A1:G1';
+        $headerRange = 'A1:H1';
         $sheet->getStyle($headerRange)->getFont()->setBold(true);
         $sheet->getStyle($headerRange)->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
@@ -302,7 +303,7 @@ class UserController extends Controller
         $sheet->setCellValue('F4', 'PANITIA');
         $sheet->setCellValue('G4', 'Staff Kepanitiaan');
 
-        foreach (range('A', 'G') as $col) {
+        foreach (range('A', 'H') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -355,6 +356,7 @@ class UserController extends Controller
             if ($nidnIdx === false) $nidnIdx = array_search('nidn', $header);
             $unitIdx = array_search('unit', $header);
             $jabatanIdx = array_search('jabatan', $header);
+            $nomorWaIdx = array_search('nomor_wa', $header);
             $jabatanPkkmbIdx = array_search('jabatan_pkkmb', $header);
             $jabatanEsqIdx = array_search('jabatan_esq', $header);
             $jabatanMiladIdx = array_search('jabatan_milad', $header);
@@ -407,6 +409,10 @@ class UserController extends Controller
                 $jabatan = ($jabatanIdx !== false && isset($row[$jabatanIdx]) && trim((string) $row[$jabatanIdx]) !== '')
                     ? trim((string) $row[$jabatanIdx])
                     : '-';
+
+                $nomorWa = ($nomorWaIdx !== false && isset($row[$nomorWaIdx]) && trim((string) $row[$nomorWaIdx]) !== '')
+                    ? trim((string) $row[$nomorWaIdx])
+                    : null;
 
                 $jabatanPkkmb = ($jabatanPkkmbIdx !== false && isset($row[$jabatanPkkmbIdx]) && trim((string) $row[$jabatanPkkmbIdx]) !== '')
                     ? trim((string) $row[$jabatanPkkmbIdx])
@@ -470,6 +476,7 @@ class UserController extends Controller
                 User::create([
                     'name' => $name,
                     'email' => $finalEmail,
+                    'nomor_wa' => $nomorWa,
                     'password' => $password,
                     'roles' => $roles,
                     'nidn' => $nidn,

@@ -27,6 +27,7 @@ use App\Http\Controllers\LaporanPengembanganController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SkKepanitiaanController;
 use App\Http\Controllers\AbsensiKinerjaController;
+use App\Http\Controllers\PengaturanPesanWhatsappController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -66,6 +67,12 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('user', UserController::class);
     Route::resource('periode-akademik', PeriodeAkademikController::class);
     Route::resource('kategori', KategoriController::class);
+    Route::get('pengaturan-pesan-whatsapp', [PengaturanPesanWhatsappController::class, 'create'])
+        ->name('pengaturan-pesan-whatsapp.create');
+    Route::post('pengaturan-pesan-whatsapp', [PengaturanPesanWhatsappController::class, 'store'])
+        ->name('pengaturan-pesan-whatsapp.store');
+    Route::get('pengaturan-pesan-whatsapp/index', fn () => redirect()->route('pengaturan-pesan-whatsapp.create'))
+        ->name('pengaturan-pesan-whatsapp.index');
     Route::get('database-backup', [\App\Http\Controllers\DatabaseBackupController::class, 'index'])
         ->name('database-backup.index');
     Route::get('database-backup/export', [\App\Http\Controllers\DatabaseBackupController::class, 'export'])

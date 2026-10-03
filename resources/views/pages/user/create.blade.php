@@ -39,6 +39,14 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label for="nomor_wa" class="form-label">Nomor WhatsApp</label>
+                            <input type="tel" class="form-control @error('nomor_wa') is-invalid @enderror" id="nomor_wa" name="nomor_wa" value="{{ old('nomor_wa') }}" placeholder="Contoh: +6281234567890">
+                            @error('nomor_wa')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
                             <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
                             <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Masukkan password">
                             @error('password')

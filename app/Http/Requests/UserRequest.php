@@ -27,6 +27,7 @@ class UserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
+            'nomor_wa' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9\s().-]{8,30}$/'],
             'password' => $userId ? ['nullable', 'string', 'min:6'] : ['required', 'string', 'min:6'],
             'roles' => ['required'],
             'roles.*' => ['string'],
