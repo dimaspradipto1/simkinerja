@@ -640,6 +640,7 @@ class KegiatanController extends Controller
 
         $estimasiFields = [
             'estimasi_tanggal_mulai', 'estimasi_tanggal_selesai', 'estimasi_jam_mulai', 'estimasi_jam_selesai',
+            'estimasi_durasi_hari', 'estimasi_durasi_jam',
             'tanggal_mulai', 'tanggal_selesai', 'waktu_mulai', 'waktu_selesai',
         ];
 
@@ -1805,9 +1806,18 @@ class KegiatanController extends Controller
                 $query->where('status', '!=', 'Selesai');
             } elseif ($st === 'terlambat') {
                 $nowStr = now()->format('Y-m-d');
-                $query->where('status', '!=', 'Selesai')
-                      ->whereNotNull('estimasi_tanggal_selesai')
-                      ->where('estimasi_tanggal_selesai', '<', $nowStr);
+                $query->where(function ($q) use ($nowStr) {
+                    $q->where(function ($sub) use ($nowStr) {
+                        $sub->where('status', '!=', 'Selesai')
+                            ->whereNotNull('estimasi_tanggal_selesai')
+                            ->where('estimasi_tanggal_selesai', '<', $nowStr);
+                    })->orWhere(function ($sub) {
+                        $sub->where('status', 'Selesai')
+                            ->whereNotNull('estimasi_tanggal_selesai')
+                            ->whereNotNull('tanggal_selesai')
+                            ->whereColumn('tanggal_selesai', '>', 'estimasi_tanggal_selesai');
+                    });
+                });
             } elseif ($st === 'proses') {
                 $query->whereIn('status', ['Proses', 'Berjalan']);
             } elseif ($st === 'belum_dimulai') {
@@ -1837,10 +1847,18 @@ class KegiatanController extends Controller
         $belum = (clone $query)->where('status', 'Belum Dimulai')->count();
         $proses = (clone $query)->whereIn('status', ['Proses', 'Berjalan'])->count();
         $selesai = (clone $query)->where('status', 'Selesai')->count();
-        $terlambat = (clone $query)->where('status', '!=', 'Selesai')
-            ->whereNotNull('estimasi_tanggal_selesai')
-            ->where('estimasi_tanggal_selesai', '<', $nowStr)
-            ->count();
+        $terlambat = (clone $query)->where(function ($q) use ($nowStr) {
+            $q->where(function ($sub) use ($nowStr) {
+                $sub->where('status', '!=', 'Selesai')
+                    ->whereNotNull('estimasi_tanggal_selesai')
+                    ->where('estimasi_tanggal_selesai', '<', $nowStr);
+            })->orWhere(function ($sub) {
+                $sub->where('status', 'Selesai')
+                    ->whereNotNull('estimasi_tanggal_selesai')
+                    ->whereNotNull('tanggal_selesai')
+                    ->whereColumn('tanggal_selesai', '>', 'estimasi_tanggal_selesai');
+            });
+        })->count();
         $percent = $total > 0 ? round(($selesai / $total) * 100) : 0;
 
         return DataTables::of($query)
@@ -1873,6 +1891,12 @@ class KegiatanController extends Controller
                 if ($row->estimasi_jam_mulai && $row->estimasi_jam_selesai) {
                     $html .= '<div class="text-muted"><i class="bi bi-clock me-1"></i>' . substr($row->estimasi_jam_mulai, 0, 5) . ' - ' . substr($row->estimasi_jam_selesai, 0, 5) . '</div>';
                 }
+                if ($row->estimasi_durasi_hari || $row->estimasi_durasi_jam) {
+                    $durStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget($row->estimasi_durasi_hari, $row->estimasi_durasi_jam);
+                    if ($durStr) {
+                        $html .= '<div class="mt-1"><span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size:0.75rem;"><i class="bi bi-stopwatch me-1"></i>Target: ' . e($durStr) . '</span></div>';
+                    }
+                }
                 $html .= '</div>';
                 return $html ?: '<span class="text-muted small">-</span>';
             })
@@ -1894,58 +1918,48 @@ class KegiatanController extends Controller
                 return '<span class="badge bg-secondary px-2 py-1"><i class="bi bi-x-circle me-1"></i>Belum Mulai</span>';
             })
             ->addColumn('analisis_kendala', function ($row) {
+                $eval = \App\Helpers\KinerjaWaktuHelper::evaluasiKetepatanWaktu($row);
+
                 if ($row->status === 'Selesai') {
-                    $res = '<span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="bi bi-check2-all me-1"></i>Selesai Tuntas</span>';
+                    $res = '<div class="mb-1">' . $eval['badge_html'] . '</div>';
+                    $res .= '<div class="small text-muted mb-1"><i class="bi bi-info-circle me-1"></i>' . e($eval['keterangan']) . '</div>';
                     if ($row->tanggal_selesai) {
-                        $res .= '<div class="small text-muted mt-1">Selesai: ' . date('d/m/Y', strtotime($row->tanggal_selesai)) . '</div>';
+                        $selesaiStr = date('d/m/Y', strtotime($row->tanggal_selesai));
+                        if ($row->waktu_selesai && $row->waktu_selesai !== '00:00:00') {
+                            $selesaiStr .= ' (' . substr($row->waktu_selesai, 0, 5) . ' WIB)';
+                        }
+                        $res .= '<div class="small text-secondary"><i class="bi bi-calendar-check me-1"></i>Realisasi Selesai: ' . $selesaiStr . '</div>';
+                    }
+                    if ($eval['real_durasi']) {
+                        $res .= '<div class="small mt-0.5" style="color: #0f766e;"><i class="bi bi-hourglass-split me-1"></i>Durasi Pengerjaan: <strong>' . e($eval['real_durasi']) . '</strong></div>';
                     }
                     return $res;
                 }
 
-                $now = \Carbon\Carbon::now();
                 $badges = [];
-                $isOverdue = false;
-
-                // 1. Cek Keterlambatan batas akhir
-                if (!empty($row->estimasi_tanggal_selesai)) {
-                    $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
-                    $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
-                    if ($now->gt($estimasiEnd)) {
-                        $isOverdue = true;
-                        $diffMinutes = (int) round(abs($now->diffInMinutes($estimasiEnd)));
-                        $diffHours = (int) floor($diffMinutes / 60);
-                        $diffDays = (int) floor($diffHours / 24);
-
-                        if ($diffDays > 0) {
-                            $remainingHours = $diffHours % 24;
-                            $durasiText = "{$diffDays} hari" . ($remainingHours > 0 ? " {$remainingHours} jam" : "");
-                        } elseif ($diffHours > 0) {
-                            $remainingMinutes = $diffMinutes % 60;
-                            $durasiText = "{$diffHours} jam" . ($remainingMinutes > 0 ? " {$remainingMinutes} menit" : "");
-                        } else {
-                            $durasiText = max(1, $diffMinutes) . " menit";
-                        }
-
-                        $badges[] = '<div class="mb-1"><span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Terlambat ' . $durasiText . ' (Lewat Estimasi)</span></div>';
-                    }
+                if ($eval['is_terlambat']) {
+                    $badges[] = '<div class="mb-1">' . $eval['badge_html'] . '</div>';
+                    $badges[] = '<div class="small text-danger mb-1"><i class="bi bi-exclamation-triangle me-1"></i>' . e($eval['keterangan']) . '</div>';
                 }
 
-                // 2. Cek Status Proses & Penyebab
                 if ($row->status === 'Belum Dimulai') {
-                    if (!$isOverdue && !empty($row->estimasi_tanggal_mulai) && $now->lt(\Carbon\Carbon::parse($row->estimasi_tanggal_mulai))) {
+                    if (!$eval['is_terlambat'] && $eval['kategori'] === 'menunggu') {
                         $badges[] = '<div><span class="badge bg-secondary-subtle text-secondary border px-2 py-1"><i class="bi bi-calendar-event me-1"></i>Menunggu Jadwal Mulai</span></div>';
-                    } else {
+                    } elseif (!$eval['is_terlambat']) {
                         $badges[] = '<div><span class="badge bg-warning-subtle text-dark border border-warning px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Kendala: Tugas Belum Dimulai Pegawai</span></div>';
                     }
                 } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
                     if ($row->is_paused) {
                         $badges[] = '<div><span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-pause-circle-fill me-1"></i>Kendala: Tugas Sedang Dijeda (Paused)</span></div>';
                     } else {
-                        $badges[] = '<div><span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1"><i class="bi bi-arrow-repeat me-1"></i>Penyebab: Sedang Dikerjakan (Belum Upload Hasil)</span></div>';
+                        $badges[] = '<div><span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1"><i class="bi bi-arrow-repeat me-1"></i>Sedang Dikerjakan (Belum Selesai)</span></div>';
                     }
                 }
 
-                // 3. Catatan Kendala Tambahan
+                if ($eval['real_durasi']) {
+                    $badges[] = '<div class="small mt-1" style="color: #0f766e;"><i class="bi bi-hourglass-split me-1"></i>Durasi Berjalan: <strong>' . e($eval['real_durasi']) . '</strong></div>';
+                }
+
                 if (!empty($row->estimasi_unlock_reason)) {
                     $cleanReason = trim(strip_tags(html_entity_decode((string)$row->estimasi_unlock_reason, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
                     $badges[] = '<div class="small text-danger mt-1 p-1 bg-danger-subtle rounded border border-danger-subtle"><i class="bi bi-chat-left-dots-fill me-1"></i><strong>Alasan Kendala:</strong> ' . e($cleanReason) . '</div>';

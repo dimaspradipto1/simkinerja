@@ -25,6 +25,8 @@ return new class extends Migration
                 $table->time('estimasi_jam_selesai')->nullable();
                 $table->date('estimasi_tanggal_mulai')->nullable();
                 $table->date('estimasi_tanggal_selesai')->nullable();
+                $table->unsignedInteger('estimasi_durasi_hari')->nullable();
+                $table->unsignedInteger('estimasi_durasi_jam')->nullable();
                 $table->date('estimasi_tanggal_selesai_awal')->nullable();
                 $table->time('estimasi_jam_selesai_awal')->nullable();
                 $table->time('waktu_mulai')->nullable();

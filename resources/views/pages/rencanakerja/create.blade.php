@@ -122,17 +122,17 @@
                         </div>
 
                         <div class="col-md-3">
-                            <label for="estimasi_tanggal_selesai" class="form-label fw-semibold text-secondary">Estimasi Tgl Selesai</label>
-                            <input type="date" class="form-control @error('estimasi_tanggal_selesai') is-invalid @enderror" id="estimasi_tanggal_selesai" name="estimasi_tanggal_selesai" value="{{ old('estimasi_tanggal_selesai') }}">
-                            @error('estimasi_tanggal_selesai')
+                            <label for="estimasi_jam_mulai" class="form-label fw-semibold text-secondary">Estimasi Jam Mulai</label>
+                            <input type="time" class="form-control @error('estimasi_jam_mulai') is-invalid @enderror" id="estimasi_jam_mulai" name="estimasi_jam_mulai" value="{{ old('estimasi_jam_mulai') }}">
+                            @error('estimasi_jam_mulai')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-3">
-                            <label for="estimasi_jam_mulai" class="form-label fw-semibold text-secondary">Estimasi Jam Mulai</label>
-                            <input type="time" class="form-control @error('estimasi_jam_mulai') is-invalid @enderror" id="estimasi_jam_mulai" name="estimasi_jam_mulai" value="{{ old('estimasi_jam_mulai') }}">
-                            @error('estimasi_jam_mulai')
+                            <label for="estimasi_tanggal_selesai" class="form-label fw-semibold text-secondary">Estimasi Tgl Selesai</label>
+                            <input type="date" class="form-control @error('estimasi_tanggal_selesai') is-invalid @enderror" id="estimasi_tanggal_selesai" name="estimasi_tanggal_selesai" value="{{ old('estimasi_tanggal_selesai') }}">
+                            @error('estimasi_tanggal_selesai')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -143,6 +143,55 @@
                             @error('estimasi_jam_selesai')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                        </div>
+
+                        {{-- Durasi Pengerjaan (Hari / Jam - Opsional) --}}
+                        <div class="col-12">
+                            <div class="card border border-success-subtle bg-light-subtle rounded-3 p-3 shadow-2xs">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <label class="form-label fw-semibold text-dark mb-0 d-inline-flex align-items-center gap-1.5">
+                                        <i class="bi bi-stopwatch text-success fs-5"></i>
+                                        <span>Estimasi Durasi Pengerjaan</span>
+                                        <span class="badge bg-secondary-subtle text-secondary border fw-normal" style="font-size: 0.72rem;">Opsional</span>
+                                    </label>
+                                    <small class="text-muted fst-italic">Boleh diisi Hari saja, Jam saja, keduanya, atau dihitung otomatis.</small>
+                                </div>
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-3 col-sm-6">
+                                        <label for="estimasi_durasi_hari" class="form-label small text-secondary mb-1">Durasi (Hari)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white text-secondary"><i class="bi bi-calendar-event"></i></span>
+                                            <input type="number" min="0" step="1" class="form-control @error('estimasi_durasi_hari') is-invalid @enderror" id="estimasi_durasi_hari" name="estimasi_durasi_hari" placeholder="0" value="{{ old('estimasi_durasi_hari') }}">
+                                            <span class="input-group-text bg-light text-dark fw-semibold">Hari</span>
+                                        </div>
+                                        @error('estimasi_durasi_hari')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <label for="estimasi_durasi_jam" class="form-label small text-secondary mb-1">Durasi (Jam)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white text-secondary"><i class="bi bi-clock"></i></span>
+                                            <input type="number" min="0" step="1" class="form-control @error('estimasi_durasi_jam') is-invalid @enderror" id="estimasi_durasi_jam" name="estimasi_durasi_jam" placeholder="0" value="{{ old('estimasi_durasi_jam') }}">
+                                            <span class="input-group-text bg-light text-dark fw-semibold">Jam</span>
+                                        </div>
+                                        @error('estimasi_durasi_jam')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-6 col-12 pt-md-3">
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-success fw-semibold" id="btn-hitung-durasi-auto" title="Hitung durasi dari tanggal/jam mulai ke selesai">
+                                                <i class="bi bi-calculator me-1"></i> Hitung dari Tanggal
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btn-hitung-selesai-auto" title="Hitung tanggal/jam selesai berdasarkan estimasi mulai + durasi">
+                                                <i class="bi bi-calendar-plus me-1"></i> Terapkan ke Tgl Selesai
+                                            </button>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 ms-auto d-none" id="preview-durasi-badge"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-12">
@@ -183,6 +232,90 @@
             allowClear: true
         });
 
+        function updateDurasiPreview() {
+            let h = parseInt($('#estimasi_durasi_hari').val()) || 0;
+            let j = parseInt($('#estimasi_durasi_jam').val()) || 0;
+            let parts = [];
+            if (h > 0) parts.push(h + ' hari');
+            if (j > 0) parts.push(j + ' jam');
+
+            let $badge = $('#preview-durasi-badge');
+            if (parts.length > 0) {
+                $badge.html('<i class="bi bi-check2-circle me-1"></i>Target Durasi: ' + parts.join(' ')).removeClass('d-none');
+            } else {
+                $badge.addClass('d-none');
+            }
+        }
+
+        $('#estimasi_durasi_hari, #estimasi_durasi_jam').on('input change', updateDurasiPreview);
+        updateDurasiPreview();
+
+        // Hitung durasi otomatis dari tanggal/jam mulai & selesai
+        $('#btn-hitung-durasi-auto').on('click', function() {
+            let tglMulai = $('#estimasi_tanggal_mulai').val();
+            let tglSelesai = $('#estimasi_tanggal_selesai').val();
+            let jamMulai = $('#estimasi_jam_mulai').val() || '08:00';
+            let jamSelesai = $('#estimasi_jam_selesai').val() || '16:00';
+
+            if (!tglMulai || !tglSelesai) {
+                alert('Silakan isi Estimasi Tanggal Mulai dan Estimasi Tanggal Selesai terlebih dahulu.');
+                return;
+            }
+
+            let startDt = new Date(tglMulai + 'T' + (jamMulai.length === 5 ? jamMulai + ':00' : jamMulai));
+            let endDt = new Date(tglSelesai + 'T' + (jamSelesai.length === 5 ? jamSelesai + ':00' : jamSelesai));
+
+            let diffMs = endDt - startDt;
+            if (diffMs < 0) {
+                alert('Estimasi Selesai tidak boleh mendahului Estimasi Mulai.');
+                return;
+            }
+
+            let totalMinutes = Math.floor(diffMs / (1000 * 60));
+            let days = Math.floor(totalMinutes / (24 * 60));
+            let remMinutes = totalMinutes % (24 * 60);
+            let hours = Math.round(remMinutes / 60);
+
+            if (hours === 24) {
+                days += 1;
+                hours = 0;
+            }
+
+            $('#estimasi_durasi_hari').val(days > 0 ? days : '');
+            $('#estimasi_durasi_jam').val(hours > 0 ? hours : '');
+            updateDurasiPreview();
+        });
+
+        // Hitung tanggal/jam selesai otomatis dari tanggal mulai + durasi
+        $('#btn-hitung-selesai-auto').on('click', function() {
+            let tglMulai = $('#estimasi_tanggal_mulai').val();
+            let jamMulai = $('#estimasi_jam_mulai').val() || '08:00';
+            let h = parseInt($('#estimasi_durasi_hari').val()) || 0;
+            let j = parseInt($('#estimasi_durasi_jam').val()) || 0;
+
+            if (!tglMulai) {
+                alert('Silakan isi Estimasi Tanggal Mulai terlebih dahulu.');
+                return;
+            }
+
+            if (h === 0 && j === 0) {
+                alert('Silakan isi durasi (hari atau jam) terlebih dahulu.');
+                return;
+            }
+
+            let startDt = new Date(tglMulai + 'T' + (jamMulai.length === 5 ? jamMulai + ':00' : jamMulai));
+            let addedMs = (h * 24 * 60 * 60 * 1000) + (j * 60 * 60 * 1000);
+            let endDt = new Date(startDt.getTime() + addedMs);
+
+            let year = endDt.getFullYear();
+            let month = String(endDt.getMonth() + 1).padStart(2, '0');
+            let day = String(endDt.getDate()).padStart(2, '0');
+            let hours = String(endDt.getHours()).padStart(2, '0');
+            let minutes = String(endDt.getMinutes()).padStart(2, '0');
+
+            $('#estimasi_tanggal_selesai').val(`${year}-${month}-${day}`);
+            $('#estimasi_jam_selesai').val(`${hours}:${minutes}`);
+        });
     });
 </script>
 @endpush

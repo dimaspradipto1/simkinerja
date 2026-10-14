@@ -283,23 +283,24 @@
         <tbody>
             @forelse($items as $idx => $item)
                 @php
-                    $isSelesai = $item->status === 'Selesai';
-                    $isTerlambat = false;
-                    if (!$isSelesai && !empty($item->estimasi_tanggal_selesai)) {
-                        $endTime = $item->estimasi_jam_selesai ?: '23:59:59';
-                        try {
-                            $estimasiEnd = \Carbon\Carbon::parse($item->estimasi_tanggal_selesai . ' ' . $endTime);
-                            if (\Carbon\Carbon::now()->gt($estimasiEnd)) {
-                                $isTerlambat = true;
-                            }
-                        } catch (\Throwable $e) {}
-                    }
-                    
+                    $eval = \App\Helpers\KinerjaWaktuHelper::evaluasiKetepatanWaktu($item);
+                    $targetDurasiStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget(
+                        $item->estimasi_durasi_hari ?? null,
+                        $item->estimasi_durasi_jam ?? null
+                    );
+
                     $estStr = '-';
                     if ($item->estimasi_tanggal_mulai && $item->estimasi_tanggal_selesai) {
                         $estStr = date('d/m/Y', strtotime($item->estimasi_tanggal_mulai)) . ' - ' . date('d/m/Y', strtotime($item->estimasi_tanggal_selesai));
                     } elseif ($item->estimasi_tanggal_selesai) {
                         $estStr = 's/d ' . date('d/m/Y', strtotime($item->estimasi_tanggal_selesai));
+                    }
+
+                    $estJam = '';
+                    if ($item->estimasi_jam_mulai && $item->estimasi_jam_selesai) {
+                        $estJam = substr($item->estimasi_jam_mulai, 0, 5) . ' - ' . substr($item->estimasi_jam_selesai, 0, 5) . ' WIB';
+                    } elseif ($item->estimasi_jam_selesai) {
+                        $estJam = 's/d ' . substr($item->estimasi_jam_selesai, 0, 5) . ' WIB';
                     }
 
                     $realStr = '-';
@@ -311,82 +312,18 @@
                         $realStr = 'Selesai ' . date('d/m/Y', strtotime($item->tanggal_selesai));
                     }
 
-                    // Total waktu pengerjaan dalam jam dan menit
-                    $durasiStr = null;
-                    $durasiDetik = 0;
-                    $isBerjalan = false;
+                    $realDurasiStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiRealisasi($item);
 
-                    if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
-                        $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
-                        $tglS = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglM;
-                        $startTs = strtotime($tglM . ' ' . $item->waktu_mulai);
-                        $endTs = strtotime($tglS . ' ' . $item->waktu_selesai);
-                        if ($endTs > $startTs) {
-                            $durasiDetik = $endTs - $startTs;
-                        } else {
-                            $tDiff = strtotime($item->waktu_selesai) - strtotime($item->waktu_mulai);
-                            if ($tDiff > 0) $durasiDetik = $tDiff;
-                        }
-                    }
-
-                    if ($durasiDetik <= 0 && !empty($item->durasi_detik) && $item->durasi_detik > 0) {
-                        $durasiDetik = (int) $item->durasi_detik;
-                    }
-
-                    if ($durasiDetik <= 0 && in_array($item->status, ['Proses', 'Berjalan'])) {
-                        if (!empty($item->waktu_mulai)) {
-                            $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
-                            $diff = time() - strtotime($tglM . ' ' . $item->waktu_mulai);
-                            if ($diff > 0) {
-                                $durasiDetik = $diff;
-                                $isBerjalan = true;
-                            }
-                        } elseif (!empty($item->last_started_at)) {
-                            $diff = now()->diffInSeconds($item->last_started_at);
-                            if ($diff > 0) {
-                                $durasiDetik = (int) $diff + (int) ($item->durasi_detik ?? 0);
-                                $isBerjalan = true;
-                            }
-                        }
-                    }
-
-                    if ($durasiDetik <= 0 && !empty($item->tanggal_mulai) && !empty($item->tanggal_selesai)) {
-                        $d1 = strtotime($item->tanggal_mulai);
-                        $d2 = strtotime($item->tanggal_selesai);
-                        if ($d2 >= $d1) {
-                            $days = floor(($d2 - $d1) / 86400) + 1;
-                            $durasiDetik = $days * 8 * 3600;
-                        }
-                    }
-
-                    if ($durasiDetik > 0) {
-                        $h = floor($durasiDetik / 3600);
-                        $m = floor(($durasiDetik % 3600) / 60);
-                        if ($h > 0 && $m > 0) {
-                            $durasiStr = $h . ' jam ' . $m . ' menit';
-                        } elseif ($h > 0) {
-                            $durasiStr = $h . ' jam';
-                        } elseif ($m > 0) {
-                            $durasiStr = $m . ' menit';
-                        } else {
-                            $durasiStr = '< 1 menit';
-                        }
-                        if ($isBerjalan) {
-                            $durasiStr .= ' (berjalan)';
-                        }
-                    }
+                    $kat = $item->kategori ?: 'Rencana Kerja';
+                    $katBadge = match($kat) {
+                        'Kepanitiaan' => 'badge-info',
+                        'Insidentil' => 'badge-warning',
+                        default => 'badge-success'
+                    };
                 @endphp
                 <tr>
                     <td class="text-center" style="padding-left: 1px; padding-right: 1px;">{{ $idx + 1 }}</td>
                     <td class="text-center">
-                        @php
-                            $kat = $item->kategori ?: 'Rencana Kerja';
-                            $katBadge = match($kat) {
-                                'Kepanitiaan' => 'badge-info',
-                                'Insidentil' => 'badge-warning',
-                                default => 'badge-success'
-                            };
-                        @endphp
                         <span class="badge {{ $katBadge }}">{{ $kat }}</span>
                     </td>
                     <td>
@@ -395,8 +332,6 @@
                     <td>
                         @if($item->taggedUsers && $item->taggedUsers->count() > 0)
                             @php
-                                // Filter tagged users: hanya tampilkan yang merupakan bawahan unit kepala yang login
-                                // $subordinateIds = null berarti super admin/rektorat (tampilkan semua)
                                 $visibleTagged = isset($subordinateIds) && $subordinateIds !== null
                                     ? $item->taggedUsers->filter(fn($u) => in_array($u->id, $subordinateIds))
                                     : $item->taggedUsers;
@@ -411,7 +346,6 @@
                                     </div>
                                 @endforeach
                             @else
-                                {{-- Jika semua tagged users berasal dari unit lain, tampilkan pemilik kegiatan --}}
                                 <strong>{{ $item->user ? $item->user->name : '-' }}</strong>
                                 @if($item->user && $item->user->jabatan)
                                     <br><small style="color: #64748b;">{{ $item->user->jabatan }}</small>
@@ -424,22 +358,31 @@
                             @endif
                         @endif
                     </td>
-                    <td class="text-center" style="font-size: 6.5pt;">{{ $estStr }}</td>
+                    <td class="text-center" style="font-size: 6.5pt;">
+                        <div>{{ $estStr }}</div>
+                        @if($estJam)
+                            <div style="color: #64748b; font-size: 6pt;">{{ $estJam }}</div>
+                        @endif
+                        @if($targetDurasiStr)
+                            <div style="margin-top: 2px; padding: 1px 3px; background-color: #f0fdf4; border: 0.5px solid #bbf7d0; border-radius: 2px; color: #166534; font-size: 5.8pt; font-weight: bold;">
+                                Target: {{ $targetDurasiStr }}
+                            </div>
+                        @endif
+                    </td>
                     <td class="text-center" style="font-size: 6.5pt;">
                         @if($realStr !== '-')
                             <div>{{ $realStr }}</div>
                         @endif
-                        @if($durasiStr)
-                            <div style="{{ $realStr !== '-' ? 'margin-top: 3px;' : '' }} font-size: 5.8pt; line-height: 1.2;">
-                                <span style="color: #dc2626; font-weight: bold;">Lama Pengerjaan:</span><br>
-                                <span style="color: #0f766e; font-weight: bold;">{{ $durasiStr }}</span>
+                        @if($realDurasiStr)
+                            <div style="{{ $realStr !== '-' ? 'margin-top: 2px;' : '' }} padding: 1px 3px; background-color: #eff6ff; border: 0.5px solid #bfdbfe; border-radius: 2px; color: #1e40af; font-size: 5.8pt; font-weight: bold;">
+                                Real: {{ $realDurasiStr }}
                             </div>
                         @elseif($realStr === '-')
                             -
                         @endif
                     </td>
                     <td class="text-center">
-                        @if($isSelesai)
+                        @if($item->status === 'Selesai')
                             <span class="badge badge-success">Selesai</span>
                         @elseif($item->status === 'Berjalan' || $item->status === 'Proses')
                             <span class="badge badge-primary">Proses</span>
@@ -450,21 +393,34 @@
                         @endif
                     </td>
                     <td>
-                        @if($isTerlambat)
-                            <div style="color: #b91c1c; font-weight: bold; margin-bottom: 2px;">
-                                ⚠️ Terlambat (Lewat Estimasi)
+                        {{-- Evaluasi Ketepatan Waktu --}}
+                        @if($eval['status'] === 'terlambat')
+                            <div style="color: #b91c1c; font-weight: bold; margin-bottom: 2px; font-size: 6.5pt;">
+                                🚨 TERLAMBAT
+                                <div style="font-size: 6pt; font-weight: normal; color: #dc2626;">{{ $eval['keterangan'] }}</div>
+                            </div>
+                        @elseif($eval['status'] === 'lebih_cepat')
+                            <div style="color: #0d9488; font-weight: bold; margin-bottom: 2px; font-size: 6.5pt;">
+                                ⚡ LEBIH CEPAT
+                                <div style="font-size: 6pt; font-weight: normal; color: #0f766e;">{{ $eval['keterangan'] }}</div>
+                            </div>
+                        @elseif($eval['status'] === 'on_time')
+                            <div style="color: #15803d; font-weight: bold; margin-bottom: 2px; font-size: 6.5pt;">
+                                ✅ TEPAT WAKTU (ON TIME)
+                                <div style="font-size: 6pt; font-weight: normal; color: #166534;">{{ $eval['keterangan'] }}</div>
                             </div>
                         @endif
+
                         @if($item->alasan_pause)
-                            <div style="color: #b45309; margin-bottom: 2px;">
+                            <div style="color: #b45309; margin-bottom: 2px; font-size: 6pt;">
                                 <strong>Alasan Pause:</strong> {{ $item->alasan_pause }}
                             </div>
                         @endif
                         @if($item->rencana_tindak_lanjut)
-                            <div>
+                            <div style="font-size: 6pt;">
                                 <strong>Tindak Lanjut:</strong> {{ trim(strip_tags($item->rencana_tindak_lanjut)) }}
                             </div>
-                        @elseif(!$isTerlambat && !$item->alasan_pause)
+                        @elseif($eval['status'] !== 'terlambat' && $eval['status'] !== 'lebih_cepat' && $eval['status'] !== 'on_time' && !$item->alasan_pause)
                             <span style="color: #94a3b8;">-</span>
                         @endif
                     </td>

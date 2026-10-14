@@ -411,14 +411,40 @@
                             durasiStr += "Belum ada. ";
                         }
 
-                        // Analisis
+                        // Target Durasi jika ada
+                        let targetMatch = textContent.match(/Target Durasi:\s*([^\n\r\t]+)/i);
+                        if (targetMatch && targetMatch[1] && targetMatch[1].trim() !== '-') {
+                            durasiStr += "Target durasi " + targetMatch[1].trim() + ". ";
+                        }
+
+                        // Analisis & Ketepatan Waktu Real
                         let statusText = "Belum Dimulai";
                         if (textContent.includes("Selesai")) statusText = "Selesai";
                         else if (textContent.includes("Proses")) statusText = "Proses";
 
                         let analisisStr = "Analisis: ";
                         if (statusText === "Selesai") {
-                            analisisStr += "Selesai tepat waktu. ";
+                            // Cek apakah ada indikator terlambat dari perbandingan tanggal
+                            let isLate = false;
+                            if (selesaiMatch && selesaiMatch[1] && estMatch && estMatch[1]) {
+                                try {
+                                    let sParts = selesaiMatch[1].match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                                    let eParts = estMatch[1].match(/(\d{2})\/(\d{2})\/(\d{4})/g);
+                                    if (sParts && eParts && eParts.length > 0) {
+                                        let lastEst = eParts[eParts.length - 1].match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                                        if (lastEst) {
+                                            let sDate = new Date(sParts[3], sParts[2]-1, sParts[1]);
+                                            let eDate = new Date(lastEst[3], lastEst[2]-1, lastEst[1]);
+                                            if (sDate > eDate) isLate = true;
+                                        }
+                                    }
+                                } catch (e) {}
+                            }
+                            if (isLate) {
+                                analisisStr += "Selesai tetapi terlambat melewati estimasi target. ";
+                            } else {
+                                analisisStr += "Selesai tepat waktu. ";
+                            }
                         } else if (statusText === "Proses") {
                             analisisStr += "Masih berproses. ";
                         } else {

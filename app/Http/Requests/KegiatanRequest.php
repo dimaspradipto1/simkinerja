@@ -31,6 +31,8 @@ class KegiatanRequest extends FormRequest
             'estimasi_jam_selesai' => ['nullable'],
             'estimasi_tanggal_mulai' => ['nullable', 'date'],
             'estimasi_tanggal_selesai' => ['nullable', 'date'],
+            'estimasi_durasi_hari' => ['nullable', 'integer', 'min:0'],
+            'estimasi_durasi_jam' => ['nullable', 'integer', 'min:0'],
             'file' => ['nullable', 'file'],
             'url_external' => ['nullable', 'string'],
             'waktu_mulai' => ['nullable'],

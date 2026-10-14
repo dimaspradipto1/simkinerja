@@ -24,6 +24,8 @@ class Kegiatan extends Model
         'estimasi_jam_selesai',
         'estimasi_tanggal_mulai',
         'estimasi_tanggal_selesai',
+        'estimasi_durasi_hari',
+        'estimasi_durasi_jam',
         'estimasi_tanggal_selesai_awal',
         'estimasi_jam_selesai_awal',
         'waktu_mulai',
@@ -52,6 +54,8 @@ class Kegiatan extends Model
     ];
 
     protected $casts = [
+        'estimasi_durasi_hari' => 'integer',
+        'estimasi_durasi_jam' => 'integer',
         'last_started_at' => 'datetime',
         'reopened_at' => 'datetime',
         'reopen_requested_at' => 'datetime',

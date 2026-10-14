@@ -364,14 +364,17 @@
                 <div class="card-header-green"><i class="bi bi-list-check me-1"></i> Rincian Rencana Kerja Utama</div>
                 <div class="card-body pt-3">
                     <div class="table-responsive">
-                        <table id="rk-table" class="table table-hover w-100" style="font-size:0.9rem;">
+                        <table id="rk-table" class="table table-hover w-100 align-middle" style="font-size:0.88rem;">
                             <thead class="table-light text-secondary fw-semibold">
                                 <tr>
-                                    <th style="width:50px;">No</th>
-                                    <th>Uraian Tugas</th>
-                                    <th>Pembuat</th>
-                                    <th>Rekan Kerja (Tag)</th>
-                                    <th style="width:120px;">Status</th>
+                                    <th style="width:40px;" class="text-center">No</th>
+                                    <th style="min-width:200px;">Uraian Tugas</th>
+                                    <th style="min-width:140px;">Pembuat</th>
+                                    <th style="min-width:130px;">Rekan Kerja (Tag)</th>
+                                    <th style="min-width:140px;">Estimasi & Target Durasi</th>
+                                    <th style="min-width:140px;">Realisasi & Durasi Nyata</th>
+                                    <th style="width:90px;" class="text-center">Status</th>
+                                    <th style="min-width:150px;" class="text-center">Ketepatan Waktu</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -930,13 +933,16 @@ $(document).ready(function() {
                     }
                 },
                 columns: [
-                    { data: null, orderable: false, searchable: false,
+                    { data: null, orderable: false, searchable: false, className: 'text-center',
                       render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
                     { data: 'uraian_tugas', name: 'uraian_tugas',
                       render: function(data) { return '<div class="fw-semibold text-dark text-wrap">' + (data || '-') + '</div>'; } },
                     { data: 'pembuat', name: 'user.name' },
                     { data: 'rekan_kerja', name: 'taggedUsers.name', orderable: false },
-                    { data: 'status_badge', name: 'status', className: 'text-center' }
+                    { data: 'estimasi_waktu', name: 'estimasi_tanggal_selesai' },
+                    { data: 'realisasi_waktu', name: 'tanggal_selesai' },
+                    { data: 'status_badge', name: 'status', className: 'text-center' },
+                    { data: 'ketepatan_badge', name: 'status', className: 'text-center', orderable: false, searchable: false }
                 ],
                 language: { url: "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json" },
                 order: [[0, 'desc']],

@@ -253,6 +253,10 @@ class RencanaKerjaController extends Controller
                     $html .= '<div class="mb-2">';
                     $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-clock-history me-1"></i>Estimasi Pelaksanaan:</label>';
                     $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($estFormatted) . '</div>';
+                    $targetDurasiStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget($row->estimasi_durasi_hari ?? null, $row->estimasi_durasi_jam ?? null);
+                    if ($targetDurasiStr) {
+                        $html .= '<div class="mt-1 ps-1"><span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.75rem;"><i class="bi bi-hourglass-top me-1"></i>Target Durasi: ' . e($targetDurasiStr) . '</span></div>';
+                    }
                     $html .= '</div>';
 
                     $html .= '<div>';
@@ -747,6 +751,7 @@ class RencanaKerjaController extends Controller
         // lewat tombol Start/Pause/Stop karena rute itu tidak lewat method update() ini.
         $estimasiFields = [
             'estimasi_tanggal_mulai', 'estimasi_tanggal_selesai', 'estimasi_jam_mulai', 'estimasi_jam_selesai',
+            'estimasi_durasi_hari', 'estimasi_durasi_jam',
             'tanggal_mulai', 'tanggal_selesai', 'waktu_mulai', 'waktu_selesai',
         ];
 
