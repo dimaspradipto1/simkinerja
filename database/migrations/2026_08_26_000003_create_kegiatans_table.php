@@ -54,6 +54,15 @@ return new class extends Migration
                 $table->foreignId('reopened_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
             });
+        } else {
+            Schema::table('kegiatans', function (Blueprint $table) {
+                if (!Schema::hasColumn('kegiatans', 'estimasi_durasi_hari')) {
+                    $table->unsignedInteger('estimasi_durasi_hari')->nullable()->after('estimasi_tanggal_selesai');
+                }
+                if (!Schema::hasColumn('kegiatans', 'estimasi_durasi_jam')) {
+                    $table->unsignedInteger('estimasi_durasi_jam')->nullable()->after('estimasi_durasi_hari');
+                }
+            });
         }
 
         if (!Schema::hasTable('kegiatan_user')) {
