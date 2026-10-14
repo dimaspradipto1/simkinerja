@@ -223,22 +223,53 @@ class KinerjaWaktuHelper
             }
 
             // A2. Cek terhadap Target Durasi Pengerjaan (Hari / Jam) jika ditentukan
+            $sisaDetik = null;
+            $sisaTeks = null;
+            $sisaStatus = null; // 'sisa' (hemat), 'lebih' (over), 'pas'
+
             if ($targetDurasiDetik > 0 && $realDurasiDetik > 0) {
                 if ($realDurasiDetik > $targetDurasiDetik) {
                     $overSec = $realDurasiDetik - $targetDurasiDetik;
+                    $overTeks = self::formatDetikKeTeks((int) $overSec);
+                    $sisaDetik = -$overSec;
+                    $sisaTeks = "+{$overTeks}";
+                    $sisaStatus = 'lebih';
                     // Toleransi 15 menit
                     if ($overSec > 900) {
                         $isLate = true;
                         $isEarly = false;
                         $isOnTime = false;
-                        $overTeks = self::formatDetikKeTeks((int) $overSec);
                         $alasan[] = "Waktu pengerjaan melebihi target durasi (+{$overTeks})";
                     }
-                } elseif (!$isLate && ($targetDurasiDetik - $realDurasiDetik) >= 3600) {
-                    $isEarly = true;
+                } elseif ($realDurasiDetik < $targetDurasiDetik) {
                     $savedSec = $targetDurasiDetik - $realDurasiDetik;
                     $savedTeks = self::formatDetikKeTeks((int) $savedSec);
-                    $alasan[] = "Selesai hemat durasi {$savedTeks}";
+                    $sisaDetik = $savedSec;
+                    $sisaTeks = "Sisa {$savedTeks}";
+                    $sisaStatus = 'sisa';
+                    if (!$isLate && $savedSec >= 3600) {
+                        $isEarly = true;
+                        $alasan[] = "Selesai hemat durasi {$savedTeks}";
+                    }
+                } else {
+                    $sisaDetik = 0;
+                    $sisaTeks = "Tepat target";
+                    $sisaStatus = 'pas';
+                }
+            } elseif ($estDeadline && $actFinish) {
+                // Jika tidak ada target durasi hari/jam, hitung sisa dari deadline estimasi vs waktu selesai
+                if ($actFinish->lt($estDeadline)) {
+                    $diffSec = $estDeadline->diffInSeconds($actFinish);
+                    $diffTeks = self::formatDetikKeTeks((int) $diffSec);
+                    $sisaDetik = $diffSec;
+                    $sisaTeks = "Sisa {$diffTeks}";
+                    $sisaStatus = 'sisa';
+                } elseif ($actFinish->gt($estDeadline)) {
+                    $diffSec = $actFinish->diffInSeconds($estDeadline);
+                    $diffTeks = self::formatDetikKeTeks((int) $diffSec);
+                    $sisaDetik = -$diffSec;
+                    $sisaTeks = "+{$diffTeks}";
+                    $sisaStatus = 'lebih';
                 }
             }
 
@@ -246,6 +277,7 @@ class KinerjaWaktuHelper
             if ($isLate) {
                 return [
                     'kategori' => 'terlambat',
+                    'status' => 'terlambat',
                     'label' => 'Selesai Terlambat',
                     'sublabel' => 'Terlambat',
                     'badge_color' => 'danger',
@@ -253,6 +285,8 @@ class KinerjaWaktuHelper
                     'keterangan' => implode(' & ', $alasan) ?: 'Melewati estimasi waktu pengerjaan',
                     'target_durasi' => $targetDurasiStr,
                     'real_durasi' => $realDurasiStr,
+                    'sisa_waktu_teks' => $sisaTeks,
+                    'sisa_waktu_status' => $sisaStatus,
                     'is_on_time' => false,
                     'is_terlambat' => true,
                     'is_lebih_cepat' => false,
@@ -262,6 +296,7 @@ class KinerjaWaktuHelper
             if ($isEarly) {
                 return [
                     'kategori' => 'lebih_cepat',
+                    'status' => 'lebih_cepat',
                     'label' => 'Selesai Lebih Cepat',
                     'sublabel' => 'Lebih Cepat',
                     'badge_color' => 'info',
@@ -269,7 +304,9 @@ class KinerjaWaktuHelper
                     'keterangan' => implode(' & ', $alasan) ?: 'Selesai lebih awal dari target estimasi',
                     'target_durasi' => $targetDurasiStr,
                     'real_durasi' => $realDurasiStr,
-                    'is_on_time' => true, // Lebih cepat termasuk on time (tidak terlambat)
+                    'sisa_waktu_teks' => $sisaTeks,
+                    'sisa_waktu_status' => $sisaStatus,
+                    'is_on_time' => true,
                     'is_terlambat' => false,
                     'is_lebih_cepat' => true,
                 ];
@@ -278,13 +315,16 @@ class KinerjaWaktuHelper
             if ($isOnTime || $estDeadline || $targetDurasiDetik > 0) {
                 return [
                     'kategori' => 'on_time',
-                    'label' => 'Selesai On Time',
+                    'status' => 'on_time',
+                    'label' => 'Selesai Tepat Waktu',
                     'sublabel' => 'Tepat Waktu',
                     'badge_color' => 'success',
-                    'badge_html' => '<span class="badge bg-success text-white px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>On Time (Tepat Waktu)</span>',
+                    'badge_html' => '<span class="badge bg-success text-white px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Tepat Waktu</span>',
                     'keterangan' => implode(' & ', $alasan) ?: 'Tuntas tepat waktu sesuai target',
                     'target_durasi' => $targetDurasiStr,
                     'real_durasi' => $realDurasiStr,
+                    'sisa_waktu_teks' => $sisaTeks,
+                    'sisa_waktu_status' => $sisaStatus,
                     'is_on_time' => true,
                     'is_terlambat' => false,
                     'is_lebih_cepat' => false,
@@ -294,6 +334,7 @@ class KinerjaWaktuHelper
             // Selesai tanpa estimasi
             return [
                 'kategori' => 'selesai',
+                'status' => 'selesai',
                 'label' => 'Selesai',
                 'sublabel' => 'Tuntas',
                 'badge_color' => 'success',
@@ -301,6 +342,8 @@ class KinerjaWaktuHelper
                 'keterangan' => 'Tuntas dikerjakan (tanpa estimasi spesifik)',
                 'target_durasi' => null,
                 'real_durasi' => $realDurasiStr,
+                'sisa_waktu_teks' => null,
+                'sisa_waktu_status' => null,
                 'is_on_time' => true,
                 'is_terlambat' => false,
                 'is_lebih_cepat' => false,
@@ -326,6 +369,7 @@ class KinerjaWaktuHelper
         if ($isOverdue) {
             return [
                 'kategori' => 'terlambat',
+                'status' => 'terlambat',
                 'label' => 'Terlambat (Lewat Batas)',
                 'sublabel' => 'Terlambat',
                 'badge_color' => 'danger',
@@ -342,6 +386,7 @@ class KinerjaWaktuHelper
         if ($status === 'Di-pause') {
             return [
                 'kategori' => 'paused',
+                'status' => 'paused',
                 'label' => 'Sedang Dijeda (Di-pause)',
                 'sublabel' => 'Dijeda',
                 'badge_color' => 'warning',
@@ -358,6 +403,7 @@ class KinerjaWaktuHelper
         if ($status === 'Berjalan' || $status === 'Proses') {
             return [
                 'kategori' => 'proses',
+                'status' => 'proses',
                 'label' => 'Sedang Proses (On Track)',
                 'sublabel' => 'On Track',
                 'badge_color' => 'primary',
@@ -385,6 +431,7 @@ class KinerjaWaktuHelper
         if ($menungguJadwal) {
             return [
                 'kategori' => 'menunggu',
+                'status' => 'menunggu',
                 'label' => 'Menunggu Jadwal',
                 'sublabel' => 'Terjadwal',
                 'badge_color' => 'secondary',
@@ -400,6 +447,7 @@ class KinerjaWaktuHelper
 
         return [
             'kategori' => 'belum_dimulai',
+            'status' => 'belum_dimulai',
             'label' => 'Belum Dimulai',
             'sublabel' => 'Belum Mulai',
             'badge_color' => 'secondary',

@@ -218,10 +218,10 @@
                                         <span>Estimasi Durasi Pengerjaan</span>
                                         <span class="badge bg-secondary-subtle text-secondary border fw-normal" style="font-size: 0.72rem;">Opsional</span>
                                     </label>
-                                    <small class="text-muted fst-italic">Boleh diisi Hari saja, Jam saja, keduanya, atau dihitung otomatis.</small>
+                                    <small class="text-muted fst-italic">Boleh diisi Hari saja, Jam saja, atau keduanya.</small>
                                 </div>
-                                <div class="row g-2 align-items-center">
-                                    <div class="col-md-3 col-sm-6">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-6 col-12">
                                         <label for="estimasi_durasi_hari" class="form-label small text-secondary mb-1">Durasi (Hari)</label>
                                         <div class="input-group">
                                             <span class="input-group-text bg-white text-secondary"><i class="bi bi-calendar-event"></i></span>
@@ -232,7 +232,7 @@
                                             <div class="invalid-feedback d-block">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    <div class="col-md-3 col-sm-6">
+                                    <div class="col-md-6 col-12">
                                         <label for="estimasi_durasi_jam" class="form-label small text-secondary mb-1">Durasi (Jam)</label>
                                         <div class="input-group">
                                             <span class="input-group-text bg-white text-secondary"><i class="bi bi-clock"></i></span>
@@ -243,23 +243,12 @@
                                             <div class="invalid-feedback d-block">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    @if(!$estimasiLocked)
-                                    <div class="col-md-6 col-12 pt-md-3">
-                                        <div class="d-flex flex-wrap align-items-center gap-2">
-                                            <button type="button" class="btn btn-sm btn-outline-success fw-semibold" id="btn-hitung-durasi-auto" title="Hitung durasi dari tanggal/jam mulai ke selesai">
-                                                <i class="bi bi-calculator me-1"></i> Hitung dari Tanggal
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btn-hitung-selesai-auto" title="Hitung tanggal/jam selesai berdasarkan estimasi mulai + durasi">
-                                                <i class="bi bi-calendar-plus me-1"></i> Terapkan ke Tgl Selesai
-                                            </button>
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 ms-auto d-none" id="preview-durasi-badge"></span>
+                                    <div class="col-12 pt-1 d-none" id="preview-durasi-wrapper">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="small text-muted">Total target waktu:</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1" id="preview-durasi-badge" style="font-size: 0.8rem;"></span>
                                         </div>
                                     </div>
-                                    @else
-                                    <div class="col-md-6 col-12 pt-md-3">
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" id="preview-durasi-badge"></span>
-                                    </div>
-                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -428,81 +417,19 @@
 
             let $badge = $('#preview-durasi-badge');
             if (parts.length > 0) {
-                $badge.html('<i class="bi bi-check2-circle me-1"></i>Target Durasi: ' + parts.join(' ')).removeClass('d-none');
+                $badge.html('<i class="bi bi-check2-circle me-1"></i>Target Durasi: ' + parts.join(' '));
+                let $wrap = $('#preview-durasi-wrapper');
+                if ($wrap.length) $wrap.removeClass('d-none');
+                $badge.removeClass('d-none');
             } else {
+                let $wrap = $('#preview-durasi-wrapper');
+                if ($wrap.length) $wrap.addClass('d-none');
                 $badge.addClass('d-none');
             }
         }
 
         $('#estimasi_durasi_hari, #estimasi_durasi_jam').on('input change', updateDurasiPreview);
         updateDurasiPreview();
-
-        // Hitung durasi otomatis dari tanggal/jam mulai & selesai
-        $('#btn-hitung-durasi-auto').on('click', function() {
-            let tglMulai = $('#estimasi_tanggal_mulai').val();
-            let tglSelesai = $('#estimasi_tanggal_selesai').val();
-            let jamMulai = $('#estimasi_jam_mulai').val() || '08:00';
-            let jamSelesai = $('#estimasi_jam_selesai').val() || '16:00';
-
-            if (!tglMulai || !tglSelesai) {
-                alert('Silakan isi Estimasi Tanggal Mulai dan Estimasi Tanggal Selesai terlebih dahulu.');
-                return;
-            }
-
-            let startDt = new Date(tglMulai + 'T' + (jamMulai.length === 5 ? jamMulai + ':00' : jamMulai));
-            let endDt = new Date(tglSelesai + 'T' + (jamSelesai.length === 5 ? jamSelesai + ':00' : jamSelesai));
-
-            let diffMs = endDt - startDt;
-            if (diffMs < 0) {
-                alert('Estimasi Selesai tidak boleh mendahului Estimasi Mulai.');
-                return;
-            }
-
-            let totalMinutes = Math.floor(diffMs / (1000 * 60));
-            let days = Math.floor(totalMinutes / (24 * 60));
-            let remMinutes = totalMinutes % (24 * 60);
-            let hours = Math.round(remMinutes / 60);
-
-            if (hours === 24) {
-                days += 1;
-                hours = 0;
-            }
-
-            $('#estimasi_durasi_hari').val(days > 0 ? days : '');
-            $('#estimasi_durasi_jam').val(hours > 0 ? hours : '');
-            updateDurasiPreview();
-        });
-
-        // Hitung tanggal/jam selesai otomatis dari tanggal mulai + durasi
-        $('#btn-hitung-selesai-auto').on('click', function() {
-            let tglMulai = $('#estimasi_tanggal_mulai').val();
-            let jamMulai = $('#estimasi_jam_mulai').val() || '08:00';
-            let h = parseInt($('#estimasi_durasi_hari').val()) || 0;
-            let j = parseInt($('#estimasi_durasi_jam').val()) || 0;
-
-            if (!tglMulai) {
-                alert('Silakan isi Estimasi Tanggal Mulai terlebih dahulu.');
-                return;
-            }
-
-            if (h === 0 && j === 0) {
-                alert('Silakan isi durasi (hari atau jam) terlebih dahulu.');
-                return;
-            }
-
-            let startDt = new Date(tglMulai + 'T' + (jamMulai.length === 5 ? jamMulai + ':00' : jamMulai));
-            let addedMs = (h * 24 * 60 * 60 * 1000) + (j * 60 * 60 * 1000);
-            let endDt = new Date(startDt.getTime() + addedMs);
-
-            let year = endDt.getFullYear();
-            let month = String(endDt.getMonth() + 1).padStart(2, '0');
-            let day = String(endDt.getDate()).padStart(2, '0');
-            let hours = String(endDt.getHours()).padStart(2, '0');
-            let minutes = String(endDt.getMinutes()).padStart(2, '0');
-
-            $('#estimasi_tanggal_selesai').val(`${year}-${month}-${day}`);
-            $('#estimasi_jam_selesai').val(`${hours}:${minutes}`);
-        });
     });
 </script>
 @endpush

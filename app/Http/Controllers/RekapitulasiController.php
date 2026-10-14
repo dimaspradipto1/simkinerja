@@ -336,15 +336,27 @@ class RekapitulasiController extends Controller
                 return $html ?: '<span class="text-muted small">-</span>';
             })
             ->addColumn('status_badge', function ($row) {
+                $eval = \App\Helpers\KinerjaWaktuHelper::evaluasiKetepatanWaktu($row);
+                $html = '';
+
                 if ($row->status === 'Selesai') {
-                    return '<span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Selesai</span>';
+                    $html .= '<span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Selesai</span>';
                 } elseif ($row->status === 'Proses' || $row->status === 'Berjalan') {
                     if ($row->is_paused) {
-                        return '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-pause-circle me-1"></i>Dijeda</span>';
+                        $html .= '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-pause-circle me-1"></i>Dijeda</span>';
+                    } else {
+                        $html .= '<span class="badge bg-primary px-2 py-1"><i class="bi bi-play-circle me-1"></i>Proses</span>';
                     }
-                    return '<span class="badge bg-primary px-2 py-1"><i class="bi bi-play-circle me-1"></i>Proses</span>';
+                } else {
+                    $html .= '<span class="badge bg-secondary px-2 py-1"><i class="bi bi-x-circle me-1"></i>Belum Dimulai</span>';
                 }
-                return '<span class="badge bg-secondary px-2 py-1"><i class="bi bi-x-circle me-1"></i>Belum Dimulai</span>';
+
+                if (!empty($eval['sisa_waktu_teks'])) {
+                    $sColor = 'bg-danger-subtle text-danger border-danger-subtle'; // Warna merah
+                    $html .= '<div class="mt-1"><span class="badge border px-1.5 py-0.5 ' . $sColor . '" style="font-size:0.75rem;">' . e($eval['sisa_waktu_teks']) . '</span></div>';
+                }
+
+                return $html;
             })
             ->addColumn('ketepatan_badge', function ($row) {
                 $eval = \App\Helpers\KinerjaWaktuHelper::evaluasiKetepatanWaktu($row);
@@ -1077,7 +1089,21 @@ class RekapitulasiController extends Controller
             $kepalaNama = 'H. Andi Ibrahim, B.A.';
             $kepalaNidn = '-';
         } else {
-            if (!empty($unit) && $unit !== '-') {
+            // 1. PRIORITAS UTAMA: Ambil langsung atasan/supervisor pegawai dari hirarki DB (supervisor_id)
+            if ($targetPegawai && $targetPegawai->supervisor_id) {
+                $kepala = User::where('id', $targetPegawai->supervisor_id)->where('is_active', true)->first();
+            }
+
+            // 2. Jika belum ada, gunakan getDirectSupervisors()
+            if (!$kepala && $targetPegawai) {
+                $directSups = $targetPegawai->getDirectSupervisors();
+                if ($directSups && $directSups->isNotEmpty()) {
+                    $kepala = $directSups->first();
+                }
+            }
+
+            // 3. Jika belum ketemu, cari pimpinan dalam unit yang sama
+            if (!$kepala && !empty($unit) && $unit !== '-') {
                 $kepala = User::where('unit', $unit)
                     ->when($targetPegawai, fn($q) => $q->where('id', '!=', $targetPegawai->id))
                     ->where(function ($q) {
@@ -1091,8 +1117,8 @@ class RekapitulasiController extends Controller
                     ->first();
             }
 
+            // 4. Fallback terakhir jika benar-benar tidak ada atasan
             if (!$kepala) {
-                // Cari pimpinan universitas / Rektor
                 $kepala = User::where('jabatan', 'LIKE', '%REKTOR%')
                     ->where('jabatan', 'NOT LIKE', '%WAKIL%')
                     ->where('jabatan', 'NOT LIKE', '%KASIR%')

@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Rekapitulasi Capaian & Analisis Kendala Kinerja - Universitas Ibnu Sina</title>
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/logouis.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('assets/img/logouis.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/logouis.png') }}">
     <style>
         @page {
             size: A4 landscape;
@@ -270,14 +274,14 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 2.5%; padding-left: 1px; padding-right: 1px;">NO</th>
-                <th style="width: 8.5%;">KATEGORI</th>
-                <th style="width: 27%;">URAIAN KEGIATAN / TUGAS</th>
-                <th style="width: 14%;">PEGAWAI / JABATAN</th>
-                <th style="width: 11%;">ESTIMASI WAKTU</th>
-                <th style="width: 11%;">REALISASI WAKTU</th>
-                <th style="width: 7%;">STATUS</th>
-                <th style="width: 19%;">ANALISIS KENDALA & TINDAK LANJUT</th>
+                <th style="width: 3%; padding-left: 1px; padding-right: 1px;">NO</th>
+                <th style="width: 9%;">KATEGORI</th>
+                <th style="width: 29%;">URAIAN KEGIATAN / TUGAS</th>
+                <th style="width: 12%;">ESTIMASI WAKTU</th>
+                <th style="width: 12%;">REALISASI WAKTU</th>
+                <th style="width: 8%;">STATUS</th>
+                <th style="width: 17%;">ANALISIS KENDALA & TINDAK LANJUT</th>
+                <th style="width: 10%;">LINK BUKTI</th>
             </tr>
         </thead>
         <tbody>
@@ -329,35 +333,6 @@
                     <td>
                         <strong style="color: #1e293b;">{{ $item->uraian_tugas ?: '-' }}</strong>
                     </td>
-                    <td>
-                        @if($item->taggedUsers && $item->taggedUsers->count() > 0)
-                            @php
-                                $visibleTagged = isset($subordinateIds) && $subordinateIds !== null
-                                    ? $item->taggedUsers->filter(fn($u) => in_array($u->id, $subordinateIds))
-                                    : $item->taggedUsers;
-                            @endphp
-                            @if($visibleTagged->count() > 0)
-                                @foreach($visibleTagged as $tUser)
-                                    <div style="{{ !$loop->first ? 'margin-top: 3px; padding-top: 3px; border-top: 0.5px dashed #cbd5e1;' : '' }}">
-                                        <strong>{{ $tUser->name }}</strong>
-                                        @if($tUser->jabatan)
-                                            <br><small style="color: #64748b;">{{ $tUser->jabatan }}</small>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            @else
-                                <strong>{{ $item->user ? $item->user->name : '-' }}</strong>
-                                @if($item->user && $item->user->jabatan)
-                                    <br><small style="color: #64748b;">{{ $item->user->jabatan }}</small>
-                                @endif
-                            @endif
-                        @else
-                            <strong>{{ $item->user ? $item->user->name : '-' }}</strong>
-                            @if($item->user && $item->user->jabatan)
-                                <br><small style="color: #64748b;">{{ $item->user->jabatan }}</small>
-                            @endif
-                        @endif
-                    </td>
                     <td class="text-center" style="font-size: 6.5pt;">
                         <div>{{ $estStr }}</div>
                         @if($estJam)
@@ -375,7 +350,7 @@
                         @endif
                         @if($realDurasiStr)
                             <div style="{{ $realStr !== '-' ? 'margin-top: 2px;' : '' }} padding: 1px 3px; background-color: #eff6ff; border: 0.5px solid #bfdbfe; border-radius: 2px; color: #1e40af; font-size: 5.8pt; font-weight: bold;">
-                                Real: {{ $realDurasiStr }}
+                                Realisasi: {{ $realDurasiStr }}
                             </div>
                         @elseif($realStr === '-')
                             -
@@ -391,23 +366,36 @@
                         @else
                             <span class="badge badge-secondary">Belum Mulai</span>
                         @endif
+
+                        {{-- Perhitungan Sisa Waktu dari Target vs Realisasi --}}
+                        @if(!empty($eval['sisa_waktu_teks']))
+                            @php
+                                $sColor = ['bg' => '#fef2f2', 'border' => '#fecaca', 'text' => '#b91c1c']; // Warna merah
+                            @endphp
+                            <div style="margin-top: 3px; padding: 1.5px 3px; background-color: {{ $sColor['bg'] }}; border: 0.5px solid {{ $sColor['border'] }}; border-radius: 2px; color: {{ $sColor['text'] }}; font-size: 5.5pt; font-weight: bold; line-height: 1.15;">
+                                {{ $eval['sisa_waktu_teks'] }}
+                            </div>
+                        @endif
                     </td>
                     <td>
                         {{-- Evaluasi Ketepatan Waktu --}}
-                        @if($eval['status'] === 'terlambat')
+                        @php
+                            $evalStatus = $eval['status'] ?? $eval['kategori'] ?? '';
+                        @endphp
+                        @if($evalStatus === 'terlambat')
                             <div style="color: #b91c1c; font-weight: bold; margin-bottom: 2px; font-size: 6.5pt;">
-                                🚨 TERLAMBAT
-                                <div style="font-size: 6pt; font-weight: normal; color: #dc2626;">{{ $eval['keterangan'] }}</div>
+                                [TERLAMBAT]
+                                <div style="font-size: 6pt; font-weight: normal; color: #dc2626;">{{ $eval['keterangan'] ?? '' }}</div>
                             </div>
-                        @elseif($eval['status'] === 'lebih_cepat')
+                        @elseif($evalStatus === 'lebih_cepat')
                             <div style="color: #0d9488; font-weight: bold; margin-bottom: 2px; font-size: 6.5pt;">
-                                ⚡ LEBIH CEPAT
-                                <div style="font-size: 6pt; font-weight: normal; color: #0f766e;">{{ $eval['keterangan'] }}</div>
+                                [LEBIH CEPAT]
+                                <div style="font-size: 6pt; font-weight: normal; color: #0f766e;">{{ $eval['keterangan'] ?? '' }}</div>
                             </div>
-                        @elseif($eval['status'] === 'on_time')
+                        @elseif($evalStatus === 'on_time')
                             <div style="color: #15803d; font-weight: bold; margin-bottom: 2px; font-size: 6.5pt;">
-                                ✅ TEPAT WAKTU (ON TIME)
-                                <div style="font-size: 6pt; font-weight: normal; color: #166534;">{{ $eval['keterangan'] }}</div>
+                                [TEPAT WAKTU]
+                                <div style="font-size: 6pt; font-weight: normal; color: #166534;">{{ $eval['keterangan'] ?? '' }}</div>
                             </div>
                         @endif
 
@@ -420,7 +408,42 @@
                             <div style="font-size: 6pt;">
                                 <strong>Tindak Lanjut:</strong> {{ trim(strip_tags($item->rencana_tindak_lanjut)) }}
                             </div>
-                        @elseif($eval['status'] !== 'terlambat' && $eval['status'] !== 'lebih_cepat' && $eval['status'] !== 'on_time' && !$item->alasan_pause)
+                        @elseif($evalStatus !== 'terlambat' && $evalStatus !== 'lebih_cepat' && $evalStatus !== 'on_time' && !$item->alasan_pause)
+                            <span style="color: #94a3b8;">-</span>
+                        @endif
+                    </td>
+                    <td class="text-center" style="font-size: 6pt; word-break: break-all;">
+                        @php
+                            $hasProof = false;
+                        @endphp
+                        @if(!empty($item->url_external))
+                            @php
+                                $hasProof = true;
+                                $urls = explode(',', $item->url_external);
+                            @endphp
+                            @foreach($urls as $u)
+                                @php $cleanUrl = trim($u); @endphp
+                                @if(!empty($cleanUrl))
+                                    <div style="margin-bottom: 3px;">
+                                        <a href="{{ $cleanUrl }}" target="_blank" style="color: #0d6efd; text-decoration: underline; font-weight: bold;">
+                                            Link Bukti
+                                        </a>
+                                    </div>
+                                @endif
+                            @endforeach
+                        @endif
+                        @if(!empty($item->file))
+                            @php
+                                $hasProof = true;
+                                $fileUrl = asset('storage/' . $item->file);
+                            @endphp
+                            <div>
+                                <a href="{{ $fileUrl }}" target="_blank" style="color: #198754; text-decoration: underline; font-weight: bold;">
+                                    Berkas File
+                                </a>
+                            </div>
+                        @endif
+                        @if(!$hasProof)
                             <span style="color: #94a3b8;">-</span>
                         @endif
                     </td>
