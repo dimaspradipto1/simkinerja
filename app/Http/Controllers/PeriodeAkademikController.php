@@ -43,8 +43,7 @@ class PeriodeAkademikController extends Controller
      */
     public function show(string $id)
     {
-        $periodeAkademik = PeriodeAkademik::findOrFail($id);
-        return view('pages.periode-akademik.show', compact('periodeAkademik'));
+        return redirect()->route('periode-akademik.edit', $id);
     }
 
     /**

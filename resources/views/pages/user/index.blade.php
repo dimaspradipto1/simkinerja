@@ -103,11 +103,21 @@
                     <p class="text-muted mb-3" id="password_user_name"></p>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Password Baru <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="new_password" required minlength="6" placeholder="Minimal 6 karakter">
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="new_password" required minlength="6" placeholder="Minimal 6 karakter">
+                            <button class="btn btn-outline-secondary toggle-pwd-field" type="button" data-target="new_password" title="Lihat/Sembunyikan Password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Konfirmasi Password Baru <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="new_password_confirmation" required minlength="6" placeholder="Ulangi password baru">
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="new_password_confirmation" required minlength="6" placeholder="Ulangi password baru">
+                            <button class="btn btn-outline-secondary toggle-pwd-field" type="button" data-target="new_password_confirmation" title="Lihat/Sembunyikan Password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -341,5 +351,17 @@
                 }
             });
         }
+        $(document).on('click', '.toggle-pwd-field', function() {
+            let targetId = $(this).data('target');
+            let input = $('#' + targetId);
+            let icon = $(this).find('i');
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                icon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                input.attr('type', 'password');
+                icon.removeClass('bi-eye-slash').addClass('bi-eye');
+            }
+        });
     </script>
 @endpush

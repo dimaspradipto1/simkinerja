@@ -48,9 +48,14 @@
 
                         <div class="col-md-6">
                             <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Masukkan password">
+                            <div class="input-group">
+                                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Masukkan password">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword" title="Lihat/Sembunyikan Password">
+                                    <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
                             @error('password')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -253,6 +258,18 @@
             `;
             $('#kepanitiaan-container').append(rowHtml);
             kepanitiaanIdx++;
+        });
+
+        $('#togglePassword').on('click', function() {
+            let passInput = $('#password');
+            let icon = $('#togglePasswordIcon');
+            if (passInput.attr('type') === 'password') {
+                passInput.attr('type', 'text');
+                icon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                passInput.attr('type', 'password');
+                icon.removeClass('bi-eye-slash').addClass('bi-eye');
+            }
         });
 
         $(document).on('click', '.btn-remove-kepanitiaan', function() {

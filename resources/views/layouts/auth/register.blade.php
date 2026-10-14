@@ -360,10 +360,9 @@
 
       if (toggleBtn && passwordInput && icon) {
         toggleBtn.addEventListener('click', function () {
-          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-          passwordInput.setAttribute('type', type);
-          icon.classList.toggle('bi-eye-fill');
-          icon.classList.toggle('bi-eye-slash-fill');
+          const isPassword = passwordInput.getAttribute('type') === 'password';
+          passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+          icon.className = isPassword ? 'bi bi-eye-fill text-success' : 'bi bi-eye-slash-fill';
         });
       }
     });

@@ -43,8 +43,7 @@ class KategoriController extends Controller
      */
     public function show(string $id)
     {
-        $kategori = Kategori::findOrFail($id);
-        return view('pages.kategori.show', compact('kategori'));
+        return redirect()->route('kategori.edit', $id);
     }
 
     /**
