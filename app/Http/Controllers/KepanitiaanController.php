@@ -15,6 +15,10 @@ use Yajra\DataTables\Facades\DataTables;
 
 class KepanitiaanController extends Controller
 {
+    use \App\Traits\ManagesKegiatanLifecycle;
+
+    protected string $attachmentFolder = 'kepanitiaan';
+
     /**
      * Display a listing of the resource.
      */
@@ -1020,46 +1024,7 @@ class KepanitiaanController extends Controller
      */
     public function requestUnlockEstimasi(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser) {
-            abort(403, 'Anda belum login.');
-        }
-
-        $canAccess = false;
-        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit() || $kepanitiaan->user_id === $authUser->id) {
-            $canAccess = true;
-        } elseif ($kepanitiaan->relationLoaded('taggedUsers') ? $kepanitiaan->taggedUsers->contains($authUser->id) : $kepanitiaan->taggedUsers()->where('users.id', $authUser->id)->exists()) {
-            $canAccess = true;
-        }
-
-        if (!$canAccess) {
-            abort(403, 'Anda tidak memiliki hak akses untuk tugas ini.');
-        }
-
-        $request->validate([
-            'estimasi_unlock_reason' => 'required|string|max:1000',
-        ]);
-
-        $reason = $request->input('estimasi_unlock_reason');
-        if ($request->filled('pimpinan_id')) {
-            $pimpinan = \App\Models\User::find($request->input('pimpinan_id'));
-            if ($pimpinan) {
-                $reason = "[Tujuan: " . $pimpinan->name . " - " . ($pimpinan->jabatan ?: $pimpinan->roles) . "] " . $reason;
-            }
-        }
-
-        $kepanitiaan->update([
-            'estimasi_unlock_reason' => $reason,
-            'estimasi_unlock_requested_at' => now(),
-        ]);
-
-        Alert::success('Berhasil', 'Permintaan perubahan estimasi telah dikirim ke pimpinan.')
-            ->toToast()
-            ->autoClose(4000)
-            ->timerProgressBar();
-
-        return redirect()->back();
+        return $this->executeRequestUnlockEstimasi($request, $kepanitiaan);
     }
 
     /**
@@ -1067,43 +1032,7 @@ class KepanitiaanController extends Controller
      */
     public function approveExtension(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
-            abort(403, 'Hanya pimpinan atau administrator yang dapat menyetujui perpanjangan waktu.');
-        }
-
-        $request->validate([
-            'estimasi_tanggal_selesai' => 'required|date',
-            'estimasi_jam_selesai'     => 'required|string',
-            'catatan_pimpinan'         => 'nullable|string|max:1000',
-        ]);
-
-        $updateData = [
-            'estimasi_tanggal_selesai'     => $request->input('estimasi_tanggal_selesai'),
-            'estimasi_jam_selesai'         => $request->input('estimasi_jam_selesai'),
-            'estimasi_unlock_requested_at'  => null, // Reset request flag
-            'estimasi_unlock_approved_at'   => now(),
-        ];
-
-        if (empty($kepanitiaan->estimasi_tanggal_selesai_awal)) {
-            $updateData['estimasi_tanggal_selesai_awal'] = $kepanitiaan->estimasi_tanggal_selesai;
-            $updateData['estimasi_jam_selesai_awal']     = $kepanitiaan->estimasi_jam_selesai;
-        }
-
-        if ($request->filled('catatan_pimpinan')) {
-            $existing = $kepanitiaan->estimasi_unlock_reason ? $kepanitiaan->estimasi_unlock_reason . " | " : "";
-            $updateData['estimasi_unlock_reason'] = $existing . "[Disetujui oleh " . $authUser->name . "]: " . $request->input('catatan_pimpinan');
-        }
-
-        $kepanitiaan->update($updateData);
-
-        Alert::success('Berhasil', 'Perpanjangan waktu tugas berhasil disetujui & diberikan kepada pegawai.')
-            ->toToast()
-            ->autoClose(4000)
-            ->timerProgressBar();
-
-        return redirect()->back();
+        return $this->executeApproveExtension($request, $kepanitiaan);
     }
 
     /**
@@ -1111,168 +1040,15 @@ class KepanitiaanController extends Controller
      */
     public function requestReopen(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
-        }
-
-        $canAccess = ($kepanitiaan->user_id === $authUser->id)
-            || ($kepanitiaan->relationLoaded('taggedUsers') ? $kepanitiaan->taggedUsers->contains($authUser->id) : $kepanitiaan->taggedUsers()->where('users.id', $authUser->id)->exists())
-            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
-
-        if (!$canAccess) {
-            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk tugas ini.'], 403);
-        }
-
-        $request->validate([
-            'reason' => 'required|string|max:1000',
-        ]);
-
-        $kepanitiaan->update([
-            'reopen_reason' => $request->input('reason'),
-            'reopen_requested_at' => now(),
-        ]);
-
-        $kepanitiaan->syncToKegiatan();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permohonan buka kembali tugas berhasil dikirimkan ke Pimpinan/Admin.',
-        ]);
+        return $this->executeRequestReopen($request, $kepanitiaan);
     }
 
     /**
-     * Pimpinan atau Admin membuka kembali tugas yang sudah selesai (karena tidak sengaja selesai).
+     * Pimpinan atau Admin membuka kembali tugas yang sudah selesai.
      */
     public function reopen(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kunci tugas yang telah diselesaikan.',
-            ], 403);
-        }
-
-        $now = \Carbon\Carbon::now();
-
-        // 1. Hapus milestone auto-log "Selesai Pekerjaan" jika ada
-        $finishMilestones = $kepanitiaan->milestones()
-            ->where(function ($q) {
-                $q->where('nama_milestone', 'Selesai Pekerjaan')
-                  ->orWhere('nama_milestone', 'like', '%Selesai%Pekerjaan%');
-            })->get();
-        foreach ($finishMilestones as $fm) {
-            $fm->delete();
-        }
-
-        // 2. Aktifkan milestone point agar langsung melanjutkan dan berjalan otomatis
-        $lastMilestone = $kepanitiaan->milestones()->latest()->first();
-        if ($lastMilestone) {
-            $lastMilestone->status = 'Berjalan';
-            $lastMilestone->waktu_selesai = null;
-            $lastMilestone->last_started_at = $now;
-            $lastMilestone->save();
-        } else {
-            $kepanitiaan->milestones()->create([
-                'nama_milestone' => 'Melanjutkan Pekerjaan',
-                'status' => 'Berjalan',
-                'waktu_mulai' => $now,
-                'last_started_at' => $now,
-                'durasi_detik' => 0,
-            ]);
-        }
-
-        // 3. Kembalikan status tugas ke 'Berjalan', reset waktu_selesai, pasang last_started_at agar waktu berjalan otomatis tanpa perlu klik Lanjut
-        $kepanitiaan->update([
-            'status' => 'Berjalan',
-            'waktu_selesai' => null,
-            'tanggal_selesai' => null,
-            'last_started_at' => $now,
-            'reopen_reason' => null,
-            'reopen_requested_at' => null,
-            'reopened_at' => $now,
-            'reopened_by' => $authUser->id,
-        ]);
-
-        $kepanitiaan->syncToKegiatan();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Kunci tugas berhasil dibuka dan pengerjaan langsung berjalan otomatis.',
-        ]);
-    }
-
-    /**
-     * Helper to automatically log milestone points for task timer events.
-     */
-    private function autoLogMilestone($kepanitiaan, $action, $now, $alasanPause = null)
-    {
-        if ($action === 'start') {
-            // Mark any paused milestones as completed for phase 1
-            $pausedMilestones = $kepanitiaan->milestones()->where('status', 'Di-pause')->get();
-            foreach ($pausedMilestones as $pm) {
-                $pm->status = 'Selesai';
-                if (!$pm->waktu_selesai) {
-                    $pm->waktu_selesai = $now;
-                }
-                $pm->save();
-            }
-
-            $runningMilestone = $kepanitiaan->milestones()->where('status', 'Berjalan')->first();
-            if (!$runningMilestone) {
-                $milestoneCount = $kepanitiaan->milestones()->count();
-                $title = ($milestoneCount === 0) ? 'Mulai Pelaksanaan Pekerjaan' : 'Melanjutkan Pekerjaan';
-                $kepanitiaan->milestones()->create([
-                    'nama_milestone' => $title,
-                    'status' => 'Berjalan',
-                    'waktu_mulai' => $now,
-                    'last_started_at' => $now,
-                    'durasi_detik' => 0,
-                ]);
-            }
-        } elseif ($action === 'pause') {
-            $runningMilestones = $kepanitiaan->milestones()->where('status', 'Berjalan')->get();
-            foreach ($runningMilestones as $m) {
-                if ($m->last_started_at) {
-                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
-                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
-                }
-                $m->last_started_at = null;
-                $m->status = 'Di-pause';
-                if ($alasanPause !== null) {
-                    $m->alasan_pause = $alasanPause;
-                }
-                $m->save();
-            }
-        } elseif ($action === 'stop') {
-            $activeMilestones = $kepanitiaan->milestones()->whereIn('status', ['Berjalan', 'Di-pause'])->get();
-            foreach ($activeMilestones as $m) {
-                if ($m->status === 'Berjalan' && $m->last_started_at) {
-                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
-                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
-                }
-                $m->last_started_at = null;
-                $m->status = 'Selesai';
-                if (!$m->waktu_selesai) {
-                    $m->waktu_selesai = $now;
-                }
-                $m->save();
-            }
-
-            $lastMilestone = $kepanitiaan->milestones()->latest()->first();
-            if (!$lastMilestone || $lastMilestone->nama_milestone !== 'Selesai Pekerjaan') {
-                $kepanitiaan->milestones()->create([
-                    'nama_milestone' => 'Selesai Pekerjaan',
-                    'status' => 'Selesai',
-                    'waktu_mulai' => $now,
-                    'waktu_selesai' => $now,
-                    'durasi_detik' => 0,
-                ]);
-            }
-        }
+        return $this->executeReopen($request, $kepanitiaan);
     }
 
     /**
@@ -1280,47 +1056,7 @@ class KepanitiaanController extends Controller
      */
     public function start(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $now = \Carbon\Carbon::now();
-
-        if ($kepanitiaan->status !== 'Selesai' && !empty($kepanitiaan->estimasi_tanggal_selesai)) {
-            $endTime = $kepanitiaan->estimasi_jam_selesai ?: '23:59:59';
-            $estimasiEnd = \Carbon\Carbon::parse($kepanitiaan->estimasi_tanggal_selesai . ' ' . $endTime);
-            if ($now->gt($estimasiEnd)) {
-                $kepanitiaan->update([
-                    'status' => 'Selesai',
-                    'waktu_selesai' => $kepanitiaan->waktu_selesai ?: $endTime,
-                    'tanggal_selesai' => $kepanitiaan->tanggal_selesai ?: $kepanitiaan->estimasi_tanggal_selesai,
-                    'last_started_at' => null,
-                ]);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Waktu estimasi tugas telah habis. Tugas otomatis dihentikan dan ditandai selesai.',
-                ]);
-            }
-        }
-
-        $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
-        $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
-
-        $updateData = [
-            'status' => 'Berjalan',
-            'last_started_at' => $now,
-        ];
-
-        if (empty($kepanitiaan->waktu_mulai) || $kepanitiaan->waktu_mulai === '00:00:00') {
-            $updateData['waktu_mulai'] = $clientTime;
-            $updateData['tanggal_mulai'] = $clientDate;
-        }
-
-        $kepanitiaan->update($updateData);
-
-        // Auto log milestone point for start/resume
-        $this->autoLogMilestone($kepanitiaan, 'start', $now);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dijalankan (' . substr($clientTime, 0, 5) . ').',
-        ]);
+        return $this->executeStart($request, $kepanitiaan);
     }
 
     /**
@@ -1328,28 +1064,7 @@ class KepanitiaanController extends Controller
      */
     public function pause(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $now = \Carbon\Carbon::now();
-
-        if ($kepanitiaan->status === 'Berjalan' && $kepanitiaan->last_started_at) {
-            $elapsedSeconds = (int) abs($now->diffInSeconds($kepanitiaan->last_started_at));
-            $kepanitiaan->durasi_detik = (int) ($kepanitiaan->durasi_detik ?? 0) + $elapsedSeconds;
-        }
-
-        $alasanPause = $request->input('alasan_pause');
-        $kepanitiaan->last_started_at = null;
-        $kepanitiaan->status = 'Di-pause';
-        if ($alasanPause !== null) {
-            $kepanitiaan->alasan_pause = $alasanPause;
-        }
-        $kepanitiaan->save();
-
-        // Auto log milestone point for pause
-        $this->autoLogMilestone($kepanitiaan, 'pause', $now, $alasanPause);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil di-pause.',
-        ]);
+        return $this->executePause($request, $kepanitiaan);
     }
 
     /**
@@ -1357,43 +1072,7 @@ class KepanitiaanController extends Controller
      */
     public function stop(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $now = \Carbon\Carbon::now();
-
-        $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
-        $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
-
-        if ($kepanitiaan->status === 'Berjalan' && $kepanitiaan->last_started_at) {
-            $elapsedSeconds = (int) abs($now->diffInSeconds($kepanitiaan->last_started_at));
-            $kepanitiaan->durasi_detik = (int) ($kepanitiaan->durasi_detik ?? 0) + $elapsedSeconds;
-        }
-
-        $updateData = [
-            'waktu_selesai' => $clientTime,
-            'tanggal_selesai' => $clientDate,
-            'status' => 'Selesai',
-            'last_started_at' => null,
-        ];
-
-        if ($request->hasFile('file')) {
-            if ($kepanitiaan->file && Storage::disk('public')->exists($kepanitiaan->file)) {
-                Storage::disk('public')->delete($kepanitiaan->file);
-            }
-            $updateData['file'] = $request->file('file')->store('kepanitiaan', 'public');
-        }
-
-        if ($request->filled('url_external')) {
-            $updateData['url_external'] = $request->input('url_external');
-        }
-
-        $kepanitiaan->update($updateData);
-
-        // Auto log milestone point for stop
-        $this->autoLogMilestone($kepanitiaan, 'stop', $now);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Waktu penyelesaian tugas (' . substr($clientTime, 0, 5) . ') berhasil dicatat.',
-        ]);
+        return $this->executeStop($request, $kepanitiaan);
     }
 
     /**
@@ -1401,62 +1080,9 @@ class KepanitiaanController extends Controller
      */
     public function uploadAttachment(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $updateData = [];
-
-        if ($request->hasFile('file')) {
-            $uploadedFile = $request->file('file');
-            if ($uploadedFile->isValid()) {
-                if ($kepanitiaan->file && Storage::disk('public')->exists($kepanitiaan->file)) {
-                    Storage::disk('public')->delete($kepanitiaan->file);
-                }
-                $updateData['file'] = $uploadedFile->store('kepanitiaan', 'public');
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal mengunggah berkas: ' . $uploadedFile->getErrorMessage(),
-                ], 422);
-            }
-        }
-
-        if ($request->has('url_external')) {
-            $newManualUrl = trim((string) $request->input('url_external'));
-            $existingUrls = !empty($kepanitiaan->url_external) ? explode(',', $kepanitiaan->url_external) : [];
-            $absensiUrls = array_filter($existingUrls, function($p) {
-                foreach (\App\Models\AbsensiSetting::defaults() as $s => $c) {
-                    if (str_contains($p, $s)) return true;
-                }
-                return false;
-            });
-            if (!empty($newManualUrl)) {
-                $absensiUrls[] = $newManualUrl;
-            }
-            $updateData['url_external'] = !empty($absensiUrls) ? implode(',', array_unique($absensiUrls)) : null;
-        }
-
-        if ($request->has('hasil_kerja')) {
-            $updateData['hasil_kerja'] = $request->input('hasil_kerja');
-        }
-
-        if ($request->has('rencana_tindak_lanjut')) {
-            $updateData['rencana_tindak_lanjut'] = $request->input('rencana_tindak_lanjut');
-        }
-
-        if ($request->has('alasan_pause')) {
-            $alasanPause = $request->input('alasan_pause');
-            $updateData['alasan_pause'] = $alasanPause;
-            // Also update any paused milestones
-            $kepanitiaan->milestones()->where('status', 'Di-pause')->update(['alasan_pause' => $alasanPause]);
-        }
-
-        if (!empty($updateData)) {
-            $kepanitiaan->update($updateData);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Berkas dan link eksternal berhasil disimpan.',
-        ]);
+        return $this->executeUploadAttachment($request, $kepanitiaan);
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -1541,30 +1167,9 @@ class KepanitiaanController extends Controller
      */
     public function updateTags(Request $request, Kepanitiaan $kepanitiaan)
     {
-        $authUser = Auth::user();
-        if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
-            if ($kepanitiaan->user_id !== $authUser->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki hak akses untuk mengubah tag tugas ini.'
-                ], 403);
-            }
-        }
-
-        $request->validate([
-            'tagged_users' => ['nullable', 'array'],
-            'tagged_users.*' => ['exists:users,id'],
-        ]);
-
-        $kepanitiaan->taggedUsers()->sync($request->input('tagged_users', []));
-        $kepanitiaan->syncToKegiatan();
-        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($kepanitiaan);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Rekan kerja berhasil diperbarui.'
-        ]);
+        return $this->executeUpdateTags($request, $kepanitiaan);
     }
+
 
     /**
      * Download Excel Import Template

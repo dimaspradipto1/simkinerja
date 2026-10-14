@@ -16,6 +16,10 @@ use Yajra\DataTables\Facades\DataTables;
 
 class RencanaKerjaController extends Controller
 {
+    use \App\Traits\ManagesKegiatanLifecycle;
+
+    protected string $attachmentFolder = 'rencana_kerja';
+
     /**
      * Display a listing of the resource.
      */
@@ -791,46 +795,7 @@ class RencanaKerjaController extends Controller
      */
     public function requestUnlockEstimasi(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser) {
-            abort(403, 'Anda belum login.');
-        }
-
-        $canAccess = false;
-        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit() || $rencanaKerja->user_id === $authUser->id) {
-            $canAccess = true;
-        } elseif ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists()) {
-            $canAccess = true;
-        }
-
-        if (!$canAccess) {
-            abort(403, 'Anda tidak memiliki hak akses untuk tugas ini.');
-        }
-
-        $request->validate([
-            'estimasi_unlock_reason' => 'required|string|max:1000',
-        ]);
-
-        $reason = $request->input('estimasi_unlock_reason');
-        if ($request->filled('pimpinan_id')) {
-            $pimpinan = \App\Models\User::find($request->input('pimpinan_id'));
-            if ($pimpinan) {
-                $reason = "[Tujuan: " . $pimpinan->name . " - " . ($pimpinan->jabatan ?: $pimpinan->roles) . "] " . $reason;
-            }
-        }
-
-        $rencanaKerja->update([
-            'estimasi_unlock_reason' => $reason,
-            'estimasi_unlock_requested_at' => now(),
-        ]);
-
-        Alert::success('Berhasil', 'Permintaan perubahan estimasi telah dikirim ke pimpinan.')
-            ->toToast()
-            ->autoClose(4000)
-            ->timerProgressBar();
-
-        return redirect()->back();
+        return $this->executeRequestUnlockEstimasi($request, $rencanaKerja);
     }
 
     /**
@@ -838,43 +803,7 @@ class RencanaKerjaController extends Controller
      */
     public function approveExtension(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
-            abort(403, 'Hanya pimpinan atau administrator yang dapat menyetujui perpanjangan waktu.');
-        }
-
-        $request->validate([
-            'estimasi_tanggal_selesai' => 'required|date',
-            'estimasi_jam_selesai'     => 'required|string',
-            'catatan_pimpinan'         => 'nullable|string|max:1000',
-        ]);
-
-        $updateData = [
-            'estimasi_tanggal_selesai'     => $request->input('estimasi_tanggal_selesai'),
-            'estimasi_jam_selesai'         => $request->input('estimasi_jam_selesai'),
-            'estimasi_unlock_requested_at'  => null, // Reset request flag
-            'estimasi_unlock_approved_at'   => now(),
-        ];
-
-        if (empty($rencanaKerja->estimasi_tanggal_selesai_awal)) {
-            $updateData['estimasi_tanggal_selesai_awal'] = $rencanaKerja->estimasi_tanggal_selesai;
-            $updateData['estimasi_jam_selesai_awal']     = $rencanaKerja->estimasi_jam_selesai;
-        }
-
-        if ($request->filled('catatan_pimpinan')) {
-            $existing = $rencanaKerja->estimasi_unlock_reason ? $rencanaKerja->estimasi_unlock_reason . " | " : "";
-            $updateData['estimasi_unlock_reason'] = $existing . "[Disetujui oleh " . $authUser->name . "]: " . $request->input('catatan_pimpinan');
-        }
-
-        $rencanaKerja->update($updateData);
-
-        Alert::success('Berhasil', 'Perpanjangan waktu tugas berhasil disetujui & diberikan kepada pegawai.')
-            ->toToast()
-            ->autoClose(4000)
-            ->timerProgressBar();
-
-        return redirect()->back();
+        return $this->executeApproveExtension($request, $rencanaKerja);
     }
 
     /**
@@ -882,168 +811,15 @@ class RencanaKerjaController extends Controller
      */
     public function requestReopen(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
-        }
-
-        $canAccess = ($rencanaKerja->user_id === $authUser->id)
-            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
-            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
-
-        if (!$canAccess) {
-            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk tugas ini.'], 403);
-        }
-
-        $request->validate([
-            'reason' => 'required|string|max:1000',
-        ]);
-
-        $rencanaKerja->update([
-            'reopen_reason' => $request->input('reason'),
-            'reopen_requested_at' => now(),
-        ]);
-
-        $rencanaKerja->syncToKegiatan();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permohonan buka kembali tugas berhasil dikirimkan ke Pimpinan/Admin.',
-        ]);
+        return $this->executeRequestReopen($request, $rencanaKerja);
     }
 
     /**
-     * Pimpinan atau Admin membuka kembali tugas yang sudah selesai (karena tidak sengaja selesai).
+     * Pimpinan atau Admin membuka kembali tugas yang sudah selesai.
      */
     public function reopen(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kunci tugas yang telah diselesaikan.',
-            ], 403);
-        }
-
-        $now = \Carbon\Carbon::now();
-
-        // 1. Hapus milestone auto-log "Selesai Pekerjaan" jika ada
-        $finishMilestones = $rencanaKerja->milestones()
-            ->where(function ($q) {
-                $q->where('nama_milestone', 'Selesai Pekerjaan')
-                  ->orWhere('nama_milestone', 'like', '%Selesai%Pekerjaan%');
-            })->get();
-        foreach ($finishMilestones as $fm) {
-            $fm->delete();
-        }
-
-        // 2. Aktifkan milestone point agar langsung melanjutkan dan berjalan otomatis
-        $lastMilestone = $rencanaKerja->milestones()->latest()->first();
-        if ($lastMilestone) {
-            $lastMilestone->status = 'Berjalan';
-            $lastMilestone->waktu_selesai = null;
-            $lastMilestone->last_started_at = $now;
-            $lastMilestone->save();
-        } else {
-            $rencanaKerja->milestones()->create([
-                'nama_milestone' => 'Melanjutkan Pekerjaan',
-                'status' => 'Berjalan',
-                'waktu_mulai' => $now,
-                'last_started_at' => $now,
-                'durasi_detik' => 0,
-            ]);
-        }
-
-        // 3. Kembalikan status tugas ke 'Berjalan', reset waktu_selesai, dan pasang last_started_at agar waktu berjalan otomatis tanpa perlu klik Lanjut
-        $rencanaKerja->update([
-            'status' => 'Berjalan',
-            'waktu_selesai' => null,
-            'tanggal_selesai' => null,
-            'last_started_at' => $now,
-            'reopen_reason' => null,
-            'reopen_requested_at' => null,
-            'reopened_at' => $now,
-            'reopened_by' => $authUser->id,
-        ]);
-
-        $rencanaKerja->syncToKegiatan();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Kunci tugas berhasil dibuka dan pengerjaan langsung berjalan otomatis.',
-        ]);
-    }
-
-    /**
-     * Helper to automatically log milestone points for task timer events.
-     */
-    private function autoLogMilestone($rencanaKerja, $action, $now, $alasanPause = null)
-    {
-        if ($action === 'start') {
-            // Mark any paused milestones as completed for phase 1
-            $pausedMilestones = $rencanaKerja->milestones()->where('status', 'Di-pause')->get();
-            foreach ($pausedMilestones as $pm) {
-                $pm->status = 'Selesai';
-                if (!$pm->waktu_selesai) {
-                    $pm->waktu_selesai = $now;
-                }
-                $pm->save();
-            }
-
-            $runningMilestone = $rencanaKerja->milestones()->where('status', 'Berjalan')->first();
-            if (!$runningMilestone) {
-                $milestoneCount = $rencanaKerja->milestones()->count();
-                $title = ($milestoneCount === 0) ? 'Mulai Pelaksanaan Pekerjaan' : 'Melanjutkan Pekerjaan';
-                $rencanaKerja->milestones()->create([
-                    'nama_milestone' => $title,
-                    'status' => 'Berjalan',
-                    'waktu_mulai' => $now,
-                    'last_started_at' => $now,
-                    'durasi_detik' => 0,
-                ]);
-            }
-        } elseif ($action === 'pause') {
-            $runningMilestones = $rencanaKerja->milestones()->where('status', 'Berjalan')->get();
-            foreach ($runningMilestones as $m) {
-                if ($m->last_started_at) {
-                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
-                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
-                }
-                $m->last_started_at = null;
-                $m->status = 'Di-pause';
-                if ($alasanPause !== null) {
-                    $m->alasan_pause = $alasanPause;
-                }
-                $m->save();
-            }
-        } elseif ($action === 'stop') {
-            $activeMilestones = $rencanaKerja->milestones()->whereIn('status', ['Berjalan', 'Di-pause'])->get();
-            foreach ($activeMilestones as $m) {
-                if ($m->status === 'Berjalan' && $m->last_started_at) {
-                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
-                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
-                }
-                $m->last_started_at = null;
-                $m->status = 'Selesai';
-                if (!$m->waktu_selesai) {
-                    $m->waktu_selesai = $now;
-                }
-                $m->save();
-            }
-
-            $lastMilestone = $rencanaKerja->milestones()->latest()->first();
-            if (!$lastMilestone || $lastMilestone->nama_milestone !== 'Selesai Pekerjaan') {
-                $rencanaKerja->milestones()->create([
-                    'nama_milestone' => 'Selesai Pekerjaan',
-                    'status' => 'Selesai',
-                    'waktu_mulai' => $now,
-                    'waktu_selesai' => $now,
-                    'durasi_detik' => 0,
-                ]);
-            }
-        }
+        return $this->executeReopen($request, $rencanaKerja);
     }
 
     /**
@@ -1051,55 +827,7 @@ class RencanaKerjaController extends Controller
      */
     public function start(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-        if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
-        }
-
-        $canAccess = ($rencanaKerja->user_id === $authUser->id)
-            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
-            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
-
-        if (!$canAccess) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak. Anda tidak memiliki izin untuk mengoperasikan tugas ini.'], 403);
-        }
-
-        $now = \Carbon\Carbon::now();
-
-        if ($rencanaKerja->status !== 'Selesai' && !empty($rencanaKerja->estimasi_tanggal_selesai)) {
-            $endTime = $rencanaKerja->estimasi_jam_selesai ?: '23:59:59';
-            $estimasiEnd = \Carbon\Carbon::parse($rencanaKerja->estimasi_tanggal_selesai . ' ' . $endTime);
-            if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'success' => false,
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
-            }
-        }
-
-        $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
-        $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
-
-        $updateData = [
-            'status' => 'Berjalan',
-            'last_started_at' => $now,
-        ];
-
-        if (empty($rencanaKerja->waktu_mulai) || $rencanaKerja->waktu_mulai === '00:00:00') {
-            $updateData['waktu_mulai'] = $clientTime;
-            $updateData['tanggal_mulai'] = $clientDate;
-        }
-
-        $rencanaKerja->update($updateData);
-
-        // Auto log milestone point for start/resume
-        $this->autoLogMilestone($rencanaKerja, 'start', $now);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dijalankan (' . substr($clientTime, 0, 5) . ').',
-        ]);
+        return $this->executeStart($request, $rencanaKerja);
     }
 
     /**
@@ -1107,41 +835,7 @@ class RencanaKerjaController extends Controller
      */
     public function pause(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-        if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
-        }
-
-        $canAccess = ($rencanaKerja->user_id === $authUser->id)
-            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
-            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
-
-        if (!$canAccess) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
-        }
-
-        $now = \Carbon\Carbon::now();
-
-        if ($rencanaKerja->status === 'Berjalan' && $rencanaKerja->last_started_at) {
-            $elapsedSeconds = (int) abs($now->diffInSeconds($rencanaKerja->last_started_at));
-            $rencanaKerja->durasi_detik = (int) ($rencanaKerja->durasi_detik ?? 0) + $elapsedSeconds;
-        }
-
-        $alasanPause = $request->input('alasan_pause');
-        $rencanaKerja->last_started_at = null;
-        $rencanaKerja->status = 'Di-pause';
-        if ($alasanPause !== null) {
-            $rencanaKerja->alasan_pause = $alasanPause;
-        }
-        $rencanaKerja->save();
-
-        // Auto log milestone point for pause
-        $this->autoLogMilestone($rencanaKerja, 'pause', $now, $alasanPause);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil di-pause.',
-        ]);
+        return $this->executePause($request, $rencanaKerja);
     }
 
     /**
@@ -1149,71 +843,7 @@ class RencanaKerjaController extends Controller
      */
     public function stop(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-        if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
-        }
-
-        $canAccess = ($rencanaKerja->user_id === $authUser->id)
-            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
-            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
-
-        if (!$canAccess) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
-        }
-
-        $now = \Carbon\Carbon::now();
-
-        if ($rencanaKerja->status !== 'Selesai' && !empty($rencanaKerja->estimasi_tanggal_selesai)) {
-            $endTime = $rencanaKerja->estimasi_jam_selesai ?: '23:59:59';
-            $estimasiEnd = \Carbon\Carbon::parse($rencanaKerja->estimasi_tanggal_selesai . ' ' . $endTime);
-            if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'success' => false,
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
-            }
-        }
-
-        $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
-        $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
-
-        if ($rencanaKerja->status === 'Berjalan' && $rencanaKerja->last_started_at) {
-            $elapsedSeconds = (int) abs($now->diffInSeconds($rencanaKerja->last_started_at));
-            $rencanaKerja->durasi_detik = (int) ($rencanaKerja->durasi_detik ?? 0) + $elapsedSeconds;
-        }
-
-        $updateData = [
-            'waktu_selesai' => $clientTime,
-            'tanggal_selesai' => $clientDate,
-            'status' => 'Selesai',
-            'last_started_at' => null,
-        ];
-
-        if ($request->hasFile('file')) {
-            $request->validate([
-                'file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar|max:20480',
-            ]);
-            if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
-                Storage::disk('public')->delete($rencanaKerja->file);
-            }
-            $updateData['file'] = $request->file('file')->store('rencana_kerja', 'public');
-        }
-
-        if ($request->filled('url_external')) {
-            $updateData['url_external'] = $request->input('url_external');
-        }
-
-        $rencanaKerja->update($updateData);
-
-        // Auto log milestone point for stop
-        $this->autoLogMilestone($rencanaKerja, 'stop', $now);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Waktu penyelesaian tugas (' . substr($clientTime, 0, 5) . ') berhasil dicatat.',
-        ]);
+        return $this->executeStop($request, $rencanaKerja);
     }
 
     /**
@@ -1221,69 +851,9 @@ class RencanaKerjaController extends Controller
      */
     public function uploadAttachment(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-        if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
-        }
-
-        $canAccess = ($rencanaKerja->user_id === $authUser->id)
-            || ($rencanaKerja->relationLoaded('taggedUsers') ? $rencanaKerja->taggedUsers->contains($authUser->id) : $rencanaKerja->taggedUsers()->where('users.id', $authUser->id)->exists())
-            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
-
-        if (!$canAccess) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
-        }
-
-        $request->validate([
-            'file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip,rar|max:20480',
-            'url_external' => 'nullable|url|max:500',
-        ]);
-
-        $updateData = [];
-
-        if ($request->hasFile('file')) {
-            $uploadedFile = $request->file('file');
-            if ($uploadedFile->isValid()) {
-                if ($rencanaKerja->file && Storage::disk('public')->exists($rencanaKerja->file)) {
-                    Storage::disk('public')->delete($rencanaKerja->file);
-                }
-                $updateData['file'] = $uploadedFile->store('rencana_kerja', 'public');
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal mengunggah berkas: ' . $uploadedFile->getErrorMessage(),
-                ], 422);
-            }
-        }
-
-        if ($request->has('url_external')) {
-            $updateData['url_external'] = $request->input('url_external');
-        }
-
-        if ($request->has('hasil_kerja')) {
-            $updateData['hasil_kerja'] = $request->input('hasil_kerja');
-        }
-
-        if ($request->has('rencana_tindak_lanjut')) {
-            $updateData['rencana_tindak_lanjut'] = $request->input('rencana_tindak_lanjut');
-        }
-
-        if ($request->has('alasan_pause')) {
-            $alasanPause = $request->input('alasan_pause');
-            $updateData['alasan_pause'] = $alasanPause;
-            // Also update any paused milestones
-            $rencanaKerja->milestones()->where('status', 'Di-pause')->update(['alasan_pause' => $alasanPause]);
-        }
-
-        if (!empty($updateData)) {
-            $rencanaKerja->update($updateData);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Berkas dan link eksternal berhasil disimpan.',
-        ]);
+        return $this->executeUploadAttachment($request, $rencanaKerja);
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -2385,28 +1955,6 @@ class RencanaKerjaController extends Controller
      */
     public function updateTags(Request $request, RencanaKerja $rencanaKerja)
     {
-        $authUser = Auth::user();
-        if ($authUser && !$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit()) {
-            if ($rencanaKerja->user_id !== $authUser->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki hak akses untuk mengubah tag tugas ini.'
-                ], 403);
-            }
-        }
-
-        $request->validate([
-            'tagged_users' => ['nullable', 'array'],
-            'tagged_users.*' => ['exists:users,id'],
-        ]);
-
-        $rencanaKerja->taggedUsers()->sync($request->input('tagged_users', []));
-        $rencanaKerja->syncToKegiatan();
-        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($rencanaKerja);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Rekan kerja berhasil diperbarui.'
-        ]);
+        return $this->executeUpdateTags($request, $rencanaKerja);
     }
 }

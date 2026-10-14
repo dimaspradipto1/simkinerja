@@ -22,6 +22,10 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class InsidentilController extends Controller
 {
+    use \App\Traits\ManagesKegiatanLifecycle;
+
+    protected string $attachmentFolder = 'insidentils';
+
     /**
      * Display a listing of the resource.
      */
@@ -801,57 +805,7 @@ class InsidentilController extends Controller
      */
     public function requestUnlockEstimasi(Request $request, Insidentil $insidentil)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser) {
-            abort(403, 'Anda belum login.');
-        }
-
-        $canAccess = false;
-        if ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit() || $insidentil->user_id === $authUser->id) {
-            $canAccess = true;
-        } elseif ($insidentil->relationLoaded('taggedUsers') ? $insidentil->taggedUsers->contains($authUser->id) : $insidentil->taggedUsers()->where('users.id', $authUser->id)->exists()) {
-            $canAccess = true;
-        }
-
-        if (!$canAccess) {
-            abort(403, 'Anda tidak memiliki hak akses untuk tugas ini.');
-        }
-
-        $requiresPimpinan = !$authUser->isPimpinanUnit() && !$authUser->isAdmin();
-        $supervisorIds = $requiresPimpinan
-            ? $authUser->getDirectSupervisors()->modelKeys()
-            : [];
-
-        $validated = $request->validate([
-            'estimasi_unlock_reason' => 'required|string|max:1000',
-            'pimpinan_id' => [
-                $requiresPimpinan ? 'required' : 'nullable',
-                'integer',
-                Rule::exists('users', 'id')->where('is_active', true),
-                ...($requiresPimpinan ? [Rule::in($supervisorIds)] : []),
-            ],
-        ]);
-
-        $reason = $validated['estimasi_unlock_reason'];
-        if (!empty($validated['pimpinan_id'])) {
-            $pimpinan = User::findOrFail($validated['pimpinan_id']);
-            if ($pimpinan) {
-                $reason = "[Tujuan: " . $pimpinan->name . " - " . ($pimpinan->jabatan ?: $pimpinan->roles) . "] " . $reason;
-            }
-        }
-
-        $insidentil->update([
-            'estimasi_unlock_reason' => $reason,
-            'estimasi_unlock_requested_at' => now(),
-        ]);
-
-        Alert::success('Berhasil', 'Permintaan perubahan estimasi telah dikirim ke pimpinan.')
-            ->toToast()
-            ->autoClose(4000)
-            ->timerProgressBar();
-
-        return redirect()->back();
+        return $this->executeRequestUnlockEstimasi($request, $insidentil);
     }
 
     /**
@@ -859,43 +813,7 @@ class InsidentilController extends Controller
      */
     public function approveExtension(Request $request, Insidentil $insidentil)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
-            abort(403, 'Hanya pimpinan atau administrator yang dapat menyetujui perpanjangan waktu.');
-        }
-
-        $request->validate([
-            'estimasi_tanggal_selesai' => 'required|date',
-            'estimasi_jam_selesai'     => 'required|string',
-            'catatan_pimpinan'         => 'nullable|string|max:1000',
-        ]);
-
-        $updateData = [
-            'estimasi_tanggal_selesai'     => $request->input('estimasi_tanggal_selesai'),
-            'estimasi_jam_selesai'         => $request->input('estimasi_jam_selesai'),
-            'estimasi_unlock_requested_at'  => null, // Reset request flag
-            'estimasi_unlock_approved_at'   => now(),
-        ];
-
-        if (empty($insidentil->estimasi_tanggal_selesai_awal)) {
-            $updateData['estimasi_tanggal_selesai_awal'] = $insidentil->estimasi_tanggal_selesai;
-            $updateData['estimasi_jam_selesai_awal']     = $insidentil->estimasi_jam_selesai;
-        }
-
-        if ($request->filled('catatan_pimpinan')) {
-            $existing = $insidentil->estimasi_unlock_reason ? $insidentil->estimasi_unlock_reason . " | " : "";
-            $updateData['estimasi_unlock_reason'] = $existing . "[Disetujui oleh " . $authUser->name . "]: " . $request->input('catatan_pimpinan');
-        }
-
-        $insidentil->update($updateData);
-
-        Alert::success('Berhasil', 'Perpanjangan waktu tugas berhasil disetujui & diberikan kepada pegawai.')
-            ->toToast()
-            ->autoClose(4000)
-            ->timerProgressBar();
-
-        return redirect()->back();
+        return $this->executeApproveExtension($request, $insidentil);
     }
 
     /**
@@ -903,99 +821,17 @@ class InsidentilController extends Controller
      */
     public function requestReopen(Request $request, Insidentil $insidentil)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser) {
-            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
-        }
-
-        $canAccess = ($insidentil->user_id === $authUser->id)
-            || ($insidentil->relationLoaded('taggedUsers') ? $insidentil->taggedUsers->contains($authUser->id) : $insidentil->taggedUsers()->where('users.id', $authUser->id)->exists())
-            || $authUser->isAdmin() || $authUser->isSuperAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
-
-        if (!$canAccess) {
-            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk tugas ini.'], 403);
-        }
-
-        $request->validate([
-            'reason' => 'required|string|max:1000',
-        ]);
-
-        $insidentil->update([
-            'reopen_reason' => $request->input('reason'),
-            'reopen_requested_at' => now(),
-        ]);
-
-        $insidentil->syncToKegiatan();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permohonan buka kembali tugas berhasil dikirimkan ke Pimpinan/Admin.',
-        ]);
+        return $this->executeRequestReopen($request, $insidentil);
     }
 
     /**
-     * Pimpinan atau Admin membuka kembali tugas yang sudah selesai (karena tidak sengaja selesai).
+     * Pimpinan atau Admin membuka kembali tugas yang sudah selesai.
      */
     public function reopen(Request $request, Insidentil $insidentil)
     {
-        $authUser = Auth::user();
-
-        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->isPimpinanRektorat() && !$authUser->isPimpinanUnit())) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya Pimpinan, Admin, atau Superadmin yang berwenang membuka kunci tugas yang telah diselesaikan.',
-            ], 403);
-        }
-
-        $now = \Carbon\Carbon::now();
-
-        // 1. Hapus milestone auto-log "Selesai Pekerjaan" jika ada
-        $finishMilestones = $insidentil->milestones()
-            ->where(function ($q) {
-                $q->where('nama_milestone', 'Selesai Pekerjaan')
-                  ->orWhere('nama_milestone', 'like', '%Selesai%Pekerjaan%');
-            })->get();
-        foreach ($finishMilestones as $fm) {
-            $fm->delete();
-        }
-
-        // 2. Aktifkan milestone point agar langsung melanjutkan dan berjalan otomatis
-        $lastMilestone = $insidentil->milestones()->latest()->first();
-        if ($lastMilestone) {
-            $lastMilestone->status = 'Berjalan';
-            $lastMilestone->waktu_selesai = null;
-            $lastMilestone->last_started_at = $now;
-            $lastMilestone->save();
-        } else {
-            $insidentil->milestones()->create([
-                'nama_milestone' => 'Melanjutkan Pekerjaan',
-                'status' => 'Berjalan',
-                'waktu_mulai' => $now,
-                'last_started_at' => $now,
-                'durasi_detik' => 0,
-            ]);
-        }
-
-        // 3. Kembalikan status tugas ke 'Berjalan', reset waktu_selesai, pasang last_started_at agar waktu berjalan otomatis tanpa perlu klik Lanjut
-        $insidentil->update([
-            'status' => 'Berjalan',
-            'waktu_selesai' => null,
-            'tanggal_selesai' => null,
-            'last_started_at' => $now,
-            'reopen_reason' => null,
-            'reopen_requested_at' => null,
-            'reopened_at' => $now,
-            'reopened_by' => $authUser->id,
-        ]);
-
-        $insidentil->syncToKegiatan();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Kunci tugas berhasil dibuka dan pengerjaan langsung berjalan otomatis.',
-        ]);
+        return $this->executeReopen($request, $insidentil);
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -1019,110 +855,11 @@ class InsidentilController extends Controller
     }
 
     /**
-     * Helper to automatically log milestone points for task timer events.
-     */
-    private function autoLogMilestone($insidentil, $action, $now, $alasanPause = null)
-    {
-        if ($action === 'start') {
-            // Mark any paused milestones as completed for phase 1
-            $pausedMilestones = $insidentil->milestones()->where('status', 'Di-pause')->get();
-            foreach ($pausedMilestones as $pm) {
-                $pm->status = 'Selesai';
-                if (!$pm->waktu_selesai) {
-                    $pm->waktu_selesai = $now;
-                }
-                $pm->save();
-            }
-
-            $runningMilestone = $insidentil->milestones()->where('status', 'Berjalan')->first();
-            if (!$runningMilestone) {
-                $milestoneCount = $insidentil->milestones()->count();
-                $title = ($milestoneCount === 0) ? 'Mulai Pelaksanaan Pekerjaan' : 'Melanjutkan Pekerjaan';
-                $insidentil->milestones()->create([
-                    'nama_milestone' => $title,
-                    'status' => 'Berjalan',
-                    'waktu_mulai' => $now,
-                    'last_started_at' => $now,
-                    'durasi_detik' => 0,
-                ]);
-            }
-        } elseif ($action === 'pause') {
-            $runningMilestones = $insidentil->milestones()->where('status', 'Berjalan')->get();
-            foreach ($runningMilestones as $m) {
-                if ($m->last_started_at) {
-                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
-                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
-                }
-                $m->last_started_at = null;
-                $m->status = 'Di-pause';
-                if ($alasanPause !== null) {
-                    $m->alasan_pause = $alasanPause;
-                }
-                $m->save();
-            }
-        } elseif ($action === 'stop') {
-            $activeMilestones = $insidentil->milestones()->whereIn('status', ['Berjalan', 'Di-pause'])->get();
-            foreach ($activeMilestones as $m) {
-                if ($m->status === 'Berjalan' && $m->last_started_at) {
-                    $elapsedSeconds = (int) abs($now->diffInSeconds($m->last_started_at));
-                    $m->durasi_detik = (int) ($m->durasi_detik ?? 0) + $elapsedSeconds;
-                }
-                $m->last_started_at = null;
-                $m->status = 'Selesai';
-                if (!$m->waktu_selesai) {
-                    $m->waktu_selesai = $now;
-                }
-                $m->save();
-            }
-
-            $lastMilestone = $insidentil->milestones()->latest()->first();
-            if (!$lastMilestone || $lastMilestone->nama_milestone !== 'Selesai Pekerjaan') {
-                $insidentil->milestones()->create([
-                    'nama_milestone' => 'Selesai Pekerjaan',
-                    'status' => 'Selesai',
-                    'waktu_mulai' => $now,
-                    'waktu_selesai' => $now,
-                    'durasi_detik' => 0,
-                ]);
-            }
-        }
-    }
-
-    /**
      * Start/Resume task timer.
      */
-    public function start(Insidentil $insidentil)
+    public function start(Request $request, Insidentil $insidentil)
     {
-        $now = \Carbon\Carbon::now();
-
-        if ($insidentil->status !== 'Selesai' && !empty($insidentil->estimasi_tanggal_selesai)) {
-            $endTime = $insidentil->estimasi_jam_selesai ?: '23:59:59';
-            $estimasiEnd = \Carbon\Carbon::parse($insidentil->estimasi_tanggal_selesai . ' ' . $endTime);
-            if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'status' => 'error',
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
-            }
-        }
-
-        $updateData = [
-            'status' => 'Proses',
-            'last_started_at' => $now,
-        ];
-
-        if (empty($insidentil->waktu_mulai)) {
-            $updateData['tanggal_mulai'] = date('Y-m-d');
-            $updateData['waktu_mulai'] = date('H:i:s');
-        }
-
-        $insidentil->update($updateData);
-
-        // Auto log milestone point for start/resume
-        $this->autoLogMilestone($insidentil, 'start', $now);
-
-        return response()->json(['status' => 'success', 'message' => 'Pekerjaan berhasil dijalankan.']);
+        return $this->executeStart($request, $insidentil);
     }
 
     /**
@@ -1130,62 +867,15 @@ class InsidentilController extends Controller
      */
     public function pause(Request $request, Insidentil $insidentil)
     {
-        $now = \Carbon\Carbon::now();
-
-        if (($insidentil->status === 'Proses' || $insidentil->status === 'Berjalan') && $insidentil->last_started_at) {
-            $elapsedSeconds = (int) abs($now->diffInSeconds($insidentil->last_started_at));
-            $insidentil->durasi_detik = (int) ($insidentil->durasi_detik ?? 0) + $elapsedSeconds;
-        }
-
-        $alasanPause = $request->input('alasan_pause');
-        $insidentil->last_started_at = null;
-        $insidentil->status = 'Di-pause';
-        if ($alasanPause !== null) {
-            $insidentil->alasan_pause = $alasanPause;
-        }
-        $insidentil->save();
-
-        // Auto log milestone point for pause
-        $this->autoLogMilestone($insidentil, 'pause', $now, $alasanPause);
-
-        return response()->json(['status' => 'success', 'message' => 'Pekerjaan berhasil di-pause.']);
+        return $this->executePause($request, $insidentil);
     }
 
     /**
      * Stop task timer.
      */
-    public function stop(Insidentil $insidentil)
+    public function stop(Request $request, Insidentil $insidentil)
     {
-        $now = \Carbon\Carbon::now();
-
-        if ($insidentil->status !== 'Selesai' && !empty($insidentil->estimasi_tanggal_selesai)) {
-            $endTime = $insidentil->estimasi_jam_selesai ?: '23:59:59';
-            $estimasiEnd = \Carbon\Carbon::parse($insidentil->estimasi_tanggal_selesai . ' ' . $endTime);
-            if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'status' => 'error',
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
-            }
-        }
-
-        if (($insidentil->status === 'Proses' || $insidentil->status === 'Berjalan') && $insidentil->last_started_at) {
-            $elapsedSeconds = (int) abs($now->diffInSeconds($insidentil->last_started_at));
-            $insidentil->durasi_detik = (int) ($insidentil->durasi_detik ?? 0) + $elapsedSeconds;
-        }
-
-        $insidentil->update([
-            'status' => 'Selesai',
-            'tanggal_selesai' => date('Y-m-d'),
-            'waktu_selesai' => date('H:i:s'),
-            'last_started_at' => null,
-        ]);
-
-        // Auto log milestone point for stop
-        $this->autoLogMilestone($insidentil, 'stop', $now);
-
-        return response()->json(['status' => 'success', 'message' => 'Pekerjaan telah diselesaikan.']);
+        return $this->executeStop($request, $insidentil);
     }
 
     /**
@@ -1193,57 +883,9 @@ class InsidentilController extends Controller
      */
     public function uploadAttachment(Request $request, Insidentil $insidentil)
     {
-        $updateData = [];
-
-        if ($request->hasFile('file')) {
-            $uploadedFile = $request->file('file');
-            if ($uploadedFile->isValid()) {
-                if ($insidentil->file && Storage::disk('public')->exists($insidentil->file)) {
-                    Storage::disk('public')->delete($insidentil->file);
-                }
-                $updateData['file'] = $uploadedFile->store('insidentils', 'public');
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal mengunggah berkas: ' . $uploadedFile->getErrorMessage(),
-                ], 422);
-            }
-        }
-
-        if ($request->has('url_external')) {
-            $updateData['url_external'] = $request->input('url_external');
-        }
-
-        if ($request->has('hasil_kerja')) {
-            $updateData['hasil_kerja'] = $request->input('hasil_kerja');
-        }
-
-        if ($request->has('rencana_tindak_lanjut')) {
-            $updateData['rencana_tindak_lanjut'] = $request->input('rencana_tindak_lanjut');
-        }
-
-        if ($request->has('alasan_pause')) {
-            $alasanPause = $request->input('alasan_pause');
-            $updateData['alasan_pause'] = $alasanPause;
-            // Also update any paused milestones
-            $insidentil->milestones()->where('status', 'Di-pause')->update(['alasan_pause' => $alasanPause]);
-        }
-
-        if (!empty($updateData)) {
-            $insidentil->update($updateData);
-        }
-
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Hasil Kerja & Tindak Lanjut berhasil disimpan.',
-                'data'    => $insidentil->fresh(),
-            ]);
-        }
-
-        Alert::success('Berhasil', 'Lampiran & Hasil Kerja berhasil diunggah.');
-        return redirect()->back();
+        return $this->executeUploadAttachment($request, $insidentil);
     }
+
 
     /**
      * Download Excel Import Template for Insidentil
@@ -1334,17 +976,9 @@ class InsidentilController extends Controller
      */
     public function updateTags(Request $request, Insidentil $insidentil)
     {
-        $request->validate([
-            'tagged_users' => ['nullable', 'array'],
-            'tagged_users.*' => ['exists:users,id'],
-        ]);
-
-        $insidentil->taggedUsers()->sync($request->tagged_users ?? []);
-        $insidentil->syncToKegiatan();
-        \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($insidentil);
-
-        return response()->json(['status' => 'success', 'message' => 'Rekan kerja berhasil diperbarui.']);
+        return $this->executeUpdateTags($request, $insidentil);
     }
+
 
     /**
      * Export data to PDF.
