@@ -77,8 +77,12 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
         ->name('database-backup.index');
     Route::get('database-backup/export', [\App\Http\Controllers\DatabaseBackupController::class, 'export'])
         ->name('database-backup.export');
+    Route::post('database-backup/import', [\App\Http\Controllers\DatabaseBackupController::class, 'import'])
+        ->name('database-backup.import');
     Route::get('database-backup/storage-public', [\App\Http\Controllers\DatabaseBackupController::class, 'exportPublicStorage'])
         ->name('database-backup.storage-public');
+    Route::post('database-backup/storage-public/import', [\App\Http\Controllers\DatabaseBackupController::class, 'importPublicStorage'])
+        ->name('database-backup.storage-public.import');
 
     // SK Kepanitiaan (Upload & Ekstraksi Personel - Superadmin & Admin)
     Route::post('sk-kepanitiaan/{id}/link-user', [SkKepanitiaanController::class, 'linkUser'])->name('sk-kepanitiaan.link-user');
