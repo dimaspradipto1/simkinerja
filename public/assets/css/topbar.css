@@ -1,0 +1,414 @@
+/*--------------------------------------------------------------
+# Primary Color Overrides (#046B26)
+--------------------------------------------------------------*/
+:root {
+  --bs-primary: #046B26 !important;
+  --bs-primary-rgb: 4, 107, 38 !important;
+}
+
+/* Bootstrap Primary Elements */
+.btn-primary {
+  background-color: #046B26 !important;
+  border-color: #046B26 !important;
+  color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: #03521d !important;
+  border-color: #03521d !important;
+}
+
+.bg-primary {
+  background-color: #046B26 !important;
+}
+
+.text-primary {
+  color: #046B26 !important;
+}
+
+.border-primary {
+  border-color: #046B26 !important;
+}
+
+/* Links */
+a {
+  color: #046B26;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #058930;
+}
+
+/* Back to top */
+.back-to-top {
+  background: #046B26 !important;
+}
+
+.back-to-top:hover {
+  background: #058930 !important;
+}
+
+/* Nav tabs bordered */
+.nav-tabs-bordered .nav-link:hover,
+.nav-tabs-bordered .nav-link:focus {
+  color: #046B26 !important;
+}
+
+.nav-tabs-bordered .nav-link.active {
+  color: #046B26 !important;
+  border-bottom: 2px solid #046B26 !important;
+}
+
+/* Dashboard Cards & Icons */
+.dashboard .sales-card .card-icon {
+  color: #046B26 !important;
+  background: #e8f5ec !important;
+}
+
+.dashboard .filter .icon:hover,
+.dashboard .filter .icon:focus {
+  color: #046B26 !important;
+}
+
+/* Form Controls Focus */
+.form-control:focus,
+.form-select:focus {
+  border-color: #046B26 !important;
+  box-shadow: 0 0 0 0.25rem rgba(4, 107, 38, 0.2) !important;
+}
+
+.form-check-input:checked {
+  background-color: #046B26 !important;
+  border-color: #046B26 !important;
+}
+
+/* Accordion */
+.accordion-flush .accordion-button:not(.collapsed) {
+  color: #046B26 !important;
+}
+
+/*--------------------------------------------------------------
+# Header Custom Height (120px)
+--------------------------------------------------------------*/
+.header {
+  height: 120px !important;
+}
+
+/*--------------------------------------------------------------
+# Top Navigation Bar (Horizontal Sidebar Replacement)
+--------------------------------------------------------------*/
+.topbar-nav {
+  position: fixed;
+  top: 120px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background-color: #ffffff;
+  z-index: 996;
+  box-shadow: 0px 2px 15px rgba(1, 41, 112, 0.08);
+  border-bottom: 1px solid #eef2f7;
+  transition: all 0.3s ease;
+  height: 54px;
+  overflow: visible !important;
+}
+
+.topbar-nav .container-fluid,
+.topbar-nav .topbar-container {
+  overflow: visible !important;
+}
+
+.topbar-wrapper {
+  display: flex;
+  align-items: center;
+  height: 54px;
+  overflow: visible !important;
+}
+
+.topbar-menu {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow: visible !important;
+}
+
+.topbar-menu .nav-item {
+  position: relative;
+  white-space: nowrap;
+}
+
+.topbar-menu .nav-link {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #012970;
+  padding: 8px 14px;
+  border-radius: 4px;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.topbar-menu .nav-link i {
+  font-size: 16px;
+  margin-right: 7px;
+  color: #798eb3;
+  transition: color 0.25s ease;
+}
+
+.topbar-menu .nav-link .dropdown-chevron {
+  font-size: 11px;
+  margin-left: 6px;
+  margin-right: 0;
+  color: #899bbd;
+  transition: transform 0.2s ease;
+}
+
+.topbar-menu .nav-link:hover,
+.topbar-menu .nav-link.active,
+.topbar-menu .nav-item.show > .nav-link,
+.topbar-menu .nav-item:hover > .nav-link {
+  color: #046B26;
+  background-color: #e8f5ec;
+}
+
+.topbar-menu .nav-link:hover i,
+.topbar-menu .nav-link.active i,
+.topbar-menu .nav-item.show > .nav-link i,
+.topbar-menu .nav-item:hover > .nav-link i,
+.topbar-menu .nav-link:hover .dropdown-chevron,
+.topbar-menu .nav-item.show > .nav-link .dropdown-chevron,
+.topbar-menu .nav-item:hover > .nav-link .dropdown-chevron {
+  color: #046B26;
+}
+
+.topbar-menu .dropdown-toggle::after {
+  display: none !important;
+}
+
+/* Dropdown Menu Base Styling */
+.topbar-nav .dropdown-menu {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  margin: 0 !important;
+  padding: 8px 0;
+  background-color: #ffffff !important;
+  border: 1px solid #ebeef4 !important;
+  border-top: 3px solid #046B26 !important;
+  border-radius: 0 0 8px 8px !important;
+  box-shadow: 0px 10px 30px rgba(1, 41, 112, 0.15) !important;
+  z-index: 1050 !important;
+  min-width: 200px;
+  display: none;
+}
+
+/* Invisible bridge so mouse hover doesn't drop when transitioning */
+.topbar-nav .dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: transparent;
+}
+
+/* Right-aligned dropdown for Pages */
+.topbar-nav .dropdown-menu.dropdown-menu-end {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.topbar-nav .dropdown-item {
+  display: flex;
+  align-items: center;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #012970 !important;
+  padding: 8px 18px;
+  transition: all 0.2s ease;
+  background: transparent;
+  text-decoration: none;
+}
+
+.topbar-nav .dropdown-item i {
+  font-size: 7px;
+  margin-right: 10px;
+  color: #899bbd;
+  transition: all 0.2s ease;
+}
+
+.topbar-nav .dropdown-item:hover,
+.topbar-nav .dropdown-item:focus {
+  background-color: #e8f5ec !important;
+  color: #046B26 !important;
+  padding-left: 22px;
+}
+
+.topbar-nav .dropdown-item:hover i,
+.topbar-nav .dropdown-item:focus i {
+  color: #046B26 !important;
+}
+
+/* Desktop behaviors (>= 992px) */
+@media (min-width: 992px) {
+  /* Show dropdown on hover or on click (.show) */
+  .topbar-nav .nav-item.dropdown:hover > .dropdown-menu,
+  .topbar-nav .dropdown-menu.show {
+    display: block !important;
+    animation: topbarFadeIn 0.2s ease-in-out;
+  }
+
+  .topbar-nav .nav-item.dropdown:hover > .nav-link .dropdown-chevron,
+  .topbar-nav .nav-item.dropdown.show > .nav-link .dropdown-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* 2-column dropdown for Components */
+  .topbar-nav .dropdown-menu-columns {
+    min-width: 380px !important;
+  }
+
+  .topbar-nav .nav-item.dropdown:hover > .dropdown-menu-columns,
+  .topbar-nav .dropdown-menu-columns.show {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(175px, 1fr)) !important;
+    gap: 0;
+  }
+
+  @keyframes topbarFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .header .logo {
+    width: auto;
+    min-width: 180px;
+    margin-right: 25px;
+  }
+}
+
+/* Override Main Layout & Margins (Header 120px + Topbar 54px) */
+#main {
+  margin-top: 185px !important;
+  margin-left: 0 !important;
+  transition: all 0.3s ease;
+}
+
+#footer {
+  margin-left: 0 !important;
+}
+
+/* Hide original vertical sidebar if any remains */
+.sidebar {
+  display: none !important;
+}
+
+/*--------------------------------------------------------------
+# Left & Right Margins (Header, Topbar, Main Content, Footer)
+--------------------------------------------------------------*/
+@media (min-width: 992px) {
+  .header,
+  .topbar-nav .topbar-container,
+  #main,
+  #footer {
+    padding-left: 103px !important;
+    padding-right: 103px !important;
+  }
+}
+
+@media (max-width: 991px) {
+  .header,
+  .topbar-nav .topbar-container,
+  #main,
+  #footer {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+/* Mobile & Tablet behaviors (< 992px) */
+@media (max-width: 991px) {
+  .topbar-nav {
+    top: 120px !important;
+    height: auto;
+    max-height: 0;
+    overflow: hidden !important;
+    opacity: 0;
+    pointer-events: none;
+    padding: 0;
+    border-bottom: none;
+    box-shadow: 0px 10px 25px rgba(1, 41, 112, 0.12);
+  }
+
+  .toggle-sidebar .topbar-nav {
+    max-height: calc(100vh - 130px);
+    overflow-y: auto !important;
+    opacity: 1;
+    pointer-events: auto;
+    padding: 12px 0;
+    border-bottom: 1px solid #ebeef4;
+  }
+
+  .topbar-wrapper {
+    height: auto;
+  }
+
+  .topbar-menu {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 4px;
+    padding: 0 10px;
+  }
+
+  .topbar-nav .dropdown-menu {
+    position: static !important;
+    transform: none !important;
+    float: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #f8faff !important;
+    border-radius: 6px !important;
+    margin: 4px 0 6px 15px !important;
+    padding: 6px 0 !important;
+    display: none;
+  }
+
+  .topbar-nav .dropdown-menu.show {
+    display: block !important;
+  }
+
+  #main {
+    margin-top: 135px !important;
+  }
+}
+
+/* Desktop toggle behavior (hamburger button collapses/expands topbar) */
+@media (min-width: 992px) {
+  .toggle-sidebar .topbar-nav {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .toggle-sidebar #main {
+    margin-top: 135px !important;
+  }
+}

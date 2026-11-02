@@ -16,6 +16,7 @@ use App\Http\Controllers\RekapitulasiKepanitiaanController;
 use App\Http\Controllers\InsidentilController;
 use App\Http\Controllers\RekapitulasiInsidentilController;
 use App\Http\Controllers\AnalisisKeterlambatanController;
+use App\Http\Controllers\PemantauanStaffController;
 use App\Http\Controllers\HierarchyController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\RekapitulasiAbsensiController;
@@ -188,6 +189,12 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('analisis-keterlambatan/export-pdf', [AnalisisKeterlambatanController::class, 'exportPdf'])->name('analisis-keterlambatan.export-pdf');
     Route::post('analisis-keterlambatan/{id}/saran-pimpinan', [AnalisisKeterlambatanController::class, 'updateSaranPimpinan'])->name('analisis-keterlambatan.update-saran');
     Route::resource('analisis-keterlambatan', AnalisisKeterlambatanController::class)->only(['index']);
+
+    // Pemantauan Staff Routes
+    Route::get('pemantauan-staff', [PemantauanStaffController::class, 'index'])->name('pemantauan-staff.index');
+    Route::get('pemantauan-staff/detail/{id}', [PemantauanStaffController::class, 'detail'])->name('pemantauan-staff.detail');
+    Route::get('pemantauan-staff/export-excel', [PemantauanStaffController::class, 'exportExcel'])->name('pemantauan-staff.export-excel');
+    Route::get('pemantauan-staff/export-pdf', [PemantauanStaffController::class, 'exportPdf'])->name('pemantauan-staff.export-pdf');
 
     // Laporan Eksekutif Yayasan & Universitas Ibnu Sina
     Route::get('laporan-kinerja-pegawai', [LaporanKinerjaPegawaiController::class, 'index'])->name('laporan-kinerja-pegawai.index');
