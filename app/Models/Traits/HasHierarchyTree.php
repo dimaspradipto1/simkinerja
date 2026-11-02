@@ -41,7 +41,7 @@ trait HasHierarchyTree
         $visited[] = $this->id;
         $ids = [];
 
-        $directSubs = $this->subordinates()->where('is_active', true)->get(['id', 'supervisor_id']);
+        $directSubs = $this->subordinates()->where('users.is_active', true)->get(['users.id', 'users.supervisor_id']);
         foreach ($directSubs as $sub) {
             if (!in_array($sub->id, $visited, true)) {
                 $ids[] = $sub->id;
@@ -82,14 +82,14 @@ trait HasHierarchyTree
     {
         // Prioritas: gunakan supervisor dari DB jika ada
         if ($this->supervisor_id) {
-            $dbSupervisor = User::where('id', $this->supervisor_id)->where('is_active', true)->get();
+            $dbSupervisor = User::where('users.id', $this->supervisor_id)->where('users.is_active', true)->get();
             if ($dbSupervisor->isNotEmpty()) {
                 return $dbSupervisor;
             }
         }
 
         // Fallback: cari berdasarkan unit & role (legacy behavior)
-        $allPimpinan = User::where('is_active', true)
+        $allPimpinan = User::where('users.is_active', true)
             ->where('id', '!=', $this->id)
             ->get()
             ->filter(function ($u) {

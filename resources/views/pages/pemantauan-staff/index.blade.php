@@ -4,13 +4,13 @@
 <div class="pagetitle d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
         <h1 class="fw-bold mb-1" style="color: #15432D; font-size: 1.65rem;">
-            <i class="bi bi-diagram-3-fill me-2"></i>Pemantauan Staff &amp; Tim (Struktur OTK)
+            <i class="bi bi-diagram-3-fill me-2"></i>Pemantauan Staff &amp; Tim
         </h1>
         <nav>
             <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
                 <li class="breadcrumb-item">Monitoring &amp; Evaluasi</li>
-                <li class="breadcrumb-item active">Pemantauan Staff (OTK)</li>
+                <li class="breadcrumb-item active">Pemantauan Staff</li>
             </ol>
         </nav>
     </div>

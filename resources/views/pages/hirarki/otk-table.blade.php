@@ -2,6 +2,145 @@
 
 @section('page-style-class', 'menu-page-otk')
 @section('content')
+
+<style>
+/* Table Width & Layout: Bebas Wrap untuk Nama */
+body.menu-page-otk .otk-table-wrap {
+    overflow-x: auto !important;
+}
+body.menu-page-otk .otk-table {
+    min-width: 1250px !important;
+    table-layout: auto !important;
+}
+
+/* Penyesuaian Lebar Kolom Header & Cell */
+body.menu-page-otk .otk-table th.number-column,
+body.menu-page-otk .otk-table th:nth-child(1) {
+    width: 36px !important;
+    min-width: 36px !important;
+}
+body.menu-page-otk .otk-table th.unit-column,
+body.menu-page-otk .otk-table th:nth-child(2) {
+    width: 14% !important;
+    min-width: 145px !important;
+}
+body.menu-page-otk .otk-table th:nth-child(3) {
+    width: 9% !important;
+    min-width: 95px !important;
+}
+body.menu-page-otk .otk-table th:nth-child(4) {
+    width: 11% !important;
+    min-width: 115px !important;
+}
+body.menu-page-otk .otk-table th:nth-child(5) {
+    width: 12% !important;
+    min-width: 125px !important;
+}
+body.menu-page-otk .otk-table th:nth-child(6) {
+    width: 22% !important;
+    min-width: 220px !important;
+}
+body.menu-page-otk .otk-table th:nth-child(7) {
+    width: 32% !important;
+    min-width: 380px !important;
+}
+
+/* Kolom NAMA: Full 1 Baris, TIDAK BOLEH WRAP */
+body.menu-page-otk .otk-table td.employee-name {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    padding: 3px 6px !important;
+}
+body.menu-page-otk .otk-table tr[hidden] {
+    display: none !important;
+}
+body.menu-page-otk .otk-table .employee-name-text {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    color: #111827;
+}
+
+/* Tombol Aksi Row OTK (Move, Insert, Edit, Delete) */
+.otk-row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    margin-left: 10px;
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+}
+.otk-row:hover .otk-row-actions {
+    opacity: 1;
+}
+.otk-row-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 19px;
+    height: 19px;
+    padding: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #4b5563;
+    font-size: 10px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    line-height: 1;
+}
+.otk-row-actions button:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    color: #111827;
+}
+.otk-row-actions .btn-otk-move-up:hover,
+.otk-row-actions .btn-otk-move-down:hover {
+    background: #e0f2fe;
+    border-color: #38bdf8;
+    color: #0284c7;
+}
+.otk-row-actions .btn-otk-insert:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+    color: #15803d;
+}
+.otk-row-actions .edit-supervisor:hover {
+    background: #fef3c7;
+    border-color: #fcd34d;
+    color: #b45309;
+}
+.otk-row-actions .btn-otk-delete:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+    color: #b91c1c;
+}
+
+@media print {
+    body.menu-page-otk .otk-table {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+    body.menu-page-otk .otk-table th:nth-child(6) {
+        width: 25% !important;
+    }
+    body.menu-page-otk .otk-table th:nth-child(7) {
+        width: 24% !important;
+    }
+    body.menu-page-otk .otk-table td.employee-name {
+        white-space: normal !important;
+    }
+    .otk-row-actions {
+        display: none !important;
+    }
+}
+</style>
+
 <section class="section">
     <div class="otk-heading">
         <button type="button" class="btn btn-sm btn-outline-secondary screen-only edit-otk-title" id="editOtkTitlesButton" title="Edit judul OTK" aria-label="Edit judul OTK">
@@ -70,6 +209,7 @@
                             @foreach($implementer['employees'] as $employee)
                                 <tr
                                     class="otk-row"
+                                    data-user-id="{{ $employee->id }}"
                                     data-section-key="{{ $sectionIndex }}"
                                     data-coordinator-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}"
                                     data-implementer-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}-{{ $implementerIndex }}"
@@ -88,20 +228,59 @@
                                     @if($loop->first)
                                         <td rowspan="{{ $implementerRowCount }}" class="merged-label" data-merge="implementer" data-merge-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}-{{ $implementerIndex }}">{{ $implementer['label'] }}</td>
                                     @endif
-                                    <td>{{ $employee->jabatan }}</td>
+                                    <td class="otk-cell-jabatan">{{ $employee->jabatan }}</td>
                                     <td class="employee-name">
-                                        <span>{{ $employee->name }}</span>
-                                        <button
-                                            type="button"
-                                            class="edit-supervisor screen-only"
-                                            data-user-id="{{ $employee->id }}"
-                                            data-user-name="{{ $employee->name }}"
-                                            data-user-position="{{ $employee->jabatan }}"
-                                            data-user-unit="{{ $employee->unit }}"
-                                            data-supervisor-id="{{ $employee->supervisor_id }}"
-                                            aria-label="Edit data OTK {{ $employee->name }}"
-                                            title="Edit data OTK"
-                                        ><i class="bi bi-pencil-square"></i></button>
+                                        <div class="d-flex align-items-center justify-content-between gap-1">
+                                            <span class="employee-name-text">{{ $employee->name }}</span>
+                                            <div class="otk-row-actions screen-only">
+                                                <button
+                                                    type="button"
+                                                    class="btn-otk-move btn-otk-move-up"
+                                                    data-user-id="{{ $employee->id }}"
+                                                    data-direction="up"
+                                                    title="Pindahkan Baris ke Atas"
+                                                    aria-label="Pindahkan ke Atas"
+                                                ><i class="bi bi-arrow-up"></i></button>
+                                                <button
+                                                    type="button"
+                                                    class="btn-otk-move btn-otk-move-down"
+                                                    data-user-id="{{ $employee->id }}"
+                                                    data-direction="down"
+                                                    title="Pindahkan Baris ke Bawah"
+                                                    aria-label="Pindahkan ke Bawah"
+                                                ><i class="bi bi-arrow-down"></i></button>
+                                                <button
+                                                    type="button"
+                                                    class="btn-otk-insert"
+                                                    data-user-id="{{ $employee->id }}"
+                                                    data-user-name="{{ $employee->name }}"
+                                                    data-user-position="{{ $employee->jabatan }}"
+                                                    data-user-unit="{{ $employee->unit }}"
+                                                    data-supervisor-id="{{ $employee->supervisor_id }}"
+                                                    title="Sisipkan Baris Baru di Sini"
+                                                    aria-label="Sisipkan Baris"
+                                                ><i class="bi bi-plus-lg"></i></button>
+                                                <button
+                                                    type="button"
+                                                    class="edit-supervisor"
+                                                    data-user-id="{{ $employee->id }}"
+                                                    data-user-name="{{ $employee->name }}"
+                                                    data-user-position="{{ $employee->jabatan }}"
+                                                    data-user-unit="{{ $employee->unit }}"
+                                                    data-supervisor-id="{{ $employee->supervisor_id }}"
+                                                    title="Edit Data OTK"
+                                                    aria-label="Edit data OTK {{ $employee->name }}"
+                                                ><i class="bi bi-pencil-square"></i></button>
+                                                <button
+                                                    type="button"
+                                                    class="btn-otk-delete text-danger"
+                                                    data-user-id="{{ $employee->id }}"
+                                                    data-user-name="{{ $employee->name }}"
+                                                    title="Hapus Baris dari OTK"
+                                                    aria-label="Hapus Baris"
+                                                ><i class="bi bi-trash3"></i></button>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -196,12 +375,12 @@
                         >{{ $user->name }} — {{ $user->jabatan ?: 'Tanpa jabatan' }} ({{ $user->unit ?: 'Tanpa unit' }})</option>
                     @endforeach
                 </select>
-                <label for="addOtkPosition" class="form-label fw-semibold">Jabatan OTK</label>
-                <input type="text" id="addOtkPosition" class="form-control mb-3" maxlength="255" required>
-                <label for="addOtkUnit" class="form-label fw-semibold">Unit</label>
-                <input type="text" id="addOtkUnit" class="form-control mb-3" maxlength="255" required>
-                <label for="addOtkSupervisor" class="form-label fw-semibold">Atasan Langsung</label>
-                <select id="addOtkSupervisor" class="form-select" style="width: 100%;" required>
+                <label for="addOtkPosition" class="form-label fw-semibold">Jabatan OTK <span class="text-muted fw-normal">(Opsional)</span></label>
+                <input type="text" id="addOtkPosition" class="form-control mb-3" maxlength="255" placeholder="Boleh dikosongkan">
+                <label for="addOtkUnit" class="form-label fw-semibold">Unit <span class="text-muted fw-normal">(Opsional)</span></label>
+                <input type="text" id="addOtkUnit" class="form-control mb-3" maxlength="255" placeholder="Boleh dikosongkan">
+                <label for="addOtkSupervisor" class="form-label fw-semibold">Atasan Langsung <span class="text-muted fw-normal">(Opsional)</span></label>
+                <select id="addOtkSupervisor" class="form-select" style="width: 100%;">
                     <option value="">Pilih atasan...</option>
                     @foreach($pimpinan as $leader)
                         <option value="{{ $leader->id }}">{{ $leader->name }} — {{ $leader->jabatan }} ({{ $leader->unit }})</option>
@@ -212,6 +391,111 @@
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-success" id="saveAddedOtkUserButton">
                     <i class="bi bi-check-circle me-1"></i>Tambahkan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Sisipkan Baris OTK -->
+<div class="modal fade" id="insertOtkRowModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #15432D 0%, #1e5c3e 100%);">
+                <h5 class="modal-title fs-6 fw-bold"><i class="bi bi-plus-circle me-2"></i>Sisipkan Baris Baru di OTK</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Info Acuan -->
+                <div class="alert alert-light border mb-3 py-2 px-3 small">
+                    <span class="text-muted">Baris Acuan:</span> <strong id="insertRefUserName" class="text-dark">-</strong>
+                    <input type="hidden" id="insertRefUserId">
+                </div>
+
+                <!-- Posisi Sisip -->
+                <label class="form-label fw-bold small text-secondary mb-1">Posisi Sisipan Baris</label>
+                <div class="d-flex gap-3 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="insertPosition" id="insertPosAfter" value="after" checked>
+                        <label class="form-check-label small" for="insertPosAfter">
+                            <i class="bi bi-arrow-down-short text-success fw-bold"></i> Tepat di <strong>Bawah</strong> Baris Ini
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="insertPosition" id="insertPosBefore" value="before">
+                        <label class="form-check-label small" for="insertPosBefore">
+                            <i class="bi bi-arrow-up-short text-primary fw-bold"></i> Tepat di <strong>Atas</strong> Baris Ini
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Mode Pengguna -->
+                <label class="form-label fw-bold small text-secondary mb-1">Pilihan Pengguna</label>
+                <div class="d-flex gap-3 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="insertUserMode" id="insertModeExisting" value="existing" checked>
+                        <label class="form-check-label small" for="insertModeExisting">Pilih Akun yang Sudah Ada</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="insertUserMode" id="insertModeNew" value="new">
+                        <label class="form-check-label small" for="insertModeNew">Buat Pengguna Baru</label>
+                    </div>
+                </div>
+
+                <!-- Dropdown Akun Existing -->
+                <div id="insertExistingUserSection" class="mb-3">
+                    <label for="insertExistingUserSelect" class="form-label small fw-semibold">Pilih Pengguna</label>
+                    <select id="insertExistingUserSelect" class="form-select form-select-sm" style="width: 100%;">
+                        <option value="">— Kosongkan / Lewati (Bypass) —</option>
+                        @foreach($availableUsers as $user)
+                            <option value="{{ $user->id }}" data-position="{{ $user->jabatan }}" data-unit="{{ $user->unit }}">
+                                {{ $user->name }} — {{ $user->jabatan ?: 'Tanpa Jabatan' }} ({{ $user->unit ?: 'Tanpa Unit' }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Form Buat User Baru -->
+                <div id="insertNewUserSection" class="mb-3 d-none">
+                    <div class="mb-2">
+                        <label for="insertNewName" class="form-label small fw-semibold">Nama Lengkap &amp; Gelar</label>
+                        <input type="text" id="insertNewName" class="form-control form-control-sm" placeholder="Contoh: Nama Pegawai, S.Kom., M.Kom">
+                    </div>
+                    <div class="mb-2">
+                        <label for="insertNewEmail" class="form-label small fw-semibold">Alamat Email</label>
+                        <input type="email" id="insertNewEmail" class="form-control form-control-sm" placeholder="pegawai@uis.ac.id">
+                        <small class="text-muted" style="font-size: 0.70rem;">Password default: <code>password123</code></small>
+                    </div>
+                </div>
+
+                <!-- Jabatan UIS -->
+                <div class="mb-3">
+                    <label for="insertJabatan" class="form-label small fw-semibold">Jabatan UIS (Sesuai OTK) <span class="text-muted fw-normal">(Opsional)</span></label>
+                    <input type="text" id="insertJabatan" class="form-control form-control-sm" placeholder="Contoh: STAFF ADMINISTRASI AKADEMIK (Boleh dikosongkan)">
+                </div>
+
+                <!-- Unit -->
+                <div class="mb-3">
+                    <label for="insertUnit" class="form-label small fw-semibold">Unit Kerja <span class="text-muted fw-normal">(Opsional)</span></label>
+                    <input type="text" id="insertUnit" class="form-control form-control-sm" placeholder="Contoh: BAAK / FST / BAUK (Boleh dikosongkan)">
+                </div>
+
+                <!-- Atasan Langsung -->
+                <div class="mb-2">
+                    <label for="insertSupervisorSelect" class="form-label small fw-semibold">Atasan Langsung (Hierarki OTK)</label>
+                    <select id="insertSupervisorSelect" class="form-select form-select-sm" style="width: 100%;">
+                        <option value="">— Tidak Ada Atasan (Tingkat Pimpinan) —</option>
+                        @foreach($pimpinan as $leader)
+                            <option value="{{ $leader->id }}">{{ $leader->name }} — {{ $leader->jabatan }} ({{ $leader->unit }})</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-4">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-sm btn-success fw-bold px-3" id="saveInsertOtkRowBtn" style="background-color: #15432D; border-color: #15432D;">
+                    <i class="bi bi-plus-circle me-1"></i>Sisipkan Baris
                 </button>
             </div>
         </div>
@@ -249,13 +533,15 @@
     let activeUserId = null;
     const mergedCells = new Map();
 
-    if ($supervisorSelect && jQuery.fn.select2) {
-        $supervisorSelect.select2({
-            dropdownParent: jQuery('#supervisorModal'),
-            placeholder: 'Cari nama, jabatan, atau unit...',
-            theme: 'bootstrap-5',
-            width: '100%',
-        });
+    if (window.jQuery && jQuery.fn.select2) {
+        if ($supervisorSelect) {
+            $supervisorSelect.select2({
+                dropdownParent: jQuery('#supervisorModal'),
+                placeholder: 'Cari nama, jabatan, atau unit...',
+                theme: 'bootstrap-5',
+                width: '100%',
+            });
+        }
         jQuery(addOtkUserSelect).select2({
             dropdownParent: jQuery(addOtkUserModalElement),
             placeholder: 'Cari nama pengguna...',
@@ -268,14 +554,50 @@
             theme: 'bootstrap-5',
             width: '100%',
         });
+        jQuery('#insertSupervisorSelect').select2({
+            dropdownParent: jQuery('#insertOtkRowModal'),
+            placeholder: 'Cari nama atau jabatan atasan...',
+            theme: 'bootstrap-5',
+            width: '100%',
+        });
+        jQuery('#insertExistingUserSelect').select2({
+            dropdownParent: jQuery('#insertOtkRowModal'),
+            placeholder: 'Cari nama atau jabatan pengguna...',
+            theme: 'bootstrap-5',
+            width: '100%',
+        });
+
+        jQuery('#insertOtkRowModal').on('shown.bs.modal', function () {
+            jQuery('#insertSupervisorSelect, #insertExistingUserSelect').select2({
+                dropdownParent: jQuery('#insertOtkRowModal'),
+                theme: 'bootstrap-5',
+                width: '100%',
+            });
+        });
+
+        // Autofocus kotak pencarian Select2 saat dibuka
+        jQuery(document).on('select2:open', function () {
+            const searchField = document.querySelector('.select2-container--open .select2-search__field');
+            if (searchField) {
+                searchField.focus();
+            }
+        });
     }
 
     document.querySelectorAll('[data-merge]').forEach((cell) => {
         mergedCells.set(`${cell.dataset.merge}:${cell.dataset.mergeKey}`, cell);
     });
 
-    function restoreMergedCells(tbody, rows) {
+    function restoreMergedCells(tbody, visibleRows) {
+        // 1. Lepaskan seluruh sel merged dari baris pada tbody ini
         tbody.querySelectorAll('[data-merge]').forEach((cell) => cell.remove());
+
+        // Jika tidak ada baris yang cocok pada section ini, sembunyikan section
+        if (!visibleRows || visibleRows.length === 0) {
+            tbody.style.display = 'none';
+            return;
+        }
+        tbody.style.display = '';
 
         const mergeLevels = [
             ['section-number', 'sectionKey'],
@@ -285,9 +607,12 @@
             ['implementer', 'implementerKey'],
         ];
 
-        mergeLevels.forEach(([level, keyName], columnIndex) => {
+        // Petakan untuk setiap firstRow sel-sel apa saja yang harus disisipkan (berurutan dari level 0 s.d 4)
+        const rowCellsToInsert = new Map();
+
+        mergeLevels.forEach(([level, keyName], levelIndex) => {
             const groups = new Map();
-            rows.forEach((row) => {
+            visibleRows.forEach((row) => {
                 const key = row.dataset[keyName];
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key).push(row);
@@ -299,7 +624,19 @@
 
                 cell.rowSpan = groupRows.length;
                 const firstRow = groupRows[0];
-                firstRow.insertBefore(cell, firstRow.children[columnIndex] || null);
+                if (!rowCellsToInsert.has(firstRow)) {
+                    rowCellsToInsert.set(firstRow, []);
+                }
+                rowCellsToInsert.get(firstRow).push({ cell, levelIndex });
+            });
+        });
+
+        // Sisipkan sel-sel secara berurutan TEPAT SEBELUM kolom Jabatan UIS (tidak akan pernah geser ke belakang Nama)
+        rowCellsToInsert.forEach((cellList, row) => {
+            cellList.sort((a, b) => a.levelIndex - b.levelIndex);
+            const jabatanCell = row.querySelector('.otk-cell-jabatan') || row.children[row.children.length - 2];
+            cellList.forEach(({ cell }) => {
+                row.insertBefore(cell, jabatanCell);
             });
         });
     }
@@ -385,28 +722,59 @@
 
     document.getElementById('otkSearch').addEventListener('input', (event) => {
         const query = event.target.value.trim().toLowerCase();
+        let totalVisible = 0;
+
         document.querySelectorAll('.otk-section').forEach((tbody) => {
-            const rows = [...tbody.querySelectorAll('.otk-row')];
+            const rows = Array.from(tbody.querySelectorAll('.otk-row'));
+            const matchingRows = [];
+
             rows.forEach((row) => {
-                row.hidden = query !== '' && !row.dataset.search.includes(query);
+                const searchData = (row.dataset.search || '').toLowerCase();
+                const isMatch = (query === '' || searchData.includes(query));
+                if (isMatch) {
+                    row.style.display = '';
+                    row.removeAttribute('hidden');
+                    matchingRows.push(row);
+                } else {
+                    row.style.display = 'none';
+                    row.setAttribute('hidden', '');
+                }
             });
-            restoreMergedCells(tbody, rows.filter((row) => !row.hidden));
+
+            totalVisible += matchingRows.length;
+            restoreMergedCells(tbody, matchingRows);
         });
+
+        let noResultTbody = document.getElementById('otkNoSearchResultRow');
+        if (totalVisible === 0 && query !== '') {
+            if (!noResultTbody) {
+                const table = document.getElementById('otkTable');
+                noResultTbody = document.createElement('tbody');
+                noResultTbody.id = 'otkNoSearchResultRow';
+                noResultTbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted fw-semibold"><i class="bi bi-search me-2"></i>Tidak ada data OTK yang sesuai dengan kata kunci "${query}".</td></tr>`;
+                table.appendChild(noResultTbody);
+            } else {
+                noResultTbody.style.display = '';
+                noResultTbody.querySelector('td').innerHTML = `<i class="bi bi-search me-2"></i>Tidak ada data OTK yang sesuai dengan kata kunci "${query}".`;
+            }
+        } else if (noResultTbody) {
+            noResultTbody.style.display = 'none';
+        }
     });
 
-    document.querySelectorAll('.edit-supervisor').forEach((button) => {
-        button.addEventListener('click', () => {
-            activeUserId = button.dataset.userId;
-            description.textContent = `Perubahan nama, jabatan, unit, dan atasan akan memperbarui akun Pengguna ${button.dataset.userName}.`;
-            userNameInput.value = button.dataset.userName;
-            userPositionInput.value = button.dataset.userPosition;
-            userUnitSelect.value = button.dataset.userUnit;
-            supervisorSelect.value = button.dataset.supervisorId || '';
-            if ($supervisorSelect && jQuery.fn.select2) {
-                $supervisorSelect.trigger('change');
-            }
-            supervisorModal.show();
-        });
+    document.getElementById('otkTable').addEventListener('click', (e) => {
+        const button = e.target.closest('.edit-supervisor');
+        if (!button) return;
+        activeUserId = button.dataset.userId;
+        description.textContent = `Perubahan nama, jabatan, unit, dan atasan akan memperbarui akun Pengguna ${button.dataset.userName}.`;
+        userNameInput.value = button.dataset.userName;
+        userPositionInput.value = button.dataset.userPosition;
+        userUnitSelect.value = button.dataset.userUnit;
+        supervisorSelect.value = button.dataset.supervisorId || '';
+        if ($supervisorSelect && jQuery.fn.select2) {
+            $supervisorSelect.trigger('change');
+        }
+        supervisorModal.show();
     });
 
     saveButton.addEventListener('click', async () => {
@@ -452,12 +820,12 @@
     saveAddedOtkUserButton.addEventListener('click', async () => {
         const payload = {
             user_id: addOtkUserSelect.value,
-            jabatan: addOtkPosition.value.trim(),
-            unit: addOtkUnit.value.trim(),
-            supervisor_id: addOtkSupervisor.value,
+            jabatan: addOtkPosition.value.trim() || '-',
+            unit: addOtkUnit.value.trim() || '-',
+            supervisor_id: addOtkSupervisor.value || null,
         };
-        if (!payload.user_id || !payload.jabatan || !payload.unit || !payload.supervisor_id) {
-            await showAlert('Pilih pengguna, isi jabatan dan unit, serta tentukan atasan langsung.', 'warning');
+        if (!payload.user_id) {
+            await showAlert('Pilih pengguna aktif terlebih dahulu.', 'warning');
             return;
         }
         if (!await confirmAction('Pengguna akan dimasukkan ke OTK dan jabatan, unit, serta atasannya diperbarui pada menu Pengguna.', 'Tambahkan pengguna ke OTK?')) return;
@@ -562,6 +930,259 @@
             await showAlert(error.message || 'Gagal terhubung ke server.', 'error');
         }
     });
+
+    // === FITUR PINDAHKAN BARIS (MOVE UP / DOWN) TANPA REFRESH ===
+    document.getElementById('otkTable').addEventListener('click', async (e) => {
+        const moveBtn = e.target.closest('.btn-otk-move');
+        if (!moveBtn) return;
+        e.stopPropagation();
+
+        const currentRow = moveBtn.closest('tr.otk-row');
+        if (!currentRow) return;
+
+        const currentUserId = moveBtn.dataset.userId;
+        const direction = moveBtn.dataset.direction;
+
+        const allRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+            .filter(r => r.style.display !== 'none');
+        const currentIndex = allRows.indexOf(currentRow);
+        if (currentIndex === -1) return;
+
+        let targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        if (targetIndex < 0) {
+            await showAlert('Baris sudah berada di posisi paling atas.', 'info');
+            return;
+        }
+        if (targetIndex >= allRows.length) {
+            await showAlert('Baris sudah berada di posisi paling bawah.', 'info');
+            return;
+        }
+
+        const targetRow = allRows[targetIndex];
+        const targetUserId = targetRow.dataset.userId || targetRow.querySelector('.btn-otk-move')?.dataset.userId;
+
+        // Tukar sel Jabatan UIS dan Nama UIS di DOM secara instan tanpa refresh
+        const currentJabatanCell = currentRow.children[currentRow.children.length - 2];
+        const currentNameCell = currentRow.children[currentRow.children.length - 1];
+        const targetJabatanCell = targetRow.children[targetRow.children.length - 2];
+        const targetNameCell = targetRow.children[targetRow.children.length - 1];
+
+        const tempJabatan = currentJabatanCell.innerHTML;
+        const tempName = currentNameCell.innerHTML;
+        const tempUserId = currentRow.dataset.userId;
+        const tempSearch = currentRow.dataset.search;
+
+        currentJabatanCell.innerHTML = targetJabatanCell.innerHTML;
+        currentNameCell.innerHTML = targetNameCell.innerHTML;
+        currentRow.dataset.userId = targetRow.dataset.userId;
+        currentRow.dataset.search = targetRow.dataset.search;
+
+        targetJabatanCell.innerHTML = tempJabatan;
+        targetNameCell.innerHTML = tempName;
+        targetRow.dataset.userId = tempUserId;
+        targetRow.dataset.search = tempSearch;
+
+        // Visual feedback highlight
+        targetRow.style.transition = 'background-color 0.3s ease';
+        targetRow.style.backgroundColor = '#dcfce7';
+        setTimeout(() => {
+            targetRow.style.backgroundColor = '';
+        }, 600);
+
+        // Update di server di background (tanpa reload halaman)
+        try {
+            const response = await fetch(@json(route('hirarki.move-row')), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: currentUserId,
+                    swap_user_id: targetUserId,
+                    direction: direction
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal memindahkan baris di server.');
+            }
+        } catch (error) {
+            // Revert jika gagal
+            const revertJabatan = currentJabatanCell.innerHTML;
+            const revertName = currentNameCell.innerHTML;
+            const revertUserId = currentRow.dataset.userId;
+            const revertSearch = currentRow.dataset.search;
+
+            currentJabatanCell.innerHTML = targetJabatanCell.innerHTML;
+            currentNameCell.innerHTML = targetNameCell.innerHTML;
+            currentRow.dataset.userId = targetRow.dataset.userId;
+            currentRow.dataset.search = targetRow.dataset.search;
+
+            targetJabatanCell.innerHTML = revertJabatan;
+            targetNameCell.innerHTML = revertName;
+            targetRow.dataset.userId = revertUserId;
+            targetRow.dataset.search = revertSearch;
+
+            await showAlert(error.message || 'Terjadi kesalahan saat memindahkan baris.', 'error');
+        }
+    });
+
+    // === FITUR SISIPKAN BARIS (INSERT ROW) ===
+    const insertModalElement = document.getElementById('insertOtkRowModal');
+    const insertModal = new bootstrap.Modal(insertModalElement);
+    const insertRefUserId = document.getElementById('insertRefUserId');
+    const insertRefUserName = document.getElementById('insertRefUserName');
+    const insertJabatan = document.getElementById('insertJabatan');
+    const insertUnit = document.getElementById('insertUnit');
+    const insertSupervisorSelect = document.getElementById('insertSupervisorSelect');
+    const insertExistingUserSelect = document.getElementById('insertExistingUserSelect');
+    const insertExistingSection = document.getElementById('insertExistingUserSection');
+    const insertNewSection = document.getElementById('insertNewUserSection');
+    const insertNewName = document.getElementById('insertNewName');
+    const insertNewEmail = document.getElementById('insertNewEmail');
+    const saveInsertBtn = document.getElementById('saveInsertOtkRowBtn');
+
+    // Event delegation untuk tombol sisipkan baris
+    document.getElementById('otkTable').addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-otk-insert');
+        if (!btn) return;
+        e.stopPropagation();
+        insertRefUserId.value = btn.dataset.userId;
+        insertRefUserName.textContent = `${btn.dataset.userName} (${btn.dataset.userPosition || '-'})`;
+        insertUnit.value = btn.dataset.userUnit || '';
+        insertSupervisorSelect.value = btn.dataset.supervisorId || '';
+        if (window.jQuery && jQuery.fn.select2) {
+            jQuery(insertSupervisorSelect).val(btn.dataset.supervisorId || '').trigger('change');
+            jQuery(insertExistingUserSelect).val('').trigger('change');
+        }
+        insertJabatan.value = '';
+        insertExistingUserSelect.value = '';
+        insertNewName.value = '';
+        insertNewEmail.value = '';
+        document.getElementById('insertModeExisting').checked = true;
+        insertExistingSection.classList.remove('d-none');
+        insertNewSection.classList.add('d-none');
+        insertModal.show();
+    });
+
+    document.querySelectorAll('input[name="insertUserMode"]').forEach((radio) => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'new') {
+                insertExistingSection.classList.add('d-none');
+                insertNewSection.classList.remove('d-none');
+            } else {
+                insertExistingSection.classList.remove('d-none');
+                insertNewSection.classList.add('d-none');
+            }
+        });
+    });
+
+    const onExistingUserChange = () => {
+        const opt = insertExistingUserSelect.selectedOptions ? insertExistingUserSelect.selectedOptions[0] : null;
+        if (opt && opt.value) {
+            if (opt.dataset.position && !insertJabatan.value) {
+                insertJabatan.value = opt.dataset.position;
+            }
+            if (opt.dataset.unit && !insertUnit.value) {
+                insertUnit.value = opt.dataset.unit;
+            }
+        }
+    };
+    insertExistingUserSelect.addEventListener('change', onExistingUserChange);
+    if (window.jQuery) {
+        jQuery(insertExistingUserSelect).on('select2:select change', onExistingUserChange);
+    }
+
+    saveInsertBtn.addEventListener('click', async () => {
+        const mode = document.querySelector('input[name="insertUserMode"]:checked').value;
+        const position = document.querySelector('input[name="insertPosition"]:checked').value;
+        const refId = insertRefUserId.value;
+        const jabatan = insertJabatan.value.trim();
+        const unit = insertUnit.value.trim();
+        const supervisorId = insertSupervisorSelect.value;
+
+        // Kolom bersifat nullable / opsional (boleh juga diisi)
+        const payload = {
+            reference_user_id: refId,
+            position: position,
+            user_mode: mode,
+            jabatan: jabatan || '-',
+            unit: unit || '-',
+            supervisor_id: supervisorId || null,
+        };
+
+        if (mode === 'existing') {
+            payload.existing_user_id = insertExistingUserSelect.value || null;
+        } else {
+            payload.new_name = insertNewName.value.trim() || '-';
+            payload.new_email = insertNewEmail.value.trim() || null;
+        }
+
+        saveInsertBtn.disabled = true;
+        try {
+            const response = await fetch(@json(route('hirarki.insert-row')), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal menyisipkan baris.');
+            }
+
+            insertModal.hide();
+            await showAlert(result.message);
+            window.location.reload();
+        } catch (error) {
+            await showAlert(error.message || 'Terjadi kesalahan.', 'error');
+        } finally {
+            saveInsertBtn.disabled = false;
+        }
+    });
+
+    // === FITUR HAPUS BARIS (DELETE ROW) ===
+    document.getElementById('otkTable').addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-otk-delete');
+        if (!btn) return;
+        e.stopPropagation();
+        const userId = btn.dataset.userId;
+        const userName = btn.dataset.userName;
+
+        if (!await confirmAction(`Hapus baris "${userName}" dari penempatan OTK? Akun pengguna tetap tersimpan di sistem namun baris akan dikeluarkan dari tabel OTK.`, 'Hapus Baris OTK?')) {
+            return;
+        }
+
+        btn.disabled = true;
+        try {
+            const response = await fetch(@json(route('hirarki.delete-row')), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ user_id: userId }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal menghapus baris.');
+            }
+
+            await showAlert(result.message);
+            window.location.reload();
+        } catch (error) {
+            await showAlert(error.message || 'Terjadi kesalahan.', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
 })();
 </script>
 @endpush

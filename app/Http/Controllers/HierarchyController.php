@@ -221,6 +221,7 @@ class HierarchyController extends Controller
                             ->merge($descendantsOf($child))
                             ->filter($isReportableUser)
                             ->unique('id')
+                            ->sortBy($rankWeight)
                             ->values(),
                     ];
                 })
@@ -241,7 +242,7 @@ class HierarchyController extends Controller
                 'label' => null,
                 'implementers' => [[
                     'label' => null,
-                    'employees' => collect([$rektor])->filter()->merge($viceRectors)->filter($isReportableUser)->values(),
+                    'employees' => collect([$rektor])->filter()->merge($viceRectors)->filter($isReportableUser)->sortBy($rankWeight)->values(),
                 ]],
             ]],
         ]];
@@ -270,6 +271,7 @@ class HierarchyController extends Controller
                     'label' => $label,
                     'employees' => $groups->flatMap(fn ($group) => $group['employees'])
                         ->unique('id')
+                        ->sortBy($rankWeight)
                         ->values(),
                 ])
                 ->values();
@@ -522,15 +524,15 @@ class HierarchyController extends Controller
     public function addExistingUserToOtk(Request $request)
     {
         $authUser = Auth::user();
-        if (!$authUser || !$authUser->isAdmin()) {
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->subordinates()->exists())) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
 
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
-            'jabatan' => 'required|string|max:255',
-            'unit' => 'required|string|max:255',
-            'supervisor_id' => 'required|integer|exists:users,id',
+            'jabatan' => 'nullable|string|max:255',
+            'unit' => 'nullable|string|max:255',
+            'supervisor_id' => 'nullable|integer|exists:users,id',
         ]);
 
         $user = User::query()
@@ -551,28 +553,35 @@ class HierarchyController extends Controller
             ], 422);
         }
 
-        $supervisor = User::query()
-            ->whereKey($validated['supervisor_id'])
-            ->where('is_active', true)
-            ->first();
-        if (!$supervisor) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Atasan tidak ditemukan atau tidak aktif.',
-            ], 422);
+        $supervisorId = !empty($validated['supervisor_id']) ? (int) $validated['supervisor_id'] : null;
+        if ($supervisorId) {
+            $supervisor = User::query()
+                ->whereKey($supervisorId)
+                ->where('is_active', true)
+                ->first();
+            if (!$supervisor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Atasan tidak ditemukan atau tidak aktif.',
+                ], 422);
+            }
+
+            if ($this->supervisorWouldCreateCycle($user, $supervisor->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Atasan yang dipilih akan membuat siklus dalam struktur OTK.',
+                ], 422);
+            }
         }
 
-        if ($this->supervisorWouldCreateCycle($user, $supervisor->id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Atasan yang dipilih akan membuat siklus dalam struktur OTK.',
-            ], 422);
-        }
-
-        DB::transaction(function () use ($user, $supervisor, $validated): void {
-            $user->jabatan = $validated['jabatan'];
-            $user->unit = $validated['unit'];
-            $user->supervisor_id = $supervisor->id;
+        DB::transaction(function () use ($user, $supervisorId, $validated): void {
+            if (!empty($validated['jabatan'])) {
+                $user->jabatan = trim($validated['jabatan']);
+            }
+            if (!empty($validated['unit'])) {
+                $user->unit = trim($validated['unit']);
+            }
+            $user->supervisor_id = $supervisorId;
             $user->save();
 
             DB::table('otk_members')->insert([
@@ -581,11 +590,242 @@ class HierarchyController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            DB::table('otk_sync_state')->updateOrInsert(['id' => 1], ['synced_at' => now()]);
         });
 
         return response()->json([
             'success' => true,
             'message' => "{$user->name} berhasil ditambahkan ke OTK dan data Pengguna diperbarui.",
+        ]);
+    }
+
+    /**
+     * Pindahkan posisi baris OTK (Naik / Turun).
+     */
+    public function moveOtkRow(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->subordinates()->exists())) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'direction' => 'required|in:up,down',
+            'swap_user_id' => 'nullable|integer|exists:users,id',
+        ]);
+
+        $userId = (int) $validated['user_id'];
+        $direction = $validated['direction'];
+        $swapUserId = !empty($validated['swap_user_id']) ? (int) $validated['swap_user_id'] : null;
+
+        $currentRow = DB::table('otk_members')->where('user_id', $userId)->first();
+        if (!$currentRow) {
+            $maxOrder = (int) DB::table('otk_members')->max('sort_order');
+            DB::table('otk_members')->insert([
+                'user_id' => $userId,
+                'sort_order' => $maxOrder + 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $currentRow = DB::table('otk_members')->where('user_id', $userId)->first();
+        }
+
+        $swapRow = null;
+        if ($swapUserId) {
+            $swapRow = DB::table('otk_members')->where('user_id', $swapUserId)->first();
+            if (!$swapRow) {
+                $maxOrder = (int) DB::table('otk_members')->max('sort_order');
+                DB::table('otk_members')->insert([
+                    'user_id' => $swapUserId,
+                    'sort_order' => $direction === 'up' ? max(0, (int)$currentRow->sort_order - 1) : (int)$currentRow->sort_order + 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $swapRow = DB::table('otk_members')->where('user_id', $swapUserId)->first();
+            }
+        }
+
+        if (!$swapRow) {
+            $currentSortOrder = (int) $currentRow->sort_order;
+            if ($direction === 'up') {
+                $swapRow = DB::table('otk_members')
+                    ->where('sort_order', '<', $currentSortOrder)
+                    ->orderBy('sort_order', 'desc')
+                    ->first();
+            } else {
+                $swapRow = DB::table('otk_members')
+                    ->where('sort_order', '>', $currentSortOrder)
+                    ->orderBy('sort_order', 'asc')
+                    ->first();
+            }
+        }
+
+        if (!$swapRow) {
+            return response()->json([
+                'success' => false,
+                'message' => $direction === 'up' ? 'Baris sudah berada di posisi paling atas.' : 'Baris sudah berada di posisi paling bawah.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($currentRow, $swapRow) {
+            $orderA = (int) $currentRow->sort_order;
+            $orderB = (int) $swapRow->sort_order;
+
+            if ($orderA === $orderB) {
+                $orderB = $orderA + 1;
+            }
+
+            $tempOrder = (int) DB::table('otk_members')->max('sort_order') + 100;
+            DB::table('otk_members')->where('user_id', $currentRow->user_id)->update(['sort_order' => $tempOrder]);
+            DB::table('otk_members')->where('user_id', $swapRow->user_id)->update(['sort_order' => $orderA]);
+            DB::table('otk_members')->where('user_id', $currentRow->user_id)->update(['sort_order' => $orderB]);
+
+            DB::table('otk_sync_state')->updateOrInsert(['id' => 1], ['synced_at' => now()]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Posisi baris berhasil dipindahkan ' . ($direction === 'up' ? 'ke atas.' : 'ke bawah.'),
+        ]);
+    }
+
+    /**
+     * Sisipkan baris baru (di atas atau di bawah baris acuan tertentu).
+     */
+    public function insertOtkRow(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->subordinates()->exists())) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $validated = $request->validate([
+            'reference_user_id' => 'required|integer|exists:users,id',
+            'position' => 'required|in:before,after',
+            'user_mode' => 'nullable|string',
+            'existing_user_id' => 'nullable|integer',
+            'new_name' => 'nullable|string|max:255',
+            'new_email' => 'nullable|string|max:255',
+            'jabatan' => 'nullable|string|max:255',
+            'unit' => 'nullable|string|max:255',
+            'supervisor_id' => 'nullable|exists:users,id',
+        ]);
+
+        $refUser = User::findOrFail($validated['reference_user_id']);
+        $refRow = DB::table('otk_members')->where('user_id', $refUser->id)->first();
+        if (!$refRow) {
+            $refSortOrder = (int) DB::table('otk_members')->max('sort_order') + 1;
+        } else {
+            $refSortOrder = (int) $refRow->sort_order;
+        }
+
+        $targetSortOrder = ($validated['position'] === 'before')
+            ? $refSortOrder
+            : ($refSortOrder + 1);
+
+        $insertedUser = null;
+        DB::transaction(function () use ($validated, $targetSortOrder, &$insertedUser) {
+            $jabatanVal = !empty($validated['jabatan']) ? trim($validated['jabatan']) : '-';
+            $unitVal = !empty($validated['unit']) ? trim($validated['unit']) : '-';
+            $supervisorIdVal = !empty($validated['supervisor_id']) ? $validated['supervisor_id'] : null;
+
+            if (!empty($validated['existing_user_id']) && $existing = User::find($validated['existing_user_id'])) {
+                $insertedUser = $existing;
+                if (!empty($validated['jabatan']) && $validated['jabatan'] !== '-') {
+                    $insertedUser->jabatan = $jabatanVal;
+                }
+                if (!empty($validated['unit']) && $validated['unit'] !== '-') {
+                    $insertedUser->unit = $unitVal;
+                }
+                $insertedUser->supervisor_id = $supervisorIdVal;
+                $insertedUser->save();
+
+                DB::table('otk_members')->where('user_id', $insertedUser->id)->delete();
+            } else {
+                // Mode bypass / pengguna baru / kosong
+                $nameVal = !empty($validated['new_name']) ? trim($validated['new_name']) : '-';
+                $randomSuffix = time() . '_' . mt_rand(100, 999);
+                $emailVal = !empty($validated['new_email']) ? trim($validated['new_email']) : ('otk_' . $randomSuffix . '@uis.ac.id');
+                if (User::where('email', $emailVal)->exists()) {
+                    $emailVal = 'otk_' . $randomSuffix . '_' . uniqid() . '@uis.ac.id';
+                }
+
+                $insertedUser = User::create([
+                    'name' => $nameVal,
+                    'email' => $emailVal,
+                    'password' => bcrypt('password123'),
+                    'jabatan' => $jabatanVal,
+                    'unit' => $unitVal,
+                    'supervisor_id' => $supervisorIdVal,
+                    'is_active' => true,
+                    'roles' => 'staff',
+                    'status' => 'Aktif',
+                ]);
+            }
+
+            // Geser baris di bawahnya
+            DB::table('otk_members')
+                ->where('sort_order', '>=', $targetSortOrder)
+                ->increment('sort_order');
+
+            // Masukkan pada posisi target
+            DB::table('otk_members')->insert([
+                'user_id' => $insertedUser->id,
+                'sort_order' => $targetSortOrder,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Pastikan otk_sync_state ada nilainya
+            DB::table('otk_sync_state')->updateOrInsert(['id' => 1], ['synced_at' => now()]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Baris berhasil disisipkan untuk {$insertedUser->name}.",
+        ]);
+    }
+
+    /**
+     * Hapus baris dari tabel penempatan OTK.
+     */
+    public function deleteOtkRow(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->subordinates()->exists())) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+        ]);
+
+        $userId = (int) $validated['user_id'];
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User tidak ditemukan.'], 404);
+        }
+
+        $exists = DB::table('otk_members')->where('user_id', $userId)->exists();
+        if (!$exists) {
+            return response()->json(['success' => false, 'message' => 'Baris tidak ditemukan pada daftar OTK.'], 404);
+        }
+
+        DB::transaction(function () use ($userId) {
+            DB::table('otk_members')->where('user_id', $userId)->delete();
+
+            // Normalisasi urutan sekuensial
+            $all = DB::table('otk_members')->orderBy('sort_order', 'asc')->get();
+            foreach ($all as $idx => $m) {
+                DB::table('otk_members')->where('user_id', $m->user_id)->update(['sort_order' => $idx]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Baris {$user->name} berhasil dihapus dari penempatan OTK.",
         ]);
     }
 

@@ -27,7 +27,7 @@
                 <!-- 1. DASHBOARD UTAMA -->
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                        <i class="bi bi-grid-fill"></i>
+                        
                         <span>
                             @if($isAdmin) Dashboard Admin
                             @elseif($isRektorat) Dashboard Eksekutif
@@ -48,24 +48,23 @@
                     @endphp
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ $isKinerjaActive ? 'active' : '' }}" href="#" id="kegiatanDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            <i class="bi bi-briefcase-fill text-success"></i>
+                            
                             <span>
                                 @if($isStaffOrDosen) Kegiatan
                                 @elseif($isPimpinanUnit) Kegiatan Unit
                                 @else Kegiatan
                                 @endif
                             </span>
-                            <i class="bi bi-chevron-down dropdown-chevron"></i>
-                        </a>
+                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu" aria-labelledby="kegiatanDropdown">
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('kegiatan.create') ? 'active' : '' }}" href="{{ route('kegiatan.create') }}">
-                                    <i class="bi bi-circle"></i><span>Tambah Kegiatan</span>
+                                    <span>Tambah Kegiatan</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('rencana-kerja.*') ? 'active' : '' }}" href="{{ route('rencana-kerja.index') }}">
-                                    <i class="bi bi-circle"></i><span>
+                                    <span>
                                         @if($isStaffOrDosen) Kegiatan Saya
                                         @elseif($isPimpinanUnit) Kegiatan Unit
                                         @else Kegiatan Utama
@@ -75,12 +74,12 @@
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('kepanitiaan.*') ? 'active' : '' }}" href="{{ route('kepanitiaan.index') }}">
-                                    <i class="bi bi-circle"></i><span>Kegiatan Kepanitiaan</span>
+                                    <span>Kegiatan Kepanitiaan</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('insidentil.*') ? 'active' : '' }}" href="{{ route('insidentil.index') }}">
-                                    <i class="bi bi-circle"></i><span>Kegiatan Insidentil</span>
+                                    <span>Kegiatan Insidentil</span>
                                 </a>
                             </li>
                         </ul>
@@ -101,18 +100,17 @@
                     @endphp
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ $isMonitoringActive ? 'active' : '' }}" href="#" id="monitoringDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            <i class="bi bi-pie-chart-fill text-info"></i>
+                            
                             <span>
                                 @if($isAdmin || $isRektorat) Monitoring &amp; Evaluasi
                                 @else Monitoring Unit
                                 @endif
                             </span>
-                            <i class="bi bi-chevron-down dropdown-chevron"></i>
-                        </a>
+                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu" aria-labelledby="monitoringDropdown">
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*') ? 'active' : '' }}" href="{{ route('rekapitulasi.index') }}">
-                                    <i class="bi bi-circle"></i><span>
+                                    <span>
                                         @if($isPimpinanUnit) Rekapitulasi Kinerja Unit
                                         @else Rekapitulasi Kinerja
                                         @endif
@@ -121,12 +119,12 @@
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('pemantauan-staff.*') ? 'active' : '' }}" href="{{ route('pemantauan-staff.index') }}">
-                                    <i class="bi bi-circle"></i><span>Pemantauan Staff</span>
+                                    <span>Pemantauan Staff</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('analisis-keterlambatan.*') ? 'active' : '' }}" href="{{ route('analisis-keterlambatan.index') }}">
-                                    <i class="bi bi-circle"></i><span>Analisis Keterlambatan</span>
+                                    <span>Analisis Keterlambatan</span>
                                 </a>
                             </li>
                         </ul>
@@ -134,7 +132,7 @@
                 @else
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*') ? 'active' : '' }}" href="{{ route('rekapitulasi.index') }}">
-                            <i class="bi bi-pie-chart-fill text-info"></i>
+                            
                             <span>Rekapitulasi Capaian Saya</span>
                         </a>
                     </li>
@@ -147,25 +145,24 @@
                     @endphp
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ $isLpjActive ? 'active' : '' }}" href="#" id="lpjDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            <i class="bi bi-file-earmark-text-fill text-secondary"></i>
+                            
                             <span>Laporan LPJ</span>
-                            <i class="bi bi-chevron-down dropdown-chevron"></i>
-                        </a>
+                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu" aria-labelledby="lpjDropdown">
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('lpj.index') ? 'active' : '' }}" href="{{ route('lpj.index') }}">
-                                    <i class="bi bi-circle"></i><span>Daftar LPJ</span>
+                                    <span>Daftar LPJ</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('lpj.create') ? 'active' : '' }}" href="{{ route('lpj.create') }}">
-                                    <i class="bi bi-circle"></i><span>Tambah LPJ</span>
+                                    <span>Tambah LPJ</span>
                                 </a>
                             </li>
                             @if ($isAdmin || ($u && $u->isTimEvaluasi()))
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('lpj.template*') ? 'active' : '' }}" href="{{ route('lpj.template') }}">
-                                        <i class="bi bi-circle"></i><span>Template LPJ</span>
+                                        <span>Template LPJ</span>
                                     </a>
                                 </li>
                             @endif
@@ -181,24 +178,23 @@
                     @endphp
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ $isLaporanActive ? 'active' : '' }}" href="#" id="laporanDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            <i class="bi bi-file-earmark-bar-graph-fill text-warning"></i>
+                            
                             <span>
                                 @if($isAdmin || $isRektorat) Laporan Eksekutif
                                 @else Laporan Unit Kerja
                                 @endif
                             </span>
-                            <i class="bi bi-chevron-down dropdown-chevron"></i>
-                        </a>
+                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu" aria-labelledby="laporanDropdown">
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('laporan-kinerja-pegawai.*') ? 'active' : '' }}" href="{{ route('laporan-kinerja-pegawai.index') }}">
-                                    <i class="bi bi-circle"></i><span>Laporan Kinerja Pegawai</span>
+                                    <span>Laporan Kinerja Pegawai</span>
                                 </a>
                             </li>
                             @if($isAdmin || $isRektorat)
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('laporan-pengembangan.*') ? 'active' : '' }}" href="{{ route('laporan-pengembangan.index') }}">
-                                        <i class="bi bi-circle"></i><span>Pengembangan Universitas</span>
+                                        <span>Pengembangan Universitas</span>
                                     </a>
                                 </li>
                             @endif
@@ -210,11 +206,10 @@
                 @if ($isAdmin)
                     <li class="nav-item dropdown" id="sidebar-presensi-active-item" style="{{ $activeSessions->isEmpty() ? 'display: none;' : '' }}">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('presensi.*') || request()->routeIs('absensi-*') ? 'active' : '' }}" href="#" id="presensiAktifDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            <i class="bi bi-qr-code-scan text-success"></i>
+                            
                             <span>Sesi Presensi Aktif</span>
                             <span class="badge bg-success rounded-pill ms-2 px-2 py-0" id="sidebar-active-sessions-badge" style="font-size: 10px;">{{ $activeSessions->count() }}</span>
-                            <i class="bi bi-chevron-down dropdown-chevron"></i>
-                        </a>
+                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu" aria-labelledby="presensiAktifDropdown" id="presensi-kepanitiaan-nav">
                             @foreach($activeSessions as $activeSess)
                                 @php
@@ -222,7 +217,7 @@
                                 @endphp
                                 <li id="sidebar-sesi-item-{{ $activeSess->id }}">
                                     <a class="dropdown-item {{ request()->routeIs('presensi.sesi.show') && request()->route('id') == $activeSess->id ? 'active' : '' }}" href="{{ $targetUrl }}" title="{{ $activeSess->nama_sesi }}">
-                                        <i class="bi bi-circle"></i><span class="text-truncate">{{ $activeSess->nama_sesi }}</span>
+                                        <span class="text-truncate">{{ $activeSess->nama_sesi }}</span>
                                     </a>
                                 </li>
                             @endforeach
@@ -231,7 +226,7 @@
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('absensi-kinerja.*') ? 'active' : '' }}" href="{{ route('absensi-kinerja.index') }}">
-                            <i class="bi bi-person-lines-fill text-primary"></i>
+                            
                             <span>Absensi Kinerja</span>
                         </a>
                     </li>
@@ -242,19 +237,18 @@
                     @endphp
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ $isPresensiAdminActive ? 'active' : '' }}" href="#" id="kelolaPresensiDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            <i class="bi bi-clipboard-check-fill text-primary"></i>
+                            
                             <span>Kelola Presensi</span>
-                            <i class="bi bi-chevron-down dropdown-chevron"></i>
-                        </a>
+                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu" aria-labelledby="kelolaPresensiDropdown">
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('pengaturan-absensi.*') ? 'active' : '' }}" href="{{ route('pengaturan-absensi.index') }}">
-                                    <i class="bi bi-circle"></i><span>Status Sesi Absensi</span>
+                                    <span>Status Sesi Absensi</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('rekapitulasi-absensi.*') ? 'active' : '' }}" href="{{ route('rekapitulasi-absensi.index') }}">
-                                    <i class="bi bi-circle"></i><span>Rekapitulasi Absensi</span>
+                                    <span>Rekapitulasi Absensi</span>
                                 </a>
                             </li>
                         </ul>
@@ -263,15 +257,14 @@
                     @if($activeSessions->isNotEmpty() && ($u->isKoordinatorPanitia() || $u->isKepanitiaan()))
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {{ request()->routeIs('presensi.*') ? 'active' : '' }}" href="#" id="presensiUserDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                                <i class="bi bi-qr-code-scan text-success"></i>
+                                
                                 <span>Sesi Aktif (<span id="sidebar-user-active-sessions-badge">{{ $activeSessions->count() }}</span>)</span>
-                                <i class="bi bi-chevron-down dropdown-chevron"></i>
-                            </a>
+                                 <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                             <ul class="dropdown-menu" aria-labelledby="presensiUserDropdown">
                                 @foreach($activeSessions as $activeSess)
                                     <li id="sidebar-sesi-item-{{ $activeSess->id }}">
                                         <a class="dropdown-item {{ request()->routeIs('presensi.sesi.show') && request()->route('id') == $activeSess->id ? 'active' : '' }}" href="{{ route('presensi.sesi.show', $activeSess->id) }}">
-                                            <i class="bi bi-circle"></i><span class="text-truncate">{{ $activeSess->nama_sesi }}</span>
+                                            <span class="text-truncate">{{ $activeSess->nama_sesi }}</span>
                                         </a>
                                     </li>
                                 @endforeach
@@ -281,14 +274,14 @@
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('absensi-kinerja.*') ? 'active' : '' }}" href="{{ route('absensi-kinerja.index') }}">
-                            <i class="bi bi-person-lines-fill text-primary"></i>
+                            
                             <span>Absensi Kinerja</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('rekapitulasi-absensi.*') ? 'active' : '' }}" href="{{ route('rekapitulasi-absensi.index') }}">
-                            <i class="bi bi-person-check-fill text-success"></i>
+                            
                             <span>Riwayat Presensi Saya</span>
                         </a>
                     </li>
@@ -307,18 +300,17 @@
                     @endphp
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ $isSettingsActive ? 'active' : '' }}" href="#" id="pengaturanDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            <i class="bi bi-gear-wide-connected text-secondary"></i>
+                            
                             <span>Pengaturan Sistem</span>
-                            <i class="bi bi-chevron-down dropdown-chevron"></i>
-                        </a>
+                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="pengaturanDropdown">
-                            <li><a class="dropdown-item {{ request()->routeIs('sk-kepanitiaan.*') ? 'active' : '' }}" href="{{ route('sk-kepanitiaan.index') }}"><i class="bi bi-file-earmark-pdf"></i><span>SK Kepanitiaan</span></a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}"><i class="bi bi-person"></i><span>Kelola Pengguna</span></a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('periode-akademik.*') ? 'active' : '' }}" href="{{ route('periode-akademik.index') }}"><i class="bi bi-calendar-event"></i><span>Periode Akademik</span></a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('kategori.*') ? 'active' : '' }}" href="{{ route('kategori.index') }}"><i class="bi bi-tags"></i><span>Kategori Kegiatan</span></a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('pengaturan-pesan-whatsapp.*') ? 'active' : '' }}" href="{{ route('pengaturan-pesan-whatsapp.create') }}"><i class="bi bi-whatsapp"></i><span>Pesan WhatsApp</span></a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('hirarki.*') ? 'active' : '' }}" href="{{ route('hirarki.index') }}"><i class="bi bi-diagram-3"></i><span>Struktur OTK</span></a></li>
-                            <li><a class="dropdown-item {{ request()->routeIs('database-backup.*') ? 'active' : '' }}" href="{{ route('database-backup.index') }}"><i class="bi bi-database-down"></i><span>Backup Database &amp; Storage</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('sk-kepanitiaan.*') ? 'active' : '' }}" href="{{ route('sk-kepanitiaan.index') }}"><span>SK Kepanitiaan</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}"><span>Kelola Pengguna</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('periode-akademik.*') ? 'active' : '' }}" href="{{ route('periode-akademik.index') }}"><span>Periode Akademik</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('kategori.*') ? 'active' : '' }}" href="{{ route('kategori.index') }}"><span>Kategori Kegiatan</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('pengaturan-pesan-whatsapp.*') ? 'active' : '' }}" href="{{ route('pengaturan-pesan-whatsapp.create') }}"><span>Pesan WhatsApp</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('hirarki.*') ? 'active' : '' }}" href="{{ route('hirarki.index') }}"><span>Struktur OTK</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('database-backup.*') ? 'active' : '' }}" href="{{ route('database-backup.index') }}"><span>Backup Database &amp; Storage</span></a></li>
                         </ul>
                     </li>
                 @endif

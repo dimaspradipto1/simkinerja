@@ -98,6 +98,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('hirarki/sync-otk', [HierarchyController::class, 'syncOtk'])->name('hirarki.sync-otk');
     Route::post('hirarki/upload-otk', [HierarchyController::class, 'uploadOtk'])->name('hirarki.upload-otk');
     Route::post('hirarki/add-user', [HierarchyController::class, 'addExistingUserToOtk'])->name('hirarki.add-user');
+    Route::post('hirarki/insert-row', [HierarchyController::class, 'insertOtkRow'])->name('hirarki.insert-row');
+    Route::post('hirarki/move-row', [HierarchyController::class, 'moveOtkRow'])->name('hirarki.move-row');
+    Route::post('hirarki/delete-row', [HierarchyController::class, 'deleteOtkRow'])->name('hirarki.delete-row');
     Route::put('hirarki/update-titles', [HierarchyController::class, 'updateOtkTitles'])->name('hirarki.update-titles');
     Route::post('hirarki/{user}/reset', [HierarchyController::class, 'reset'])->name('hirarki.reset');
     Route::post('hirarki/reset-all', [HierarchyController::class, 'resetAll'])->name('hirarki.reset-all');

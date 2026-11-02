@@ -1947,7 +1947,8 @@ body.menu-page-otk .otk-table .person-name {
 }
 body.menu-page-otk .otk-table .employee-name {
     font-weight: 600;
-    overflow-wrap: anywhere;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
 }
 body.menu-page-otk .otk-table .merged-label {
     text-align: center;
@@ -1993,10 +1994,10 @@ body.menu-page-otk .otk-table th:nth-child(5) {
     width: 13%;
 }
 body.menu-page-otk .otk-table th:nth-child(6) {
-    width: 28%;
+    width: 23%;
 }
 body.menu-page-otk .otk-table th:nth-child(7) {
-    width: 16.5%;
+    width: 30%;
 }
 body.menu-page-otk .otk-footnote {
     display: flex;

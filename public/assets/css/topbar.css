@@ -146,16 +146,22 @@ a:hover {
 .topbar-menu .nav-link {
   display: flex;
   align-items: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: #012970;
-  padding: 8px 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 450;
+  color: #334155;
+  padding: 6px 12px;
   border-radius: 4px;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   text-decoration: none;
   cursor: pointer;
   background: transparent;
   border: none;
+  letter-spacing: 0.1px;
+}
+
+.topbar-menu .nav-link i:not(.dropdown-chevron) {
+  display: none !important;
 }
 
 .topbar-menu .nav-link i {
@@ -166,10 +172,10 @@ a:hover {
 }
 
 .topbar-menu .nav-link .dropdown-chevron {
-  font-size: 11px;
-  margin-left: 6px;
+  font-size: 9px;
+  margin-left: 4px;
   margin-right: 0;
-  color: #899bbd;
+  color: #64748b;
   transition: transform 0.2s ease;
 }
 
@@ -178,7 +184,8 @@ a:hover {
 .topbar-menu .nav-item.show > .nav-link,
 .topbar-menu .nav-item:hover > .nav-link {
   color: #046B26;
-  background-color: #e8f5ec;
+  background-color: #f1f5f9;
+  font-weight: 500;
 }
 
 .topbar-menu .nav-link:hover i,
