@@ -1,9 +1,76 @@
-<!-- Modal Tambah Point Milestone -->
+<!-- Modal Tambah Sub Kegiatan Mandiri (Full Fitur & Bisa Di-start) -->
+<div class="modal fade" id="modalAddSubKegiatan" tabindex="-1" aria-labelledby="modalAddSubKegiatanLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header text-white" style="background-color: #15432d;">
+                <h5 class="modal-title fw-bold" id="modalAddSubKegiatanLabel">
+                    <i class="bi bi-diagram-3-fill me-2"></i>Tambah Sub Kegiatan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formAddSubKegiatan">
+                @csrf
+                <input type="hidden" name="parent_id" id="sub_modal_parent_id">
+                <input type="hidden" id="sub_modal_route_prefix" value="rencana-kerja">
+                <div class="modal-body p-4">
+                    <div class="mb-3 p-2.5 bg-light rounded-3 border">
+                        <label class="form-label small text-muted mb-0.5 fw-semibold d-block">Kegiatan Induk / Utama:</label>
+                        <div class="fw-bold text-dark text-break" id="sub_modal_parent_title">-</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="sub_modal_uraian" class="form-label fw-semibold text-dark">
+                            Uraian Sub Kegiatan <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="sub_modal_uraian" name="uraian_tugas" rows="3" placeholder="Tuliskan uraian sub kegiatan yang akan dikerjakan..." required></textarea>
+                        <div class="form-text small text-muted">Sub kegiatan ini akan memiliki fitur mandiri (bisa mulai/start timer, pause, selesai) dan terhubung ke kegiatan induk.</div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary fw-semibold">Estimasi Tgl Selesai</label>
+                            <input type="date" class="form-control form-control-sm" name="estimasi_tanggal_selesai" id="sub_modal_est_tgl">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary fw-semibold">Estimasi Jam Selesai</label>
+                            <input type="time" class="form-control form-control-sm" name="estimasi_jam_selesai" id="sub_modal_est_jam">
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 bg-light-subtle rounded border d-flex align-items-center justify-content-between">
+                        <div>
+                            <label class="form-check-label fw-bold text-dark d-block mb-0" for="sub_modal_start_now" style="cursor: pointer;">
+                                <i class="bi bi-play-circle-fill text-success me-1"></i> Langsung Mulai (Start Timer)
+                            </label>
+                            <span class="small text-muted" style="font-size: 0.75rem;">Otomatis mencatat waktu mulai saat sub kegiatan disimpan.</span>
+                        </div>
+                        <div class="form-check form-switch mb-0 ms-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="sub_modal_start_now" name="start_now" value="1" style="cursor: pointer; width: 36px; height: 20px;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <a href="#" id="sub_modal_full_form_link" class="btn btn-sm btn-link text-decoration-none text-secondary">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Form Lengkap
+                    </a>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-sm btn-success fw-bold px-3" style="background-color: #15432d; border-color: #15432d;">
+                            <i class="bi bi-check2-circle me-1"></i> Simpan Sub Kegiatan
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Sub Kegiatan / Point Milestone -->
 <div class="modal fade" id="addMilestoneModal" tabindex="-1" aria-labelledby="addMilestoneModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-lg border-0">
             <div class="modal-header text-white" style="background-color: #15432d;">
-                <h5 class="modal-title fw-bold" id="addMilestoneModalLabel"><i class="bi bi-flag-fill me-2"></i>Tambah Point Milestone</h5>
+                <h5 class="modal-title fw-bold" id="addMilestoneModalLabel"><i class="bi bi-diagram-3-fill me-2"></i>Tambah Sub Kegiatan</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formAddMilestone">
@@ -13,18 +80,19 @@
                     <input type="hidden" name="milestonable_type" id="modal_milestonable_type">
 
                     <div class="mb-3">
-                        <label for="modal_nama_milestone" class="form-label fw-semibold text-dark">Nama / Uraian Point Milestone <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="modal_nama_milestone" name="nama_milestone" placeholder="Contoh: Pengumpulan Data awal, Draft Tahap 1, Review Direksi" required>
+                        <label for="modal_nama_milestone" class="form-label fw-semibold text-dark">Nama / Uraian Sub Kegiatan <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="modal_nama_milestone" name="nama_milestone" placeholder="Contoh: Pengumpulan Data, Pembuatan Draft, Review Atasan, Finalisasi" required>
+                        <div class="form-text small text-muted">Sub kegiatan akan menjadi tahapan kerja (milestone) yang dapat dipantau dan dihitung durasinya.</div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="modal_catatan" class="form-label fw-semibold text-dark">Catatan Tambahan (Opsional)</label>
-                        <textarea class="form-control" id="modal_catatan" name="catatan" rows="2" placeholder="Catatan singkat terkait point ini..."></textarea>
+                        <label for="modal_catatan" class="form-label fw-semibold text-dark">Catatan / Keterangan (Opsional)</label>
+                        <textarea class="form-control" id="modal_catatan" name="catatan" rows="2" placeholder="Catatan singkat terkait sub kegiatan ini..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success fw-bold px-4" style="background-color: #15432d; border-color: #15432d;"><i class="bi bi-plus-lg me-1"></i> Simpan Point</button>
+                    <button type="submit" class="btn btn-success fw-bold px-4" style="background-color: #15432d; border-color: #15432d;"><i class="bi bi-plus-lg me-1"></i> Simpan Sub Kegiatan</button>
                 </div>
             </form>
         </div>
@@ -62,6 +130,124 @@
             if (seconds > 0 || parts.length === 0) parts.push(seconds + 's');
 
             return parts.join(' ');
+        }
+
+        // Open Add Sub Kegiatan Modal (Kegiatan Mandiri dengan Timer Lengkap)
+        window.openAddSubKegiatanModal = function (parentId, parentTitle, routePrefix) {
+            var prefix = routePrefix || 'rencana-kerja';
+            var parentIdEl = document.getElementById('sub_modal_parent_id');
+            var parentTitleEl = document.getElementById('sub_modal_parent_title');
+            var routePrefixEl = document.getElementById('sub_modal_route_prefix');
+            var fullLinkEl = document.getElementById('sub_modal_full_form_link');
+            var uraianEl = document.getElementById('sub_modal_uraian');
+            var estTglEl = document.getElementById('sub_modal_est_tgl');
+            var estJamEl = document.getElementById('sub_modal_est_jam');
+            var startNowEl = document.getElementById('sub_modal_start_now');
+
+            if (parentIdEl) parentIdEl.value = parentId;
+            if (parentTitleEl) parentTitleEl.textContent = parentTitle || ('Kegiatan Utama #' + parentId);
+            if (routePrefixEl) routePrefixEl.value = prefix;
+            if (fullLinkEl) fullLinkEl.setAttribute('href', '/' + prefix + '/create?parent_id=' + parentId);
+            if (uraianEl) uraianEl.value = '';
+            if (estTglEl) estTglEl.value = '';
+            if (estJamEl) estJamEl.value = '';
+            if (startNowEl) startNowEl.checked = false;
+
+            var modalEl = document.getElementById('modalAddSubKegiatan');
+            if (modalEl) {
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        };
+
+        // Form Submit Handler for Sub Kegiatan
+        var formAddSub = document.getElementById('formAddSubKegiatan');
+        if (formAddSub) {
+            formAddSub.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var prefix = document.getElementById('sub_modal_route_prefix') ? document.getElementById('sub_modal_route_prefix').value : 'rencana-kerja';
+                var url = '/' + prefix;
+                var formData = new FormData(formAddSub);
+                var btnSubmit = formAddSub.querySelector('button[type="submit"]');
+
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan Sub Kegiatan';
+                    }
+
+                    if (data.success) {
+                        var modalEl = document.getElementById('modalAddSubKegiatan');
+                        var modal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+                        if (modal) modal.hide();
+                        formAddSub.reset();
+
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: data.message || 'Sub kegiatan berhasil disimpan!',
+                                showConfirmButton: false,
+                                timer: 3500,
+                                timerProgressBar: true
+                            });
+                        }
+
+                        // Reload appropriate DataTable
+                        if (window.LaravelDataTables && window.LaravelDataTables['rencanakerja-table']) {
+                            window.LaravelDataTables['rencanakerja-table'].ajax.reload(null, false);
+                        } else if (typeof $ !== 'undefined' && $.fn && $.fn.DataTable) {
+                            if ($.fn.DataTable.isDataTable('#rencanakerja-table')) {
+                                $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                            } else if ($.fn.DataTable.isDataTable('#kegiatan-table')) {
+                                $('#kegiatan-table').DataTable().ajax.reload(null, false);
+                            } else if ($.fn.DataTable.isDataTable('#kepanitiaan-table')) {
+                                $('#kepanitiaan-table').DataTable().ajax.reload(null, false);
+                            } else if ($.fn.DataTable.isDataTable('#insidentil-table')) {
+                                $('#insidentil-table').DataTable().ajax.reload(null, false);
+                            } else {
+                                window.location.reload();
+                            }
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        var msg = data.message || 'Terjadi kesalahan saat menyimpan sub kegiatan.';
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+                        } else {
+                            alert(msg);
+                        }
+                    }
+                })
+                .catch(err => {
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Simpan Sub Kegiatan';
+                    }
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: 'Terjadi kesalahan jaringan atau server.' });
+                    } else {
+                        alert('Terjadi kesalahan jaringan atau server.');
+                    }
+                });
+            });
         }
 
         // Open Add Milestone Modal

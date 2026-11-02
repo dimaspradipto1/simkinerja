@@ -24,19 +24,20 @@ class MilestoneHelper
         // Header Row: Title, Progress & Total Waktu
         $html .= '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-1 border-bottom">';
         $html .= '<div class="d-flex align-items-center gap-2">';
-        $html .= '<span class="fw-bold text-dark small"><i class="bi bi-diagram-3-fill text-success me-1"></i>Timeline Milestone Kinerja</span>';
+        $html .= '<span class="fw-bold text-dark small"><i class="bi bi-diagram-3-fill text-success me-1"></i>Timeline Sub Kegiatan / Milestone</span>';
         
         if ($totalMilestones > 0) {
             $percent = round(($selesaiMilestones / $totalMilestones) * 100);
-            $html .= '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.74rem;"><i class="bi bi-check2-circle me-1"></i>' . $selesaiMilestones . '/' . $totalMilestones . ' Point Selesai (' . $percent . '%)</span>';
+            $html .= '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.74rem;"><i class="bi bi-check2-circle me-1"></i>' . $selesaiMilestones . '/' . $totalMilestones . ' Selesai (' . $percent . '%)</span>';
         } else {
-            $html .= '<span class="badge bg-light text-muted border" style="font-size: 0.72rem;">Belum ada point</span>';
+            $html .= '<span class="badge bg-light text-muted border" style="font-size: 0.72rem;">Belum ada sub kegiatan</span>';
         }
         
         $html .= '</div>';
 
-        // Overall Total Duration Badge
+        // Overall Total Duration Badge & Add Button
         $html .= '<div class="d-flex align-items-center gap-2">';
+        $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-1 px-2.5 shadow-2xs" onclick="window.openAddMilestoneModal(' . $milestonableId . ', \'' . addslashes($milestonableType) . '\')" style="font-size: 0.76rem; border-radius: 6px;" title="Tambah Sub Kegiatan / Tahapan Baru"><i class="bi bi-plus-circle me-1"></i>+ Sub Kegiatan</button>';
         $html .= '<span class="badge bg-dark text-white px-2 py-1 overall-milestone-timer" style="font-size: 0.74rem;" data-total-detik="' . $totalDetikAll . '"><i class="bi bi-stopwatch-fill me-1 text-warning"></i>Total Waktu: <span class="overall-timer-text">' . self::formatDuration($totalDetikAll) . '</span></span>';
         $html .= '</div>';
         $html .= '</div>'; // end header row
@@ -104,8 +105,11 @@ class MilestoneHelper
                 // Card Header: Step Index & Status Badge
                 $html .= '<div>';
                 $html .= '<div class="d-flex align-items-center justify-content-between mb-1 flex-wrap gap-1">';
+                $html .= '<div class="d-flex align-items-center gap-1">';
                 $html .= '<span class="badge bg-dark text-white fw-bold" style="font-size: 0.68rem;">Point #' . $idx . '</span>';
                 $html .= '<span class="badge milestone-status-badge px-1 py-0 fw-bold" style="font-size: 0.68rem; ' . $badgeStyle . '">' . e($statusBadgeText) . '</span>';
+                $html .= '</div>';
+                $html .= '<button type="button" class="btn btn-link text-danger p-0 ms-auto" onclick="window.deleteMilestone(' . $m->id . ')" title="Hapus Sub Kegiatan ini" style="font-size: 0.75rem; text-decoration: none;"><i class="bi bi-trash"></i></button>';
                 $html .= '</div>';
 
                 // Milestone Name
@@ -204,10 +208,11 @@ class MilestoneHelper
             $html .= '</div>'; // end horizontal timeline
             $html .= '</div>'; // end wrapper
         } else {
-            $html .= '<div class="text-center py-2 bg-light rounded-2 border border-dashed my-1">';
-            $html .= '<i class="bi bi-diagram-3 text-success fs-4 d-block mb-1"></i>';
-            $html .= '<div class="fw-semibold text-dark small mb-1">Belum Ada Point Milestone</div>';
-            $html .= '<div class="text-muted" style="font-size: 0.74rem;">Klik <strong>+ Tambah Point</strong> untuk membuat alur kerja.</div>';
+            $html .= '<div class="text-center py-3 bg-light rounded-2 border border-dashed my-1">';
+            $html .= '<i class="bi bi-diagram-3 text-success fs-3 d-block mb-1"></i>';
+            $html .= '<div class="fw-semibold text-dark small mb-1">Belum Ada Sub Kegiatan</div>';
+            $html .= '<div class="text-muted mb-2" style="font-size: 0.74rem;">Pecah kegiatan ini menjadi beberapa sub kegiatan / tahapan agar lebih terorganisir.</div>';
+            $html .= '<button type="button" class="btn btn-sm btn-success text-white fw-bold py-1 px-3 shadow-2xs" onclick="window.openAddMilestoneModal(' . $milestonableId . ', \'' . addslashes($milestonableType) . '\')" style="font-size: 0.78rem; border-radius: 6px;"><i class="bi bi-plus-circle me-1"></i>+ Tambah Sub Kegiatan</button>';
             $html .= '</div>';
         }
 

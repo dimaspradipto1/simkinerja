@@ -28,7 +28,7 @@ class RencanaKerjaController extends Controller
         $authUser = Auth::user();
 
         if ($request->ajax()) {
-            $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
+            $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones', 'parent', 'subKegiatans']);
 
             if ($request->filled('jabatan') && $request->jabatan !== '__own__') {
                 if ($request->jabatan === '__all__' || $request->jabatan === 'all') {
@@ -54,7 +54,7 @@ class RencanaKerjaController extends Controller
                 }
             }
 
-            $query->latest();
+            $query->orderByRaw('COALESCE(parent_id, id) DESC, (CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END) ASC, id ASC');
 
             $totalCount = (clone $query)->count();
             $selesaiCount = (clone $query)->where('status', 'Selesai')->count();
@@ -103,6 +103,12 @@ class RencanaKerjaController extends Controller
                           })
                           ->orWhereHas('taggedUsers', function ($tu) use ($keyword) {
                               $tu->where('name', 'like', "%{$keyword}%");
+                          })
+                          ->orWhereHas('parent', function ($p) use ($keyword) {
+                              $p->where('uraian_tugas', 'like', "%{$keyword}%");
+                          })
+                          ->orWhereHas('subKegiatans', function ($sq) use ($keyword) {
+                              $sq->where('uraian_tugas', 'like', "%{$keyword}%");
                           });
                     });
                 })
@@ -113,10 +119,27 @@ class RencanaKerjaController extends Controller
                     $collapseId = 'collapseTask_' . $row->id;
                     $actionBtns = $this->renderActionButtons($row, $authUser, 'rencana-kerja', 'deleteRencanaKerja', $collapseId);
 
-                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">';
+                    $isSub = !empty($row->parent_id);
+                    $parentTitle = ($isSub && $row->parent) ? e($row->parent->uraian_tugas) : '';
+
+                    $borderStyle = $isSub ? 'border-left: 4px solid #198754 !important;' : '';
+                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible; ' . $borderStyle . '">';
+                    
+                    if ($isSub) {
+                        $html .= '  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">';
+                        $html .= '      <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;"><i class="bi bi-arrow-return-right"></i> Sub Kegiatan</span>';
+                        $html .= '      <span class="small text-secondary fw-semibold">Induk: <strong class="text-dark text-break">' . $parentTitle . '</strong></span>';
+                        $html .= '  </div>';
+                    } elseif ($row->subKegiatans && $row->subKegiatans->count() > 0) {
+                        $html .= '  <div class="d-flex align-items-center gap-2 mb-1">';
+                        $html .= '      <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;"><i class="bi bi-diagram-3-fill"></i> ' . $row->subKegiatans->count() . ' Sub Kegiatan</span>';
+                        $html .= '  </div>';
+                    }
+
+                    $iconClass = $isSub ? 'bi-check2-square text-success' : 'bi-card-checklist text-primary';
                     $html .= '  <div class="d-flex align-items-center justify-content-between gap-2 pb-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
                     $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.95rem;">';
-                    $html .= '          <i class="bi bi-card-checklist text-success fs-5 flex-shrink-0"></i>';
+                    $html .= '          <i class="bi ' . $iconClass . ' fs-5 flex-shrink-0"></i>';
                     $html .= '          <span class="text-break">' . e($row->uraian_tugas) . '</span>';
                     $html .= '      </div>';
                     $html .= '      <i class="bi bi-chevron-down text-secondary fs-6 transition-transform toggle-icon flex-shrink-0"></i>';
@@ -642,6 +665,11 @@ class RencanaKerjaController extends Controller
         if ($canEditDelete) {
             $editUrl = route($routePrefix . '.edit', $row->id);
             $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-2">';
+            if (!$row->parent_id) {
+                $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
+                $safeTitle = htmlspecialchars(addslashes($firstLineTitle), ENT_QUOTES, 'UTF-8');
+                $btn .= '<button type="button" class="btn btn-outline-success d-inline-flex align-items-center justify-content-center gap-1 shadow-2xs btn-add-sub-kegiatan" onclick="window.openAddSubKegiatanModal(' . $row->id . ', \'' . $safeTitle . '\', \'' . $routePrefix . '\')" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Tambah Sub Kegiatan untuk tugas ini"><i class="bi bi-diagram-3"></i> <span class="d-none d-md-inline">+ Sub Kegiatan</span></button>';
+            }
             $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span class="d-none d-md-inline">Tag</span></button>';
             $btn .= '<a href="' . $editUrl . '" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Edit Tugas"><i class="bi bi-pencil"></i> <span class="d-none d-md-inline">Edit</span></a>';
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.' . $deleteJsFunc . '(' . $row->id . ')" class="btn btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Hapus Tugas"><i class="bi bi-trash"></i> <span class="d-none d-md-inline">Hapus</span></button>';
@@ -661,13 +689,22 @@ class RencanaKerjaController extends Controller
      */
     public function create()
     {
+        $authUser = Auth::user();
+        $isAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
         $kategoris = Kategori::orderBy('id', 'asc')->get();
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
-        return view('pages.rencanakerja.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId', 'kategoris'));
+        $parentKegiatans = RencanaKerja::whereNull('parent_id')
+            ->when(!$isAdmin, function ($q) use ($authUser) {
+                $q->where('user_id', $authUser->id);
+            })
+            ->latest('id')
+            ->get(['id', 'uraian_tugas', 'kategori', 'user_id']);
+
+        return view('pages.rencanakerja.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId', 'kategoris', 'parentKegiatans'));
     }
 
     /**
@@ -676,12 +713,21 @@ class RencanaKerjaController extends Controller
     public function store(RencanaKerjaRequest $request)
     {
         $validated = $request->validated();
+
         $authUser = Auth::user();
         $isAdmin = $authUser && $authUser->isSystemAdmin();
         if (!$isAdmin || empty($validated['user_id'])) {
             $validated['user_id'] = Auth::id();
         }
         $validated['kategori'] = $validated['kategori'] ?? 'Rencana Kerja';
+
+        if (!empty($validated['parent_id'])) {
+            $parentObj = RencanaKerja::find($validated['parent_id']);
+            if ($parentObj) {
+                $validated['periode_akademik_id'] = $validated['periode_akademik_id'] ?? $parentObj->periode_akademik_id;
+                $validated['kategori'] = $validated['kategori'] ?? $parentObj->kategori;
+            }
+        }
 
         if ($request->hasFile('file')) {
             $validated['file'] = $request->file('file')->store('rencana_kerja', 'public');
@@ -690,6 +736,7 @@ class RencanaKerjaController extends Controller
         if ($request->has('start_now') && $request->start_now) {
             $validated['waktu_mulai'] = now()->format('H:i:s');
             $validated['tanggal_mulai'] = now()->format('Y-m-d');
+            $validated['last_started_at'] = now();
             $validated['status'] = 'Berjalan';
         } else {
             $validated['status'] = 'Belum Dimulai';
@@ -702,6 +749,14 @@ class RencanaKerjaController extends Controller
             $rencanaKerja->syncToKegiatan();
         }
         \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($rencanaKerja);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Sub Kegiatan berhasil ditambahkan.',
+                'data' => $rencanaKerja
+            ]);
+        }
 
         Alert::success('Berhasil', 'Rencana Kerja berhasil ditambahkan')
             ->toToast()
@@ -729,8 +784,15 @@ class RencanaKerjaController extends Controller
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
         $kategoris = Kategori::orderBy('id', 'asc')->get();
+        $parentKegiatans = RencanaKerja::whereNull('parent_id')
+            ->where('id', '!=', $rencanaKerja->id)
+            ->when(!$isPimpinanOrAdmin, function ($q) use ($authUser) {
+                $q->where('user_id', $authUser->id);
+            })
+            ->latest('id')
+            ->get(['id', 'uraian_tugas', 'kategori', 'user_id']);
 
-        return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users', 'periodeAkademiks', 'kategoris', 'estimasiLocked'));
+        return view('pages.rencanakerja.edit', compact('rencanaKerja', 'users', 'periodeAkademiks', 'kategoris', 'estimasiLocked', 'parentKegiatans'));
     }
 
     /**
@@ -748,6 +810,8 @@ class RencanaKerjaController extends Controller
         $isPimpinanOrAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
 
         $validated = $request->validated();
+        $subItems = $request->input('sub_kegiatan_items', []);
+        unset($validated['sub_kegiatan_items']);
 
         // Tanggal & Waktu (estimasi maupun realisasi) terkunci untuk bawahan begitu tugas
         // sudah tersimpan; hanya Pimpinan/Admin yang boleh mengubahnya langsung.
@@ -777,6 +841,23 @@ class RencanaKerjaController extends Controller
         }
 
         $rencanaKerja->update($validated);
+
+        if (!empty($subItems) && is_array($subItems)) {
+            foreach ($subItems as $item) {
+                $taskName = trim($item['uraian_tugas'] ?? '');
+                if (!empty($taskName)) {
+                    RencanaKerja::create([
+                        'parent_id' => $rencanaKerja->id,
+                        'user_id' => $rencanaKerja->user_id,
+                        'periode_akademik_id' => $rencanaKerja->periode_akademik_id,
+                        'kategori' => $rencanaKerja->kategori,
+                        'uraian_tugas' => $taskName,
+                        'url_external' => trim($item['url_external'] ?? '') ?: null,
+                        'status' => 'Belum Dimulai',
+                    ]);
+                }
+            }
+        }
 
         $rencanaKerja->taggedUsers()->sync($request->input('tagged_users', []));
         $rencanaKerja->syncToKegiatan();

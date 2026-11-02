@@ -153,6 +153,58 @@
                             </div>
                         </div>
 
+                        <!-- Pilihan Jenis Kegiatan (Utama / Sub Kegiatan) -->
+                        <div class="col-12">
+                            <div class="card border border-success-subtle bg-light-subtle rounded-3 p-3 shadow-2xs">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                        <i class="bi bi-diagram-3-fill text-success fs-5"></i>
+                                        <span>Status Kegiatan (Utama / Sub Kegiatan)</span>
+                                    </label>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle fw-normal" style="font-size: 0.72rem;">Pengelompokan</span>
+                                </div>
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-12">
+                                        <div class="d-flex flex-wrap gap-4 p-2.5 bg-white rounded border">
+                                            <div class="form-check mb-0">
+                                                <input class="form-check-input" type="radio" name="tipe_hierarki" id="tipe_utama" value="utama" {{ old('parent_id', $kegiatan->parent_id) ? '' : 'checked' }}>
+                                                <label class="form-check-label fw-semibold text-dark" for="tipe_utama" style="cursor: pointer;">
+                                                    <i class="bi bi-folder2-open text-primary me-1"></i> Kegiatan Utama (Mandiri)
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-0">
+                                                <input class="form-check-input" type="radio" name="tipe_hierarki" id="tipe_sub" value="sub" {{ old('parent_id', $kegiatan->parent_id) ? 'checked' : '' }}>
+                                                <label class="form-check-label fw-semibold text-dark" for="tipe_sub" style="cursor: pointer;">
+                                                    <i class="bi bi-arrow-return-right text-success me-1"></i> Sub Kegiatan (Bagian dari Kegiatan Induk)
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dropdown Pilih Kegiatan Induk (muncul jika radio Sub Kegiatan dipilih) -->
+                                    <div class="col-12 mt-2 {{ old('parent_id', $kegiatan->parent_id) ? '' : 'd-none' }}" id="wrapper_pilih_parent">
+                                        <label for="parent_id" class="form-label small fw-semibold text-secondary mb-1">
+                                            Pilih Kegiatan Utama / Induk <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select @error('parent_id') is-invalid @enderror" id="parent_id" name="parent_id" style="width: 100%;">
+                                            <option value="">-- Pilih Kegiatan Induk --</option>
+                                            @if(isset($parentKegiatans))
+                                                @foreach($parentKegiatans as $pk)
+                                                    <option value="{{ $pk->id }}" {{ old('parent_id', $kegiatan->parent_id) == $pk->id ? 'selected' : '' }}>
+                                                        {{ $pk->uraian_tugas }} ({{ $pk->kategori ?? 'Rencana Kerja' }})
+                                                    </option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                        @error('parent_id')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text small text-muted">Sub kegiatan ini akan terhubung ke kegiatan induk dan memiliki fitur lengkap (timer, status, estimasi) secara mandiri.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-md-12">
                             <label for="uraian_tugas" class="form-label fw-semibold">Uraian Kegiatan <span class="text-danger">*</span></label>
                             <textarea class="form-control @error('uraian_tugas') is-invalid @enderror" id="uraian_tugas" name="uraian_tugas" rows="4" placeholder="Tuliskan detail rencana kegiatan" required>{{ old('uraian_tugas', $kegiatan->uraian_tugas) }}</textarea>
@@ -160,6 +212,29 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        @if($kegiatan->subKegiatans && $kegiatan->subKegiatans->count() > 0)
+                        <div class="col-12">
+                            <div class="card border rounded-3 p-3 shadow-2xs bg-white">
+                                <label class="form-label fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                                    <i class="bi bi-diagram-3 text-success fs-5"></i>
+                                    <span>Daftar Sub Kegiatan Terdaftar ({{ $kegiatan->subKegiatans->count() }})</span>
+                                </label>
+                                <div class="d-flex flex-column gap-1.5 ms-2 ps-2 border-start border-2 border-success-subtle">
+                                    @foreach($kegiatan->subKegiatans as $sub)
+                                        <div class="d-flex align-items-center justify-content-between gap-2 p-2 bg-light rounded border small">
+                                            <div>
+                                                <i class="bi bi-arrow-return-right text-success me-1"></i>
+                                                <strong class="text-dark">{{ $sub->uraian_tugas }}</strong>
+                                                <span class="badge bg-secondary-subtle text-secondary ms-1">{{ $sub->status }}</span>
+                                            </div>
+                                            <a href="{{ route('kegiatan.edit', $sub->id) }}" class="btn btn-xs btn-sm btn-outline-secondary py-0.5 px-2" style="font-size: 0.75rem;" target="_blank"><i class="bi bi-pencil"></i> Edit Sub</a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        @endif
 
                         <div class="col-md-12">
                             <label for="tagged_users" class="form-label fw-semibold">Tag Rekan Kerja</label>
@@ -354,6 +429,28 @@
                 width: '100%'
             });
         }
+
+        if ($('#parent_id').length) {
+            $('#parent_id').select2({
+                theme: 'bootstrap-5',
+                placeholder: "-- Pilih Kegiatan Utama / Induk --",
+                allowClear: true,
+                width: '100%'
+            });
+        }
+
+        // Toggle Hierarki (Kegiatan Utama vs Sub Kegiatan)
+        $('input[name="tipe_hierarki"]').on('change', function() {
+            if ($(this).val() === 'sub') {
+                $('#wrapper_pilih_parent').removeClass('d-none').hide().slideDown(200);
+                $('#parent_id').attr('required', true);
+            } else {
+                $('#wrapper_pilih_parent').slideUp(200, function() {
+                    $(this).addClass('d-none');
+                });
+                $('#parent_id').removeAttr('required').val('').trigger('change');
+            }
+        });
 
         function toggleJenisAbsensi() {
             var selectedKategori = $('#kategori').val();

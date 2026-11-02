@@ -409,6 +409,8 @@
         </div>
     </div>
 </div>
+
+@include('partials.milestone-scripts')
 @endsection
 
 @push('scripts')

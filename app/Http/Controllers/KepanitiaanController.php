@@ -30,7 +30,7 @@ class KepanitiaanController extends Controller
         Kepanitiaan::autoStopExpiredTasks();
 
         if ($request->ajax()) {
-            $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
+            $query = Kepanitiaan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones', 'parent', 'subKegiatans']);
 
             if ($request->filled('jabatan') && $request->jabatan !== '__own__') {
                 if ($request->jabatan === '__all__' || $request->jabatan === 'all') {
@@ -60,7 +60,7 @@ class KepanitiaanController extends Controller
                 $query->where('periode_akademik_id', $request->periode_akademik_id);
             }
 
-            $query->latest();
+            $query->orderByRaw('COALESCE(parent_id, id) DESC, (CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END) ASC, id ASC');
 
             $totalCount = (clone $query)->count();
             $selesaiCount = (clone $query)->where('status', 'Selesai')->count();
@@ -118,10 +118,27 @@ class KepanitiaanController extends Controller
                     $collapseId = 'collapseKepanitiaan_' . $row->id;
                     $actionBtns = $this->renderActionButtons($row, $authUser, 'kepanitiaan', 'deleteKepanitiaan', $collapseId);
 
-                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;">';
+                    $isSub = !empty($row->parent_id);
+                    $parentTitle = ($isSub && $row->parent) ? e($row->parent->uraian_tugas) : '';
+
+                    $borderStyle = $isSub ? 'border-left: 4px solid #198754 !important;' : '';
+                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible; ' . $borderStyle . '">';
+                    
+                    if ($isSub) {
+                        $html .= '  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">';
+                        $html .= '      <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;"><i class="bi bi-arrow-return-right"></i> Sub Kegiatan</span>';
+                        $html .= '      <span class="small text-secondary fw-semibold">Induk: <strong class="text-dark text-break">' . $parentTitle . '</strong></span>';
+                        $html .= '  </div>';
+                    } elseif ($row->subKegiatans && $row->subKegiatans->count() > 0) {
+                        $html .= '  <div class="d-flex align-items-center gap-2 mb-1">';
+                        $html .= '      <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;"><i class="bi bi-diagram-3-fill"></i> ' . $row->subKegiatans->count() . ' Sub Kegiatan</span>';
+                        $html .= '  </div>';
+                    }
+
+                    $iconClass = $isSub ? 'bi-check2-square text-success' : 'bi-card-checklist text-primary';
                     $html .= '  <div class="d-flex align-items-center justify-content-between gap-2 pb-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
                     $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.95rem;">';
-                    $html .= '          <i class="bi bi-card-checklist text-primary fs-5 flex-shrink-0"></i>';
+                    $html .= '          <i class="bi ' . $iconClass . ' fs-5 flex-shrink-0"></i>';
                     $html .= '          <span class="text-break">' . e($row->uraian_tugas) . '</span>';
                     $html .= '      </div>';
                     $html .= '      <i class="bi bi-chevron-down text-secondary fs-6 transition-transform toggle-icon flex-shrink-0"></i>';
@@ -645,6 +662,9 @@ class KepanitiaanController extends Controller
             $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
             $safeTitle = htmlspecialchars(addslashes($firstLineTitle), ENT_QUOTES, 'UTF-8');
             $btn .= '<div class="owner-actions-group d-inline-flex align-items-center gap-2">';
+            if (!$row->parent_id) {
+                $btn .= '<button type="button" class="btn btn-outline-success d-inline-flex align-items-center justify-content-center gap-1 shadow-2xs btn-add-sub-kegiatan" onclick="window.openAddSubKegiatanModal(' . $row->id . ', \'' . $safeTitle . '\', \'' . $routePrefix . '\')" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" title="Tambah Sub Kegiatan untuk tugas ini"><i class="bi bi-diagram-3"></i> <span class="d-none d-md-inline">+ Sub Kegiatan</span></button>';
+            }
             $btn .= '<button type="button" class="btn btn-outline-primary btn-manage-sesi d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" onclick="window.openManageSesiModal(' . $row->id . ', \'' . $safeTitle . '\')" title="Presensi Kepanitiaan"><i class="bi bi-calendar2-check"></i> <span class="d-none d-md-inline">Presensi</span></button>';
             $btn .= '<button type="button" class="btn btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center gap-1" style="padding: 7px 12px; font-size: 0.84rem; border-radius: 8px; min-height: 38px;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i> <span class="d-none d-md-inline">Tag</span></button>';
 
@@ -816,6 +836,13 @@ class KepanitiaanController extends Controller
             $validated['user_id'] = Auth::id();
         }
 
+        if (!empty($validated['parent_id'])) {
+            $parentObj = Kepanitiaan::find($validated['parent_id']);
+            if ($parentObj) {
+                $validated['periode_akademik_id'] = $validated['periode_akademik_id'] ?? $parentObj->periode_akademik_id;
+            }
+        }
+
         if ($request->has('jenis_absensi') || $request->filled('url_external')) {
             $jenisAbsensi = array_filter((array) $request->input('jenis_absensi', []));
             $urls = array_map(function ($slug) {
@@ -886,6 +913,14 @@ class KepanitiaanController extends Controller
             $kepanitiaan->syncToKegiatan();
         }
         \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($kepanitiaan);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Sub Kegiatan Kepanitiaan berhasil ditambahkan.',
+                'data' => $kepanitiaan
+            ]);
+        }
 
         Alert::success('Berhasil', 'Kepanitiaan berhasil ditambahkan')
             ->toToast()
