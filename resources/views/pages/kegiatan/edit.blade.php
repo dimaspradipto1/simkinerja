@@ -218,7 +218,14 @@
                                         <span>Estimasi Durasi Pengerjaan</span>
                                         <span class="badge bg-secondary-subtle text-secondary border fw-normal" style="font-size: 0.72rem;">Opsional</span>
                                     </label>
-                                    <small class="text-muted fst-italic">Boleh diisi Hari saja, Jam saja, atau keduanya.</small>
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        @if(!$estimasiLocked)
+                                            <button type="button" class="btn btn-sm btn-outline-success border-dashed py-0 px-2 rounded-pill shadow-none" id="btnHitungOtomatisDurasi" style="font-size: 0.75rem;" title="Hitung ulang otomatis berdasarkan rentang tanggal & jam di atas">
+                                                <i class="bi bi-calculator me-1"></i>Hitung Otomatis
+                                            </button>
+                                        @endif
+                                        <small class="text-muted fst-italic">Jika dikosongkan/0, akan terhitung otomatis dari tanggal & jam.</small>
+                                    </div>
                                 </div>
                                 <div class="row g-3 align-items-center">
                                     <div class="col-md-6 col-12">
@@ -408,6 +415,96 @@
             }
         });
 
+        let manualDurasiTouched = false;
+
+        $('#estimasi_durasi_hari, #estimasi_durasi_jam').on('input', function() {
+            manualDurasiTouched = true;
+        });
+
+        function autoCalculateDurasi(force = false) {
+            if ($('#estimasi_durasi_hari').prop('disabled')) return;
+
+            let tglMulai = $('#estimasi_tanggal_mulai').val();
+            let tglSelesai = $('#estimasi_tanggal_selesai').val();
+            let jamMulai = $('#estimasi_jam_mulai').val();
+            let jamSelesai = $('#estimasi_jam_selesai').val();
+
+            if (!tglMulai || !tglSelesai) return;
+
+            let curHari = $('#estimasi_durasi_hari').val();
+            let curJam = $('#estimasi_durasi_jam').val();
+            let isDurasiEmpty = (!curHari || parseInt(curHari) === 0) && (!curJam || parseInt(curJam) === 0);
+
+            if (!force && manualDurasiTouched && !isDurasiEmpty) {
+                return;
+            }
+
+            let hari = 0;
+            let jam = 0;
+
+            if (!jamMulai && !jamSelesai) {
+                let d1 = new Date(tglMulai + 'T00:00:00');
+                let d2 = new Date(tglSelesai + 'T00:00:00');
+                let diffMs = d2.getTime() - d1.getTime();
+                if (diffMs < 0) return;
+                let diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+                hari = (diffDays === 0) ? 1 : diffDays;
+                jam = 0;
+            } else {
+                let jM = jamMulai || '08:00';
+                let jS = jamSelesai || jM;
+                let d1 = new Date(tglMulai + 'T' + jM);
+                let d2 = new Date(tglSelesai + 'T' + jS);
+                let diffMs = d2.getTime() - d1.getTime();
+                if (diffMs < 0) return;
+
+                let totalMinutes = Math.round(diffMs / 60000);
+                hari = Math.floor(totalMinutes / 1440);
+                jam = Math.round((totalMinutes % 1440) / 60);
+                if (jam >= 24) {
+                    hari += 1;
+                    jam = 0;
+                }
+            }
+
+            $('#estimasi_durasi_hari').val(hari);
+            $('#estimasi_durasi_jam').val(jam);
+            manualDurasiTouched = false;
+            updateDurasiPreview();
+        }
+
+        $('#estimasi_tanggal_mulai, #estimasi_jam_mulai, #estimasi_tanggal_selesai, #estimasi_jam_selesai').on('change input', function() {
+            autoCalculateDurasi();
+        });
+
+        $('#btnHitungOtomatisDurasi').on('click', function(e) {
+            e.preventDefault();
+            autoCalculateDurasi(true);
+        });
+
+        $('#estimasi_durasi_hari, #estimasi_durasi_jam').on('change', function() {
+            let tglMulai = $('#estimasi_tanggal_mulai').val();
+            let tglSelesai = $('#estimasi_tanggal_selesai').val();
+            let h = parseInt($('#estimasi_durasi_hari').val()) || 0;
+            let j = parseInt($('#estimasi_durasi_jam').val()) || 0;
+
+            if (tglMulai && !tglSelesai && (h > 0 || j > 0)) {
+                let jamMulai = $('#estimasi_jam_mulai').val() || '08:00';
+                let d = new Date(tglMulai + 'T' + jamMulai);
+                d.setDate(d.getDate() + h);
+                d.setHours(d.getHours() + j);
+                let yyyy = d.getFullYear();
+                let mm = String(d.getMonth() + 1).padStart(2, '0');
+                let dd = String(d.getDate()).padStart(2, '0');
+                let hh = String(d.getHours()).padStart(2, '0');
+                let min = String(d.getMinutes()).padStart(2, '0');
+                $('#estimasi_tanggal_selesai').val(`${yyyy}-${mm}-${dd}`);
+                if (!$('#estimasi_jam_selesai').val()) {
+                    $('#estimasi_jam_selesai').val(`${hh}:${min}`);
+                }
+            }
+        });
+
         function updateDurasiPreview() {
             let h = parseInt($('#estimasi_durasi_hari').val()) || 0;
             let j = parseInt($('#estimasi_durasi_jam').val()) || 0;
@@ -429,6 +526,7 @@
         }
 
         $('#estimasi_durasi_hari, #estimasi_durasi_jam').on('input change', updateDurasiPreview);
+        autoCalculateDurasi();
         updateDurasiPreview();
     });
 </script>

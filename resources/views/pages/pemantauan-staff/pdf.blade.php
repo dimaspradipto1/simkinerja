@@ -145,7 +145,7 @@
                 <strong>Pimpinan Universitas / Unit Kerja</strong>
                 <br><br><br><br>
                 <u><strong>{{ auth()->user()->name }}</strong></u><br>
-                <span>NIDN/NIP: {{ auth()->user()->nidn ?: '-' }}</span>
+                <span>NUPTK/NUP: {{ auth()->user()->nidn ?: '-' }}</span>
             </td>
         </tr>
     </table>

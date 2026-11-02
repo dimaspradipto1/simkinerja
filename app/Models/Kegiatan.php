@@ -76,6 +76,58 @@ class Kegiatan extends Model
     {
         parent::boot();
 
+        static::saving(function ($kegiatan) {
+            // Auto-calculate estimasi durasi jika tidak diisi tapi rentang tanggal & jam tersedia
+            $hasDurasi = (!is_null($kegiatan->estimasi_durasi_hari) && (int)$kegiatan->estimasi_durasi_hari > 0) ||
+                         (!is_null($kegiatan->estimasi_durasi_jam) && (int)$kegiatan->estimasi_durasi_jam > 0);
+
+            if (!$hasDurasi && !empty($kegiatan->estimasi_tanggal_mulai) && !empty($kegiatan->estimasi_tanggal_selesai)) {
+                try {
+                    $jamMulai = $kegiatan->estimasi_jam_mulai;
+                    $jamSelesai = $kegiatan->estimasi_jam_selesai;
+
+                    if (empty($jamMulai) && empty($jamSelesai)) {
+                        $sDate = \Carbon\Carbon::parse($kegiatan->estimasi_tanggal_mulai)->startOfDay();
+                        $eDate = \Carbon\Carbon::parse($kegiatan->estimasi_tanggal_selesai)->startOfDay();
+                        if ($eDate->gte($sDate)) {
+                            $diffDays = (int) $sDate->diffInDays($eDate);
+                            $kegiatan->estimasi_durasi_hari = ($diffDays === 0) ? 1 : $diffDays;
+                            $kegiatan->estimasi_durasi_jam = 0;
+                        }
+                    } else {
+                        $sStr = $kegiatan->estimasi_tanggal_mulai . ' ' . ($jamMulai ?: '08:00:00');
+                        $eStr = $kegiatan->estimasi_tanggal_selesai . ' ' . ($jamSelesai ?: ($jamMulai ?: '08:00:00'));
+                        $start = \Carbon\Carbon::parse($sStr);
+                        $end = \Carbon\Carbon::parse($eStr);
+                        if ($end->gte($start)) {
+                            $totalMinutes = $start->diffInMinutes($end);
+                            $hari = intdiv($totalMinutes, 1440);
+                            $jam = (int) round(($totalMinutes % 1440) / 60);
+                            if ($jam >= 24) {
+                                $hari += 1;
+                                $jam = 0;
+                            }
+                            $kegiatan->estimasi_durasi_hari = $hari;
+                            $kegiatan->estimasi_durasi_jam = $jam;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Ignore parsing error
+                }
+            } elseif ($hasDurasi && !empty($kegiatan->estimasi_tanggal_mulai) && empty($kegiatan->estimasi_tanggal_selesai)) {
+                try {
+                    $start = \Carbon\Carbon::parse($kegiatan->estimasi_tanggal_mulai . ' ' . ($kegiatan->estimasi_jam_mulai ?: '08:00:00'));
+                    $end = (clone $start)->addDays((int)($kegiatan->estimasi_durasi_hari ?? 0))->addHours((int)($kegiatan->estimasi_durasi_jam ?? 0));
+                    $kegiatan->estimasi_tanggal_selesai = $end->format('Y-m-d');
+                    if (empty($kegiatan->estimasi_jam_selesai)) {
+                        $kegiatan->estimasi_jam_selesai = $end->format('H:i:s');
+                    }
+                } catch (\Throwable $e) {
+                    // Ignore
+                }
+            }
+        });
+
         static::saved(function ($kegiatan) {
             if (in_array($kegiatan->kategori, ['Rencana Kerja', 'Kepanitiaan', 'Insidentil'], true)) {
                 \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($kegiatan);

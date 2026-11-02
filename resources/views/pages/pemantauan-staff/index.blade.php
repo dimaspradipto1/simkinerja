@@ -131,18 +131,18 @@
                 <div class="row g-2.5 align-items-end">
 
                     <!-- Search Box -->
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-md-6">
                         <label class="form-label small fw-bold text-secondary mb-1">
                             <i class="bi bi-search me-1"></i>Cari Anggota Tim / Staf
                         </label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama, jabatan, NIDN..." value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama, jabatan, NUPTK/NUP..." value="{{ request('search') }}">
                         </div>
                     </div>
 
                     <!-- Periode Bulan & Tahun Navigator -->
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-md-6">
                         <label class="form-label small fw-bold text-secondary mb-1">
                             <i class="bi bi-calendar-event me-1"></i>Periode Bulan
                         </label>
@@ -171,42 +171,9 @@
                         </div>
                     </div>
 
-                    <!-- Filter Atasan / Pimpinan OTK -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label small fw-bold text-secondary mb-1">
-                            <i class="bi bi-diagram-2 me-1"></i>Pimpinan / Atasan OTK
-                        </label>
-                        <select name="supervisor_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="all" {{ empty($selectedSupervisorId) ? 'selected' : '' }}>-- Seluruh Personel OTK UIS --</option>
-                            @foreach($supervisorsList as $sup)
-                                <option value="{{ $sup->id }}" {{ $selectedSupervisorId == $sup->id ? 'selected' : '' }}>
-                                    {{ $sup->name }} &mdash; {{ $sup->jabatan ?: $sup->unit }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Filter Bidang Koordinasi OTK -->
-                    <div class="col-lg-3 col-md-6">
-                        <label class="form-label small fw-bold text-secondary mb-1">
-                            <i class="bi bi-building me-1"></i>Bidang Koordinasi OTK
-                        </label>
-                        <select name="bidang_otk" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">-- Semua Bidang OTK --</option>
-                            <option value="pimpinan_uis" {{ $selectedBidangOtk == 'pimpinan_uis' ? 'selected' : '' }}>Pimpinan Universitas (Rektor &amp; Warek)</option>
-                            <option value="warek1" {{ $selectedBidangOtk == 'warek1' ? 'selected' : '' }}>Wakil Rektor I (Akademik &amp; BAAK)</option>
-                            <option value="warek2" {{ $selectedBidangOtk == 'warek2' ? 'selected' : '' }}>Wakil Rektor II (Umum, Keuangan, SDM &amp; Sarpras)</option>
-                            <option value="warek3" {{ $selectedBidangOtk == 'warek3' ? 'selected' : '' }}>Wakil Rektor III (Kemahasiswaan &amp; Kerjasama)</option>
-                            <option value="feb" {{ $selectedBidangOtk == 'feb' ? 'selected' : '' }}>Fakultas Ekonomi dan Bisnis (FEB)</option>
-                            <option value="fst" {{ $selectedBidangOtk == 'fst' ? 'selected' : '' }}>Fakultas Sains dan Teknologi (FST)</option>
-                            <option value="fikes" {{ $selectedBidangOtk == 'fikes' ? 'selected' : '' }}>Fakultas Ilmu Kesehatan (FIKES)</option>
-                            <option value="lembaga" {{ $selectedBidangOtk == 'lembaga' ? 'selected' : '' }}>Lembaga &amp; Perpustakaan (LPPM, LPMI, Perpustakaan)</option>
-                        </select>
-                    </div>
-
                 </div>
 
-                @if(request()->hasAny(['search', 'unit', 'supervisor_id', 'bidang_otk', 'status_pencatatan']))
+                @if(request()->hasAny(['search', 'unit', 'status_pencatatan']))
                     <div class="mt-2.5 pt-2 border-top d-flex align-items-center justify-content-between">
                         <span class="small text-muted">
                             <i class="bi bi-info-circle me-1"></i>Menampilkan hasil filter khusus
@@ -287,8 +254,7 @@
                                             {{ $pegawai->jabatan ?: 'Staf' }}
                                         </div>
                                         <div class="text-muted text-truncate" style="font-size: 0.70rem;">
-                                            {{ $pegawai->unit ?: 'Universitas Ibnu Sina' }}
-                                            @if($pegawai->nidn) &bull; NIDN: {{ $pegawai->nidn }} @endif
+                                            {{ $pegawai->unit ?: 'Universitas Ibnu Sina' }} &bull; NUPTK/NUP: {{ $pegawai->nidn ?: '-' }}
                                         </div>
                                     </div>
                                 </div>
@@ -340,41 +306,18 @@
 
                             <!-- Aksi -->
                             <td class="text-center">
-                                <div class="d-inline-flex align-items-center gap-2">
-                                    <!-- Tombol Pantau -->
-                                    <button type="button" 
-                                            class="btn btn-sm btn-dark d-inline-flex align-items-center gap-1 btn-pantau px-2.5 py-1.5 rounded-2 shadow-xs" 
-                                            style="font-size: 0.78rem; background-color: #15432D; border-color: #15432D;"
-                                            data-id="{{ $pegawai->id }}"
-                                            data-name="{{ $pegawai->name }}"
-                                            data-bulan="{{ $bulan }}"
-                                            data-tahun="{{ $tahun }}"
-                                            title="Pantau rincian kegiatan kinerja pegawai ini">
-                                        <i class="bi bi-eye"></i>
-                                        <span>Pantau</span>
-                                    </button>
-
-                                    <!-- Tombol WhatsApp -->
-                                    @if(!empty($pegawai->nomor_wa))
-                                        @php
-                                            $cleanWa = preg_replace('/[^0-9]/', '', $pegawai->nomor_wa);
-                                            if (str_starts_with($cleanWa, '0')) {
-                                                $cleanWa = '62' . substr($cleanWa, 1);
-                                            }
-                                            $waMsg = urlencode("Halo {$pegawai->name}, saya melihat catatan pemantauan kinerja Anda untuk periode {$namaBulanIndonesia} {$tahun}.");
-                                        @endphp
-                                        <a href="https://wa.me/{{ $cleanWa }}?text={{ $waMsg }}" 
-                                           target="_blank" 
-                                           class="btn btn-sm btn-outline-success px-2 py-1.5 rounded-2 shadow-xs" 
-                                           title="Kirim pesan WhatsApp ke {{ $pegawai->name }}">
-                                            <i class="bi bi-whatsapp"></i>
-                                        </a>
-                                    @else
-                                        <button type="button" class="btn btn-sm btn-light text-muted px-2 py-1.5 rounded-2" disabled title="Nomor WhatsApp belum didaftarkan">
-                                            <i class="bi bi-chat-dots"></i>
-                                        </button>
-                                    @endif
-                                </div>
+                                <!-- Tombol Pantau -->
+                                <button type="button" 
+                                        class="btn btn-sm btn-dark d-inline-flex align-items-center gap-1 btn-pantau px-3 py-1.5 rounded-2 shadow-xs" 
+                                        style="font-size: 0.78rem; background-color: #15432D; border-color: #15432D;"
+                                        data-id="{{ $pegawai->id }}"
+                                        data-name="{{ $pegawai->name }}"
+                                        data-bulan="{{ $bulan }}"
+                                        data-tahun="{{ $tahun }}"
+                                        title="Pantau rincian kegiatan kinerja pegawai ini">
+                                    <i class="bi bi-eye"></i>
+                                    <span>Pantau</span>
+                                </button>
                             </td>
                         </tr>
                     @empty
