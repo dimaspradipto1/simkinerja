@@ -67,7 +67,12 @@ class KegiatanController extends Controller
                 $query->where('periode_akademik_id', $request->periode_akademik_id);
             }
 
-            $query->orderByRaw('COALESCE(parent_id, id) DESC, (CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END) ASC, id ASC');
+            $hasParentIdCol = \Illuminate\Support\Facades\Schema::hasColumn('kegiatans', 'parent_id');
+            if ($hasParentIdCol) {
+                $query->orderByRaw('COALESCE(parent_id, id) DESC, (CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END) ASC, id ASC');
+            } else {
+                $query->orderBy('id', 'desc');
+            }
 
             $totalCount = (clone $query)->count();
             $selesaiCount = (clone $query)->where('status', 'Selesai')->count();
@@ -91,8 +96,8 @@ class KegiatanController extends Controller
                     }
                     return '';
                 })
-                ->filterColumn('task_details', function ($query, $keyword) {
-                    $query->where(function ($q) use ($keyword) {
+                ->filterColumn('task_details', function ($query, $keyword) use ($hasParentIdCol) {
+                    $query->where(function ($q) use ($keyword, $hasParentIdCol) {
                         $q->where('uraian_tugas', 'like', "%{$keyword}%")
                           ->orWhereHas('user', function ($u) use ($keyword) {
                               $u->where('name', 'like', "%{$keyword}%")
@@ -100,22 +105,24 @@ class KegiatanController extends Controller
                           })
                           ->orWhereHas('taggedUsers', function ($tu) use ($keyword) {
                               $tu->where('name', 'like', "%{$keyword}%");
-                          })
-                          ->orWhereHas('parent', function ($p) use ($keyword) {
-                              $p->where('uraian_tugas', 'like', "%{$keyword}%");
-                          })
-                          ->orWhereHas('subKegiatans', function ($sq) use ($keyword) {
-                              $sq->where('uraian_tugas', 'like', "%{$keyword}%");
                           });
+                        if ($hasParentIdCol) {
+                            $q->orWhereHas('parent', function ($p) use ($keyword) {
+                                $p->where('uraian_tugas', 'like', "%{$keyword}%");
+                            })
+                            ->orWhereHas('subKegiatans', function ($sq) use ($keyword) {
+                                $sq->where('uraian_tugas', 'like', "%{$keyword}%");
+                            });
+                        }
                     });
                 })
-                ->addColumn('task_details', function ($row) use ($authUser) {
+                ->addColumn('task_details', function ($row) use ($authUser, $hasParentIdCol) {
                     $html = '<div class="d-flex flex-column gap-2 py-1 w-100" style="max-width: 100%; box-sizing: border-box;">';
                     
                     // 1. Task Title & Action Buttons Bar
                     $actionBtns = $this->renderActionButtons($row, $authUser, 'kegiatan', 'deleteKegiatan');
 
-                    $isSub = !empty($row->parent_id);
+                    $isSub = $hasParentIdCol && !empty($row->parent_id);
                     $parentTitle = ($isSub && $row->parent) ? e($row->parent->uraian_tugas) : '';
 
                     $borderStyle = $isSub ? 'border-left: 4px solid #198754 !important;' : '';
@@ -126,7 +133,7 @@ class KegiatanController extends Controller
                         $html .= '      <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;"><i class="bi bi-arrow-return-right"></i> Sub Kegiatan</span>';
                         $html .= '      <span class="small text-secondary fw-semibold">Induk: <strong class="text-dark text-break">' . $parentTitle . '</strong></span>';
                         $html .= '  </div>';
-                    } elseif ($row->subKegiatans && $row->subKegiatans->count() > 0) {
+                    } elseif ($hasParentIdCol && $row->subKegiatans && $row->subKegiatans->count() > 0) {
                         $html .= '  <div class="d-flex align-items-center gap-2 mb-1">';
                         $html .= '      <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;"><i class="bi bi-diagram-3-fill"></i> ' . $row->subKegiatans->count() . ' Sub Kegiatan</span>';
                         $html .= '  </div>';
@@ -529,15 +536,8 @@ class KegiatanController extends Controller
             $pendingRequests = $pendingRequestsQuery->with(['user', 'periodeAkademik'])->latest('estimasi_unlock_requested_at')->get();
         }
         $absensiSessions = \App\Models\AbsensiSetting::getAllGrouped();
-        $isAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
-        $parentKegiatans = Kegiatan::whereNull('parent_id')
-            ->when(!$isAdmin, function ($q) use ($authUser) {
-                $q->where('user_id', $authUser->id);
-            })
-            ->latest('id')
-            ->get(['id', 'uraian_tugas', 'kategori', 'user_id']);
 
-        return view('pages.kegiatan.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId', 'kategoris', 'pendingRequests', 'absensiSessions', 'parentKegiatans'));
+        return view('pages.kegiatan.create', compact('users', 'periodeAkademiks', 'defaultPeriodeId', 'kategoris', 'pendingRequests', 'absensiSessions'));
     }
 
     /**
@@ -554,13 +554,17 @@ class KegiatanController extends Controller
         }
         $kategori = $validated['kategori'] ?? 'Rencana Kerja';
 
-        if (!empty($validated['parent_id'])) {
-            $parentObj = Kegiatan::find($validated['parent_id']);
-            if ($parentObj) {
-                $validated['periode_akademik_id'] = $validated['periode_akademik_id'] ?? $parentObj->periode_akademik_id;
-                $validated['kategori'] = $validated['kategori'] ?? $parentObj->kategori;
-                $kategori = $validated['kategori'];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('kegiatans', 'parent_id')) {
+            if (!empty($validated['parent_id'])) {
+                $parentObj = Kegiatan::find($validated['parent_id']);
+                if ($parentObj) {
+                    $validated['periode_akademik_id'] = $validated['periode_akademik_id'] ?? $parentObj->periode_akademik_id;
+                    $validated['kategori'] = $validated['kategori'] ?? $parentObj->kategori;
+                    $kategori = $validated['kategori'];
+                }
             }
+        } else {
+            unset($validated['parent_id']);
         }
 
         if ($request->filled('jenis_absensi') && empty($validated['url_external'])) {
@@ -696,15 +700,8 @@ class KegiatanController extends Controller
         $users = User::orderBy('name')->get();
         $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
         $kategoris = Kategori::orderBy('id', 'asc')->get();
-        $parentKegiatans = Kegiatan::whereNull('parent_id')
-            ->where('id', '!=', $kegiatan->id)
-            ->when(!$isPimpinanOrAdmin, function ($q) use ($authUser) {
-                $q->where('user_id', $authUser->id);
-            })
-            ->latest('id')
-            ->get(['id', 'uraian_tugas', 'kategori', 'user_id']);
 
-        return view('pages.kegiatan.edit', compact('kegiatan', 'users', 'periodeAkademiks', 'kategoris', 'estimasiLocked', 'parentKegiatans'));
+        return view('pages.kegiatan.edit', compact('kegiatan', 'users', 'periodeAkademiks', 'kategoris', 'estimasiLocked'));
     }
 
     /**
@@ -722,6 +719,9 @@ class KegiatanController extends Controller
         $isPimpinanOrAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
 
         $validated = $request->validated();
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('kegiatans', 'parent_id')) {
+            unset($validated['parent_id']);
+        }
         $subItems = $request->input('sub_kegiatan_items', []);
         unset($validated['sub_kegiatan_items']);
         if (!$authUser || !$authUser->isSystemAdmin()) {
