@@ -153,9 +153,7 @@
                             </div>
                         </div>
 
-                        @if($kegiatan->parent_id)
-                            <input type="hidden" name="parent_id" value="{{ $kegiatan->parent_id }}">
-                        @endif
+
 
                         <div class="col-md-12">
                             <label for="uraian_tugas" class="form-label fw-semibold">Uraian Kegiatan <span class="text-danger">*</span></label>

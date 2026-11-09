@@ -13,7 +13,6 @@ class Kegiatan extends Model
     protected $table = 'kegiatans';
 
     protected $fillable = [
-        'parent_id',
         'user_id',
         'periode_akademik_id',
         'kategori',
@@ -193,26 +192,6 @@ class Kegiatan extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function parent()
-    {
-        return $this->belongsTo(Kegiatan::class, 'parent_id');
-    }
-
-    public function subKegiatans()
-    {
-        return $this->hasMany(Kegiatan::class, 'parent_id')->orderBy('id', 'asc');
-    }
-
-    public function children()
-    {
-        return $this->subKegiatans();
-    }
-
-    public function isSubKegiatan(): bool
-    {
-        return !empty($this->parent_id);
     }
 
     public function periodeAkademik()

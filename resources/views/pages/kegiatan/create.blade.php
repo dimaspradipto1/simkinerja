@@ -199,9 +199,7 @@
                             </div>
                         </div>
 
-                        @if(request('parent_id'))
-                            <input type="hidden" name="parent_id" value="{{ request('parent_id') }}">
-                        @endif
+
 
                         <div class="col-md-12">
                             <label for="uraian_tugas" class="form-label fw-semibold">Uraian Kegiatan <span class="text-danger">*</span></label>

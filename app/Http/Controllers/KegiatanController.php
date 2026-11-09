@@ -67,12 +67,7 @@ class KegiatanController extends Controller
                 $query->where('periode_akademik_id', $request->periode_akademik_id);
             }
 
-            $hasParentIdCol = \Illuminate\Support\Facades\Schema::hasColumn('kegiatans', 'parent_id');
-            if ($hasParentIdCol) {
-                $query->orderByRaw('COALESCE(parent_id, id) DESC, (CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END) ASC, id ASC');
-            } else {
-                $query->orderBy('id', 'desc');
-            }
+            $query->orderBy('id', 'desc');
 
             $totalCount = (clone $query)->count();
             $selesaiCount = (clone $query)->where('status', 'Selesai')->count();
@@ -96,8 +91,8 @@ class KegiatanController extends Controller
                     }
                     return '';
                 })
-                ->filterColumn('task_details', function ($query, $keyword) use ($hasParentIdCol) {
-                    $query->where(function ($q) use ($keyword, $hasParentIdCol) {
+                ->filterColumn('task_details', function ($query, $keyword) {
+                    $query->where(function ($q) use ($keyword) {
                         $q->where('uraian_tugas', 'like', "%{$keyword}%")
                           ->orWhereHas('user', function ($u) use ($keyword) {
                               $u->where('name', 'like', "%{$keyword}%")
@@ -106,42 +101,17 @@ class KegiatanController extends Controller
                           ->orWhereHas('taggedUsers', function ($tu) use ($keyword) {
                               $tu->where('name', 'like', "%{$keyword}%");
                           });
-                        if ($hasParentIdCol) {
-                            $q->orWhereHas('parent', function ($p) use ($keyword) {
-                                $p->where('uraian_tugas', 'like', "%{$keyword}%");
-                            })
-                            ->orWhereHas('subKegiatans', function ($sq) use ($keyword) {
-                                $sq->where('uraian_tugas', 'like', "%{$keyword}%");
-                            });
-                        }
                     });
                 })
-                ->addColumn('task_details', function ($row) use ($authUser, $hasParentIdCol) {
+                ->addColumn('task_details', function ($row) use ($authUser) {
                     $html = '<div class="d-flex flex-column gap-2 py-1 w-100" style="max-width: 100%; box-sizing: border-box;">';
                     
                     // 1. Task Title & Action Buttons Bar
                     $actionBtns = $this->renderActionButtons($row, $authUser, 'kegiatan', 'deleteKegiatan');
 
-                    $isSub = $hasParentIdCol && !empty($row->parent_id);
-                    $parentTitle = ($isSub && $row->parent) ? e($row->parent->uraian_tugas) : '';
-
-                    $borderStyle = $isSub ? 'border-left: 4px solid #198754 !important;' : '';
-                    $html .= '<div class="p-2 px-3 bg-light rounded border mb-1 shadow-2xs d-flex flex-column gap-2" style="' . $borderStyle . '">';
-                    
-                    if ($isSub) {
-                        $html .= '  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">';
-                        $html .= '      <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;"><i class="bi bi-arrow-return-right"></i> Sub Kegiatan</span>';
-                        $html .= '      <span class="small text-secondary fw-semibold">Induk: <strong class="text-dark text-break">' . $parentTitle . '</strong></span>';
-                        $html .= '  </div>';
-                    } elseif ($hasParentIdCol && $row->subKegiatans && $row->subKegiatans->count() > 0) {
-                        $html .= '  <div class="d-flex align-items-center gap-2 mb-1">';
-                        $html .= '      <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;"><i class="bi bi-diagram-3-fill"></i> ' . $row->subKegiatans->count() . ' Sub Kegiatan</span>';
-                        $html .= '  </div>';
-                    }
-
-                    $iconClass = $isSub ? 'bi-check2-square text-success' : 'bi-card-checklist text-primary';
+                    $html .= '<div class="p-2 px-3 bg-light rounded border mb-1 shadow-2xs d-flex flex-column gap-2">';
                     $html .= '  <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break" style="font-size: 0.98rem;">';
-                    $html .= '      <i class="bi ' . $iconClass . ' fs-5 flex-shrink-0"></i>';
+                    $html .= '      <i class="bi bi-card-checklist text-primary fs-5 flex-shrink-0"></i>';
                     $html .= '      <span>' . e($row->uraian_tugas) . '</span>';
                     $html .= '  </div>';
                     $html .= '  <div class="pt-2 border-top d-flex flex-wrap align-items-center justify-content-start gap-2">';
@@ -149,10 +119,6 @@ class KegiatanController extends Controller
                     $html .=        $actionBtns;
                     $html .= '  </div>';
                     $html .= '</div>';
-                    $html .= '  <div class="pt-2 border-top d-flex flex-wrap align-items-center justify-content-start gap-2">';
-                    $html .= '      <span class="text-secondary small fw-semibold me-1"><i class="bi bi-gear-fill me-1"></i>Aksi & Status:</span>';
-                    $html .=        $actionBtns;
-                    $html .= '  </div>';
                     $html .= '</div>';
 
                     // 2. Metadata Chips (Periode, Hari, Pegawai)
@@ -434,11 +400,6 @@ class KegiatanController extends Controller
 
         if ($canEditDelete) {
             $editUrl = route($routePrefix . '.edit', $row->id);
-            if (!$row->parent_id) {
-                $firstLineTitle = trim(explode("\n", (string)$row->uraian_tugas)[0]);
-                $safeTitle = htmlspecialchars(addslashes($firstLineTitle), ENT_QUOTES, 'UTF-8');
-                $btn .= '<button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center me-1 px-2" style="height: 32px;" onclick="window.openAddSubKegiatanModal(' . $row->id . ', \'' . $safeTitle . '\', \'' . $routePrefix . '\')" title="Tambah Sub Kegiatan untuk tugas ini"><i class="bi bi-diagram-3 me-1"></i><span class="d-none d-md-inline">+ Sub Kegiatan</span></button>';
-            }
             $btn .= '<button type="button" class="btn btn-sm btn-outline-info btn-quick-tag d-inline-flex align-items-center justify-content-center me-1" style="height: 32px; width: 32px; padding: 0;" data-id="' . $row->id . '" data-uraian="' . e($row->uraian_tugas) . '" data-tags="' . e(json_encode($row->taggedUsers->pluck('id')->toArray())) . '" title="Tag Rekan Kerja"><i class="bi bi-person-plus"></i></button>';
             $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center me-1" style="height: 32px; width: 32px; padding: 0;" title="Edit Tugas"><i class="bi bi-pencil"></i></a>';
             $btn .= '<button type="button" data-id="' . $row->id . '" onclick="window.' . $deleteJsFunc . '(' . $row->id . ')" class="btn btn-sm btn-outline-danger btn-delete-timer d-inline-flex align-items-center justify-content-center" style="height: 32px; width: 32px; padding: 0;" title="Hapus Tugas"><i class="bi bi-trash"></i></button>';
@@ -553,19 +514,7 @@ class KegiatanController extends Controller
             $validated['user_id'] = Auth::id();
         }
         $kategori = $validated['kategori'] ?? 'Rencana Kerja';
-
-        if (\Illuminate\Support\Facades\Schema::hasColumn('kegiatans', 'parent_id')) {
-            if (!empty($validated['parent_id'])) {
-                $parentObj = Kegiatan::find($validated['parent_id']);
-                if ($parentObj) {
-                    $validated['periode_akademik_id'] = $validated['periode_akademik_id'] ?? $parentObj->periode_akademik_id;
-                    $validated['kategori'] = $validated['kategori'] ?? $parentObj->kategori;
-                    $kategori = $validated['kategori'];
-                }
-            }
-        } else {
-            unset($validated['parent_id']);
-        }
+        unset($validated['parent_id']);
 
         if ($request->filled('jenis_absensi') && empty($validated['url_external'])) {
             $validated['url_external'] = url($request->input('jenis_absensi'));
@@ -719,11 +668,7 @@ class KegiatanController extends Controller
         $isPimpinanOrAdmin = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
 
         $validated = $request->validated();
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('kegiatans', 'parent_id')) {
-            unset($validated['parent_id']);
-        }
-        $subItems = $request->input('sub_kegiatan_items', []);
-        unset($validated['sub_kegiatan_items']);
+        unset($validated['parent_id'], $validated['sub_kegiatan_items']);
         if (!$authUser || !$authUser->isSystemAdmin()) {
             unset($validated['user_id']);
         }
@@ -751,24 +696,6 @@ class KegiatanController extends Controller
         }
 
         $kegiatan->update($validated);
-
-        if (!empty($subItems) && is_array($subItems)) {
-            foreach ($subItems as $item) {
-                $taskName = trim($item['uraian_tugas'] ?? '');
-                if (!empty($taskName)) {
-                    $targetClass = get_class($kegiatan);
-                    $targetClass::create([
-                        'parent_id' => $kegiatan->id,
-                        'user_id' => $kegiatan->user_id,
-                        'periode_akademik_id' => $kegiatan->periode_akademik_id,
-                        'kategori' => $kegiatan->kategori,
-                        'uraian_tugas' => $taskName,
-                        'url_external' => trim($item['url_external'] ?? '') ?: null,
-                        'status' => 'Belum Dimulai',
-                    ]);
-                }
-            }
-        }
 
         // Jika kegiatan bertipe Kepanitiaan dan ada input sesi presensi baru
         if (trim($kegiatan->kategori) === 'Kepanitiaan' && $request->filled('nama_sesi_presensi')) {
