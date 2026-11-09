@@ -37,7 +37,7 @@ class KegiatanController extends Controller
         $authUser = Auth::user();
 
         if ($request->ajax()) {
-            $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones', 'parent', 'subKegiatans']);
+            $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
             if ($request->filled('jabatan') && $request->jabatan !== '__own__') {
                 if ($request->jabatan === '__all__' || $request->jabatan === 'all') {

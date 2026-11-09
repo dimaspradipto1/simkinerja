@@ -18,9 +18,8 @@ class KepanitiaanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'parent_id' => ['nullable', 'exists:kegiatans,id'],
             'uraian_tugas' => ['required', 'string'],
-            'periode_akademik_id' => [$this->filled('parent_id') ? 'nullable' : 'required', 'exists:periode_akademiks,id'],
+            'periode_akademik_id' => ['required', 'exists:periode_akademiks,id'],
             'user_id' => ['nullable', 'exists:users,id'],
             'hari' => ['nullable', 'string', 'max:50'],
             'estimasi_jam_mulai' => ['nullable'],
