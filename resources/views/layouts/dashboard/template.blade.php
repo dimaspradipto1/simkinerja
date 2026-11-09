@@ -1742,14 +1742,22 @@
                             <div id="approveTaskReasonContainer"></div>
                         </div>
                         <hr class="my-3">
-                        <div class="row g-2 mb-3">
-                            <div class="col-12 col-md-4">
-                                <label for="appr_tgl" class="form-label fw-bold small text-dark"><i class="bi bi-calendar-event me-1 text-primary"></i>Tanggal Estimasi Baru <span class="text-danger">*</span></label>
-                                <input type="date" name="estimasi_tanggal_selesai" id="appr_tgl" class="form-control form-control-sm" required>
+                        <div class="row g-3 mb-3 align-items-end">
+                            <div class="col-12 col-sm-6">
+                                <label for="appr_tgl" class="form-label fw-bold small text-dark text-nowrap mb-1.5 d-flex align-items-center gap-1">
+                                    <i class="bi bi-calendar-event text-primary"></i>
+                                    <span>Tanggal Estimasi Baru</span>
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" name="estimasi_tanggal_selesai" id="appr_tgl" class="form-control" required>
                             </div>
-                            <div class="col-12 col-md-5">
-                                <label for="appr_jam" class="form-label fw-bold small text-dark"><i class="bi bi-clock me-1 text-primary"></i>Jam Estimasi <span class="text-danger">*</span></label>
-                                <input type="time" name="estimasi_jam_selesai" id="appr_jam" class="form-control form-control-sm" value="23:59" required>
+                            <div class="col-12 col-sm-6">
+                                <label for="appr_jam" class="form-label fw-bold small text-dark text-nowrap mb-1.5 d-flex align-items-center gap-1">
+                                    <i class="bi bi-clock text-primary"></i>
+                                    <span>Jam Estimasi Baru</span>
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="time" name="estimasi_jam_selesai" id="appr_jam" class="form-control" value="23:59" required>
                             </div>
                         </div>
                         <div class="mb-2">
