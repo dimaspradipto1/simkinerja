@@ -619,20 +619,24 @@
                                 </div>
 
                                 <!-- Meta Chips Row (Kategori, Jam Estimasi, Lokasi/Pegawai) -->
-                                <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 text-muted" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-1 text-secondary">
-                                        <i class="bi bi-journal-bookmark-fill text-muted"></i> {{ $task->kategori_label }}
+                                <div class="d-flex flex-wrap align-items-center gap-2 my-2.5 text-muted" style="font-size: 0.78rem;">
+                                    <span class="badge bg-light text-secondary border px-2 py-1 d-inline-flex align-items-center gap-1.5 fw-normal">
+                                        <i class="bi bi-journal-bookmark-fill text-success"></i>
+                                        <span>{{ $task->kategori_label }}</span>
                                     </span>
-                                    <span class="d-inline-flex align-items-center gap-1 text-secondary">
-                                        <i class="bi bi-clock-fill text-muted"></i> 
-                                        @if($task->estimasi_jam_mulai)
-                                            {{ date('H:i', strtotime($task->estimasi_jam_mulai)) }} - {{ $task->estimasi_jam_selesai ? date('H:i', strtotime($task->estimasi_jam_selesai)) : 'Selesai' }} WIB
-                                        @else
-                                            Fleksibel
-                                        @endif
+                                    <span class="badge bg-light text-secondary border px-2 py-1 d-inline-flex align-items-center gap-1.5 fw-normal">
+                                        <i class="bi bi-clock-fill text-primary"></i>
+                                        <span>
+                                            @if($task->estimasi_jam_mulai)
+                                                {{ date('H:i', strtotime($task->estimasi_jam_mulai)) }} - {{ $task->estimasi_jam_selesai ? date('H:i', strtotime($task->estimasi_jam_selesai)) : 'Selesai' }} WIB
+                                            @else
+                                                Fleksibel
+                                            @endif
+                                        </span>
                                     </span>
-                                    <span class="d-inline-flex align-items-center gap-1 text-secondary">
-                                        <i class="bi bi-geo-alt-fill text-muted"></i> {{ Str::limit($task->user->name ?? 'Pegawai', 16) }}
+                                    <span class="badge bg-light text-secondary border px-2 py-1 d-inline-flex align-items-center gap-1.5 fw-normal">
+                                        <i class="bi bi-person-fill text-dark"></i>
+                                        <span>{{ Str::limit($task->user->name ?? 'Pegawai', 20) }}</span>
                                     </span>
                                 </div>
 
@@ -929,10 +933,11 @@
                         <thead class="table-light">
                             <tr>
                                 <th width="4%" class="ps-3">No</th>
-                                <th width="30%">Uraian Tugas</th>
-                                <th width="26%">Pegawai / Jabatan</th>
-                                <th width="22%">Tanggal (Estimasi & Realisasi)</th>
-                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
+                                <th width="28%">Uraian Tugas</th>
+                                <th width="12%">Kategori</th>
+                                <th width="20%">Pegawai / Jabatan</th>
+                                <th width="20%">Tanggal (Estimasi & Realisasi)</th>
+                                <th width="16%" class="pe-3 text-center">Status & Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -951,6 +956,11 @@
                                                 @endif
                                             </div>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold px-2 py-1" style="font-size: 0.74rem;">
+                                            <i class="bi bi-journal-bookmark me-1"></i>Rutinitas
+                                        </span>
                                     </td>
                                     <td>
                                         @if($task->user && $task->user->jabatan)
@@ -997,7 +1007,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
+                                    <td colspan="6" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                         Belum ada data Kegiatan Rutinitas.
                                     </td>
@@ -1047,10 +1057,11 @@
                         <thead class="table-light">
                             <tr>
                                 <th width="4%" class="ps-3">No</th>
-                                <th width="30%">Nama Kepanitiaan / Uraian</th>
-                                <th width="26%">Pegawai / Jabatan</th>
-                                <th width="22%">Tanggal Pelaksanaan</th>
-                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
+                                <th width="28%">Nama Kepanitiaan / Uraian</th>
+                                <th width="12%">Kategori</th>
+                                <th width="20%">Pegawai / Jabatan</th>
+                                <th width="20%">Tanggal Pelaksanaan</th>
+                                <th width="16%" class="pe-3 text-center">Status & Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1069,6 +1080,11 @@
                                                 @endif
                                             </div>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1" style="font-size: 0.74rem;">
+                                            <i class="bi bi-people me-1"></i>Kepanitiaan
+                                        </span>
                                     </td>
                                     <td>
                                         @if($task->user)
@@ -1115,7 +1131,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
+                                    <td colspan="6" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                         Belum ada data Tugas Kepanitiaan.
                                     </td>
@@ -1165,10 +1181,11 @@
                         <thead class="table-light">
                             <tr>
                                 <th width="4%" class="ps-3">No</th>
-                                <th width="30%">Uraian Insidentil</th>
-                                <th width="26%">Pegawai / Jabatan</th>
-                                <th width="22%">Tanggal (Estimasi & Realisasi)</th>
-                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
+                                <th width="28%">Uraian Insidentil</th>
+                                <th width="12%">Kategori</th>
+                                <th width="20%">Pegawai / Jabatan</th>
+                                <th width="20%">Tanggal (Estimasi & Realisasi)</th>
+                                <th width="16%" class="pe-3 text-center">Status & Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1187,6 +1204,11 @@
                                                 @endif
                                             </div>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle fw-semibold px-2 py-1" style="font-size: 0.74rem;">
+                                            <i class="bi bi-lightning-charge me-1"></i>Insidentil
+                                        </span>
                                     </td>
                                     <td>
                                         @if($task->user)
@@ -1233,7 +1255,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
+                                    <td colspan="6" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                         Belum ada data Tugas Insidentil.
                                     </td>

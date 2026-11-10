@@ -73,23 +73,24 @@ class DashboardController extends Controller
             }
         }
 
-        if ($user && !$isCampusWide) {
-            $dashboardScope = function ($q) use ($otkUserIds) {
-                $q->where(function ($sub) use ($otkUserIds) {
-                    $sub->whereIn('user_id', $otkUserIds)
-                        ->orWhereHas('taggedUsers', function ($qu) use ($otkUserIds) {
-                            $qu->whereIn('users.id', $otkUserIds);
+        // Scope untuk tabel kegiatan dashboard: hanya menampilkan tugas milik pengguna yang sedang login
+        $personalScope = function ($q) use ($user) {
+            if ($user) {
+                $q->where(function ($sub) use ($user) {
+                    $sub->where('user_id', $user->id)
+                        ->orWhereHas('taggedUsers', function ($qu) use ($user) {
+                            $qu->where('users.id', $user->id);
                         });
                 });
-            };
-
-            $tasksQuery->where($dashboardScope);
-            $kepanitiaanQuery->where($dashboardScope);
-            $insidentilQuery->where($dashboardScope);
-
-            if (!empty($otkUserIds)) {
-                $usersQuery->whereIn('id', $otkUserIds);
             }
+        };
+
+        $tasksQuery->where($personalScope);
+        $kepanitiaanQuery->where($personalScope);
+        $insidentilQuery->where($personalScope);
+
+        if ($user && !$isCampusWide && !empty($otkUserIds)) {
+            $usersQuery->whereIn('id', $otkUserIds);
         }
 
         $isAdminOrLeader = $isCampusWide;
