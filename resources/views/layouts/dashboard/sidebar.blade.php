@@ -118,15 +118,6 @@
                              <i class="bi bi-chevron-down dropdown-chevron"></i></a>
                         <ul class="dropdown-menu" aria-labelledby="monitoringDropdown">
                             <li>
-                                <a class="dropdown-item {{ request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*') ? 'active' : '' }}" href="{{ route('rekapitulasi.index') }}">
-                                    <span>
-                                        @if($isPimpinanUnit) Rekapitulasi Kinerja Unit
-                                        @else Rekapitulasi Kinerja
-                                        @endif
-                                    </span>
-                                </a>
-                            </li>
-                            <li>
                                 <a class="dropdown-item {{ request()->routeIs('pemantauan-staff.*') ? 'active' : '' }}" href="{{ route('pemantauan-staff.index') }}">
                                     <span>Pemantauan Staff</span>
                                 </a>
@@ -134,6 +125,15 @@
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('analisis-keterlambatan.*') ? 'active' : '' }}" href="{{ route('analisis-keterlambatan.index') }}">
                                     <span>Analisis Keterlambatan</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*') ? 'active' : '' }}" href="{{ route('rekapitulasi.index') }}">
+                                    <span>
+                                        @if($isPimpinanUnit) Rekapitulasi Kinerja Unit
+                                        @else Rekapitulasi Kinerja
+                                        @endif
+                                    </span>
                                 </a>
                             </li>
                         </ul>
