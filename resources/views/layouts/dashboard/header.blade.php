@@ -74,7 +74,7 @@
                   <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
                       <li class="dropdown-header">
                           <h6>{{ Auth::check() ? Auth::user()->name : 'User' }}</h6>
-                          <span>{{ Auth::check() ? Auth::user()->roles : 'Staff' }}</span>
+                          <span>{{ Auth::check() ? (Auth::user()->jabatan ?: (Auth::user()->roles ?: 'Pegawai')) : 'Staff' }}</span>
                       </li>
                       <li>
                           <hr class="dropdown-divider">

@@ -521,7 +521,7 @@
         <div class="col-lg-8 mb-3 mb-lg-0">
             <div class="d-flex align-items-center gap-2 mb-2">
                 <span class="badge bg-white text-success fw-bold px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
-                    <i class="bi bi-shield-check me-1"></i>{{ auth()->user()->roles }}
+                    <i class="bi bi-person-badge-fill me-1"></i>{{ auth()->user()->jabatan ?: (auth()->user()->roles ?? 'Pegawai') }}
                 </span>
                 <span class="badge bg-white bg-opacity-25 text-white fw-normal px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
                     {{ auth()->user()->unit ?? 'Universitas Ibnu Sina' }}
