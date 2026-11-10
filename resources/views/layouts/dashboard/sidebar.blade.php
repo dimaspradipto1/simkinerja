@@ -38,6 +38,15 @@
                     </a>
                 </li>
 
+                <!-- ABSENSI KINERJA (Dipindahkan Sebelum Kegiatan) -->
+                @if ($u && !$isOnlyPanitia)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('absensi-kinerja.*') ? 'active' : '' }}" href="{{ route('absensi-kinerja.index') }}">
+                            <span>Absensi Kinerja</span>
+                        </a>
+                    </li>
+                @endif
+
                 <!-- 2. TUGAS & MANAJEMEN KINERJA (Kegiatan) -->
                 @if (!$isOnlyPanitia)
                     @php
@@ -224,13 +233,6 @@
                         </ul>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('absensi-kinerja.*') ? 'active' : '' }}" href="{{ route('absensi-kinerja.index') }}">
-                            
-                            <span>Absensi Kinerja</span>
-                        </a>
-                    </li>
-
                     @php
                         $isPresensiAdminActive = request()->routeIs('pengaturan-absensi.*') || 
                                                  request()->routeIs('rekapitulasi-absensi.*');
@@ -271,13 +273,6 @@
                             </ul>
                         </li>
                     @endif
-
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('absensi-kinerja.*') ? 'active' : '' }}" href="{{ route('absensi-kinerja.index') }}">
-                            
-                            <span>Absensi Kinerja</span>
-                        </a>
-                    </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('rekapitulasi-absensi.*') ? 'active' : '' }}" href="{{ route('rekapitulasi-absensi.index') }}">
