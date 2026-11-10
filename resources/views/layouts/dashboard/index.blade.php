@@ -565,7 +565,8 @@
                 @foreach($weekDays as $day)
                     <a href="{{ request()->fullUrlWithQuery(['selected_date' => $day['date']]) }}" 
                        class="edlink-day-btn {{ $day['is_selected'] ? 'active' : '' }}" 
-                       title="{{ $day['date'] }}">
+                       data-date="{{ $day['date'] }}"
+                       title="{{ $day['formatted_date'] }}">
                         <span class="edlink-day-name">{{ $day['day_name'] }}</span>
                         <div class="edlink-day-badge">
                             {{ $day['day_num'] }}
@@ -582,112 +583,116 @@
                 @endforeach
             </div>
 
-            <!-- Card Body / Task List -->
+            <!-- Card Body / Task List (Multi-Day Instant Panels) -->
             <div class="card-body p-3">
-                <!-- Status Banner -->
-                <div class="alert alert-success d-flex align-items-center gap-2 p-2.5 rounded-3 mb-3 border-0" style="background-color: #e8f8f2; color: #0f5132; font-size: 0.85rem;">
-                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                    <div>
-                        @if($scheduledTasksOnDate->count() > 0)
-                            <strong>{{ $scheduledTasksOnDate->count() }} kegiatan / sesi</strong> terjadwal pada hari ini
-                        @else
-                            Semua sesi di hari ini sudah selesai atau belum ada jadwal
-                        @endif
-                    </div>
-                </div>
-
-                <!-- Scheduled Tasks List -->
-                @forelse($scheduledTasksOnDate as $task)
-                    <div class="edlink-task-card">
-                        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
-                            <h6 class="fw-bold text-dark m-0 text-uppercase" style="font-size: 0.9rem; line-height: 1.35;">
-                                {{ $task->uraian_tugas }}
-                            </h6>
-                            <span class="badge {{ $task->badge_class }} rounded-pill text-nowrap" style="font-size: 0.7rem; padding: 4px 8px;">
-                                {{ $task->kategori_label }}
-                            </span>
-                        </div>
-
-                        <!-- Meta Chips Row (Sesi, Jam Estimasi, Lokasi/Pegawai) -->
-                        <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 text-muted" style="font-size: 0.78rem;">
-                            <span class="d-inline-flex align-items-center gap-1 text-secondary">
-                                <i class="bi bi-journal-bookmark-fill text-muted"></i> Sesi: {{ $task->kategori_label }}
-                            </span>
-                            <span class="d-inline-flex align-items-center gap-1 text-secondary">
-                                <i class="bi bi-clock-fill text-muted"></i> 
-                                @if($task->estimasi_jam_mulai)
-                                    {{ date('H:i', strtotime($task->estimasi_jam_mulai)) }} - {{ $task->estimasi_jam_selesai ? date('H:i', strtotime($task->estimasi_jam_selesai)) : 'Selesai' }} WIB
+                @foreach($weekDays as $day)
+                    <div class="edlink-day-panel" data-date="{{ $day['date'] }}" style="{{ $day['is_selected'] ? '' : 'display: none;' }}">
+                        <!-- Status Banner -->
+                        <div class="alert alert-success d-flex align-items-center gap-2 p-2.5 rounded-3 mb-3 border-0" style="background-color: #e8f8f2; color: #0f5132; font-size: 0.85rem;">
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                            <div>
+                                @if($day['tasks']->count() > 0)
+                                    <strong>{{ $day['tasks']->count() }} kegiatan / sesi</strong> terjadwal pada hari ini
                                 @else
-                                    Fleksibel
+                                    Semua sesi di hari ini sudah selesai atau belum ada jadwal
                                 @endif
-                            </span>
-                            <span class="d-inline-flex align-items-center gap-1 text-secondary">
-                                <i class="bi bi-geo-alt-fill text-muted"></i> {{ Str::limit($task->user->name ?? 'Pegawai', 16) }}
-                            </span>
+                            </div>
                         </div>
 
-                        <!-- Subtitle / Document indicator -->
-                        <div class="d-flex align-items-center gap-2 mb-3 small" style="font-size: 0.82rem;">
-                            <i class="bi bi-file-earmark-check-fill text-success"></i>
-                            <span class="fw-medium text-dark text-truncate">
-                                @if($task->file)
-                                    {{ basename($task->file) }}
-                                @elseif($task->url_external)
-                                    Tautan Berkas Terlampir
-                                @else
-                                    Rencana Tugas Terjadwal
-                                @endif
-                            </span>
-                        </div>
+                        <!-- Scheduled Tasks List -->
+                        @forelse($day['tasks'] as $task)
+                            <div class="edlink-task-card">
+                                <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                                    <h6 class="fw-bold text-dark m-0 text-uppercase" style="font-size: 0.9rem; line-height: 1.35;">
+                                        {{ $task->uraian_tugas }}
+                                    </h6>
+                                    <span class="badge {{ $task->badge_class }} rounded-pill text-nowrap" style="font-size: 0.7rem; padding: 4px 8px;">
+                                        {{ $task->kategori_label }}
+                                    </span>
+                                </div>
 
-                        <!-- Action Buttons Row -->
-                        <div class="d-flex align-items-center gap-2">
-                            @if($task->file)
-                                <a href="{{ asset('storage/' . $task->file) }}" target="_blank" class="edlink-btn-subtle" title="Unduh / Lihat Berkas">
-                                    <i class="bi bi-paperclip"></i> Bahan Ajar
-                                </a>
-                            @elseif($task->url_external)
-                                <a href="{{ $task->url_external }}" target="_blank" class="edlink-btn-subtle" title="Buka Tautan">
-                                    <i class="bi bi-link-45deg"></i> Bahan Ajar
-                                </a>
-                            @else
-                                <a href="{{ route($task->kategori_code . '.index') }}" class="edlink-btn-subtle" title="Detail & Bahan">
-                                    <i class="bi bi-plus-lg"></i> Bahan Ajar
-                                </a>
-                            @endif
+                                <!-- Meta Chips Row (Sesi, Jam Estimasi, Lokasi/Pegawai) -->
+                                <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 text-muted" style="font-size: 0.78rem;">
+                                    <span class="d-inline-flex align-items-center gap-1 text-secondary">
+                                        <i class="bi bi-journal-bookmark-fill text-muted"></i> Sesi: {{ $task->kategori_label }}
+                                    </span>
+                                    <span class="d-inline-flex align-items-center gap-1 text-secondary">
+                                        <i class="bi bi-clock-fill text-muted"></i> 
+                                        @if($task->estimasi_jam_mulai)
+                                            {{ date('H:i', strtotime($task->estimasi_jam_mulai)) }} - {{ $task->estimasi_jam_selesai ? date('H:i', strtotime($task->estimasi_jam_selesai)) : 'Selesai' }} WIB
+                                        @else
+                                            Fleksibel
+                                        @endif
+                                    </span>
+                                    <span class="d-inline-flex align-items-center gap-1 text-secondary">
+                                        <i class="bi bi-geo-alt-fill text-muted"></i> {{ Str::limit($task->user->name ?? 'Pegawai', 16) }}
+                                    </span>
+                                </div>
 
-                            @if($task->kategori_code === 'kepanitiaan')
-                                <a href="{{ route('kepanitiaan.show', $task->id) }}" class="edlink-btn-subtle" title="Presensi Sesi">
-                                    <i class="bi bi-people-fill"></i> Presensi
-                                </a>
-                            @else
-                                <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Detail & Rekan">
-                                    <i class="bi bi-people-fill"></i> Presensi
-                                </a>
-                            @endif
+                                <!-- Subtitle / Document indicator -->
+                                <div class="d-flex align-items-center gap-2 mb-3 small" style="font-size: 0.82rem;">
+                                    <i class="bi bi-file-earmark-check-fill text-success"></i>
+                                    <span class="fw-medium text-dark text-truncate">
+                                        @if($task->file)
+                                            {{ basename($task->file) }}
+                                        @elseif($task->url_external)
+                                            Tautan Berkas Terlampir
+                                        @else
+                                            Rencana Tugas Terjadwal
+                                        @endif
+                                    </span>
+                                </div>
 
-                            @if($task->status == 'Selesai')
-                                <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
-                                    <i class="bi bi-check2"></i> Selesai
-                                </button>
-                            @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
-                                <button type="button" class="edlink-btn-stop btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
-                                    <i class="bi bi-stop-fill"></i> Selesai
-                                </button>
-                            @else
-                                <button type="button" class="edlink-btn-start btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="start" data-id="{{ $task->id }}">
-                                    <i class="bi bi-play-fill"></i> Mulai Sesi
-                                </button>
-                            @endif
-                        </div>
+                                <!-- Action Buttons Row -->
+                                <div class="d-flex align-items-center gap-2">
+                                    @if($task->file)
+                                        <a href="{{ asset('storage/' . $task->file) }}" target="_blank" class="edlink-btn-subtle" title="Unduh / Lihat Berkas">
+                                            <i class="bi bi-paperclip"></i> Bahan Ajar
+                                        </a>
+                                    @elseif($task->url_external)
+                                        <a href="{{ $task->url_external }}" target="_blank" class="edlink-btn-subtle" title="Buka Tautan">
+                                            <i class="bi bi-link-45deg"></i> Bahan Ajar
+                                        </a>
+                                    @else
+                                        <a href="{{ route($task->kategori_code . '.index') }}" class="edlink-btn-subtle" title="Detail & Bahan">
+                                            <i class="bi bi-plus-lg"></i> Bahan Ajar
+                                        </a>
+                                    @endif
+
+                                    @if($task->kategori_code === 'kepanitiaan')
+                                        <a href="{{ route('kepanitiaan.show', $task->id) }}" class="edlink-btn-subtle" title="Presensi Sesi">
+                                            <i class="bi bi-people-fill"></i> Presensi
+                                        </a>
+                                    @else
+                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Detail & Rekan">
+                                            <i class="bi bi-people-fill"></i> Presensi
+                                        </a>
+                                    @endif
+
+                                    @if($task->status == 'Selesai')
+                                        <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
+                                            <i class="bi bi-check2"></i> Selesai
+                                        </button>
+                                    @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
+                                        <button type="button" class="edlink-btn-stop btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
+                                            <i class="bi bi-stop-fill"></i> Selesai
+                                        </button>
+                                    @else
+                                        <button type="button" class="edlink-btn-start btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="start" data-id="{{ $task->id }}">
+                                            <i class="bi bi-play-fill"></i> Mulai Sesi
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="edlink-empty-state">
+                                <i class="bi bi-calendar-check text-muted d-block fs-1 mb-2 opacity-50"></i>
+                                <h6 class="fw-bold text-dark mb-1">Tidak Ada Jadwal</h6>
+                                <p class="text-muted small mb-0">Tidak ada sesi kegiatan yang terjadwal pada {{ $day['formatted_date'] }}.</p>
+                            </div>
+                        @endforelse
                     </div>
-                @empty
-                    <div class="edlink-empty-state">
-                        <i class="bi bi-calendar-check text-muted d-block fs-1 mb-2 opacity-50"></i>
-                        <h6 class="fw-bold text-dark mb-1">Tidak Ada Jadwal</h6>
-                        <p class="text-muted small mb-0">Tidak ada sesi kegiatan yang terjadwal pada {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}.</p>
-                    </div>
-                @endforelse
+                @endforeach
             </div>
         </div>
 
@@ -1467,6 +1472,32 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
+        // -------------------------------------------------------------
+        // Seamless Instant Day Switcher for Jadwal Minggu Ini
+        // -------------------------------------------------------------
+        $(document).on('click', '.edlink-day-btn', function(e) {
+            e.preventDefault();
+            let targetDate = $(this).data('date');
+            if (!targetDate) return;
+
+            // 1. Immediately update active badge and arrow on clicked day
+            $('.edlink-day-btn').removeClass('active');
+            $('.edlink-day-btn .edlink-active-arrow').remove();
+            $(this).addClass('active');
+            $(this).append('<span class="edlink-active-arrow"></span>');
+
+            // 2. Instantly switch day panel with zero page refresh
+            $('.edlink-day-panel').hide();
+            $('.edlink-day-panel[data-date="' + targetDate + '"]').stop(true, true).fadeIn(120);
+
+            // 3. Update URL query parameter silently without reloading
+            try {
+                let currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('selected_date', targetDate);
+                window.history.replaceState({ selected_date: targetDate }, '', currentUrl.toString());
+            } catch (err) {}
+        });
+
         // Handle Mulai & Selesai button click on Dashboard
         $(document).on('click', '.btn-action-dash', function() {
             let btn = $(this);

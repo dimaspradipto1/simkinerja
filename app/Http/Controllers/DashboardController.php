@@ -59,54 +59,17 @@ class DashboardController extends Controller
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
         $todayFormatted = Carbon::now()->translatedFormat('d F Y');
 
-        // Pre-query task dates in this entire week to determine 'has_tasks' for each day efficiently
-        $weeklyTaskDates = \App\Models\Kegiatan::where($userScope)
-            ->where(function ($q) use ($startOfWeek, $endOfWeek) {
-                $q->whereBetween('estimasi_tanggal_mulai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
-                  ->orWhereBetween('estimasi_tanggal_selesai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
-                  ->orWhereBetween('tanggal_mulai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
-                  ->orWhere(function ($qSub) use ($startOfWeek, $endOfWeek) {
-                      $qSub->whereDate('estimasi_tanggal_mulai', '<=', $startOfWeek->format('Y-m-d'))
-                           ->whereDate('estimasi_tanggal_selesai', '>=', $endOfWeek->format('Y-m-d'));
-                  });
-            })
-            ->get(['id', 'estimasi_tanggal_mulai', 'estimasi_tanggal_selesai', 'tanggal_mulai']);
-        
-        $weekDays = [];
-        $dayNames = [1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Min'];
-        for ($i = 0; $i < 7; $i++) {
-            $day = $startOfWeek->copy()->addDays($i);
-            $dateStr = $day->format('Y-m-d');
-
-            $hasTasks = $weeklyTaskDates->contains(function ($task) use ($dateStr) {
-                $start = $task->estimasi_tanggal_mulai ?? $task->tanggal_mulai;
-                $end = $task->estimasi_tanggal_selesai ?? $start;
-                if ($start && $end) {
-                    return $dateStr >= $start && $dateStr <= $end;
-                }
-                return $task->tanggal_mulai === $dateStr || $task->estimasi_tanggal_mulai === $dateStr;
-            });
-
-            $weekDays[] = [
-                'day_name' => $dayNames[$day->dayOfWeekIso] ?? $day->format('D'),
-                'day_num' => $day->format('d'),
-                'date' => $dateStr,
-                'has_tasks' => $hasTasks,
-                'is_selected' => ($dateStr === $selectedDate),
-                'is_today' => ($dateStr === date('Y-m-d')),
-            ];
-        }
-
-        // Query tasks scheduled/active on selected_date from 3 modules
-        $getTasksOnDate = function ($queryModel, $kategori, $kategoriCode, $badgeClass) use ($selectedDate, $userScope) {
+        // Pre-query all tasks for the entire week from the 3 modules in one batch
+        $getWeeklyTasks = function ($queryModel, $kategori, $kategoriCode, $badgeClass) use ($startOfWeek, $endOfWeek, $userScope) {
             return $queryModel->where($userScope)
-                ->where(function ($q) use ($selectedDate) {
-                    $q->where(function ($qSub) use ($selectedDate) {
-                        $qSub->whereDate('estimasi_tanggal_mulai', '<=', $selectedDate)
-                             ->whereDate('estimasi_tanggal_selesai', '>=', $selectedDate);
-                    })
-                    ->orWhereDate('tanggal_mulai', $selectedDate)
-                    ->orWhereDate('estimasi_tanggal_mulai', $selectedDate);
+                ->where(function ($q) use ($startOfWeek, $endOfWeek) {
+                    $q->whereBetween('estimasi_tanggal_mulai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+                      ->orWhereBetween('estimasi_tanggal_selesai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+                      ->orWhereBetween('tanggal_mulai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+                      ->orWhere(function ($qSub) use ($startOfWeek, $endOfWeek) {
+                          $qSub->whereDate('estimasi_tanggal_mulai', '<=', $startOfWeek->format('Y-m-d'))
+                               ->whereDate('estimasi_tanggal_selesai', '>=', $endOfWeek->format('Y-m-d'));
+                      });
                 })
                 ->with(['user', 'taggedUsers'])
                 ->get()
@@ -118,14 +81,45 @@ class DashboardController extends Controller
                 });
         };
 
-        $schUtama = $getTasksOnDate(RencanaKerja::query(), 'Utama', 'rencana-kerja', 'bg-primary');
-        $schKepanitiaan = $getTasksOnDate(Kepanitiaan::query(), 'Kepanitiaan', 'kepanitiaan', 'bg-info text-dark');
-        $schInsidentil = $getTasksOnDate(Insidentil::query(), 'Insidentil', 'insidentil', 'bg-warning text-dark');
+        $allWeeklyTasks = $getWeeklyTasks(RencanaKerja::query(), 'Utama', 'rencana-kerja', 'bg-primary')
+            ->concat($getWeeklyTasks(Kepanitiaan::query(), 'Kepanitiaan', 'kepanitiaan', 'bg-info text-dark'))
+            ->concat($getWeeklyTasks(Insidentil::query(), 'Insidentil', 'insidentil', 'bg-warning text-dark'));
 
-        $scheduledTasksOnDate = $schUtama->concat($schKepanitiaan)->concat($schInsidentil)
-            ->sortBy(function ($item) {
+        $weekDays = [];
+        $scheduledTasksOnDate = collect();
+        $dayNames = [1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Min'];
+        for ($i = 0; $i < 7; $i++) {
+            $day = $startOfWeek->copy()->addDays($i);
+            $dateStr = $day->format('Y-m-d');
+
+            // Filter tasks active on this specific day
+            $tasksOnThisDay = $allWeeklyTasks->filter(function ($task) use ($dateStr) {
+                $start = $task->estimasi_tanggal_mulai ?? $task->tanggal_mulai;
+                $end = $task->estimasi_tanggal_selesai ?? $start;
+                if ($start && $end) {
+                    return $dateStr >= $start && $dateStr <= $end;
+                }
+                return $task->tanggal_mulai === $dateStr || $task->estimasi_tanggal_mulai === $dateStr;
+            })->sortBy(function ($item) {
                 return ($item->status === 'Proses' || $item->status === 'Berjalan' ? '1_' : ($item->status === 'Belum Dimulai' ? '2_' : '3_')) . ($item->estimasi_jam_mulai ?? '00:00');
             })->values();
+
+            $isSelected = ($dateStr === $selectedDate);
+            if ($isSelected) {
+                $scheduledTasksOnDate = $tasksOnThisDay;
+            }
+
+            $weekDays[] = [
+                'day_name' => $dayNames[$day->dayOfWeekIso] ?? $day->format('D'),
+                'day_num' => $day->format('d'),
+                'date' => $dateStr,
+                'formatted_date' => $day->translatedFormat('l, d F Y'),
+                'has_tasks' => $tasksOnThisDay->isNotEmpty(),
+                'tasks' => $tasksOnThisDay,
+                'is_selected' => $isSelected,
+                'is_today' => ($dateStr === date('Y-m-d')),
+            ];
+        }
 
         // Search Filter for Rencana Kerja Utama
         if ($request->filled('search_utama')) {
