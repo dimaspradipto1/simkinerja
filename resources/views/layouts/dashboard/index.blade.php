@@ -750,7 +750,7 @@
                 <div class="card stat-card border-0 shadow-sm h-100 p-2.5" style="background: #ffffff; border-left: 4px solid #198754 !important;">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">Rencana Utama</span>
+                            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">Rutinitas</span>
                             <h4 class="fw-bold text-dark mt-1 mb-0">{{ $totalTugas }}</h4>
                             <div class="text-muted" style="font-size: 0.72rem;">
                                 <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>{{ $tugasSelesai }}</span> ({{ $persentaseSelesai }}%)
@@ -1019,12 +1019,12 @@
         </div>
         @endif
 
-        <!-- Table 1: Rencana Kerja Utama Terbaru -->
+        <!-- Table 1: Kegiatan Rutinitas Terbaru -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <h5 class="card-title m-0 fw-bold fs-6 text-dark">
-                        <i class="bi bi-journal-check text-success me-2"></i>Rencana Kerja Utama
+                        <i class="bi bi-journal-check text-success me-2"></i>Kegiatan Rutinitas
                     </h5>
                     <div class="d-flex align-items-center gap-2">
                         <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
@@ -1117,7 +1117,7 @@
                                 <tr>
                                     <td colspan="5" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data Rencana Kerja Utama.
+                                        Belum ada data Kegiatan Rutinitas.
                                     </td>
                                 </tr>
                             @endforelse

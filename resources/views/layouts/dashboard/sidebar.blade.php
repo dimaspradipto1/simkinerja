@@ -74,9 +74,9 @@
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('rencana-kerja.*') ? 'active' : '' }}" href="{{ route('rencana-kerja.index') }}">
                                     <span>
-                                        @if($isStaffOrDosen) Kegiatan Saya
-                                        @elseif($isPimpinanUnit) Kegiatan Unit
-                                        @else Kegiatan Utama
+                                        @if($isStaffOrDosen) Kegiatan Rutinitas Saya
+                                        @elseif($isPimpinanUnit) Kegiatan Rutinitas Unit
+                                        @else Kegiatan Rutinitas
                                         @endif
                                     </span>
                                 </a>

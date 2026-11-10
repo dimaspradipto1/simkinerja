@@ -163,28 +163,7 @@
                             @enderror
                         </div>
 
-                        @if($kegiatan->subKegiatans && $kegiatan->subKegiatans->count() > 0)
-                        <div class="col-12">
-                            <div class="card border rounded-3 p-3 shadow-2xs bg-white">
-                                <label class="form-label fw-bold text-dark mb-2 d-flex align-items-center gap-2">
-                                    <i class="bi bi-diagram-3 text-success fs-5"></i>
-                                    <span>Daftar Sub Kegiatan Terdaftar ({{ $kegiatan->subKegiatans->count() }})</span>
-                                </label>
-                                <div class="d-flex flex-column gap-1.5 ms-2 ps-2 border-start border-2 border-success-subtle">
-                                    @foreach($kegiatan->subKegiatans as $sub)
-                                        <div class="d-flex align-items-center justify-content-between gap-2 p-2 bg-light rounded border small">
-                                            <div>
-                                                <i class="bi bi-arrow-return-right text-success me-1"></i>
-                                                <strong class="text-dark">{{ $sub->uraian_tugas }}</strong>
-                                                <span class="badge bg-secondary-subtle text-secondary ms-1">{{ $sub->status }}</span>
-                                            </div>
-                                            <a href="{{ route('kegiatan.edit', $sub->id) }}" class="btn btn-xs btn-sm btn-outline-secondary py-0.5 px-2" style="font-size: 0.75rem;" target="_blank"><i class="bi bi-pencil"></i> Edit Sub</a>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                        @endif
+
 
                         <div class="col-md-12">
                             <label for="tagged_users" class="form-label fw-semibold">Tag Rekan Kerja</label>

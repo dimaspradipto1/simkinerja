@@ -81,7 +81,7 @@ class DashboardController extends Controller
                 });
         };
 
-        $allWeeklyTasks = $getWeeklyTasks(RencanaKerja::query(), 'Utama', 'rencana-kerja', 'bg-primary')
+        $allWeeklyTasks = $getWeeklyTasks(RencanaKerja::query(), 'Rutinitas', 'rencana-kerja', 'bg-success')
             ->concat($getWeeklyTasks(Kepanitiaan::query(), 'Kepanitiaan', 'kepanitiaan', 'bg-info text-dark'))
             ->concat($getWeeklyTasks(Insidentil::query(), 'Insidentil', 'insidentil', 'bg-warning text-dark'));
 
