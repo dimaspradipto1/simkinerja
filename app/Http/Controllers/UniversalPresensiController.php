@@ -318,6 +318,7 @@ class UniversalPresensiController extends Controller
      */
     public function exportExcel($sesiId)
     {
+        $sesiId = $this->resolveSesiId($sesiId);
         $authUser = Auth::user();
         $sesi = KepanitiaanSesiAbsensi::with(['kepanitiaan', 'presensis.user'])->findOrFail($sesiId);
 
@@ -433,10 +434,27 @@ class UniversalPresensiController extends Controller
     }
 
     /**
+     * Helper resolve ID dari slug URL tanpa mengubah database
+     */
+    protected function resolveSesiId($id): int
+    {
+        if (!is_numeric($id)) {
+            if (preg_match('/-(\d+)$/', $id, $matches)) {
+                return (int) $matches[1];
+            }
+            if (preg_match('/^sesi-(\d+)$/', $id, $matches)) {
+                return (int) $matches[1];
+            }
+        }
+        return (int) $id;
+    }
+
+    /**
      * Display dedicated attendance page for a session (Data Absensi).
      */
     public function showSesi($id)
     {
+        $id = $this->resolveSesiId($id);
         KepanitiaanSesiAbsensi::deleteWithoutKepanitiaan();
         $authUser = Auth::user();
         if (!$authUser) {
@@ -548,6 +566,7 @@ class UniversalPresensiController extends Controller
      */
     public function getSesiData(Request $request, $id)
     {
+        $id = $this->resolveSesiId($id);
         $authUser = Auth::user();
         if (!$authUser) {
             return response()->json(['error' => 'Akses ditolak. Silakan login.'], 401);

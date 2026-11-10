@@ -66,12 +66,19 @@
                     </h5>
 
                     <!-- Toolbar Filter & Tombol Isi Absen Manual -->
-                    <form action="{{ route('absensi-kinerja.index') }}" method="GET" class="row g-2.5 align-items-end mb-4">
+                    <form id="form-filter-matrix" action="{{ route('absensi-kinerja.index') }}" method="GET" class="row g-2.5 align-items-end mb-4">
                         <div class="col-6 col-md-3 col-lg-2">
                             <label class="form-label small fw-bold text-secondary mb-1">Bulan</label>
-                            <select name="bulan" class="form-select form-select-sm">
+                            <select name="bulan" id="matrix-select-bulan" class="form-select form-select-sm">
+                                @php
+                                    $bulanMap = [
+                                        1 => 'januari', 2 => 'februari', 3 => 'maret', 4 => 'april',
+                                        5 => 'mei', 6 => 'juni', 7 => 'juli', 8 => 'agustus',
+                                        9 => 'september', 10 => 'oktober', 11 => 'november', 12 => 'desember'
+                                    ];
+                                @endphp
                                 @for($m = 1; $m <= 12; $m++)
-                                    <option value="{{ $m }}" {{ $bulan == $m ? 'selected' : '' }}>
+                                    <option value="{{ $m }}" data-slug="{{ $bulanMap[$m] }}" {{ $bulan == $m ? 'selected' : '' }}>
                                         {{ \Carbon\Carbon::createFromDate(2026, $m, 1)->translatedFormat('F') }}
                                     </option>
                                 @endfor
@@ -79,7 +86,7 @@
                         </div>
                         <div class="col-6 col-md-2 col-lg-2">
                             <label class="form-label small fw-bold text-secondary mb-1">Tahun</label>
-                            <select name="tahun" class="form-select form-select-sm">
+                            <select name="tahun" id="matrix-select-tahun" class="form-select form-select-sm">
                                 @for($y = 2024; $y <= 2030; $y++)
                                     <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
                                 @endfor
@@ -89,10 +96,10 @@
                         @if($isAdmin || $isPimpinan)
                             <div class="col-12 col-md-4 col-lg-3">
                                 <label class="form-label small fw-bold text-secondary mb-1">Filter Pegawai</label>
-                                <select name="filter_user_matrix" class="form-select form-select-sm">
-                                    <option value="">Semua Pegawai Terkait</option>
+                                <select name="filter_user_matrix" id="matrix-select-user" class="form-select form-select-sm">
+                                    <option value="" data-slug="">Semua Pegawai Terkait</option>
                                     @foreach($users as $u)
-                                        <option value="{{ $u->id }}" {{ request('filter_user_matrix') == $u->id ? 'selected' : '' }}>
+                                        <option value="{{ $u->id }}" data-slug="{{ \Illuminate\Support\Str::slug($u->name) }}" {{ (request('filter_user_matrix') == $u->id || (isset($selectedUserSlug) && $selectedUserSlug == \Illuminate\Support\Str::slug($u->name))) ? 'selected' : '' }}>
                                             {{ $u->name }} ({{ $u->jabatan ?? '-' }})
                                         </option>
                                     @endforeach
@@ -687,6 +694,20 @@
         });
         $('#btn-export-absensi-pdf').on('click', function () {
             exportAbsensi('pdf');
+        });
+
+        // Intercept form filter matrix agar selalu menggunakan Slug URL di browser (tanpa query string ?bulan=X&tahun=Y)
+        $('#form-filter-matrix').on('submit', function (e) {
+            e.preventDefault();
+            const bSlug = $('#matrix-select-bulan option:selected').data('slug') || $('#matrix-select-bulan').val();
+            const yVal = $('#matrix-select-tahun').val();
+            const uSlug = $('#matrix-select-user option:selected').data('slug');
+
+            let targetUrl = "{{ url('absensi-kinerja') }}/" + bSlug + "-" + yVal;
+            if (uSlug) {
+                targetUrl += "/" + uSlug;
+            }
+            window.location.href = targetUrl;
         });
 
         window.setInterval(function () {

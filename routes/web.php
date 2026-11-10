@@ -194,10 +194,10 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('analisis-keterlambatan', AnalisisKeterlambatanController::class)->only(['index']);
 
     // Pemantauan Staff Routes
-    Route::get('pemantauan-staff', [PemantauanStaffController::class, 'index'])->name('pemantauan-staff.index');
     Route::get('pemantauan-staff/detail/{id}', [PemantauanStaffController::class, 'detail'])->name('pemantauan-staff.detail');
     Route::get('pemantauan-staff/export-excel', [PemantauanStaffController::class, 'exportExcel'])->name('pemantauan-staff.export-excel');
     Route::get('pemantauan-staff/export-pdf', [PemantauanStaffController::class, 'exportPdf'])->name('pemantauan-staff.export-pdf');
+    Route::get('pemantauan-staff/{slug?}', [PemantauanStaffController::class, 'index'])->name('pemantauan-staff.index');
 
     // Laporan Eksekutif Yayasan & Universitas Ibnu Sina
     Route::get('laporan-kinerja-pegawai', [LaporanKinerjaPegawaiController::class, 'index'])->name('laporan-kinerja-pegawai.index');
@@ -239,11 +239,11 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('rekapitulasi-absensi/stats', [RekapitulasiAbsensiController::class, 'getStats'])->name('rekapitulasi-absensi.stats');
 
     // Absensi Kinerja Harian
-    Route::get('absensi-kinerja', [AbsensiKinerjaController::class, 'index'])->name('absensi-kinerja.index');
     Route::post('absensi-kinerja/manual', [AbsensiKinerjaController::class, 'storeManual'])->name('absensi-kinerja.manual');
     Route::delete('absensi-kinerja/manual/{id}', [AbsensiKinerjaController::class, 'destroyManual'])->name('absensi-kinerja.manual.destroy');
     Route::get('absensi-kinerja/export', [AbsensiKinerjaController::class, 'export'])->name('absensi-kinerja.export');
     Route::get('absensi-kinerja/export-pdf', [AbsensiKinerjaController::class, 'exportPdf'])->name('absensi-kinerja.export-pdf');
+    Route::get('absensi-kinerja/{slug?}/{user_slug?}', [AbsensiKinerjaController::class, 'index'])->name('absensi-kinerja.index');
 
     // Pengaturan Status Sesi Absensi (is_active)
     Route::get('pengaturan-absensi', [AbsensiSettingController::class, 'index'])->name('pengaturan-absensi.index');

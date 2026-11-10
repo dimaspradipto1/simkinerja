@@ -387,7 +387,7 @@ class AbsensiKinerjaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, $slug = null, $user_slug = null)
     {
         \App\Helpers\AbsensiKinerjaHelper::backfillMissingCheckins();
         AbsensiKinerjaHarian::closeCompletedWorkdays();
@@ -396,6 +396,24 @@ class AbsensiKinerjaController extends Controller
         $isAdmin  = $authUser && ($authUser->isAdmin() || $authUser->isSuperAdmin());
         $isPimpinan = $authUser && ($authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit());
         $hasPimpinanScope = $isPimpinan && !$authUser->isSuperAdmin();
+
+        // Redirect query string biasa (?bulan=X&tahun=Y) ke Clean Slug URL tanpa menyentuh DB
+        if (!$request->ajax() && empty($slug) && ($request->has('bulan') || $request->has('tahun'))) {
+            $b = (int) $request->input('bulan', now()->month);
+            $y = (int) $request->input('tahun', now()->year);
+            if ($b < 1 || $b > 12) $b = now()->month;
+            if ($y < 2020 || $y > 2035) $y = now()->year;
+
+            $cleanSlug = $this->getSlugPeriode($b, $y);
+            $redirectUrl = url('absensi-kinerja/' . $cleanSlug);
+            if ($request->filled('filter_user_matrix')) {
+                $uObj = User::find($request->filter_user_matrix);
+                if ($uObj) {
+                    $redirectUrl .= '/' . \Illuminate\Support\Str::slug($uObj->name);
+                }
+            }
+            return redirect($redirectUrl);
+        }
 
         if ($request->ajax()) {
             $query = AbsensiKinerjaHarian::with('user')
@@ -578,10 +596,38 @@ class AbsensiKinerjaController extends Controller
         // ==========================================
         // DATA MATRIX MONITORING HARIAN (TANGGAL 01 - AKHIR BULAN)
         // ==========================================
-        $bulan = (int) $request->input('bulan', now()->month);
-        $tahun = (int) $request->input('tahun', now()->year);
+        $bulan = now()->month;
+        $tahun = now()->year;
+
+        if (!empty($slug)) {
+            $parsed = $this->parseSlugPeriode($slug);
+            if ($parsed) {
+                $bulan = $parsed['bulan'];
+                $tahun = $parsed['tahun'];
+            }
+        } else {
+            $bulan = (int) $request->input('bulan', now()->month);
+            $tahun = (int) $request->input('tahun', now()->year);
+        }
+
         if ($bulan < 1 || $bulan > 12) $bulan = now()->month;
         if ($tahun < 2020 || $tahun > 2035) $tahun = now()->year;
+
+        // Resolve user filter dari user_slug jika ada
+        $selectedUserSlug = null;
+        if (!empty($user_slug)) {
+            $selectedUserSlug = $user_slug;
+            if (is_numeric($user_slug)) {
+                $request->merge(['filter_user_matrix' => (int) $user_slug]);
+            } else {
+                $matchedUser = User::where('is_active', true)->get()->first(function ($u) use ($user_slug) {
+                    return \Illuminate\Support\Str::slug($u->name) === $user_slug;
+                });
+                if ($matchedUser) {
+                    $request->merge(['filter_user_matrix' => $matchedUser->id]);
+                }
+            }
+        }
 
         $namaBulanIndonesia = $this->getNamaBulan($bulan);
         $daysInMonth = Carbon::createFromDate($tahun, $bulan, 1)->daysInMonth;
@@ -751,7 +797,9 @@ class AbsensiKinerjaController extends Controller
             'bulan',
             'tahun',
             'namaBulanIndonesia',
-            'totalWorkdays'
+            'totalWorkdays',
+            'slug',
+            'selectedUserSlug'
         ));
     }
 
@@ -1045,5 +1093,54 @@ class AbsensiKinerjaController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
         return $daftarBulan[$bulan] ?? 'Bulan ' . $bulan;
+    }
+
+    /**
+     * Helper generate slug periode (tanpa simpan di database).
+     */
+    protected function getSlugPeriode(int $bulan, int $tahun): string
+    {
+        $daftarBulan = [
+            1 => 'januari', 2 => 'februari', 3 => 'maret', 4 => 'april',
+            5 => 'mei', 6 => 'juni', 7 => 'juli', 8 => 'agustus',
+            9 => 'september', 10 => 'oktober', 11 => 'november', 12 => 'desember'
+        ];
+        $b = $daftarBulan[$bulan] ?? $bulan;
+        return $b . '-' . $tahun;
+    }
+
+    /**
+     * Parse slug periode seperti 'februari-2026' menjadi array ['bulan' => 2, 'tahun' => 2026] tanpa database.
+     */
+    protected function parseSlugPeriode(?string $slug): ?array
+    {
+        if (empty($slug)) {
+            return null;
+        }
+
+        $daftarBulan = [
+            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
+            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
+            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
+            'january' => 1, 'february' => 2, 'march' => 3, 'may' => 5,
+            'june' => 6, 'july' => 7, 'august' => 8, 'october' => 10, 'december' => 12
+        ];
+
+        // Format nama-bulan-tahun, contoh: februari-2026
+        if (preg_match('/^([a-zA-Z]+)-(\d{4})$/', $slug, $matches)) {
+            $namaBulan = strtolower($matches[1]);
+            $tahun = (int) $matches[2];
+            if (isset($daftarBulan[$namaBulan])) {
+                return ['bulan' => $daftarBulan[$namaBulan], 'tahun' => $tahun];
+            }
+        } elseif (preg_match('/^(\d{1,2})-(\d{4})$/', $slug, $matches)) {
+            $bulan = (int) $matches[1];
+            $tahun = (int) $matches[2];
+            if ($bulan >= 1 && $bulan <= 12) {
+                return ['bulan' => $bulan, 'tahun' => $tahun];
+            }
+        }
+
+        return null;
     }
 }

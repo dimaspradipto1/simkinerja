@@ -21,16 +21,41 @@ class PemantauanStaffController extends Controller
     /**
      * Tampilan utama Pemantauan Staff sesuai struktur OTK.
      */
-    public function index(Request $request)
+    public function index(Request $request, $slug = null)
     {
         $authUser = Auth::user();
         if (!$authUser) {
             return redirect()->route('login');
         }
 
-        // Tentukan Bulan & Tahun terpilih (Default bulan & tahun berjalan)
-        $bulan = (int) $request->input('bulan', now()->month);
-        $tahun = (int) $request->input('tahun', now()->year);
+        // Redirect query string biasa (?bulan=X&tahun=Y) ke clean slug URL tanpa DB
+        if (empty($slug) && ($request->has('bulan') || $request->has('tahun'))) {
+            $b = (int) $request->input('bulan', now()->month);
+            $y = (int) $request->input('tahun', now()->year);
+            if ($b < 1 || $b > 12) $b = now()->month;
+            if ($y < 2020 || $y > 2035) $y = now()->year;
+
+            $slugUrl = url('pemantauan-staff/' . $this->getSlugPeriode($b, $y));
+            $params = $request->except(['bulan', 'tahun']);
+            if (!empty($params)) {
+                $slugUrl .= '?' . http_build_query($params);
+            }
+            return redirect($slugUrl);
+        }
+
+        // Tentukan Bulan & Tahun terpilih dari slug jika ada
+        $bulan = now()->month;
+        $tahun = now()->year;
+        if (!empty($slug)) {
+            $parsed = $this->parseSlugPeriode($slug);
+            if ($parsed) {
+                $bulan = $parsed['bulan'];
+                $tahun = $parsed['tahun'];
+            }
+        } else {
+            $bulan = (int) $request->input('bulan', now()->month);
+            $tahun = (int) $request->input('tahun', now()->year);
+        }
 
         if ($bulan < 1 || $bulan > 12) {
             $bulan = now()->month;
@@ -365,6 +390,16 @@ class PemantauanStaffController extends Controller
         $authUser = Auth::user();
         if (!$authUser) {
             abort(401);
+        }
+
+        // Resolve user jika $id adalah slug nama
+        if (!is_numeric($id)) {
+            $matched = User::where('is_active', true)->get()->first(function ($u) use ($id) {
+                return \Illuminate\Support\Str::slug($u->name) === $id;
+            });
+            if ($matched) {
+                $id = $matched->id;
+            }
         }
 
         // Jika bukan pimpinan atau kepala, hanya boleh mengakses detail kinerjanya sendiri
@@ -870,5 +905,53 @@ class PemantauanStaffController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * Helper generate slug periode (tanpa simpan di database).
+     */
+    protected function getSlugPeriode(int $bulan, int $tahun): string
+    {
+        $daftarBulan = [
+            1 => 'januari', 2 => 'februari', 3 => 'maret', 4 => 'april',
+            5 => 'mei', 6 => 'juni', 7 => 'juli', 8 => 'agustus',
+            9 => 'september', 10 => 'oktober', 11 => 'november', 12 => 'desember'
+        ];
+        $b = $daftarBulan[$bulan] ?? $bulan;
+        return $b . '-' . $tahun;
+    }
+
+    /**
+     * Parse slug periode seperti 'februari-2026' menjadi array ['bulan' => 2, 'tahun' => 2026] tanpa database.
+     */
+    protected function parseSlugPeriode(?string $slug): ?array
+    {
+        if (empty($slug)) {
+            return null;
+        }
+
+        $daftarBulan = [
+            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
+            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
+            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
+            'january' => 1, 'february' => 2, 'march' => 3, 'may' => 5,
+            'june' => 6, 'july' => 7, 'august' => 8, 'october' => 10, 'december' => 12
+        ];
+
+        if (preg_match('/^([a-zA-Z]+)-(\d{4})$/', $slug, $matches)) {
+            $namaBulan = strtolower($matches[1]);
+            $tahun = (int) $matches[2];
+            if (isset($daftarBulan[$namaBulan])) {
+                return ['bulan' => $daftarBulan[$namaBulan], 'tahun' => $tahun];
+            }
+        } elseif (preg_match('/^(\d{1,2})-(\d{4})$/', $slug, $matches)) {
+            $bulan = (int) $matches[1];
+            $tahun = (int) $matches[2];
+            if ($bulan >= 1 && $bulan <= 12) {
+                return ['bulan' => $bulan, 'tahun' => $tahun];
+            }
+        }
+
+        return null;
     }
 }
