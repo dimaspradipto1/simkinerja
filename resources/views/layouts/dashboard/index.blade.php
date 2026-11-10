@@ -727,7 +727,13 @@
                     </div>
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="text-secondary small fw-semibold">
-                            @if(auth()->user() && auth()->user()->isAdmin()) Total Pegawai Sistem @else Total Pegawai Unit @endif
+                            @if(isset($isCampusWide) && $isCampusWide)
+                                Total Pegawai Sistem
+                            @elseif(auth()->user() && auth()->user()->subordinates()->exists())
+                                Total Pegawai (OTK)
+                            @else
+                                Total Pegawai Unit
+                            @endif
                         </span>
                         <span class="fw-bold text-dark">{{ $totalPegawai }} Pegawai</span>
                     </div>

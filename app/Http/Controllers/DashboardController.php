@@ -25,31 +25,66 @@ class DashboardController extends Controller
         $insidentilQuery = Insidentil::query();
         $usersQuery = User::query();
 
-        $isAdminOrLeader = $user && ($user->isAdmin() || $user->isSuperAdmin() || $user->isPimpinanRektorat());
+        // Pimpinan Rektorat murni (Rektor / Warek) atau Pure Admin tanpa bawahan OTK
+        $jabatanUpper = strtoupper(trim($user->jabatan ?? ''));
+        $unitUpper = strtoupper(trim($user->unit ?? ''));
+        $isRealRektorat = in_array($jabatanUpper, ['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])
+            || $unitUpper === 'REKTORAT';
+        $isPureAdmin = $user && $user->isSystemAdmin() && !$user->subordinates()->exists();
+        $isCampusWide = $isRealRektorat || $isPureAdmin;
 
-        $userScope = function ($q) use ($user, $isAdminOrLeader) {
-            if ($user && !$isAdminOrLeader) {
-                $q->where(function ($sub) use ($user) {
-                    $sub->where('user_id', $user->id)
-                        ->orWhereHas('taggedUsers', function ($qu) use ($user) {
-                            $qu->where('users.id', $user->id);
-                        });
-                });
-            }
-        };
-
+        // Tentukan daftar pegawai yang bernaung di bawah pimpinan sesuai struktur OTK
+        $otkUserIds = null;
         if ($user) {
-            // Jika bukan admin / rektorat, tampilkan data yang dibuat oleh user login ATAU di mana user login di-tag
-            if (!$isAdminOrLeader) {
-                $tasksQuery->where($userScope);
-                $kepanitiaanQuery->where($userScope);
-                $insidentilQuery->where($userScope);
-
+            if ($isCampusWide) {
+                // Rektorat / Pure Admin mengawasi seluruh universitas
+                $otkUserIds = null;
+            } elseif ($user->subordinates()->exists()) {
+                // Pimpinan dengan bawahan langsung / berjenjang di OTK
+                $subs = $user->getAllSubordinateIds();
+                $unitUsers = [];
                 if ($user->unit) {
-                    $usersQuery->where('unit', $user->unit);
+                    $uName = trim($user->unit);
+                    $unitUsers = User::where('unit', $uName)
+                        ->orWhere('unit', 'like', "%{$uName}%")
+                        ->pluck('id')
+                        ->all();
                 }
+                $otkUserIds = array_values(array_unique([(int) $user->id, ...$subs, ...$unitUsers]));
+            } elseif ($user->isPimpinanUnit() && $user->unit) {
+                // Pimpinan unit (meskipun supervisor_id bawahan belum di-set di DB, lingkupnya adalah unit kerjanya)
+                $uName = trim($user->unit);
+                $unitUsers = User::where('unit', $uName)
+                    ->orWhere('unit', 'like', "%{$uName}%")
+                    ->pluck('id')
+                    ->all();
+                $otkUserIds = array_values(array_unique([(int) $user->id, ...$unitUsers]));
+            } else {
+                // Staff biasa tanpa bawahan
+                $otkUserIds = [(int) $user->id];
             }
         }
+
+        if ($user && !$isCampusWide) {
+            $dashboardScope = function ($q) use ($otkUserIds) {
+                $q->where(function ($sub) use ($otkUserIds) {
+                    $sub->whereIn('user_id', $otkUserIds)
+                        ->orWhereHas('taggedUsers', function ($qu) use ($otkUserIds) {
+                            $qu->whereIn('users.id', $otkUserIds);
+                        });
+                });
+            };
+
+            $tasksQuery->where($dashboardScope);
+            $kepanitiaanQuery->where($dashboardScope);
+            $insidentilQuery->where($dashboardScope);
+
+            if (!empty($otkUserIds)) {
+                $usersQuery->whereIn('id', $otkUserIds);
+            }
+        }
+
+        $isAdminOrLeader = $isCampusWide;
 
         // EdLink-style Weekly Calendar Days (Senin - Minggu)
         Carbon::setLocale('id');
@@ -242,7 +277,9 @@ class DashboardController extends Controller
             'dynamicKepanitiaanList',
             'activeSessions',
             'defaultSession',
-            'isAdminOrLeader'
+            'isAdminOrLeader',
+            'isCampusWide',
+            'otkUserIds'
         ));
     }
 
@@ -277,13 +314,12 @@ class DashboardController extends Controller
         $canViewAll = false;
 
         if ($authUser) {
-            $isSuperAdmin = $authUser->isSuperAdmin();
-            $isAdmin = $authUser->isAdmin();
-            $isRektor = $authUser->hasRole('REKTOR') 
-                     || $authUser->hasRole('rektor') 
-                     || (trim(strtoupper($authUser->jabatan ?? '')) === 'REKTOR');
-
-            $canViewAll = $isSuperAdmin || $isAdmin || $isRektor;
+            $jabatanUpper = strtoupper(trim($authUser->jabatan ?? ''));
+            $unitUpper = strtoupper(trim($authUser->unit ?? ''));
+            $isRealRektorat = in_array($jabatanUpper, ['REKTOR', 'WAKIL REKTOR I', 'WAKIL REKTOR II', 'WAKIL REKTOR III'])
+                || $unitUpper === 'REKTORAT';
+            $isPureAdmin = $authUser->isSystemAdmin() && !$authUser->subordinates()->exists();
+            $canViewAll = $isRealRektorat || $isPureAdmin;
         }
 
         $usersQuery = User::query()
@@ -309,6 +345,9 @@ class DashboardController extends Controller
                 ->pluck('id');
 
             $usersQuery->whereNotIn('users.id', $excludedUserIds);
+        } elseif ($authUser && $authUser->subordinates()->exists()) {
+            $otkIds = array_values(array_unique([(int) $authUser->id, ...$authUser->getAllSubordinateIds()]));
+            $usersQuery->whereIn('users.id', $otkIds);
         } else {
             $usersQuery->where('users.id', $authUser ? $authUser->id : 0);
         }
