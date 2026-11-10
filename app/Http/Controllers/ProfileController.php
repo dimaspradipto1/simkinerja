@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use RealRashid\SweetAlert\Facades\Alert;
 
@@ -31,6 +32,8 @@ class ProfileController extends Controller
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,gif', 'max:2048'],
+            'hapus_foto' => ['nullable'],
             'nomor_wa' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9\s().-]{8,30}$/'],
             'nidn' => ['nullable', 'string', 'max:50'],
             'unit' => ['nullable', 'string', 'max:100'],
@@ -45,7 +48,27 @@ class ProfileController extends Controller
             $rules['roles'] = ['nullable'];
         }
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'foto.image' => 'File harus berupa gambar.',
+            'foto.mimes' => 'Format foto harus jpeg, png, jpg, webp, atau gif.',
+            'foto.max' => 'Ukuran foto maksimal 2MB.',
+        ]);
+
+        if ($request->boolean('hapus_foto')) {
+            if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+                Storage::disk('public')->delete($user->foto);
+            }
+            $validated['foto'] = null;
+        } elseif ($request->hasFile('foto')) {
+            if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+                Storage::disk('public')->delete($user->foto);
+            }
+            $path = $request->file('foto')->store('profile_photos', 'public');
+            $validated['foto'] = $path;
+        } else {
+            unset($validated['foto']);
+        }
+        unset($validated['hapus_foto']);
 
         if (isset($validated['roles'])) {
             if (is_array($validated['roles'])) {

@@ -17,7 +17,7 @@
         <div class="col-xl-4">
             <div class="card shadow-sm border-0">
                 <div class="card-body profile-card pt-4 d-flex flex-column align-items-center text-center">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&size=128&background=15432d&color=ffffff&bold=true" alt="Profile" class="rounded-circle shadow-sm mb-3" style="width: 110px; height: 110px;">
+                    <img src="{{ $user->avatar_url }}" alt="Profile" class="rounded-circle shadow-sm mb-3" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #15432d;">
                     <h5 class="fw-bold text-dark mb-1">{{ $user->name }}</h5>
                     <div class="d-flex flex-wrap justify-content-center gap-1 mb-2">
                         @php
@@ -145,9 +145,40 @@
 
                         <!-- Tab 2: Edit Profil Form -->
                         <div class="tab-pane fade profile-edit pt-2" id="profile-edit" role="tabpanel">
-                            <form action="{{ route('profile.update') }}" method="POST">
+                            <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
+
+                                <!-- Foto Profil Section -->
+                                <div class="row mb-4 align-items-center">
+                                    <label class="col-md-4 col-lg-3 col-form-label fw-semibold">Foto Profil</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                                            <div class="position-relative">
+                                                <img id="avatarPreview" src="{{ $user->avatar_url }}" alt="Preview Foto" class="rounded-circle shadow-sm" style="width: 85px; height: 85px; object-fit: cover; border: 2px solid #15432d;">
+                                            </div>
+                                            <div class="d-flex flex-column gap-1 flex-grow-1">
+                                                <div class="input-group input-group-sm">
+                                                    <input type="file" name="foto" id="fotoInput" class="form-control @error('foto') is-invalid @enderror" accept="image/jpeg,image/png,image/jpg,image/webp,image/gif">
+                                                </div>
+                                                <small class="text-muted" style="font-size: 0.78rem;">
+                                                    <i class="bi bi-info-circle me-1"></i>Format: JPG, PNG, WEBP, GIF. Maksimal 2MB.
+                                                </small>
+                                                @if($user->foto)
+                                                    <div class="form-check mt-1">
+                                                        <input class="form-check-input" type="checkbox" name="hapus_foto" value="1" id="hapusFotoCheck">
+                                                        <label class="form-check-label text-danger small fw-semibold" for="hapusFotoCheck" style="cursor: pointer;">
+                                                            <i class="bi bi-trash me-1"></i> Hapus foto kustom (kembali ke avatar inisial)
+                                                        </label>
+                                                    </div>
+                                                @endif
+                                                @error('foto')
+                                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div class="row mb-3">
                                     <label for="name" class="col-md-4 col-lg-3 col-form-label fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
@@ -310,6 +341,18 @@
             $(this).closest('.profile-kepanitiaan-row').remove();
             if ($('#profile-kepanitiaan-container .profile-kepanitiaan-row').length === 0) {
                 $('#empty-profile-kepanitiaan-notice').removeClass('d-none');
+            }
+        });
+
+        // Live preview foto profil baru
+        $('#fotoInput').on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    $('#avatarPreview').attr('src', evt.target.result);
+                };
+                reader.readAsDataURL(file);
             }
         });
     });

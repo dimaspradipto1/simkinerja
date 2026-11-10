@@ -67,7 +67,7 @@
 
                   <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#"
                       data-bs-toggle="dropdown">
-                      <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=cbd5e1&color=334155" alt="Profile" class="rounded-circle">
+                      <img src="{{ Auth::check() ? Auth::user()->avatar_url : 'https://ui-avatars.com/api/?name=User' }}" alt="Profile" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover;">
                       <span class="d-none d-md-block dropdown-toggle ps-2">{{ Auth::check() ? Auth::user()->name : 'User' }}</span>
                   </a><!-- End Profile Iamge Icon -->
 

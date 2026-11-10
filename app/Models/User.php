@@ -23,6 +23,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'foto',
         'nomor_wa',
         'password',
         'roles',
@@ -57,6 +58,14 @@ class User extends Authenticatable
             'password' => 'hashed',
             'jabatan_kepanitiaan' => 'array',
         ];
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->foto)) {
+            return asset('storage/' . $this->foto);
+        }
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=15432d&color=ffffff&bold=true';
     }
 
     public function taggedRencanaKerjas()
