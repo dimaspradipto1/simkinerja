@@ -62,23 +62,33 @@ class PemantauanStaffController extends Controller
             ->orderBy('unit', 'asc')
             ->pluck('unit');
 
-        // Filter Scope MURNI BERDASARKAN STRUKTUR OTK (Tanpa dipengaruhi role admin/superadmin)
+        // Cek apakah user adalah Pimpinan atau Kepala yang berhak memantau staf bawahan
+        $isLeader = $this->isPimpinanAtauKepala($authUser);
+
+        // Filter Scope MURNI BERDASARKAN STRUKTUR OTK
         $selectedSupervisorId = $request->input('supervisor_id');
         $selectedUnit = $request->input('unit');
         $selectedBidangOtk = $request->input('bidang_otk');
+        $pimpinanTerpilih = null;
 
-        // Default: Jika user memiliki bawahan dalam struktur OTK, otomatis tampilkan staf bawahannya sendiri
-        $hasSubs = $authUser->subordinates()->exists();
-        if (empty($selectedSupervisorId) && empty($selectedBidangOtk) && empty($selectedUnit) && !$request->has('all')) {
-            if ($hasSubs) {
-                $selectedSupervisorId = $authUser->id;
-            } elseif ($authUser->supervisor_id) {
-                $selectedSupervisorId = $authUser->supervisor_id;
-            } elseif ($authUser->unit) {
-                $selectedUnit = $authUser->unit;
-            }
-        } elseif ($selectedSupervisorId === 'all') {
+        if (!$isLeader) {
+            // Selain akun pimpinan atau kepala: HANYA MENAMPILKAN DIRI SENDIRI
             $selectedSupervisorId = null;
+            $selectedUnit = null;
+            $selectedBidangOtk = null;
+        } else {
+            // Default untuk akun pimpinan/kepala:
+            // Jika user memiliki bawahan dalam struktur OTK, otomatis tampilkan staf bawahannya sendiri
+            $hasSubs = $authUser->subordinates()->exists();
+            if (empty($selectedSupervisorId) && empty($selectedBidangOtk) && empty($selectedUnit) && !$request->has('all')) {
+                if ($hasSubs) {
+                    $selectedSupervisorId = $authUser->id;
+                } elseif ($authUser->unit) {
+                    $selectedUnit = $authUser->unit;
+                }
+            } elseif ($selectedSupervisorId === 'all') {
+                $selectedSupervisorId = null;
+            }
         }
 
         // Base Query User (HANYA PERSONEL YANG TERDAFTAR RESMI PADA OTK UIS)
@@ -92,28 +102,32 @@ class PemantauanStaffController extends Controller
                 'sup.jabatan as supervisor_jabatan'
             );
 
-        // Filter Tim Berdasarkan Pimpinan / Atasan Terpilih
-        $pimpinanTerpilih = null;
-        if ($selectedSupervisorId) {
-            $pimpinanTerpilih = User::find($selectedSupervisorId);
-            if ($pimpinanTerpilih) {
-                // Ambil seluruh bawahan langsung dan berjenjang dari pimpinan ini
-                $subordinateIds = $pimpinanTerpilih->getAllSubordinateIds();
-                $userQuery->whereIn('users.id', $subordinateIds);
+        if (!$isLeader) {
+            // Selain akun pimpinan atau kepala: Kunci ke akun diri sendiri
+            $userQuery->where('users.id', $authUser->id);
+        } else {
+            // Filter Tim Berdasarkan Pimpinan / Atasan Terpilih
+            if ($selectedSupervisorId) {
+                $pimpinanTerpilih = User::find($selectedSupervisorId);
+                if ($pimpinanTerpilih) {
+                    // Ambil seluruh bawahan langsung dan berjenjang dari pimpinan ini
+                    $subordinateIds = $pimpinanTerpilih->getAllSubordinateIds();
+                    $userQuery->whereIn('users.id', $subordinateIds);
+                }
+            } elseif (empty($selectedBidangOtk) && empty($selectedUnit) && empty($request->search)) {
+                // Jika melihat seluruh OTK tanpa pimpinan tertentu, staf adalah seluruh anggota yang memiliki atasan
+                $userQuery->whereNotNull('users.supervisor_id');
             }
-        } elseif (empty($selectedBidangOtk) && empty($selectedUnit) && empty($request->search)) {
-            // Jika melihat seluruh OTK tanpa pimpinan tertentu, staf adalah seluruh anggota yang memiliki atasan
-            $userQuery->whereNotNull('users.supervisor_id');
-        }
 
-        // Filter Unit
-        if ($selectedUnit) {
-            $userQuery->where('users.unit', $selectedUnit);
-        }
+            // Filter Unit
+            if ($selectedUnit) {
+                $userQuery->where('users.unit', $selectedUnit);
+            }
 
-        // Filter Grup / Bidang Koordinasi OTK
-        if ($selectedBidangOtk) {
-            $this->applyBidangOtkFilter($userQuery, $selectedBidangOtk);
+            // Filter Grup / Bidang Koordinasi OTK
+            if ($selectedBidangOtk) {
+                $this->applyBidangOtkFilter($userQuery, $selectedBidangOtk);
+            }
         }
 
         // Search Keyword
@@ -276,7 +290,8 @@ class PemantauanStaffController extends Controller
             'selectedBidangOtk',
             'kpi',
             'prevDate',
-            'nextDate'
+            'nextDate',
+            'isLeader'
         ));
     }
 
@@ -347,6 +362,16 @@ class PemantauanStaffController extends Controller
      */
     public function detail(Request $request, $id)
     {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            abort(401);
+        }
+
+        // Jika bukan pimpinan atau kepala, hanya boleh mengakses detail kinerjanya sendiri
+        if (!$this->isPimpinanAtauKepala($authUser) && (int)$id !== (int)$authUser->id) {
+            $id = $authUser->id;
+        }
+
         $pegawai = User::where('users.id', $id)
             ->leftJoin('users as sup', 'users.supervisor_id', '=', 'sup.id')
             ->leftJoin('otk_members', 'users.id', '=', 'otk_members.user_id')
@@ -425,18 +450,24 @@ class PemantauanStaffController extends Controller
         $namaBulan = $this->getNamaBulan($bulan);
 
         $authUser = Auth::user();
+        $isLeader = $this->isPimpinanAtauKepala($authUser);
+
         $selectedSupervisorId = $request->input('supervisor_id');
         $selectedUnit = $request->input('unit');
         $selectedBidangOtk = $request->input('bidang_otk');
 
-        if (empty($selectedSupervisorId) && empty($selectedBidangOtk) && empty($selectedUnit) && !$request->has('all')) {
-            if ($authUser->subordinates()->exists()) {
-                $selectedSupervisorId = $authUser->id;
-            } elseif ($authUser->supervisor_id) {
-                $selectedSupervisorId = $authUser->supervisor_id;
-            }
-        } elseif ($selectedSupervisorId === 'all') {
+        if (!$isLeader) {
             $selectedSupervisorId = null;
+            $selectedUnit = null;
+            $selectedBidangOtk = null;
+        } else {
+            if (empty($selectedSupervisorId) && empty($selectedBidangOtk) && empty($selectedUnit) && !$request->has('all')) {
+                if ($authUser->subordinates()->exists()) {
+                    $selectedSupervisorId = $authUser->id;
+                }
+            } elseif ($selectedSupervisorId === 'all') {
+                $selectedSupervisorId = null;
+            }
         }
 
         $userQuery = User::where('users.is_active', true)
@@ -444,21 +475,25 @@ class PemantauanStaffController extends Controller
             ->leftJoin('users as sup', 'users.supervisor_id', '=', 'sup.id')
             ->select('users.*', 'otk_members.sort_order as otk_sort_order', 'sup.name as supervisor_name');
 
-        if ($selectedSupervisorId) {
-            $pimpinan = User::find($selectedSupervisorId);
-            if ($pimpinan) {
-                $userQuery->whereIn('users.id', $pimpinan->getAllSubordinateIds());
+        if (!$isLeader) {
+            $userQuery->where('users.id', $authUser->id);
+        } else {
+            if ($selectedSupervisorId) {
+                $pimpinan = User::find($selectedSupervisorId);
+                if ($pimpinan) {
+                    $userQuery->whereIn('users.id', $pimpinan->getAllSubordinateIds());
+                }
+            } elseif (empty($selectedBidangOtk) && empty($selectedUnit) && empty($request->search)) {
+                $userQuery->whereNotNull('users.supervisor_id');
             }
-        } elseif (empty($selectedBidangOtk) && empty($selectedUnit) && empty($request->search)) {
-            $userQuery->whereNotNull('users.supervisor_id');
-        }
 
-        if ($selectedUnit) {
-            $userQuery->where('users.unit', $selectedUnit);
-        }
+            if ($selectedUnit) {
+                $userQuery->where('users.unit', $selectedUnit);
+            }
 
-        if ($selectedBidangOtk) {
-            $this->applyBidangOtkFilter($userQuery, $selectedBidangOtk);
+            if ($selectedBidangOtk) {
+                $this->applyBidangOtkFilter($userQuery, $selectedBidangOtk);
+            }
         }
 
         if ($request->filled('search')) {
@@ -627,18 +662,24 @@ class PemantauanStaffController extends Controller
         $namaBulanIndonesia = $this->getNamaBulan($bulan);
 
         $authUser = Auth::user();
+        $isLeader = $this->isPimpinanAtauKepala($authUser);
+
         $selectedSupervisorId = $request->input('supervisor_id');
         $selectedUnit = $request->input('unit');
         $selectedBidangOtk = $request->input('bidang_otk');
 
-        if (empty($selectedSupervisorId) && empty($selectedBidangOtk) && empty($selectedUnit) && !$request->has('all')) {
-            if ($authUser->subordinates()->exists()) {
-                $selectedSupervisorId = $authUser->id;
-            } elseif ($authUser->supervisor_id) {
-                $selectedSupervisorId = $authUser->supervisor_id;
-            }
-        } elseif ($selectedSupervisorId === 'all') {
+        if (!$isLeader) {
             $selectedSupervisorId = null;
+            $selectedUnit = null;
+            $selectedBidangOtk = null;
+        } else {
+            if (empty($selectedSupervisorId) && empty($selectedBidangOtk) && empty($selectedUnit) && !$request->has('all')) {
+                if ($authUser->subordinates()->exists()) {
+                    $selectedSupervisorId = $authUser->id;
+                }
+            } elseif ($selectedSupervisorId === 'all') {
+                $selectedSupervisorId = null;
+            }
         }
 
         $userQuery = User::where('users.is_active', true)
@@ -646,21 +687,25 @@ class PemantauanStaffController extends Controller
             ->leftJoin('users as sup', 'users.supervisor_id', '=', 'sup.id')
             ->select('users.*', 'otk_members.sort_order as otk_sort_order', 'sup.name as supervisor_name');
 
-        if ($selectedSupervisorId) {
-            $pimpinan = User::find($selectedSupervisorId);
-            if ($pimpinan) {
-                $userQuery->whereIn('users.id', $pimpinan->getAllSubordinateIds());
+        if (!$isLeader) {
+            $userQuery->where('users.id', $authUser->id);
+        } else {
+            if ($selectedSupervisorId) {
+                $pimpinan = User::find($selectedSupervisorId);
+                if ($pimpinan) {
+                    $userQuery->whereIn('users.id', $pimpinan->getAllSubordinateIds());
+                }
+            } elseif (empty($selectedBidangOtk) && empty($selectedUnit) && empty($request->search)) {
+                $userQuery->whereNotNull('users.supervisor_id');
             }
-        } elseif (empty($selectedBidangOtk) && empty($selectedUnit) && empty($request->search)) {
-            $userQuery->whereNotNull('users.supervisor_id');
-        }
 
-        if ($selectedUnit) {
-            $userQuery->where('users.unit', $selectedUnit);
-        }
+            if ($selectedUnit) {
+                $userQuery->where('users.unit', $selectedUnit);
+            }
 
-        if ($selectedBidangOtk) {
-            $this->applyBidangOtkFilter($userQuery, $selectedBidangOtk);
+            if ($selectedBidangOtk) {
+                $this->applyBidangOtkFilter($userQuery, $selectedBidangOtk);
+            }
         }
 
         if ($request->filled('search')) {
@@ -788,5 +833,42 @@ class PemantauanStaffController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
         return $daftarBulan[$bulan] ?? 'Bulan ' . $bulan;
+    }
+
+    /**
+     * Cek apakah akun merupakan Pimpinan atau Kepala yang berhak memantau staf bawahan.
+     * Akun selain pimpinan atau kepala hanya boleh melihat kinerjanya sendiri.
+     */
+    protected function isPimpinanAtauKepala($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // Super Admin sistem selalu memiliki hak pemantauan pimpinan
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        // Memiliki staf bawahan langsung/berjenjang dalam struktur hierarki OTK
+        if ($user->subordinates()->exists()) {
+            return true;
+        }
+
+        // Periksa kata kunci pimpinan atau kepala pada jabatan resmi OTK
+        $jabatan = strtoupper(trim($user->jabatan ?? ''));
+        $pimpinanKeywords = [
+            'REKTOR', 'WAKIL REKTOR', 'DEKAN', 'WAKIL DEKAN',
+            'KEPALA', 'KA. ', 'KA.', 'KAPRODI', 'KETUA PROGRAM STUDI',
+            'KETUA JURUSAN', 'KABID', 'DIREKTUR', 'PIMPINAN'
+        ];
+
+        foreach ($pimpinanKeywords as $kw) {
+            if (str_contains($jabatan, $kw)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

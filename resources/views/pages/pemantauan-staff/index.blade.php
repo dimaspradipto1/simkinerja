@@ -59,6 +59,25 @@
                 @endif
             </div>
         </div>
+    @elseif(!($isLeader ?? false))
+        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #e8f5ec 0%, #d1f0dd 100%); border-left: 5px solid #15432D !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center shadow-xs" style="width: 38px; height: 38px;">
+                    <i class="bi bi-person-badge fs-5" style="color: #15432D !important;"></i>
+                </div>
+                <div>
+                    <div class="small text-uppercase fw-bold text-muted" style="letter-spacing: 0.5px; font-size: 0.72rem;">Pemantauan Kinerja Individu Sesuai Penempatan OTK</div>
+                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">
+                        {{ Auth::user()->name }} <span class="text-secondary fw-normal">({{ Auth::user()->jabatan ?: 'Pegawai' }} - {{ Auth::user()->unit ?: 'Universitas Ibnu Sina' }})</span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success px-3 py-1.5 rounded-pill fw-semibold" style="font-size: 0.8rem; background-color: #15432D !important;">
+                    <i class="bi bi-person-check me-1"></i>Kinerja Pribadi
+                </span>
+            </div>
+        </div>
     @endif
 
     <!-- KPI Summary Cards -->
@@ -70,8 +89,8 @@
                         <i class="bi bi-diagram-3-fill fs-4" style="color: #15432D !important;"></i>
                     </div>
                     <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Anggota Tim (Sesuai OTK)</div>
-                        <div class="fs-4 fw-bold text-dark mb-0">{{ number_format($kpi['total_staff']) }} <span class="fs-6 fw-normal text-muted">Orang</span></div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">{{ ($isLeader ?? false) ? 'Anggota Tim (Sesuai OTK)' : 'Total Pegawai' }}</div>
+                        <div class="fs-4 fw-bold text-dark mb-0">{{ number_format($kpi['total_staff']) }} <span class="fs-6 fw-normal text-muted">{{ ($isLeader ?? false) ? 'Orang' : 'Pegawai' }}</span></div>
                     </div>
                 </div>
             </div>
@@ -192,12 +211,12 @@
         <div class="card-header bg-white py-3 px-4 border-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div>
                 <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.05rem;">
-                    Daftar Kinerja Anggota Tim Penempatan OTK (2024 - 2029)
+                    {{ ($isLeader ?? false) ? 'Daftar Kinerja Anggota Tim Penempatan OTK (2024 - 2029)' : 'Kinerja Individu Penempatan OTK (2024 - 2029)' }}
                 </h5>
                 <small class="text-muted">Periode Pemantauan: <strong class="text-dark">{{ $namaBulanIndonesia }} {{ $tahun }}</strong> &bull; Diurutkan Berdasarkan Penempatan Resmi OTK</small>
             </div>
             <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold" style="font-size: 0.8rem;">
-                {{ count($pegawaiData) }} Anggota Terdaftar
+                {{ count($pegawaiData) }} {{ ($isLeader ?? false) ? 'Anggota Terdaftar' : 'Pegawai' }}
             </span>
         </div>
 
