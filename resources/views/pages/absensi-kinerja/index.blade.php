@@ -125,8 +125,8 @@
                             <thead>
                                 <!-- Baris 1: Header Grup Periode -->
                                 <tr class="text-white text-center fw-bold" style="background-color: #0d6efd;">
-                                    <th rowspan="2" class="text-white align-middle px-3 text-start" style="min-width: 190px; max-width: 230px; background-color: #0b5ed7;">
-                                        NIK &amp; Nama Karyawan
+                                    <th rowspan="2" class="text-white align-middle px-3 text-start" style="min-width: 280px; background-color: #0b5ed7;">
+                                        Pegawai &amp; Jabatan OTK
                                     </th>
                                     <th colspan="{{ count($matrixDays) }}" class="text-center py-1.5 text-white" style="background-color: #0d6efd; letter-spacing: 0.5px;">
                                         Monitoring Kehadiran - Periode {{ $namaBulanIndonesia }} {{ $tahun }}
@@ -150,13 +150,16 @@
                             <tbody>
                                 @forelse($matrixData as $row)
                                     <tr>
-                                        <!-- Identitas Pegawai (Nama, NIK, Jabatan) -->
-                                        <td class="px-2.5 py-2 text-start bg-white">
-                                            <div class="fw-bold text-dark lh-sm" style="font-size: 0.81rem;">{{ $row['user']->name }}</div>
-                                            <div class="text-muted mt-0.5" style="font-size: 0.68rem;">
-                                                <span>{{ $row['nik'] }}</span>
-                                                <span class="mx-1">&bull;</span>
-                                                <span class="text-uppercase">{{ $row['user']->jabatan ?: 'Staff' }}</span>
+                                        <!-- Identitas Pegawai (Nama, Jabatan OTK, NUPTK/NUP) -->
+                                        <td class="px-3 py-2 text-start bg-white" style="white-space: nowrap;">
+                                            <div class="fw-bold text-dark lh-sm" style="font-size: 0.83rem;">
+                                                {{ $row['user']->name }}
+                                            </div>
+                                            <div class="text-dark fw-semibold mt-1 text-uppercase" style="font-size: 0.72rem; color: #15432D !important; line-height: 1.25;">
+                                                {{ $row['user']->jabatan ?: 'Staff' }}
+                                            </div>
+                                            <div class="text-muted mt-0.5" style="font-size: 0.70rem;">
+                                                NUPTK/NUP: {{ $row['user']->nidn ?: '-' }}
                                             </div>
                                         </td>
 
