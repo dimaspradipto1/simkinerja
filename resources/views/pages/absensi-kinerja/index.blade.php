@@ -1,6 +1,22 @@
 @extends('layouts.dashboard.template')
 
 @section('content')
+<style>
+    .matrix-table {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+    .matrix-col-staff {
+        min-width: 380px !important;
+        width: 380px !important;
+        position: sticky !important;
+        left: 0 !important;
+        white-space: nowrap !important;
+    }
+    .matrix-col-staff * {
+        white-space: nowrap !important;
+    }
+</style>
 <div class="pagetitle">
     <h1>Rekapitulasi Absensi</h1>
     <nav>
@@ -129,27 +145,27 @@
                     </form>
 
                     <!-- Table Matrix View (Tanggal 01 s/d Akhir Bulan) -->
-                    <div class="table-responsive rounded-2 border shadow-xs mb-4">
-                        <table class="table table-bordered table-sm align-middle mb-0 matrix-table" style="font-size: 0.77rem;">
+                    <div class="table-responsive rounded-2 border shadow-xs mb-4 w-100" style="overflow-x: auto;">
+                        <table class="table table-bordered table-sm align-middle mb-0 matrix-table w-100" style="font-size: 0.77rem; min-width: 100%;">
                             <thead>
                                 <!-- Baris 1: Header Grup Periode -->
                                 <tr class="text-white text-center fw-bold" style="background-color: #0d6efd;">
-                                    <th rowspan="2" class="text-white align-middle px-3 text-start" style="min-width: 280px; background-color: #0b5ed7;">
+                                    <th rowspan="2" class="text-white align-middle px-3 text-start text-nowrap matrix-col-staff" style="min-width: 380px; width: 380px; background-color: #0b5ed7; position: sticky; left: 0; z-index: 10;">
                                         Nama Staff
                                     </th>
                                     <th colspan="{{ count($matrixDays) }}" class="text-center py-1.5 text-white" style="background-color: #0d6efd; letter-spacing: 0.5px;">
                                         Monitoring Kehadiran - Periode {{ $namaBulanIndonesia }} {{ $tahun }}
                                     </th>
-                                    <th rowspan="2" class="text-white align-middle text-center px-2" style="width: 48px; background-color: #0b5ed7;">Sakit</th>
-                                    <th rowspan="2" class="text-white align-middle text-center px-2" style="width: 48px; background-color: #0b5ed7;">Izin</th>
-                                    <th rowspan="2" class="text-white align-middle text-center px-2" style="width: 48px; background-color: #0b5ed7;">Alfa</th>
-                                    <th rowspan="2" class="text-white align-middle text-center px-2" style="width: 48px; background-color: #0b5ed7;">Hadir</th>
-                                    <th rowspan="2" class="text-white align-middle text-center px-2" style="width: 65px; background-color: #0b5ed7;">Persentase</th>
+                                    <th rowspan="2" class="text-white align-middle text-center px-2 text-nowrap" style="width: 48px; background-color: #0b5ed7;">Sakit</th>
+                                    <th rowspan="2" class="text-white align-middle text-center px-2 text-nowrap" style="width: 48px; background-color: #0b5ed7;">Izin</th>
+                                    <th rowspan="2" class="text-white align-middle text-center px-2 text-nowrap" style="width: 48px; background-color: #0b5ed7;">Alfa</th>
+                                    <th rowspan="2" class="text-white align-middle text-center px-2 text-nowrap" style="width: 48px; background-color: #0b5ed7;">Hadir</th>
+                                    <th rowspan="2" class="text-white align-middle text-center px-2 text-nowrap" style="width: 65px; background-color: #0b5ed7;">Persentase</th>
                                 </tr>
                                 <!-- Baris 2: Nama Hari & Angka Tanggal (01, 02, ... 31) -->
                                 <tr class="text-center align-middle" style="background-color: #f1f5f9; font-size: 0.69rem;">
                                     @foreach($matrixDays as $d)
-                                        <th class="p-1 {{ $d['is_sunday'] ? 'text-danger bg-danger-subtle bg-opacity-50' : 'text-primary' }}" style="min-width: 31px; font-weight: 600;">
+                                        <th class="p-1 {{ $d['is_sunday'] ? 'text-danger bg-danger-subtle bg-opacity-50' : 'text-primary' }}" style="min-width: 32px; font-weight: 600;">
                                             <div>{{ substr($d['day_name'], 0, 3) }}</div>
                                             <div class="fw-bold fs-7 {{ $d['is_sunday'] ? 'text-danger' : 'text-dark' }}">{{ $d['day_padded'] }}</div>
                                         </th>
@@ -160,14 +176,14 @@
                                 @forelse($matrixData as $row)
                                     <tr>
                                         <!-- Identitas Pegawai (Nama, Jabatan OTK, NUPTK/NUP) -->
-                                        <td class="px-3 py-2 text-start bg-white" style="white-space: nowrap;">
-                                            <div class="fw-bold text-dark lh-sm" style="font-size: 0.83rem;">
+                                        <td class="px-3 py-2 text-start bg-white text-nowrap matrix-col-staff" style="position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.06); min-width: 380px; width: 380px; white-space: nowrap;">
+                                            <div class="fw-bold text-dark lh-sm text-nowrap" style="font-size: 0.85rem; white-space: nowrap;">
                                                 {{ $row['user']->name }}
                                             </div>
-                                            <div class="text-dark fw-semibold mt-1 text-uppercase" style="font-size: 0.72rem; color: #15432D !important; line-height: 1.25;">
+                                            <div class="text-dark fw-semibold mt-1 text-uppercase text-nowrap" style="font-size: 0.73rem; color: #15432D !important; line-height: 1.25; white-space: nowrap;">
                                                 {{ $row['user']->jabatan ?: 'Staff' }}
                                             </div>
-                                            <div class="text-muted mt-0.5" style="font-size: 0.70rem;">
+                                            <div class="text-muted mt-0.5 text-nowrap" style="font-size: 0.70rem; white-space: nowrap;">
                                                 NUPTK/NUP: {{ $row['user']->nidn ?: '-' }}
                                             </div>
                                         </td>
