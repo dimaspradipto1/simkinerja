@@ -611,10 +611,10 @@
                                     </span>
                                 </div>
 
-                                <!-- Meta Chips Row (Sesi, Jam Estimasi, Lokasi/Pegawai) -->
+                                <!-- Meta Chips Row (Kategori, Jam Estimasi, Lokasi/Pegawai) -->
                                 <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 text-muted" style="font-size: 0.78rem;">
                                     <span class="d-inline-flex align-items-center gap-1 text-secondary">
-                                        <i class="bi bi-journal-bookmark-fill text-muted"></i> Sesi: {{ $task->kategori_label }}
+                                        <i class="bi bi-journal-bookmark-fill text-muted"></i> {{ $task->kategori_label }}
                                     </span>
                                     <span class="d-inline-flex align-items-center gap-1 text-secondary">
                                         <i class="bi bi-clock-fill text-muted"></i> 
@@ -645,41 +645,48 @@
 
                                 <!-- Action Buttons Row -->
                                 <div class="d-flex align-items-center gap-2">
+                                    {{-- Button 1: Berkas / Link / Detail --}}
                                     @if($task->file)
                                         <a href="{{ asset('storage/' . $task->file) }}" target="_blank" class="edlink-btn-subtle" title="Unduh / Lihat Berkas">
-                                            <i class="bi bi-paperclip"></i> Bahan Ajar
+                                            <i class="bi bi-paperclip"></i> Berkas
                                         </a>
                                     @elseif($task->url_external)
-                                        <a href="{{ $task->url_external }}" target="_blank" class="edlink-btn-subtle" title="Buka Tautan">
-                                            <i class="bi bi-link-45deg"></i> Bahan Ajar
+                                        <a href="{{ $task->url_external }}" target="_blank" class="edlink-btn-subtle" title="Buka Tautan Eksternal">
+                                            <i class="bi bi-link-45deg"></i> Link
                                         </a>
                                     @else
-                                        <a href="{{ route($task->kategori_code . '.index') }}" class="edlink-btn-subtle" title="Detail & Bahan">
-                                            <i class="bi bi-plus-lg"></i> Bahan Ajar
+                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Lihat Rincian Kegiatan">
+                                            <i class="bi bi-eye"></i> Detail
                                         </a>
                                     @endif
 
+                                    {{-- Button 2: Presensi (Kepanitiaan) / Rekan Tim / Info --}}
                                     @if($task->kategori_code === 'kepanitiaan')
-                                        <a href="{{ route('kepanitiaan.show', $task->id) }}" class="edlink-btn-subtle" title="Presensi Sesi">
-                                            <i class="bi bi-people-fill"></i> Presensi
+                                        <a href="{{ route('kepanitiaan.show', $task->id) }}" class="edlink-btn-subtle" title="Presensi Sesi Kepanitiaan">
+                                            <i class="bi bi-qr-code-scan"></i> Presensi
+                                        </a>
+                                    @elseif($task->taggedUsers && $task->taggedUsers->count() > 0)
+                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Rekan Tim: {{ $task->taggedUsers->pluck('name')->implode(', ') }}">
+                                            <i class="bi bi-people-fill"></i> Tim ({{ $task->taggedUsers->count() }})
                                         </a>
                                     @else
-                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Detail & Rekan">
-                                            <i class="bi bi-people-fill"></i> Presensi
+                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Detail Kegiatan">
+                                            <i class="bi bi-info-circle"></i> Info
                                         </a>
                                     @endif
 
+                                    {{-- Button 3: Mulai Kegiatan / Selesaikan / Selesai --}}
                                     @if($task->status == 'Selesai')
                                         <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
-                                            <i class="bi bi-check2"></i> Selesai
+                                            <i class="bi bi-check2-circle"></i> Selesai
                                         </button>
                                     @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
                                         <button type="button" class="edlink-btn-stop btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
-                                            <i class="bi bi-stop-fill"></i> Selesai
+                                            <i class="bi bi-stop-fill"></i> Selesaikan
                                         </button>
                                     @else
                                         <button type="button" class="edlink-btn-start btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="start" data-id="{{ $task->id }}">
-                                            <i class="bi bi-play-fill"></i> Mulai Sesi
+                                            <i class="bi bi-play-fill"></i> Mulai Kegiatan
                                         </button>
                                     @endif
                                 </div>
