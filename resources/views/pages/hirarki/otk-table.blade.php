@@ -4,64 +4,158 @@
 @section('content')
 
 <style>
-/* Table Width & Layout: Bebas Wrap untuk Nama */
+/* Table Width & Layout: Fullwidth Responsif & Font Kompak */
 body.menu-page-otk .otk-table-wrap {
     overflow-x: auto !important;
+    width: 100% !important;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
 }
 body.menu-page-otk .otk-table {
-    min-width: 1250px !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
     table-layout: auto !important;
+    font-size: 0.62rem !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
 }
 
-/* Penyesuaian Lebar Kolom Header & Cell */
+/* Penyesuaian Lebar Kolom Header & Cell agar Pas Fullwidth */
 body.menu-page-otk .otk-table th.number-column,
-body.menu-page-otk .otk-table th:nth-child(1) {
-    width: 36px !important;
-    min-width: 36px !important;
+body.menu-page-otk .otk-table th:nth-child(1),
+body.menu-page-otk .otk-table td.unit-number {
+    width: 28px !important;
+    min-width: 28px !important;
+    text-align: center !important;
+    padding: 2px 2px !important;
 }
 body.menu-page-otk .otk-table th.unit-column,
-body.menu-page-otk .otk-table th:nth-child(2) {
-    width: 14% !important;
-    min-width: 145px !important;
+body.menu-page-otk .otk-table th:nth-child(2),
+body.menu-page-otk .otk-table td.unit-name {
+    width: 13% !important;
+    min-width: 105px !important;
+    font-size: 0.62rem !important;
+    padding: 2px 4px !important;
 }
-body.menu-page-otk .otk-table th:nth-child(3) {
+body.menu-page-otk .otk-table th:nth-child(3),
+body.menu-page-otk .otk-table td[data-merge="section-responsibility"] {
     width: 9% !important;
-    min-width: 95px !important;
+    min-width: 75px !important;
+    font-size: 0.61rem !important;
+    padding: 2px 3px !important;
 }
-body.menu-page-otk .otk-table th:nth-child(4) {
+body.menu-page-otk .otk-table th:nth-child(4),
+body.menu-page-otk .otk-table td[data-merge="coordinator"] {
     width: 11% !important;
-    min-width: 115px !important;
+    min-width: 85px !important;
+    font-size: 0.61rem !important;
+    padding: 2px 4px !important;
 }
-body.menu-page-otk .otk-table th:nth-child(5) {
+body.menu-page-otk .otk-table th:nth-child(5),
+body.menu-page-otk .otk-table td[data-merge="implementer"] {
     width: 12% !important;
-    min-width: 125px !important;
+    min-width: 95px !important;
+    font-size: 0.62rem !important;
+    padding: 2px 4px !important;
 }
-body.menu-page-otk .otk-table th:nth-child(6) {
-    width: 22% !important;
-    min-width: 220px !important;
+body.menu-page-otk .otk-table th:nth-child(6),
+body.menu-page-otk .otk-table td.otk-cell-jabatan {
+    width: 24% !important;
+    min-width: 135px !important;
+    font-size: 0.62rem !important;
+    padding: 2px 4px !important;
 }
-body.menu-page-otk .otk-table th:nth-child(7) {
-    width: 32% !important;
-    min-width: 380px !important;
+body.menu-page-otk .otk-table th:nth-child(7),
+body.menu-page-otk .otk-table td.employee-name {
+    width: 28% !important;
+    min-width: 165px !important;
+    font-size: 0.63rem !important;
+    padding: 2px 4px !important;
 }
 
-/* Kolom NAMA: Full 1 Baris, TIDAK BOLEH WRAP */
+body.menu-page-otk .otk-table thead th {
+    background: #a9d18e !important;
+    color: #111827 !important;
+    text-align: center !important;
+    font-size: 0.64rem !important;
+    font-weight: 700 !important;
+    padding: 4px 3px !important;
+    border: 1px solid #64748b !important;
+}
+body.menu-page-otk .otk-table.table-bordered > :not(caption) > * > * {
+    border: 1px solid #cbd5e1 !important;
+    padding: 2px 4px !important;
+    vertical-align: middle !important;
+}
+
+/* Kolom NAMA */
 body.menu-page-otk .otk-table td.employee-name {
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
-    word-break: normal !important;
-    padding: 3px 6px !important;
+    padding: 2px 4px !important;
 }
 body.menu-page-otk .otk-table tr[hidden] {
     display: none !important;
 }
 body.menu-page-otk .otk-table .employee-name-text {
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
-    word-break: normal !important;
-    font-size: 0.72rem !important;
+    font-size: 0.63rem !important;
     font-weight: 600 !important;
     color: #111827;
+}
+
+/* Drag Handle & Drag Reordering Styling */
+.otk-drag-handle {
+    cursor: grab;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 11px;
+    padding: 0 1px;
+    transition: color 0.15s ease;
+    user-select: none;
+}
+.otk-drag-handle:hover,
+.otk-drag-handle:active {
+    color: #15432D;
+    cursor: grabbing;
+}
+tr.otk-row[draggable="true"] {
+    cursor: default;
+}
+tr.otk-row.otk-row-dragging {
+    opacity: 0.45;
+    background-color: #fef08a !important;
+}
+tr.otk-row.otk-drag-over {
+    background-color: #dcfce7 !important;
+    outline: 2px dashed #16a34a !important;
+}
+tr.otk-row.otk-drag-over-top {
+    border-top: 2px solid #16a34a !important;
+}
+tr.otk-row.otk-drag-over-bottom {
+    border-bottom: 2px solid #16a34a !important;
+}
+
+/* Editable Cell Hover & Editing */
+.otk-editable-cell {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+.otk-editable-cell:hover {
+    background-color: #f0fdf4 !important;
+    box-shadow: inset 0 0 0 1px #86efac;
+}
+.otk-inline-input {
+    width: 100% !important;
+    font-size: 0.62rem !important;
+    padding: 1px 3px !important;
+    height: auto !important;
+    border-radius: 3px !important;
+    border: 1px solid #16a34a !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25) !important;
 }
 
 /* Tombol Aksi Row OTK (Move, Insert, Edit, Delete) */
@@ -209,6 +303,7 @@ body.menu-page-otk .otk-table .employee-name-text {
                             @foreach($implementer['employees'] as $employee)
                                 <tr
                                     class="otk-row"
+                                    draggable="true"
                                     data-user-id="{{ $employee->id }}"
                                     data-section-key="{{ $sectionIndex }}"
                                     data-coordinator-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}"
@@ -217,21 +312,24 @@ body.menu-page-otk .otk-table .employee-name-text {
                                 >
                                     @if($sectionFirstRow)
                                         <td rowspan="{{ $sectionRowCount }}" class="unit-number" data-merge="section-number" data-merge-key="{{ $sectionIndex }}">{{ $section['number'] }}</td>
-                                        <td rowspan="{{ $sectionRowCount }}" class="unit-name" data-merge="section-unit" data-merge-key="{{ $sectionIndex }}">{{ $section['unit'] }}</td>
-                                        <td rowspan="{{ $sectionRowCount }}" class="merged-label" data-merge="section-responsibility" data-merge-key="{{ $sectionIndex }}">{{ $section['responsibility'] }}</td>
+                                        <td rowspan="{{ $sectionRowCount }}" class="unit-name otk-editable-cell" data-field="unit" data-merge="section-unit" data-merge-key="{{ $sectionIndex }}" title="Klik ganda untuk edit unit">{{ $section['unit'] }}</td>
+                                        <td rowspan="{{ $sectionRowCount }}" class="merged-label otk-editable-cell" data-field="responsibility" data-merge="section-responsibility" data-merge-key="{{ $sectionIndex }}" title="Klik ganda untuk edit tanggung jawab">{{ $section['responsibility'] }}</td>
                                         @php $sectionFirstRow = false; @endphp
                                     @endif
                                     @if($coordinatorFirstRow)
-                                        <td rowspan="{{ $coordinatorRowCount }}" class="merged-label" data-merge="coordinator" data-merge-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}">{{ $coordinator['label'] }}</td>
+                                        <td rowspan="{{ $coordinatorRowCount }}" class="merged-label otk-editable-cell" data-field="coordinator" data-merge="coordinator" data-merge-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}" title="Klik ganda untuk edit koordinasi">{{ $coordinator['label'] }}</td>
                                         @php $coordinatorFirstRow = false; @endphp
                                     @endif
                                     @if($loop->first)
-                                        <td rowspan="{{ $implementerRowCount }}" class="merged-label" data-merge="implementer" data-merge-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}-{{ $implementerIndex }}">{{ $implementer['label'] }}</td>
+                                        <td rowspan="{{ $implementerRowCount }}" class="merged-label otk-editable-cell" data-field="implementer" data-merge="implementer" data-merge-key="{{ $sectionIndex }}-{{ $coordinatorIndex }}-{{ $implementerIndex }}" title="Klik ganda untuk edit unsur pelaksana">{{ $implementer['label'] }}</td>
                                     @endif
-                                    <td class="otk-cell-jabatan">{{ $employee->jabatan }}</td>
+                                    <td class="otk-cell-jabatan otk-editable-cell" data-field="jabatan" title="Klik ganda untuk edit jabatan langsung">{{ $employee->jabatan }}</td>
                                     <td class="employee-name">
-                                        <div class="d-flex align-items-center justify-content-between gap-1">
-                                            <span class="employee-name-text">{{ $employee->name }}</span>
+                                        <div class="d-flex align-items-center justify-content-between gap-1 w-100">
+                                            <div class="d-flex align-items-center gap-1 text-truncate">
+                                                <span class="otk-drag-handle screen-only" title="Tahan dan geser (drag) ke atas/bawah untuk memindahkan baris"><i class="bi bi-grip-vertical"></i></span>
+                                                <span class="employee-name-text otk-editable-cell" data-field="name" title="Klik ganda untuk edit nama langsung">{{ $employee->name }}</span>
+                                            </div>
                                             <div class="otk-row-actions screen-only">
                                                 <button
                                                     type="button"
@@ -931,7 +1029,84 @@ body.menu-page-otk .otk-table .employee-name-text {
         }
     });
 
-    // === FITUR PINDAHKAN BARIS (MOVE UP / DOWN) TANPA REFRESH ===
+    // === FUNGSI TUKAR POSISI BARIS SECARA INSTAN & PERSISTEN ===
+    async function swapRowData(sourceRow, targetRow, direction) {
+        if (!sourceRow || !targetRow || sourceRow === targetRow) return false;
+
+        const sourceUserId = sourceRow.dataset.userId || sourceRow.querySelector('.btn-otk-move')?.dataset.userId;
+        const targetUserId = targetRow.dataset.userId || targetRow.querySelector('.btn-otk-move')?.dataset.userId;
+        if (!sourceUserId || !targetUserId) return false;
+
+        // Tukar sel Jabatan UIS dan Nama UIS di DOM secara instan tanpa refresh
+        const sourceJabatanCell = sourceRow.children[sourceRow.children.length - 2];
+        const sourceNameCell = sourceRow.children[sourceRow.children.length - 1];
+        const targetJabatanCell = targetRow.children[targetRow.children.length - 2];
+        const targetNameCell = targetRow.children[targetRow.children.length - 1];
+
+        const tempJabatan = sourceJabatanCell.innerHTML;
+        const tempName = sourceNameCell.innerHTML;
+        const tempUserId = sourceRow.dataset.userId;
+        const tempSearch = sourceRow.dataset.search;
+
+        sourceJabatanCell.innerHTML = targetJabatanCell.innerHTML;
+        sourceNameCell.innerHTML = targetNameCell.innerHTML;
+        sourceRow.dataset.userId = targetRow.dataset.userId;
+        sourceRow.dataset.search = targetRow.dataset.search;
+
+        targetJabatanCell.innerHTML = tempJabatan;
+        targetNameCell.innerHTML = tempName;
+        targetRow.dataset.userId = tempUserId;
+        targetRow.dataset.search = tempSearch;
+
+        // Visual feedback highlight
+        targetRow.style.transition = 'background-color 0.3s ease';
+        targetRow.style.backgroundColor = '#dcfce7';
+        setTimeout(() => {
+            targetRow.style.backgroundColor = '';
+        }, 600);
+
+        try {
+            const response = await fetch(@json(route('hirarki.move-row')), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: sourceUserId,
+                    swap_user_id: targetUserId,
+                    direction: direction || 'down'
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal memindahkan baris di server.');
+            }
+            return true;
+        } catch (error) {
+            // Revert jika gagal
+            const revertJabatan = sourceJabatanCell.innerHTML;
+            const revertName = sourceNameCell.innerHTML;
+            const revertUserId = sourceRow.dataset.userId;
+            const revertSearch = sourceRow.dataset.search;
+
+            sourceJabatanCell.innerHTML = targetJabatanCell.innerHTML;
+            sourceNameCell.innerHTML = targetNameCell.innerHTML;
+            sourceRow.dataset.userId = targetRow.dataset.userId;
+            sourceRow.dataset.search = targetRow.dataset.search;
+
+            targetJabatanCell.innerHTML = revertJabatan;
+            targetNameCell.innerHTML = revertName;
+            targetRow.dataset.userId = revertUserId;
+            targetRow.dataset.search = revertSearch;
+
+            await showAlert(error.message || 'Terjadi kesalahan saat memindahkan baris.', 'error');
+            return false;
+        }
+    }
+
+    // === FITUR PINDAHKAN BARIS DENGAN TOMBOL NAIK / TURUN ===
     document.getElementById('otkTable').addEventListener('click', async (e) => {
         const moveBtn = e.target.closest('.btn-otk-move');
         if (!moveBtn) return;
@@ -940,9 +1115,7 @@ body.menu-page-otk .otk-table .employee-name-text {
         const currentRow = moveBtn.closest('tr.otk-row');
         if (!currentRow) return;
 
-        const currentUserId = moveBtn.dataset.userId;
         const direction = moveBtn.dataset.direction;
-
         const allRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
             .filter(r => r.style.display !== 'none');
         const currentIndex = allRows.indexOf(currentRow);
@@ -959,75 +1132,184 @@ body.menu-page-otk .otk-table .employee-name-text {
         }
 
         const targetRow = allRows[targetIndex];
-        const targetUserId = targetRow.dataset.userId || targetRow.querySelector('.btn-otk-move')?.dataset.userId;
-
-        // Tukar sel Jabatan UIS dan Nama UIS di DOM secara instan tanpa refresh
-        const currentJabatanCell = currentRow.children[currentRow.children.length - 2];
-        const currentNameCell = currentRow.children[currentRow.children.length - 1];
-        const targetJabatanCell = targetRow.children[targetRow.children.length - 2];
-        const targetNameCell = targetRow.children[targetRow.children.length - 1];
-
-        const tempJabatan = currentJabatanCell.innerHTML;
-        const tempName = currentNameCell.innerHTML;
-        const tempUserId = currentRow.dataset.userId;
-        const tempSearch = currentRow.dataset.search;
-
-        currentJabatanCell.innerHTML = targetJabatanCell.innerHTML;
-        currentNameCell.innerHTML = targetNameCell.innerHTML;
-        currentRow.dataset.userId = targetRow.dataset.userId;
-        currentRow.dataset.search = targetRow.dataset.search;
-
-        targetJabatanCell.innerHTML = tempJabatan;
-        targetNameCell.innerHTML = tempName;
-        targetRow.dataset.userId = tempUserId;
-        targetRow.dataset.search = tempSearch;
-
-        // Visual feedback highlight
-        targetRow.style.transition = 'background-color 0.3s ease';
-        targetRow.style.backgroundColor = '#dcfce7';
-        setTimeout(() => {
-            targetRow.style.backgroundColor = '';
-        }, 600);
-
-        // Update di server di background (tanpa reload halaman)
-        try {
-            const response = await fetch(@json(route('hirarki.move-row')), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: currentUserId,
-                    swap_user_id: targetUserId,
-                    direction: direction
-                }),
-            });
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Gagal memindahkan baris di server.');
-            }
-        } catch (error) {
-            // Revert jika gagal
-            const revertJabatan = currentJabatanCell.innerHTML;
-            const revertName = currentNameCell.innerHTML;
-            const revertUserId = currentRow.dataset.userId;
-            const revertSearch = currentRow.dataset.search;
-
-            currentJabatanCell.innerHTML = targetJabatanCell.innerHTML;
-            currentNameCell.innerHTML = targetNameCell.innerHTML;
-            currentRow.dataset.userId = targetRow.dataset.userId;
-            currentRow.dataset.search = targetRow.dataset.search;
-
-            targetJabatanCell.innerHTML = revertJabatan;
-            targetNameCell.innerHTML = revertName;
-            targetRow.dataset.userId = revertUserId;
-            targetRow.dataset.search = revertSearch;
-
-            await showAlert(error.message || 'Terjadi kesalahan saat memindahkan baris.', 'error');
-        }
+        await swapRowData(currentRow, targetRow, direction);
     });
+
+    // === FITUR DRAG AND DROP BARIS (TARIK & GESER KE ATAS / BAWAH) ===
+    function initOtkDragAndDrop() {
+        let draggedRow = null;
+        const table = document.getElementById('otkTable');
+        if (!table) return;
+
+        table.addEventListener('dragstart', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.classList.contains('otk-inline-input')) {
+                e.preventDefault();
+                return;
+            }
+            const row = e.target.closest('tr.otk-row');
+            if (!row) return;
+
+            draggedRow = row;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', row.dataset.userId || '');
+            row.classList.add('otk-row-dragging');
+        });
+
+        table.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            const targetRow = e.target.closest('tr.otk-row');
+            if (!targetRow || targetRow === draggedRow) return;
+
+            document.querySelectorAll('tr.otk-row.otk-drag-over').forEach(r => {
+                if (r !== targetRow) r.classList.remove('otk-drag-over');
+            });
+            targetRow.classList.add('otk-drag-over');
+        });
+
+        table.addEventListener('dragleave', (e) => {
+            const targetRow = e.target.closest('tr.otk-row');
+            if (targetRow && !targetRow.contains(e.relatedTarget)) {
+                targetRow.classList.remove('otk-drag-over');
+            }
+        });
+
+        table.addEventListener('dragend', () => {
+            if (draggedRow) {
+                draggedRow.classList.remove('otk-row-dragging');
+                draggedRow = null;
+            }
+            document.querySelectorAll('tr.otk-row.otk-drag-over').forEach(r => r.classList.remove('otk-drag-over'));
+        });
+
+        table.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const targetRow = e.target.closest('tr.otk-row');
+            document.querySelectorAll('tr.otk-row.otk-drag-over').forEach(r => r.classList.remove('otk-drag-over'));
+
+            if (!draggedRow || !targetRow || draggedRow === targetRow) {
+                if (draggedRow) draggedRow.classList.remove('otk-row-dragging');
+                draggedRow = null;
+                return;
+            }
+
+            const allRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+                .filter(r => r.style.display !== 'none');
+            const sourceIndex = allRows.indexOf(draggedRow);
+            const targetIndex = allRows.indexOf(targetRow);
+            const direction = targetIndex < sourceIndex ? 'up' : 'down';
+
+            const source = draggedRow;
+            draggedRow.classList.remove('otk-row-dragging');
+            draggedRow = null;
+
+            await swapRowData(source, targetRow, direction);
+        });
+    }
+
+    // === FITUR EDIT KOLOM LANGSUNG (INLINE EDIT DENGAN KLIK GANDA / ENTER) ===
+    function initOtkInlineEdit() {
+        const table = document.getElementById('otkTable');
+        if (!table) return;
+
+        table.addEventListener('dblclick', (e) => {
+            const cell = e.target.closest('.otk-editable-cell');
+            if (!cell || cell.querySelector('.otk-inline-input')) return;
+
+            let textTarget = cell;
+            if (cell.classList.contains('employee-name')) {
+                textTarget = cell.querySelector('.employee-name-text') || cell;
+            }
+
+            const originalText = textTarget.textContent.trim();
+            const field = cell.dataset.field || textTarget.dataset.field || 'name';
+            const row = cell.closest('tr.otk-row') || cell.closest('tr');
+            const userId = row ? row.dataset.userId : null;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control form-control-sm otk-inline-input';
+            input.value = originalText;
+
+            const originalHTML = textTarget.innerHTML;
+            textTarget.innerHTML = '';
+            textTarget.appendChild(input);
+            input.focus();
+            input.select();
+
+            let isSaving = false;
+
+            const saveEdit = async () => {
+                if (isSaving) return;
+                isSaving = true;
+
+                const newValue = input.value.trim();
+                if (!newValue || newValue === originalText) {
+                    textTarget.innerHTML = originalHTML;
+                    return;
+                }
+
+                // Render teks baru
+                textTarget.textContent = newValue;
+
+                if (userId && (field === 'name' || field === 'jabatan' || field === 'unit')) {
+                    try {
+                        const updateUrl = @json(url('/hirarki')) + '/' + userId + '/update';
+                        const response = await fetch(updateUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ [field]: newValue }),
+                        });
+
+                        const result = await response.json();
+                        if (!response.ok || !result.success) {
+                            throw new Error(result.message || 'Gagal menyimpan perubahan.');
+                        }
+
+                        // Efek hijau sukses
+                        textTarget.style.transition = 'background-color 0.3s ease';
+                        textTarget.style.backgroundColor = '#86efac';
+                        setTimeout(() => {
+                            textTarget.style.backgroundColor = '';
+                        }, 600);
+                    } catch (err) {
+                        textTarget.innerHTML = originalHTML;
+                        await showAlert(err.message || 'Gagal menyimpan perubahan.', 'error');
+                    }
+                } else {
+                    // Update tampilan sel merged
+                    textTarget.style.transition = 'background-color 0.3s ease';
+                    textTarget.style.backgroundColor = '#86efac';
+                    setTimeout(() => {
+                        textTarget.style.backgroundColor = '';
+                    }, 600);
+                }
+            };
+
+            input.addEventListener('keydown', (ke) => {
+                if (ke.key === 'Enter') {
+                    ke.preventDefault();
+                    input.blur();
+                } else if (ke.key === 'Escape') {
+                    ke.preventDefault();
+                    textTarget.innerHTML = originalHTML;
+                }
+            });
+
+            input.addEventListener('blur', () => {
+                saveEdit();
+            });
+        });
+    }
+
+    // Aktifkan Drag & Drop dan Inline Edit
+    initOtkDragAndDrop();
+    initOtkInlineEdit();
 
     // === FITUR SISIPKAN BARIS (INSERT ROW) ===
     const insertModalElement = document.getElementById('insertOtkRowModal');

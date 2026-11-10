@@ -499,16 +499,18 @@ class HierarchyController extends Controller
             'supervisor_id' => 'nullable|exists:users,id',
         ]);
 
-        $newSupervisorId = $request->input('supervisor_id');
-        if ($this->supervisorWouldCreateCycle($user, $newSupervisorId)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Atasan yang dipilih akan membuat siklus dalam struktur OTK.',
-            ], 422);
+        if ($request->has('supervisor_id')) {
+            $newSupervisorId = $request->input('supervisor_id');
+            if ($this->supervisorWouldCreateCycle($user, $newSupervisorId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Atasan yang dipilih akan membuat siklus dalam struktur OTK.',
+                ], 422);
+            }
+            $user->supervisor_id = $newSupervisorId ?: null;
         }
 
         $user->fill($request->only(['name', 'jabatan', 'unit']));
-        $user->supervisor_id = $newSupervisorId ?: null;
         $user->save();
 
         $supervisorName = $newSupervisorId
