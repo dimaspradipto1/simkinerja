@@ -290,44 +290,50 @@
         border-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
         border: 1px solid #e9ecef;
+        overflow: hidden;
     }
     .edlink-header {
-        padding: 1.25rem 1.5rem 0.75rem 1.5rem;
+        padding: 1.15rem 1.25rem 0.6rem 1.25rem;
     }
     .edlink-calendar-strip {
-        padding: 0.5rem 1rem 1rem 1rem;
-        border-bottom: 1px solid #f0f2f5;
+        padding: 0.25rem 0.5rem 0.85rem 0.5rem;
+        border-bottom: 1px solid #edf2f7;
         position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     .edlink-day-btn {
         display: flex;
         flex-direction: column;
         align-items: center;
         text-decoration: none;
-        padding: 6px 12px;
-        border-radius: 12px;
+        padding: 4px 2px;
+        border-radius: 10px;
         transition: all 0.2s ease;
         color: #495057;
         position: relative;
         cursor: pointer;
         user-select: none;
+        flex: 1;
     }
     .edlink-day-btn:hover {
         background-color: #f8f9fa;
         color: #198754;
     }
-    .edlink-day-btn.active {
+    .edlink-day-name {
+        font-size: 0.82rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: #6c757d;
+    }
+    .edlink-day-btn.active .edlink-day-name {
         color: #198754;
         font-weight: 700;
     }
-    .edlink-day-name {
-        font-size: 0.85rem;
-        font-weight: 500;
-        margin-bottom: 4px;
-    }
     .edlink-day-badge {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -335,34 +341,125 @@
         font-size: 0.95rem;
         font-weight: 600;
         transition: all 0.2s ease;
+        color: #212529;
     }
     .edlink-day-btn.active .edlink-day-badge {
         background-color: #198754;
         color: #ffffff;
         box-shadow: 0 4px 12px rgba(25, 135, 84, 0.35);
     }
+    .edlink-day-dot {
+        width: 5px;
+        height: 5px;
+        background-color: #198754;
+        border-radius: 50%;
+        margin-top: 5px;
+        display: inline-block;
+    }
+    .edlink-day-dot-empty {
+        width: 5px;
+        height: 5px;
+        margin-top: 5px;
+        display: inline-block;
+        visibility: hidden;
+    }
     .edlink-active-arrow {
         position: absolute;
-        bottom: -16px;
+        bottom: -14px;
+        left: 50%;
+        transform: translateX(-50%);
         width: 0;
         height: 0;
-        border-left: 7px solid transparent;
-        border-right: 7px solid transparent;
-        border-bottom: 7px solid #f0f2f5;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid #198754;
         display: none;
+        z-index: 2;
     }
     .edlink-day-btn.active .edlink-active-arrow {
         display: block;
     }
-    .edlink-empty-state {
-        padding: 3rem 1.5rem;
-        text-align: center;
+    .edlink-task-card {
+        border-radius: 12px;
+        border: 1px solid #edf2f7;
+        background: #ffffff;
+        padding: 1rem;
+        margin-bottom: 0.85rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .edlink-empty-icon {
-        width: 90px;
-        height: 90px;
-        margin: 0 auto 1.25rem auto;
-        opacity: 0.85;
+    .edlink-task-card:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .edlink-btn-subtle {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 6px 8px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        flex: 1;
+        transition: all 0.2s;
+    }
+    .edlink-btn-subtle:hover {
+        background: #f8f9fa;
+        color: #212529;
+        border-color: #ced4da;
+    }
+    .edlink-btn-start {
+        background-color: #198754;
+        border: 1px solid #198754;
+        color: #ffffff;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 6px 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        text-decoration: none;
+        flex: 1;
+        transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(25, 135, 84, 0.25);
+    }
+    .edlink-btn-start:hover {
+        background-color: #157347;
+        border-color: #146c43;
+        color: #ffffff;
+    }
+    .edlink-btn-stop {
+        background-color: #dc3545;
+        border: 1px solid #dc3545;
+        color: #ffffff;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 6px 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        text-decoration: none;
+        flex: 1;
+        transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(220, 53, 69, 0.25);
+    }
+    .edlink-btn-stop:hover {
+        background-color: #bb2d3b;
+        border-color: #b02a37;
+        color: #ffffff;
+    }
+    .edlink-empty-state {
+        padding: 2.5rem 1rem;
+        text-align: center;
     }
 
     /* Attendance Realtime DataTables Styling */
@@ -1158,8 +1255,146 @@
 
     </div>
 
-    <!-- Right Column: Monitoring & Quick Navigation -->
+    <!-- Right Column: Schedule & Monitoring -->
     <div class="col-lg-4">
+        <!-- Widget: Jadwal Minggu Ini -->
+        <div class="card edlink-card shadow-sm border-0 mb-4">
+            <div class="edlink-header d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold text-dark m-0 fs-6">Jadwal Minggu Ini</h5>
+                <span class="small text-muted" style="font-size: 0.8rem;">Hari ini: {{ $todayFormatted }}</span>
+            </div>
+            
+            <!-- Day Selector Strip (Senin - Minggu) -->
+            <div class="edlink-calendar-strip">
+                @foreach($weekDays as $day)
+                    <a href="{{ request()->fullUrlWithQuery(['selected_date' => $day['date']]) }}" 
+                       class="edlink-day-btn {{ $day['is_selected'] ? 'active' : '' }}" 
+                       title="{{ $day['date'] }}">
+                        <span class="edlink-day-name">{{ $day['day_name'] }}</span>
+                        <div class="edlink-day-badge">
+                            {{ $day['day_num'] }}
+                        </div>
+                        @if($day['has_tasks'])
+                            <span class="edlink-day-dot"></span>
+                        @else
+                            <span class="edlink-day-dot-empty"></span>
+                        @endif
+                        @if($day['is_selected'])
+                            <span class="edlink-active-arrow"></span>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+
+            <!-- Card Body / Task List -->
+            <div class="card-body p-3">
+                <!-- Status Banner -->
+                <div class="alert alert-success d-flex align-items-center gap-2 p-2.5 rounded-3 mb-3 border-0" style="background-color: #e8f8f2; color: #0f5132; font-size: 0.85rem;">
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    <div>
+                        @if($scheduledTasksOnDate->count() > 0)
+                            <strong>{{ $scheduledTasksOnDate->count() }} kegiatan / sesi</strong> terjadwal pada hari ini
+                        @else
+                            Semua sesi di hari ini sudah selesai atau belum ada jadwal
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Scheduled Tasks List -->
+                @forelse($scheduledTasksOnDate as $task)
+                    <div class="edlink-task-card">
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                            <h6 class="fw-bold text-dark m-0 text-uppercase" style="font-size: 0.9rem; line-height: 1.35;">
+                                {{ $task->uraian_tugas }}
+                            </h6>
+                            <span class="badge {{ $task->badge_class }} rounded-pill text-nowrap" style="font-size: 0.7rem; padding: 4px 8px;">
+                                {{ $task->kategori_label }}
+                            </span>
+                        </div>
+
+                        <!-- Meta Chips Row (Sesi, Jam Estimasi, Lokasi/Pegawai) -->
+                        <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 text-muted" style="font-size: 0.78rem;">
+                            <span class="d-inline-flex align-items-center gap-1 text-secondary">
+                                <i class="bi bi-journal-bookmark-fill text-muted"></i> Sesi: {{ $task->kategori_label }}
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-1 text-secondary">
+                                <i class="bi bi-clock-fill text-muted"></i> 
+                                @if($task->estimasi_jam_mulai)
+                                    {{ date('H:i', strtotime($task->estimasi_jam_mulai)) }} - {{ $task->estimasi_jam_selesai ? date('H:i', strtotime($task->estimasi_jam_selesai)) : 'Selesai' }} WIB
+                                @else
+                                    Fleksibel
+                                @endif
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-1 text-secondary">
+                                <i class="bi bi-geo-alt-fill text-muted"></i> {{ Str::limit($task->user->name ?? 'Pegawai', 16) }}
+                            </span>
+                        </div>
+
+                        <!-- Subtitle / Document indicator -->
+                        <div class="d-flex align-items-center gap-2 mb-3 small" style="font-size: 0.82rem;">
+                            <i class="bi bi-file-earmark-check-fill text-success"></i>
+                            <span class="fw-medium text-dark text-truncate">
+                                @if($task->file)
+                                    {{ basename($task->file) }}
+                                @elseif($task->url_external)
+                                    Tautan Berkas Terlampir
+                                @else
+                                    Rencana Tugas Terjadwal
+                                @endif
+                            </span>
+                        </div>
+
+                        <!-- Action Buttons Row -->
+                        <div class="d-flex align-items-center gap-2">
+                            @if($task->file)
+                                <a href="{{ asset('storage/' . $task->file) }}" target="_blank" class="edlink-btn-subtle" title="Unduh / Lihat Berkas">
+                                    <i class="bi bi-paperclip"></i> Bahan Ajar
+                                </a>
+                            @elseif($task->url_external)
+                                <a href="{{ $task->url_external }}" target="_blank" class="edlink-btn-subtle" title="Buka Tautan">
+                                    <i class="bi bi-link-45deg"></i> Bahan Ajar
+                                </a>
+                            @else
+                                <a href="{{ route($task->kategori_code . '.index') }}" class="edlink-btn-subtle" title="Detail & Bahan">
+                                    <i class="bi bi-plus-lg"></i> Bahan Ajar
+                                </a>
+                            @endif
+
+                            @if($task->kategori_code === 'kepanitiaan')
+                                <a href="{{ route('kepanitiaan.show', $task->id) }}" class="edlink-btn-subtle" title="Presensi Sesi">
+                                    <i class="bi bi-people-fill"></i> Presensi
+                                </a>
+                            @else
+                                <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Detail & Rekan">
+                                    <i class="bi bi-people-fill"></i> Presensi
+                                </a>
+                            @endif
+
+                            @if($task->status == 'Selesai')
+                                <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
+                                    <i class="bi bi-check2"></i> Selesai
+                                </button>
+                            @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
+                                <button type="button" class="edlink-btn-stop btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
+                                    <i class="bi bi-stop-fill"></i> Selesai
+                                </button>
+                            @else
+                                <button type="button" class="edlink-btn-start btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="start" data-id="{{ $task->id }}">
+                                    <i class="bi bi-play-fill"></i> Mulai Sesi
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="edlink-empty-state">
+                        <i class="bi bi-calendar-check text-muted d-block fs-1 mb-2 opacity-50"></i>
+                        <h6 class="fw-bold text-dark mb-1">Tidak Ada Jadwal</h6>
+                        <p class="text-muted small mb-0">Tidak ada sesi kegiatan yang terjadwal pada {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
         <!-- Monitoring Status Card -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom">

@@ -52,19 +52,46 @@ class DashboardController extends Controller
         }
 
         // EdLink-style Weekly Calendar Days (Senin - Minggu)
+        Carbon::setLocale('id');
         $selectedDate = $request->query('selected_date', date('Y-m-d'));
         $todayCarbon = Carbon::parse($selectedDate);
         $startOfWeek = $todayCarbon->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+        $todayFormatted = Carbon::now()->translatedFormat('d F Y');
+
+        // Pre-query task dates in this entire week to determine 'has_tasks' for each day efficiently
+        $weeklyTaskDates = \App\Models\Kegiatan::where($userScope)
+            ->where(function ($q) use ($startOfWeek, $endOfWeek) {
+                $q->whereBetween('estimasi_tanggal_mulai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+                  ->orWhereBetween('estimasi_tanggal_selesai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+                  ->orWhereBetween('tanggal_mulai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+                  ->orWhere(function ($qSub) use ($startOfWeek, $endOfWeek) {
+                      $qSub->whereDate('estimasi_tanggal_mulai', '<=', $startOfWeek->format('Y-m-d'))
+                           ->whereDate('estimasi_tanggal_selesai', '>=', $endOfWeek->format('Y-m-d'));
+                  });
+            })
+            ->get(['id', 'estimasi_tanggal_mulai', 'estimasi_tanggal_selesai', 'tanggal_mulai']);
         
         $weekDays = [];
         $dayNames = [1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Min'];
         for ($i = 0; $i < 7; $i++) {
             $day = $startOfWeek->copy()->addDays($i);
             $dateStr = $day->format('Y-m-d');
+
+            $hasTasks = $weeklyTaskDates->contains(function ($task) use ($dateStr) {
+                $start = $task->estimasi_tanggal_mulai ?? $task->tanggal_mulai;
+                $end = $task->estimasi_tanggal_selesai ?? $start;
+                if ($start && $end) {
+                    return $dateStr >= $start && $dateStr <= $end;
+                }
+                return $task->tanggal_mulai === $dateStr || $task->estimasi_tanggal_mulai === $dateStr;
+            });
+
             $weekDays[] = [
                 'day_name' => $dayNames[$day->dayOfWeekIso] ?? $day->format('D'),
                 'day_num' => $day->format('d'),
                 'date' => $dateStr,
+                'has_tasks' => $hasTasks,
                 'is_selected' => ($dateStr === $selectedDate),
                 'is_today' => ($dateStr === date('Y-m-d')),
             ];
@@ -201,6 +228,7 @@ class DashboardController extends Controller
             'totalPegawai',
             'weekDays',
             'selectedDate',
+            'todayFormatted',
             'scheduledTasksOnDate',
             'dynamicKepanitiaanList',
             'activeSessions',
