@@ -59,9 +59,23 @@ class DashboardController extends Controller
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
         $todayFormatted = Carbon::now()->translatedFormat('d F Y');
 
+        // Filter Jadwal Minggu Ini khusus untuk user yang sedang login (masing-masing pengguna melihat kegiatan pribadinya)
+        $personalScope = function ($q) use ($user) {
+            if ($user) {
+                $q->where(function ($sub) use ($user) {
+                    $sub->where('user_id', $user->id)
+                        ->orWhereHas('taggedUsers', function ($qu) use ($user) {
+                            $qu->where('users.id', $user->id);
+                        });
+                });
+            } else {
+                $q->whereRaw('1 = 0');
+            }
+        };
+
         // Pre-query all tasks for the entire week from the 3 modules in one batch
-        $getWeeklyTasks = function ($queryModel, $kategori, $kategoriCode, $badgeClass) use ($startOfWeek, $endOfWeek, $userScope) {
-            return $queryModel->where($userScope)
+        $getWeeklyTasks = function ($queryModel, $kategori, $kategoriCode, $badgeClass) use ($startOfWeek, $endOfWeek, $personalScope) {
+            return $queryModel->where($personalScope)
                 ->where(function ($q) use ($startOfWeek, $endOfWeek) {
                     $q->whereBetween('estimasi_tanggal_mulai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
                       ->orWhereBetween('estimasi_tanggal_selesai', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
@@ -115,6 +129,7 @@ class DashboardController extends Controller
                 'date' => $dateStr,
                 'formatted_date' => $day->translatedFormat('l, d F Y'),
                 'has_tasks' => $tasksOnThisDay->isNotEmpty(),
+                'tasks_count' => $tasksOnThisDay->count(),
                 'tasks' => $tasksOnThisDay,
                 'is_selected' => $isSelected,
                 'is_today' => ($dateStr === date('Y-m-d')),
