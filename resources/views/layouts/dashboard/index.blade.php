@@ -408,6 +408,13 @@
         flex: 1;
         transition: all 0.2s;
     }
+    button.edlink-btn-subtle {
+        cursor: pointer;
+        font-family: inherit;
+    }
+    button.edlink-btn-subtle:disabled {
+        cursor: not-allowed;
+    }
     .edlink-btn-subtle:hover {
         background: #f8f9fa;
         color: #212529;
@@ -634,9 +641,9 @@
                                     <i class="bi bi-file-earmark-check-fill text-success"></i>
                                     <span class="fw-medium text-dark text-truncate">
                                         @if($task->file)
-                                            {{ basename($task->file) }}
+                                            <a href="{{ asset('storage/' . $task->file) }}" target="_blank" class="text-success text-decoration-none fw-semibold" title="Buka / Unduh Berkas"><i class="bi bi-paperclip me-1"></i>{{ basename($task->file) }}</a>
                                         @elseif($task->url_external)
-                                            Tautan Berkas Terlampir
+                                            <a href="{{ $task->url_external }}" target="_blank" class="text-success text-decoration-none fw-semibold" title="Buka Tautan Eksternal"><i class="bi bi-link-45deg me-1"></i>Tautan Berkas Terlampir</a>
                                         @else
                                             Rencana Tugas Terjadwal
                                         @endif
@@ -645,37 +652,35 @@
 
                                 <!-- Action Buttons Row -->
                                 <div class="d-flex align-items-center gap-2">
-                                    {{-- Button 1: Berkas / Link / Detail --}}
-                                    @if($task->file)
-                                        <a href="{{ asset('storage/' . $task->file) }}" target="_blank" class="edlink-btn-subtle" title="Unduh / Lihat Berkas">
-                                            <i class="bi bi-paperclip"></i> Berkas
-                                        </a>
-                                    @elseif($task->url_external)
-                                        <a href="{{ $task->url_external }}" target="_blank" class="edlink-btn-subtle" title="Buka Tautan Eksternal">
-                                            <i class="bi bi-link-45deg"></i> Link
-                                        </a>
-                                    @else
-                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Lihat Rincian Kegiatan">
-                                            <i class="bi bi-eye"></i> Detail
-                                        </a>
-                                    @endif
+                                    {{-- Button 1: Detail mengarah ke Kegiatan Rutin --}}
+                                    <a href="{{ $task->kategori_code === 'rencana-kerja' ? route('rencana-kerja.index') : route($task->kategori_code . '.index') }}" class="edlink-btn-subtle" title="Lihat Kegiatan Rutin">
+                                        <i class="bi bi-eye"></i> Detail
+                                    </a>
 
-                                    {{-- Button 2: Presensi (Kepanitiaan) / Rekan Tim / Info --}}
+                                    {{-- Button 2: Pause (atau Presensi jika Kepanitiaan) --}}
                                     @if($task->kategori_code === 'kepanitiaan')
                                         <a href="{{ route('kepanitiaan.show', $task->id) }}" class="edlink-btn-subtle" title="Presensi Sesi Kepanitiaan">
                                             <i class="bi bi-qr-code-scan"></i> Presensi
                                         </a>
-                                    @elseif($task->taggedUsers && $task->taggedUsers->count() > 0)
-                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Rekan Tim: {{ $task->taggedUsers->pluck('name')->implode(', ') }}">
-                                            <i class="bi bi-people-fill"></i> Tim ({{ $task->taggedUsers->count() }})
-                                        </a>
+                                    @elseif($task->status === 'Di-pause')
+                                        <button type="button" class="edlink-btn-subtle text-warning fw-semibold" disabled style="opacity: 0.85; cursor: default;" title="Kegiatan sedang di-jeda (Di-pause)">
+                                            <i class="bi bi-pause-circle-fill text-warning"></i> Di-pause
+                                        </button>
+                                    @elseif($task->status === 'Selesai')
+                                        <button type="button" class="edlink-btn-subtle text-muted" disabled style="opacity: 0.45; cursor: not-allowed;" title="Kegiatan telah selesai">
+                                            <i class="bi bi-pause-fill"></i> Pause
+                                        </button>
+                                    @elseif($task->status === 'Proses' || $task->status === 'Berjalan')
+                                        <button type="button" class="edlink-btn-subtle btn-action-dash text-warning fw-semibold text-nowrap" data-type="{{ $task->kategori_code }}" data-action="pause" data-id="{{ $task->id }}" title="Jeda / Pause Kegiatan">
+                                            <i class="bi bi-pause-fill"></i> Pause
+                                        </button>
                                     @else
-                                        <a href="{{ route($task->kategori_code . '.show', $task->id) }}" class="edlink-btn-subtle" title="Detail Kegiatan">
-                                            <i class="bi bi-info-circle"></i> Info
-                                        </a>
+                                        <button type="button" class="edlink-btn-subtle btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="pause" data-id="{{ $task->id }}" title="Jeda / Pause Kegiatan">
+                                            <i class="bi bi-pause-fill"></i> Pause
+                                        </button>
                                     @endif
 
-                                    {{-- Button 3: Mulai Kegiatan / Selesaikan / Selesai --}}
+                                    {{-- Button 3: Mulai Kegiatan / Lanjut / Selesaikan / Selesai --}}
                                     @if($task->status == 'Selesai')
                                         <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
                                             <i class="bi bi-check2-circle"></i> Selesai
@@ -683,6 +688,10 @@
                                     @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
                                         <button type="button" class="edlink-btn-stop btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
                                             <i class="bi bi-stop-fill"></i> Selesaikan
+                                        </button>
+                                    @elseif($task->status == 'Di-pause')
+                                        <button type="button" class="edlink-btn-start btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="start" data-id="{{ $task->id }}">
+                                            <i class="bi bi-play-fill"></i> Lanjut Kegiatan
                                         </button>
                                     @else
                                         <button type="button" class="edlink-btn-start btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="start" data-id="{{ $task->id }}">
@@ -1505,13 +1514,13 @@
             } catch (err) {}
         });
 
-        // Handle Mulai & Selesai button click on Dashboard
+        // Handle Mulai, Pause, & Selesai button click on Dashboard
         $(document).on('click', '.btn-action-dash', function() {
             let btn = $(this);
             let type = btn.data('type');
             let action = btn.data('action');
             let id = btn.data('id');
-            let actionText = action === 'start' ? 'memulai' : 'menyelesaikan';
+            let actionText = action === 'start' ? 'memulai' : (action === 'pause' ? 'menjeda' : 'menyelesaikan');
 
             btn.prop('disabled', true);
 
