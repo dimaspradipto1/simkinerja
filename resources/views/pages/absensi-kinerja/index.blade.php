@@ -135,7 +135,7 @@
                                 <!-- Baris 1: Header Grup Periode -->
                                 <tr class="text-white text-center fw-bold" style="background-color: #0d6efd;">
                                     <th rowspan="2" class="text-white align-middle px-3 text-start" style="min-width: 280px; background-color: #0b5ed7;">
-                                        Pegawai &amp; Jabatan OTK
+                                        Nama Staff
                                     </th>
                                     <th colspan="{{ count($matrixDays) }}" class="text-center py-1.5 text-white" style="background-color: #0d6efd; letter-spacing: 0.5px;">
                                         Monitoring Kehadiran - Periode {{ $namaBulanIndonesia }} {{ $tahun }}
