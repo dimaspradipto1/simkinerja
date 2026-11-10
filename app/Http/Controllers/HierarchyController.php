@@ -694,6 +694,43 @@ class HierarchyController extends Controller
     }
 
     /**
+     * Batch reorder seluruh baris OTK (Drag and Drop tunggal maupun multi-select).
+     */
+    public function reorderOtkRows(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser || (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && !$authUser->subordinates()->exists())) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $validated = $request->validate([
+            'ordered_user_ids' => 'required|array',
+            'ordered_user_ids.*' => 'integer|exists:users,id',
+        ]);
+
+        $orderedIds = $validated['ordered_user_ids'];
+
+        DB::transaction(function () use ($orderedIds) {
+            foreach ($orderedIds as $index => $userId) {
+                DB::table('otk_members')->updateOrInsert(
+                    ['user_id' => $userId],
+                    [
+                        'sort_order' => $index,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+            DB::table('otk_sync_state')->updateOrInsert(['id' => 1], ['synced_at' => now()]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Urutan OTK berhasil diperbarui.',
+        ]);
+    }
+
+    /**
      * Sisipkan baris baru (di atas atau di bawah baris acuan tertentu).
      */
     public function insertOtkRow(Request $request)

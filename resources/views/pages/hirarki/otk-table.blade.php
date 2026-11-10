@@ -103,6 +103,49 @@ body.menu-page-otk .otk-table .employee-name-text {
     color: #111827;
 }
 
+/* Checkbox & Multi-Select Styling */
+.otk-row-checkbox, .otk-select-all-cb {
+    width: 12px !important;
+    height: 12px !important;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0;
+    accent-color: #16a34a;
+}
+tr.otk-row.otk-row-selected {
+    background-color: #ecfdf5 !important;
+}
+tr.otk-row.otk-row-selected td {
+    background-color: inherit !important;
+}
+tr.otk-row.otk-row-selected .employee-name-text {
+    font-weight: 700 !important;
+    color: #15803d !important;
+}
+
+/* Floating Batch Action Toolbar */
+.otk-batch-toolbar {
+    position: fixed;
+    bottom: 24px;
+    right: 28px;
+    z-index: 1060;
+    background: #ffffff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #16a34a;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    animation: fadeInSlideUp 0.2s ease-out;
+}
+@keyframes fadeInSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Drag Handle & Drag Reordering Styling */
 .otk-drag-handle {
     cursor: grab;
@@ -279,7 +322,12 @@ tr.otk-row.otk-drag-over-bottom {
                     <th>KOORDINASI MELALUI WAKIL REKTOR</th>
                     <th>UNSUR PELAKSANA</th>
                     <th>JABATAN UIS</th>
-                    <th>NAMA</th>
+                    <th>
+                        <div class="d-flex align-items-center justify-content-between px-1">
+                            <input type="checkbox" id="otkSelectAll" class="form-check-input otk-select-all-cb screen-only m-0" title="Pilih Semua Baris">
+                            <span class="mx-auto">NAMA</span>
+                        </div>
+                    </th>
                 </tr>
             </thead>
             @forelse($organizationSections as $sectionIndex => $section)
@@ -327,6 +375,7 @@ tr.otk-row.otk-drag-over-bottom {
                                     <td class="employee-name">
                                         <div class="d-flex align-items-center justify-content-between gap-1 w-100">
                                             <div class="d-flex align-items-center gap-1 text-truncate">
+                                                <input type="checkbox" class="form-check-input otk-row-checkbox screen-only m-0" data-user-id="{{ $employee->id }}" title="Pilih baris ini (Shift+klik untuk pilih rentang)">
                                                 <span class="otk-drag-handle screen-only" title="Tahan dan geser (drag) ke atas/bawah untuk memindahkan baris"><i class="bi bi-grip-vertical"></i></span>
                                                 <span class="employee-name-text otk-editable-cell" data-field="name" title="Klik ganda untuk edit nama langsung">{{ $employee->name }}</span>
                                             </div>
@@ -391,6 +440,20 @@ tr.otk-row.otk-drag-over-bottom {
                 </tbody>
             @endforelse
         </table>
+    </div>
+
+    <!-- Floating Batch Actions Toolbar untuk Multi-Select -->
+    <div id="otkBatchToolbar" class="otk-batch-toolbar screen-only" style="display: none;">
+        <span class="badge bg-success py-1 px-2" id="otkBatchCount">0 dipilih</span>
+        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-dark" id="otkBatchMoveUp" title="Geser baris terpilih ke atas">
+            <i class="bi bi-arrow-up me-1"></i>Naik
+        </button>
+        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-dark" id="otkBatchMoveDown" title="Geser baris terpilih ke bawah">
+            <i class="bi bi-arrow-down me-1"></i>Turun
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" id="otkBatchClear" title="Batalkan pilihan">
+            <i class="bi bi-x-lg me-1"></i>Batal
+        </button>
     </div>
 
     <div class="otk-footnote screen-only">
@@ -1029,84 +1092,243 @@ tr.otk-row.otk-drag-over-bottom {
         }
     });
 
-    // === FUNGSI TUKAR POSISI BARIS SECARA INSTAN & PERSISTEN ===
-    async function swapRowData(sourceRow, targetRow, direction) {
-        if (!sourceRow || !targetRow || sourceRow === targetRow) return false;
+    // ========================================================
+    // === FITUR MULTI-SELECT & REORDER BARIS OTK (DRAG/DROP) ===
+    // ========================================================
+    const selectedUserIds = new Set();
+    let lastCheckedRowIndex = -1;
 
-        const sourceUserId = sourceRow.dataset.userId || sourceRow.querySelector('.btn-otk-move')?.dataset.userId;
-        const targetUserId = targetRow.dataset.userId || targetRow.querySelector('.btn-otk-move')?.dataset.userId;
-        if (!sourceUserId || !targetUserId) return false;
+    function updateBatchToolbar() {
+        const toolbar = document.getElementById('otkBatchToolbar');
+        const countSpan = document.getElementById('otkBatchCount');
+        const selectAllCb = document.getElementById('otkSelectAll');
+        const visibleRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+            .filter(r => r.style.display !== 'none');
 
-        // Tukar sel Jabatan UIS dan Nama UIS di DOM secara instan tanpa refresh
-        const sourceJabatanCell = sourceRow.children[sourceRow.children.length - 2];
-        const sourceNameCell = sourceRow.children[sourceRow.children.length - 1];
-        const targetJabatanCell = targetRow.children[targetRow.children.length - 2];
-        const targetNameCell = targetRow.children[targetRow.children.length - 1];
+        const totalSelected = selectedUserIds.size;
+        if (countSpan) {
+            countSpan.textContent = `${totalSelected} dipilih`;
+        }
 
-        const tempJabatan = sourceJabatanCell.innerHTML;
-        const tempName = sourceNameCell.innerHTML;
-        const tempUserId = sourceRow.dataset.userId;
-        const tempSearch = sourceRow.dataset.search;
+        if (toolbar) {
+            toolbar.style.display = totalSelected > 0 ? 'flex' : 'none';
+        }
 
-        sourceJabatanCell.innerHTML = targetJabatanCell.innerHTML;
-        sourceNameCell.innerHTML = targetNameCell.innerHTML;
-        sourceRow.dataset.userId = targetRow.dataset.userId;
-        sourceRow.dataset.search = targetRow.dataset.search;
+        if (selectAllCb) {
+            if (totalSelected === 0) {
+                selectAllCb.checked = false;
+                selectAllCb.indeterminate = false;
+            } else if (totalSelected >= visibleRows.length && visibleRows.length > 0) {
+                selectAllCb.checked = true;
+                selectAllCb.indeterminate = false;
+            } else {
+                selectAllCb.checked = false;
+                selectAllCb.indeterminate = true;
+            }
+        }
+    }
 
-        targetJabatanCell.innerHTML = tempJabatan;
-        targetNameCell.innerHTML = tempName;
-        targetRow.dataset.userId = tempUserId;
-        targetRow.dataset.search = tempSearch;
+    function toggleRowSelection(row, forceState) {
+        if (!row) return;
+        const userId = row.dataset.userId;
+        if (!userId) return;
 
-        // Visual feedback highlight
-        targetRow.style.transition = 'background-color 0.3s ease';
-        targetRow.style.backgroundColor = '#dcfce7';
-        setTimeout(() => {
-            targetRow.style.backgroundColor = '';
-        }, 600);
+        const cb = row.querySelector('.otk-row-checkbox');
+        const isChecked = typeof forceState === 'boolean' ? forceState : !selectedUserIds.has(userId);
 
+        if (isChecked) {
+            selectedUserIds.add(userId);
+            row.classList.add('otk-row-selected');
+            if (cb) cb.checked = true;
+        } else {
+            selectedUserIds.delete(userId);
+            row.classList.remove('otk-row-selected');
+            if (cb) cb.checked = false;
+        }
+    }
+
+    function clearAllSelection() {
+        selectedUserIds.clear();
+        document.querySelectorAll('#otkTable tbody tr.otk-row').forEach(row => {
+            row.classList.remove('otk-row-selected');
+            const cb = row.querySelector('.otk-row-checkbox');
+            if (cb) cb.checked = false;
+        });
+        updateBatchToolbar();
+    }
+
+    // Fungsi Utama: Pindahkan dan Tata Ulang Baris di DOM serta Simpan ke Server
+    async function reorderRowsToTarget(movingIds, targetRow, position = 'before') {
+        if (!movingIds || movingIds.length === 0 || !targetRow) return false;
+
+        const allRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+            .filter(r => r.style.display !== 'none');
+        if (allRows.length === 0) return false;
+
+        // Ambil data slot karyawan dari setiap baris
+        const rowSlots = allRows.map(row => {
+            const jabatanCell = row.querySelector('.otk-cell-jabatan');
+            const nameCell = row.querySelector('.employee-name');
+            return {
+                userId: row.dataset.userId,
+                search: row.dataset.search,
+                jabatanHTML: jabatanCell.innerHTML,
+                nameHTML: nameCell.innerHTML,
+                isSelected: selectedUserIds.has(row.dataset.userId)
+            };
+        });
+
+        const movingSet = new Set(movingIds.map(String));
+        const movingItems = rowSlots.filter(item => movingSet.has(String(item.userId)));
+        const remainingItems = rowSlots.filter(item => !movingSet.has(String(item.userId)));
+
+        if (movingItems.length === 0) return false;
+
+        let targetIndexInRemaining = remainingItems.findIndex(item => String(item.userId) === String(targetRow.dataset.userId));
+        if (targetIndexInRemaining === -1) {
+            targetIndexInRemaining = position === 'before' ? 0 : remainingItems.length;
+        } else if (position === 'after') {
+            targetIndexInRemaining += 1;
+        }
+
+        const newOrder = [
+            ...remainingItems.slice(0, targetIndexInRemaining),
+            ...movingItems,
+            ...remainingItems.slice(targetIndexInRemaining)
+        ];
+
+        // Terapkan susunan baru ke sel baris di DOM
+        newOrder.forEach((item, idx) => {
+            const row = allRows[idx];
+            if (!row) return;
+
+            row.dataset.userId = item.userId;
+            row.dataset.search = item.search;
+
+            const jabatanCell = row.querySelector('.otk-cell-jabatan');
+            const nameCell = row.querySelector('.employee-name');
+            if (jabatanCell) jabatanCell.innerHTML = item.jabatanHTML;
+            if (nameCell) nameCell.innerHTML = item.nameHTML;
+
+            const cb = row.querySelector('.otk-row-checkbox');
+            if (cb) cb.checked = item.isSelected;
+
+            if (item.isSelected) {
+                row.classList.add('otk-row-selected');
+                row.style.transition = 'background-color 0.4s ease';
+                row.style.backgroundColor = '#bbf7d0';
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 700);
+            } else {
+                row.classList.remove('otk-row-selected');
+                row.style.backgroundColor = '';
+            }
+        });
+
+        updateBatchToolbar();
+
+        // Simpan urutan baru ke database via /hirarki/reorder
+        const orderedUserIds = newOrder.map(item => item.userId);
         try {
-            const response = await fetch(@json(route('hirarki.move-row')), {
+            const response = await fetch(@json(route('hirarki.reorder')), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({
-                    user_id: sourceUserId,
-                    swap_user_id: targetUserId,
-                    direction: direction || 'down'
-                }),
+                body: JSON.stringify({ ordered_user_ids: orderedUserIds }),
             });
             const result = await response.json();
             if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Gagal memindahkan baris di server.');
+                throw new Error(result.message || 'Gagal menyimpan urutan baris ke server.');
             }
             return true;
         } catch (error) {
-            // Revert jika gagal
-            const revertJabatan = sourceJabatanCell.innerHTML;
-            const revertName = sourceNameCell.innerHTML;
-            const revertUserId = sourceRow.dataset.userId;
-            const revertSearch = sourceRow.dataset.search;
-
-            sourceJabatanCell.innerHTML = targetJabatanCell.innerHTML;
-            sourceNameCell.innerHTML = targetNameCell.innerHTML;
-            sourceRow.dataset.userId = targetRow.dataset.userId;
-            sourceRow.dataset.search = targetRow.dataset.search;
-
-            targetJabatanCell.innerHTML = revertJabatan;
-            targetNameCell.innerHTML = revertName;
-            targetRow.dataset.userId = revertUserId;
-            targetRow.dataset.search = revertSearch;
-
-            await showAlert(error.message || 'Terjadi kesalahan saat memindahkan baris.', 'error');
+            await showAlert(error.message || 'Terjadi kesalahan saat menyimpan urutan.', 'error');
             return false;
         }
     }
 
-    // === FITUR PINDAHKAN BARIS DENGAN TOMBOL NAIK / TURUN ===
+    // === FITUR MULTI-SELECT ACTIONS (TOOLBAR & SELECTION) ===
+    function initOtkMultiSelect() {
+        const table = document.getElementById('otkTable');
+        if (!table) return;
+
+        // Select All Checkbox di Header NAMA
+        document.getElementById('otkSelectAll')?.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const allVisible = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+                .filter(r => r.style.display !== 'none');
+            allVisible.forEach(row => toggleRowSelection(row, isChecked));
+            updateBatchToolbar();
+        });
+
+        // Tombol Batal Pilihan
+        document.getElementById('otkBatchClear')?.addEventListener('click', () => {
+            clearAllSelection();
+        });
+
+        // Tombol Geser Naik Semua Terpilih
+        document.getElementById('otkBatchMoveUp')?.addEventListener('click', async () => {
+            if (selectedUserIds.size === 0) return;
+            const allRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+                .filter(r => r.style.display !== 'none');
+            const selectedIndices = allRows
+                .map((r, i) => selectedUserIds.has(r.dataset.userId) ? i : -1)
+                .filter(i => i !== -1);
+            const minIndex = Math.min(...selectedIndices);
+            if (minIndex <= 0) {
+                await showAlert('Baris terpilih sudah berada di posisi paling atas.', 'info');
+                return;
+            }
+            const targetRow = allRows[minIndex - 1];
+            await reorderRowsToTarget(Array.from(selectedUserIds), targetRow, 'before');
+        });
+
+        // Tombol Geser Turun Semua Terpilih
+        document.getElementById('otkBatchMoveDown')?.addEventListener('click', async () => {
+            if (selectedUserIds.size === 0) return;
+            const allRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+                .filter(r => r.style.display !== 'none');
+            const selectedIndices = allRows
+                .map((r, i) => selectedUserIds.has(r.dataset.userId) ? i : -1)
+                .filter(i => i !== -1);
+            const maxIndex = Math.max(...selectedIndices);
+            if (maxIndex >= allRows.length - 1) {
+                await showAlert('Baris terpilih sudah berada di posisi paling bawah.', 'info');
+                return;
+            }
+            const targetRow = allRows[maxIndex + 1];
+            await reorderRowsToTarget(Array.from(selectedUserIds), targetRow, 'after');
+        });
+
+        // Klik Checkbox Baris (Mendukung Shift+Klik untuk Pilih Rentang)
+        table.addEventListener('click', (e) => {
+            const cb = e.target.closest('.otk-row-checkbox');
+            if (cb) {
+                const row = cb.closest('tr.otk-row');
+                const allVisible = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+                    .filter(r => r.style.display !== 'none');
+                const currentIndex = allVisible.indexOf(row);
+
+                if (e.shiftKey && lastCheckedRowIndex !== -1 && lastCheckedRowIndex !== currentIndex) {
+                    const start = Math.min(lastCheckedRowIndex, currentIndex);
+                    const end = Math.max(lastCheckedRowIndex, currentIndex);
+                    for (let i = start; i <= end; i++) {
+                        toggleRowSelection(allVisible[i], cb.checked);
+                    }
+                } else {
+                    toggleRowSelection(row, cb.checked);
+                }
+                lastCheckedRowIndex = currentIndex;
+                updateBatchToolbar();
+            }
+        });
+    }
+
+    // === FITUR PINDAHKAN BARIS DENGAN TOMBOL NAIK / TURUN SATUAN ===
     document.getElementById('otkTable').addEventListener('click', async (e) => {
         const moveBtn = e.target.closest('.btn-otk-move');
         if (!moveBtn) return;
@@ -1132,12 +1354,16 @@ tr.otk-row.otk-drag-over-bottom {
         }
 
         const targetRow = allRows[targetIndex];
-        await swapRowData(currentRow, targetRow, direction);
+        const movingIds = selectedUserIds.has(currentRow.dataset.userId)
+            ? Array.from(selectedUserIds)
+            : [currentRow.dataset.userId];
+
+        await reorderRowsToTarget(movingIds, targetRow, direction === 'up' ? 'before' : 'after');
     });
 
-    // === FITUR DRAG AND DROP BARIS (TARIK & GESER KE ATAS / BAWAH) ===
+    // === FITUR DRAG AND DROP BARIS (MENDUKUNG SINGLE MAUPUN MULTI-SELECT) ===
     function initOtkDragAndDrop() {
-        let draggedRow = null;
+        let draggedRows = [];
         const table = document.getElementById('otkTable');
         if (!table) return;
 
@@ -1149,10 +1375,34 @@ tr.otk-row.otk-drag-over-bottom {
             const row = e.target.closest('tr.otk-row');
             if (!row) return;
 
-            draggedRow = row;
+            const userId = row.dataset.userId;
+            if (!userId) return;
+
+            // Jika baris yang didrag belum dipilih, pilih baris ini
+            if (!selectedUserIds.has(userId)) {
+                clearAllSelection();
+                toggleRowSelection(row, true);
+                updateBatchToolbar();
+            }
+
+            draggedRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
+                .filter(r => selectedUserIds.has(r.dataset.userId));
+
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', row.dataset.userId || '');
-            row.classList.add('otk-row-dragging');
+            e.dataTransfer.setData('text/plain', Array.from(selectedUserIds).join(','));
+
+            // Floating drag ghost indicator
+            const ghost = document.createElement('div');
+            ghost.className = 'badge bg-success shadow-sm py-1 px-2';
+            ghost.style.position = 'absolute';
+            ghost.style.top = '-9999px';
+            ghost.style.left = '-9999px';
+            ghost.textContent = `📦 ${selectedUserIds.size} baris`;
+            document.body.appendChild(ghost);
+            e.dataTransfer.setDragImage(ghost, 15, 15);
+            setTimeout(() => ghost.remove(), 0);
+
+            draggedRows.forEach(r => r.classList.add('otk-row-dragging'));
         });
 
         table.addEventListener('dragover', (e) => {
@@ -1160,7 +1410,7 @@ tr.otk-row.otk-drag-over-bottom {
             e.dataTransfer.dropEffect = 'move';
 
             const targetRow = e.target.closest('tr.otk-row');
-            if (!targetRow || targetRow === draggedRow) return;
+            if (!targetRow || selectedUserIds.has(targetRow.dataset.userId)) return;
 
             document.querySelectorAll('tr.otk-row.otk-drag-over').forEach(r => {
                 if (r !== targetRow) r.classList.remove('otk-drag-over');
@@ -1176,35 +1426,28 @@ tr.otk-row.otk-drag-over-bottom {
         });
 
         table.addEventListener('dragend', () => {
-            if (draggedRow) {
-                draggedRow.classList.remove('otk-row-dragging');
-                draggedRow = null;
-            }
+            document.querySelectorAll('tr.otk-row.otk-row-dragging').forEach(r => r.classList.remove('otk-row-dragging'));
             document.querySelectorAll('tr.otk-row.otk-drag-over').forEach(r => r.classList.remove('otk-drag-over'));
+            draggedRows = [];
         });
 
         table.addEventListener('drop', async (e) => {
             e.preventDefault();
             const targetRow = e.target.closest('tr.otk-row');
             document.querySelectorAll('tr.otk-row.otk-drag-over').forEach(r => r.classList.remove('otk-drag-over'));
+            document.querySelectorAll('tr.otk-row.otk-row-dragging').forEach(r => r.classList.remove('otk-row-dragging'));
 
-            if (!draggedRow || !targetRow || draggedRow === targetRow) {
-                if (draggedRow) draggedRow.classList.remove('otk-row-dragging');
-                draggedRow = null;
+            if (!targetRow || selectedUserIds.has(targetRow.dataset.userId)) {
+                draggedRows = [];
                 return;
             }
 
-            const allRows = Array.from(document.querySelectorAll('#otkTable tbody tr.otk-row'))
-                .filter(r => r.style.display !== 'none');
-            const sourceIndex = allRows.indexOf(draggedRow);
-            const targetIndex = allRows.indexOf(targetRow);
-            const direction = targetIndex < sourceIndex ? 'up' : 'down';
+            const rect = targetRow.getBoundingClientRect();
+            const position = (e.clientY - rect.top) < (rect.height / 2) ? 'before' : 'after';
 
-            const source = draggedRow;
-            draggedRow.classList.remove('otk-row-dragging');
-            draggedRow = null;
-
-            await swapRowData(source, targetRow, direction);
+            const movingIds = Array.from(selectedUserIds);
+            draggedRows = [];
+            await reorderRowsToTarget(movingIds, targetRow, position);
         });
     }
 
@@ -1307,7 +1550,8 @@ tr.otk-row.otk-drag-over-bottom {
         });
     }
 
-    // Aktifkan Drag & Drop dan Inline Edit
+    // Aktifkan Multi-Select, Drag & Drop, dan Inline Edit
+    initOtkMultiSelect();
     initOtkDragAndDrop();
     initOtkInlineEdit();
 
