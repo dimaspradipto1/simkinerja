@@ -549,713 +549,9 @@
     </div>
 </div>
 
-<!-- KPI Summary Cards -->
+<!-- Main Content Grid: Sisi Kiri col-lg-4 (Jadwal Minggu Ini) & Sisi Kanan col-lg-8 (Rencana Kerja & Kinerja) -->
 <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #198754 !important;">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Rencana Kerja Utama</span>
-                    <h3 class="fw-bold text-dark mt-1 mb-1">{{ $totalTugas }}</h3>
-                    <div class="small text-muted">
-                        <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>{{ $tugasSelesai }} Selesai</span>
-                        <span class="text-muted">({{ $persentaseSelesai }}%)</span>
-                    </div>
-                </div>
-                <div class="stat-icon stat-icon-green shadow-sm">
-                    <i class="bi bi-journal-check"></i>
-                </div>
-            </div>
-            <div class="progress mt-3" style="height: 5px; background-color: #f1f5f9;">
-                <div class="progress-bar bg-success" role="progressbar" style="width: {{ $persentaseSelesai }}%;" aria-valuenow="{{ $persentaseSelesai }}" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #0d6efd !important;">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Tugas Kepanitiaan</span>
-                    <h3 class="fw-bold text-dark mt-1 mb-1">{{ $totalKepanitiaan }}</h3>
-                    <div class="small text-muted">
-                        <span class="text-primary fw-bold"><i class="bi bi-check-circle-fill me-1"></i>{{ $kepanitiaanSelesai }} Selesai</span>
-                    </div>
-                </div>
-                <div class="stat-icon stat-icon-blue shadow-sm">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-            </div>
-            @php
-                $kpPct = $totalKepanitiaan > 0 ? round(($kepanitiaanSelesai / $totalKepanitiaan) * 100) : 0;
-            @endphp
-            <div class="progress mt-3" style="height: 5px; background-color: #f1f5f9;">
-                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $kpPct }}%;" aria-valuenow="{{ $kpPct }}" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #ffc107 !important;">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Tugas Insidentil</span>
-                    <h3 class="fw-bold text-dark mt-1 mb-1">{{ $totalInsidentil }}</h3>
-                    <div class="small text-muted">
-                        <span class="text-warning fw-bold text-dark"><i class="bi bi-check-circle-fill me-1"></i>{{ $insidentilSelesai }} Selesai</span>
-                    </div>
-                </div>
-                <div class="stat-icon stat-icon-amber shadow-sm">
-                    <i class="bi bi-lightning-charge-fill"></i>
-                </div>
-            </div>
-            @php
-                $insPct = $totalInsidentil > 0 ? round(($insidentilSelesai / $totalInsidentil) * 100) : 0;
-            @endphp
-            <div class="progress mt-3" style="height: 5px; background-color: #f1f5f9;">
-                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $insPct }}%;" aria-valuenow="{{ $insPct }}" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-        <div class="card stat-card border-0 shadow-sm h-100 p-3" style="background: #ffffff; border-left: 4px solid #6f42c1 !important;">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">
-                        @if($isAdminOrLeader) Pegawai & Sesi Aktif @else Info Unit & Presensi @endif
-                    </span>
-                    <h3 class="fw-bold text-dark mt-1 mb-1">
-                        @if($isAdminOrLeader) {{ $totalPegawai }} <span class="fs-6 fw-normal text-muted">Pegawai</span> @else {{ $activeSessions->count() }} <span class="fs-6 fw-normal text-muted">Sesi Aktif</span> @endif
-                    </h3>
-                    <div class="small">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0.5 px-2">
-                            <i class="bi bi-broadcast me-1"></i>{{ $activeSessions->count() }} Sesi Aktif
-                        </span>
-                    </div>
-                </div>
-                <div class="stat-icon stat-icon-purple shadow-sm">
-                    <i class="bi bi-person-badge-fill"></i>
-                </div>
-            </div>
-            <div class="d-flex align-items-center justify-content-between mt-3 text-muted small" style="font-size: 0.76rem;">
-                <span class="text-truncate" style="max-width: 140px;">Unit: {{ auth()->user()->unit ?? 'Universitas' }}</span>
-                <span class="text-secondary">{{ date('d M Y') }}</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-@unless(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-<!-- Quick Scan Absensi Card for Regular Users -->
-<div class="card shadow-sm border-0 mb-4" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0 !important;">
-    <div class="card-body p-4">
-        <div class="row align-items-center g-3">
-            <div class="col-md-8">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-4 shadow-sm" style="width: 52px; height: 52px; min-width: 52px; background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
-                        <i class="bi bi-qr-code-scan"></i>
-                    </div>
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <h5 class="fw-bold m-0 fs-5 text-dark">Scan Absensi Kehadiran</h5>
-                            @if($defaultSession)
-                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">Sesi Aktif Tersedia</span>
-                            @endif
-                        </div>
-                        <p class="m-0 text-muted small">
-                            @if($defaultSession)
-                                Sesi saat ini: <strong>{{ $defaultSession->nama_sesi }}</strong> ({{ $defaultSession->kepanitiaan->uraian_tugas ?? 'Kepanitiaan' }}). Klik scan untuk mencatat kehadiran Anda.
-                            @else
-                                Scan QR Code untuk mencatat kehadiran Anda pada sesi kegiatan yang sedang berlangsung.
-                            @endif
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 text-md-end">
-                <button type="button" 
-                        class="btn btn-success btn-lg text-nowrap btn-equal-width rounded-pill shadow-sm btn-scan-barcode-modal d-inline-flex align-items-center justify-content-center"
-                        @if($defaultSession)
-                            data-title="{{ $defaultSession->nama_sesi }}"
-                            data-slug="{{ $defaultSession->legacy_slug ?? 'sesi-' . $defaultSession->id }}"
-                            data-token="{{ $defaultSession->token }}"
-                        @else
-                            data-title="Absensi Kehadiran"
-                        @endif
-                        data-active="1"
-                        onclick="window.openScanBarcodeModal(this)">
-                    <i class="bi bi-camera-fill me-2 fs-5"></i>
-                    <span>Scan Sekarang</span>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-@endunless
-
-@if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-<!-- Admin Scan & Session Hub -->
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-body p-4">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 48px; height: 48px; background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
-                    <i class="bi bi-qr-code-scan fs-5"></i>
-                </div>
-                <div>
-                    <h5 class="fw-bold m-0 text-dark">Menu Sesi & Scan Absensi Aktif</h5>
-                    <p class="m-0 text-muted small">Akses langsung barcode QR, scanner kamera modal, dan rekap kehadiran sesi aktif.</p>
-                </div>
-            </div>
-            <div>
-                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.82rem;">
-                    <i class="bi bi-broadcast me-1"></i>{{ $activeSessions->count() }} Sesi Aktif di Sidebar
-                </span>
-            </div>
-        </div>
-
-        <div class="scan-accordion">
-            @forelse($dynamicKepanitiaanList as $kepanitiaan)
-                @php
-                    $isExpanded = $loop->first;
-                    $collapseId = 'kepanitiaanSessions_' . $kepanitiaan->id;
-                    $activeCount = $kepanitiaan->sesiAbsensis->where('is_active', true)->count();
-                @endphp
-                <div class="scan-accordion-item">
-                    <div class="scan-accordion-header {{ $isExpanded ? '' : 'collapsed' }}" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
-                        <div class="left">
-                            <span class="kepanitiaan-badge"><i class="bi bi-check2-circle"></i></span>
-                            <div>
-                                <span class="fw-bold text-dark">{{ $kepanitiaan->uraian_tugas }}</span>
-                                <span class="badge bg-light text-secondary border rounded-pill ms-2 fw-normal" style="font-size: 0.75rem;">
-                                    {{ $activeCount }} Sesi Buka
-                                </span>
-                            </div>
-                        </div>
-                        <i class="bi bi-chevron-up bi-chevron-toggle"></i>
-                    </div>
-                    <div id="{{ $collapseId }}" class="collapse {{ $isExpanded ? 'show' : '' }} scan-accordion-body">
-                        @forelse($kepanitiaan->sesiAbsensis->where('is_active', true) as $sesi)
-                            @php
-                                $targetUrl = route('presensi.sesi.show', $sesi->id);
-                                $qrProcessUrl = route('presensi.scan-proses', ['token' => $sesi->token]);
-                            @endphp
-                            <div class="scan-session-item flex-column flex-md-row gap-3">
-                                <!-- Info Sesi & Barcode Thumbnail -->
-                                <div class="d-flex align-items-center gap-3">
-                                    <a href="javascript:void(0)" 
-                                       class="barcode-thumb-box shadow-sm btn-barcode-absensi"
-                                       data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
-                                       data-token="{{ $sesi->token }}"
-                                       data-scan-url="{{ $qrProcessUrl }}"
-                                       data-title="{{ $sesi->nama_sesi }}"
-                                       data-url="{{ $qrProcessUrl }}"
-                                       data-active="1"
-                                       onclick="window.openBarcodeModal(this)"
-                                       title="Klik untuk Perbesar Barcode QR">
-                                        <i class="bi bi-qr-code"></i>
-                                    </a>
-                                    <div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="pulse-dot"></span>
-                                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">{{ $sesi->nama_sesi }}</span>
-                                        </div>
-                                        <small class="text-muted d-flex align-items-center gap-2 mt-1" style="font-size: 0.78rem;">
-                                            <span><i class="bi bi-calendar3 text-primary" style="margin-right: 5px;"></i>{{ $sesi->tanggal ? date('d M Y', strtotime($sesi->tanggal)) : 'Tanggal Berlangsung' }}</span>
-                                            <span>&bull;</span>
-                                            <span class="text-success fw-semibold"><i class="bi bi-broadcast" style="margin-right: 5px;"></i>Sesi Buka</span>
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <!-- Action Buttons: Barcode, Kamera Scan Modal, Rekap & Detail -->
-                                <div class="d-flex flex-wrap align-items-center gap-2 ms-md-auto">
-                                    <!-- 1. Tampilkan Barcode QR Modal -->
-                                    <button type="button" 
-                                            class="btn btn-sm btn-dark text-white rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm btn-barcode-absensi"
-                                            data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
-                                            data-token="{{ $sesi->token }}"
-                                            data-scan-url="{{ $qrProcessUrl }}"
-                                            data-title="{{ $sesi->nama_sesi }}"
-                                            data-url="{{ $qrProcessUrl }}"
-                                            data-active="1"
-                                            onclick="window.openBarcodeModal(this)"
-                                            title="Tampilkan Barcode QR untuk Peserta">
-                                        <i class="bi bi-qr-code text-warning fs-6" style="margin-right: 8px;"></i>
-                                        <span>Tampilkan Barcode</span>
-                                    </button>
-
-                                    <!-- 2. Scan Kamera Modal Langsung (Tanpa Masuk Menu) -->
-                                    <button type="button" 
-                                            class="btn btn-sm btn-success text-white rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm btn-scan-barcode-modal"
-                                            data-title="{{ $sesi->nama_sesi }}"
-                                            data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
-                                            data-token="{{ $sesi->token }}"
-                                            data-active="1"
-                                            onclick="window.openScanBarcodeModal(this)"
-                                            title="Buka Kamera Scanner Langsung">
-                                        <i class="bi bi-camera-fill text-white fs-6" style="margin-right: 8px;"></i>
-                                        <span>Scan Kamera</span>
-                                    </button>
-
-                                    <!-- 3. Rekap & Detail Presensi -->
-                                    <a href="{{ $targetUrl }}" 
-                                       class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm"
-                                       title="Lihat Rekap &amp; Tabel Kehadiran Sesi">
-                                        <i class="bi bi-table text-primary fs-6" style="margin-right: 8px;"></i>
-                                        <span>Rekap &amp; Detail</span>
-                                    </a>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="p-3 text-muted text-center small">Tidak ada sesi aktif pada kepanitiaan ini.</div>
-                        @endforelse
-                    </div>
-                </div>
-            @empty
-                <div class="alert alert-info py-3 px-4 rounded-3 border-0 d-flex align-items-center gap-2 mb-0">
-                    <i class="bi bi-info-circle fs-5 text-info"></i>
-                    <div>Saat ini tidak ada sesi presensi yang sedang aktif (buka) seperti pada sidebar. Anda dapat membuka atau mengaktifkan sesi melalui <a href="{{ route('kepanitiaan.index') }}" class="fw-bold alert-link">Rencana Kerja Kepanitiaan</a>.</div>
-                </div>
-            @endforelse
-        </div>
-    </div>
-</div>
-@endif
-
-<!-- ============================================================== -->
-<!-- DataTables Monitoring Presensi Real-Time (Datang & Pulang)     -->
-<!-- ============================================================== -->
-<div class="card shadow-sm border-0 mb-4 attendance-monitor-card" id="section-monitoring-absensi">
-    <div class="card-body p-4">
-        
-        <!-- Header Subtitle & Full Link -->
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div>
-                <h5 class="fw-bold m-0 text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-person-lines-fill text-success"></i> Monitoring Presensi Real-Time
-                </h5>
-                <p class="text-muted small mb-0 mt-1">Pantau kehadiran pegawai secara langsung pada sesi absensi yang aktif.</p>
-            </div>
-            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                @if($defaultSession)
-                <a id="btn-export-session-excel" 
-                   href="{{ route('presensi.sesi.export', $defaultSession->id) }}" 
-                   class="btn btn-success text-white rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm" 
-                   style="font-size: 0.86rem;" 
-                   title="Export Data Presensi Sesi Ini ke Excel">
-                    <i class="bi bi-file-earmark-excel-fill fs-6" style="margin-right: 8px;"></i> <span>Export Excel</span>
-                </a>
-                <a id="btn-open-session-full" 
-                   href="{{ route('presensi.sesi.show', $defaultSession->id) }}" 
-                   class="btn btn-outline-success rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm" 
-                   style="font-size: 0.86rem;" 
-                   title="Buka Halaman Kelola &amp; Rekap Sesi Ini">
-                    <i class="bi bi-box-arrow-up-right" style="margin-right: 8px;"></i> <span>Kelola &amp; Rekap Sesi Ini</span>
-                </a>
-                @endif
-            </div>
-            @endif
-        </div>
-
-        <!-- Dynamic Active Session Switcher Tabs -->
-        @if($activeSessions->count() > 0)
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 bg-light rounded-4 border">
-            <span class="text-secondary small fw-bold text-uppercase ms-2 me-1" style="font-size: 0.74rem; letter-spacing: 0.5px;">Sesi Aktif:</span>
-            @foreach($activeSessions as $sesi)
-                <button type="button" 
-                        class="btn-session-pill {{ $loop->first ? 'active' : '' }}" 
-                        data-sesi-id="{{ $sesi->id }}" 
-                        data-url="{{ route('presensi.sesi.show', $sesi->id) }}"
-                        data-export-url="{{ route('presensi.sesi.export', $sesi->id) }}"
-                        data-name="{{ $sesi->nama_sesi }}">
-                    <span class="pulse-dot"></span>
-                    <span>{{ $sesi->nama_sesi }}</span>
-                    @if($sesi->kepanitiaan)
-                        <span class="badge-pill-sub">{{ Str::limit($sesi->kepanitiaan->uraian_tugas, 24) }}</span>
-                    @endif
-                </button>
-            @endforeach
-        </div>
-        @else
-        <div class="alert alert-warning py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-center gap-2">
-            <i class="bi bi-exclamation-triangle-fill fs-6 text-warning"></i>
-            <span>Tidak ada sesi presensi yang sedang aktif. Silakan aktifkan sesi di menu Kepanitiaan agar data kehadiran muncul.</span>
-        </div>
-        @endif
-
-        <!-- Pill Search Bar -->
-        <div class="position-relative mb-3">
-            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-            <input type="text" id="attendance-custom-search" class="form-control rounded-pill ps-5 py-2 shadow-none" placeholder="Cari nama pegawai, jabatan, atau unit kerja..." style="background-color: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.92rem;">
-        </div>
-
-        <!-- DataTables Container -->
-        <div class="table-responsive border-0">
-            <table class="table table-hover align-middle mb-0 w-100" id="dashboard-attendance-table">
-                <thead>
-                    <tr style="border-bottom: 2px solid #e2e8f0; background-color: #f8fafc;">
-                        <th width="6%" class="ps-3 text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">NO</th>
-                        <th width="54%" class="text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">PEGAWAI / JABATAN</th>
-                        <th width="20%" class="text-center text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">DATANG</th>
-                        <th width="20%" class="text-center pe-3 text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">PULANG</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Loaded via AJAX DataTables -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Legend at the Bottom -->
-        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 pt-4 mt-2 text-center" style="font-size: 0.85rem;">
-            <span class="fw-bold text-secondary text-uppercase me-2" style="letter-spacing: 0.5px;">KETERANGAN:</span>
-            <span class="badge px-3 py-2 fw-semibold" style="background-color: #198754; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-check-circle me-1"></i>Hadir</span>
-            <span class="badge px-3 py-2 fw-semibold" style="background-color: #ffc107; color: #212529; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-exclamation-circle me-1"></i>Izin</span>
-            <span class="badge px-3 py-2 fw-semibold" style="background-color: #0dcaf0; color: #212529; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-heart-pulse me-1"></i>Sakit</span>
-            <span class="badge px-3 py-2 fw-semibold" style="background-color: #dc3545; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-x-circle me-1"></i>Alpha</span>
-            <span class="badge px-3 py-2 fw-semibold" style="background-color: #6c757d; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-dash-circle me-1"></i>Belum Absen</span>
-        </div>
-
-    </div>
-</div>
-
-<!-- Main Content Grid -->
-<div class="row g-3">
-    <!-- Left Column: Recent Activity Tables -->
-    <div class="col-lg-8">
-        
-        <!-- Table 1: Rencana Kerja Utama Terbaru -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
-                        <i class="bi bi-journal-check text-success me-2"></i>Rencana Kerja Utama
-                    </h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
-                            @if(request('page_kepanitiaan')) <input type="hidden" name="page_kepanitiaan" value="{{ request('page_kepanitiaan') }}"> @endif
-                            @if(request('page_insidentil')) <input type="hidden" name="page_insidentil" value="{{ request('page_insidentil') }}"> @endif
-                            <div class="input-group input-group-sm" style="max-width: 220px;">
-                                <input type="text" name="search_utama" class="form-control" placeholder="Cari..." value="{{ request('search_utama') }}">
-                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
-                            </div>
-                        </form>
-                        <a href="{{ route('rencana-kerja.index') }}" class="btn btn-sm btn-outline-success fw-semibold text-nowrap">
-                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="4%" class="ps-3">No</th>
-                                <th width="30%">Uraian Tugas</th>
-                                <th width="26%">Pegawai / Jabatan</th>
-                                <th width="22%">Tanggal (Estimasi & Realisasi)</th>
-                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentTasks as $index => $task)
-                                <tr>
-                                    <td class="ps-3 text-muted fw-semibold">{{ $recentTasks->firstItem() + $index }}</td>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ $task->uraian_tugas }}</div>
-                                        @if($task->file || $task->url_external)
-                                            <div class="small text-muted mt-1">
-                                                @if($task->file)
-                                                    <span class="badge bg-light text-secondary border me-1"><i class="bi bi-paperclip me-1"></i>Berkas</span>
-                                                @endif
-                                                @if($task->url_external)
-                                                    <span class="badge bg-light text-primary border"><i class="bi bi-link-45deg me-1"></i>Link</span>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($task->user && $task->user->jabatan)
-                                            <div class="text-dark fw-bold small">
-                                                <i class="bi bi-person-fill text-success me-1"></i>{{ $task->user->name ?? '-' }}
-                                            </div>
-                                            <div class="small mt-1">
-                                                <span class="badge bg-light text-dark border fw-semibold me-1"><i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan ?? '-' }}</span>
-                                            </div>
-                                        @else
-                                            <div class="fw-bold text-secondary small">{{ $task->user->name ?? '-' }}</div>
-                                        @endif
-                                        @if($task->taggedUsers && $task->taggedUsers->count() > 0)
-                                            <div class="small text-muted mt-1" style="font-size: 0.75rem;">
-                                                <strong>Rekan:</strong> {{ $task->taggedUsers->pluck('name')->implode(', ') }}
-                                            </div>
-                                        @endif
-                                    </td>
-
-                                    <td>
-                                        <div class="small">
-                                            <div class="text-secondary">
-                                                <i class="bi bi-calendar-event me-1 text-secondary"></i>
-                                                {{ $task->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($task->estimasi_tanggal_mulai)) : '-' }} 
-                                                s/d 
-                                                {{ $task->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) : '-' }}
-                                            </div>
-                                            @if($task->tanggal_mulai)
-                                                <div class="text-success mt-1">
-                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($task->tanggal_mulai)) }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="pe-3 text-center">
-                                        @if($task->status == 'Selesai')
-                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
-                                        @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
-                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="rencana-kerja" data-action="stop" data-id="{{ $task->id }}">
-                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
-                                            </button>
-                                        @else
-                                            <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="rencana-kerja" data-action="start" data-id="{{ $task->id }}">
-                                                <i class="bi bi-play-fill me-1"></i>Mulai
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data Rencana Kerja Utama.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @if($recentTasks->hasPages() || $recentTasks->total() > 0)
-                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="small text-muted">
-                        Menampilkan <strong>{{ $recentTasks->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentTasks->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentTasks->total() }}</strong> data
-                    </div>
-                    <div>
-                        {{ $recentTasks->links() }}
-                    </div>
-                </div>
-            @endif
-        </div>
-
-        <!-- Table 2: Kepanitiaan Terbaru -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
-                        <i class="bi bi-people-fill text-primary me-2"></i>Tugas Kepanitiaan
-                    </h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
-                            @if(request('page_utama')) <input type="hidden" name="page_utama" value="{{ request('page_utama') }}"> @endif
-                            @if(request('page_insidentil')) <input type="hidden" name="page_insidentil" value="{{ request('page_insidentil') }}"> @endif
-                            <div class="input-group input-group-sm" style="max-width: 220px;">
-                                <input type="text" name="search_kepanitiaan" class="form-control" placeholder="Cari..." value="{{ request('search_kepanitiaan') }}">
-                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
-                            </div>
-                        </form>
-                        <a href="{{ route('kepanitiaan.index') }}" class="btn btn-sm btn-outline-primary fw-semibold text-nowrap">
-                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="4%" class="ps-3">No</th>
-                                <th width="30%">Uraian Tugas Kepanitiaan</th>
-                                <th width="26%">Pembuat & Rekan Kerja</th>
-                                <th width="22%">Tanggal (Estimasi & Realisasi)</th>
-                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentKepanitiaan as $index => $kp)
-                                <tr>
-                                    <td class="ps-3 text-muted fw-semibold">{{ $recentKepanitiaan->firstItem() + $index }}</td>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ $kp->uraian_tugas }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-dark small"><i class="bi bi-person-circle me-1 text-primary"></i>{{ $kp->user ? $kp->user->name : '-' }}</div>
-                                        @if($kp->taggedUsers->count() > 0)
-                                            <div class="small text-muted mt-1" style="font-size: 0.75rem;">
-                                                <strong>Rekan:</strong> {{ $kp->taggedUsers->pluck('name')->implode(', ') }}
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="small">
-                                            <div class="text-secondary">
-                                                <i class="bi bi-calendar-event me-1 text-secondary"></i>
-                                                {{ $kp->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($kp->estimasi_tanggal_mulai)) : '-' }}
-                                                s/d
-                                                {{ $kp->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($kp->estimasi_tanggal_selesai)) : '-' }}
-                                            </div>
-                                            @if($kp->tanggal_mulai)
-                                                <div class="text-success mt-1">
-                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($kp->tanggal_mulai)) }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="pe-3 text-center">
-                                        @if($kp->status == 'Selesai')
-                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
-                                        @elseif($kp->status == 'Proses' || $kp->status == 'Berjalan')
-                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="kepanitiaan" data-action="stop" data-id="{{ $kp->id }}">
-                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
-                                            </button>
-                                        @else
-                                            <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="kepanitiaan" data-action="start" data-id="{{ $kp->id }}">
-                                                <i class="bi bi-play-fill me-1"></i>Mulai
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data Tugas Kepanitiaan.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @if($recentKepanitiaan->hasPages() || $recentKepanitiaan->total() > 0)
-                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="small text-muted">
-                        Menampilkan <strong>{{ $recentKepanitiaan->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentKepanitiaan->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentKepanitiaan->total() }}</strong> data
-                    </div>
-                    <div>
-                        {{ $recentKepanitiaan->links() }}
-                    </div>
-                </div>
-            @endif
-        </div>
-
-        <!-- Table 3: Insidentil Terbaru -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
-                        <i class="bi bi-lightning-charge text-warning me-2"></i>Tugas Insidentil
-                    </h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
-                            @if(request('page_utama')) <input type="hidden" name="page_utama" value="{{ request('page_utama') }}"> @endif
-                            @if(request('page_kepanitiaan')) <input type="hidden" name="page_kepanitiaan" value="{{ request('page_kepanitiaan') }}"> @endif
-                            <div class="input-group input-group-sm" style="max-width: 220px;">
-                                <input type="text" name="search_insidentil" class="form-control" placeholder="Cari..." value="{{ request('search_insidentil') }}">
-                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
-                            </div>
-                        </form>
-                        <a href="{{ route('insidentil.index') }}" class="btn btn-sm btn-outline-warning text-dark fw-semibold text-nowrap">
-                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="4%" class="ps-3">No</th>
-                                <th width="30%">Uraian Tugas Insidentil</th>
-                                <th width="26%">Pembuat & Rekan Kerja</th>
-                                <th width="22%">Tanggal (Estimasi & Realisasi)</th>
-                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentInsidentil as $index => $ins)
-                                <tr>
-                                    <td class="ps-3 text-muted fw-semibold">{{ $recentInsidentil->firstItem() + $index }}</td>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ $ins->uraian_tugas }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-dark small"><i class="bi bi-person-circle me-1 text-warning"></i>{{ $ins->user ? $ins->user->name : '-' }}</div>
-                                        @if($ins->taggedUsers->count() > 0)
-                                            <div class="small text-muted mt-1" style="font-size: 0.75rem;">
-                                                <strong>Rekan:</strong> {{ $ins->taggedUsers->pluck('name')->implode(', ') }}
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="small">
-                                            <div class="text-secondary">
-                                                <i class="bi bi-calendar-event me-1 text-secondary"></i>
-                                                {{ $ins->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($ins->estimasi_tanggal_mulai)) : '-' }}
-                                                s/d
-                                                {{ $ins->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($ins->estimasi_tanggal_selesai)) : '-' }}
-                                            </div>
-                                            @if($ins->tanggal_mulai)
-                                                <div class="text-success mt-1">
-                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($ins->tanggal_mulai)) }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="pe-3 text-center">
-                                        @if($ins->status == 'Selesai')
-                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
-                                        @elseif($ins->status == 'Proses' || $ins->status == 'Berjalan')
-                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="insidentil" data-action="stop" data-id="{{ $ins->id }}">
-                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
-                                            </button>
-                                        @else
-                                            <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="insidentil" data-action="start" data-id="{{ $ins->id }}">
-                                                <i class="bi bi-play-fill me-1"></i>Mulai
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data Tugas Insidentil.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @if($recentInsidentil->hasPages() || $recentInsidentil->total() > 0)
-                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="small text-muted">
-                        Menampilkan <strong>{{ $recentInsidentil->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentInsidentil->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentInsidentil->total() }}</strong> data
-                    </div>
-                    <div>
-                        {{ $recentInsidentil->links() }}
-                    </div>
-                </div>
-            @endif
-        </div>
-
-    </div>
-
-    <!-- Right Column: Schedule & Monitoring -->
+    <!-- SISI KIRI: col-lg-4 (Jadwal Minggu Ini & Status Kinerja Sistem) -->
     <div class="col-lg-4">
         <!-- Widget: Jadwal Minggu Ini -->
         <div class="card edlink-card shadow-sm border-0 mb-4">
@@ -1433,7 +729,739 @@
             </div>
         </div>
     </div>
+
+    <!-- SISI KANAN: col-lg-8 (KPI, Scan Hub, & Tabel Rencana Kerja Utama, Kepanitiaan, Insidentil) -->
+    <div class="col-lg-8">
+        <!-- KPI Summary Cards -->
+        <div class="row g-2 mb-3">
+            <div class="col-sm-6 col-md-3">
+                <div class="card stat-card border-0 shadow-sm h-100 p-2.5" style="background: #ffffff; border-left: 4px solid #198754 !important;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">Rencana Utama</span>
+                            <h4 class="fw-bold text-dark mt-1 mb-0">{{ $totalTugas }}</h4>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>{{ $tugasSelesai }}</span> ({{ $persentaseSelesai }}%)
+                            </div>
+                        </div>
+                        <div class="stat-icon stat-icon-green shadow-sm" style="width: 38px; height: 38px; font-size: 1.1rem;">
+                            <i class="bi bi-journal-check"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 4px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ $persentaseSelesai }}%;" aria-valuenow="{{ $persentaseSelesai }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-sm-6 col-md-3">
+                <div class="card stat-card border-0 shadow-sm h-100 p-2.5" style="background: #ffffff; border-left: 4px solid #0d6efd !important;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">Kepanitiaan</span>
+                            <h4 class="fw-bold text-dark mt-1 mb-0">{{ $totalKepanitiaan }}</h4>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                <span class="text-primary fw-bold"><i class="bi bi-check-circle-fill me-1"></i>{{ $kepanitiaanSelesai }} Selesai</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon stat-icon-blue shadow-sm" style="width: 38px; height: 38px; font-size: 1.1rem;">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                    </div>
+                    @php
+                        $kpPct = $totalKepanitiaan > 0 ? round(($kepanitiaanSelesai / $totalKepanitiaan) * 100) : 0;
+                    @endphp
+                    <div class="progress mt-2" style="height: 4px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $kpPct }}%;" aria-valuenow="{{ $kpPct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <div class="card stat-card border-0 shadow-sm h-100 p-2.5" style="background: #ffffff; border-left: 4px solid #ffc107 !important;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">Insidentil</span>
+                            <h4 class="fw-bold text-dark mt-1 mb-0">{{ $totalInsidentil }}</h4>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                <span class="text-warning fw-bold text-dark"><i class="bi bi-check-circle-fill me-1"></i>{{ $insidentilSelesai }} Selesai</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon stat-icon-amber shadow-sm" style="width: 38px; height: 38px; font-size: 1.1rem;">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                        </div>
+                    </div>
+                    @php
+                        $insPct = $totalInsidentil > 0 ? round(($insidentilSelesai / $totalInsidentil) * 100) : 0;
+                    @endphp
+                    <div class="progress mt-2" style="height: 4px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $insPct }}%;" aria-valuenow="{{ $insPct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-3">
+                <div class="card stat-card border-0 shadow-sm h-100 p-2.5" style="background: #ffffff; border-left: 4px solid #6f42c1 !important;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">
+                                @if($isAdminOrLeader) Pegawai @else Presensi @endif
+                            </span>
+                            <h4 class="fw-bold text-dark mt-1 mb-0">
+                                @if($isAdminOrLeader) {{ $totalPegawai }} @else {{ $activeSessions->count() }} @endif
+                            </h4>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-0.5 px-1.5" style="font-size: 0.68rem;">
+                                    <i class="bi bi-broadcast me-1"></i>{{ $activeSessions->count() }} Sesi
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-icon stat-icon-purple shadow-sm" style="width: 38px; height: 38px; font-size: 1.1rem;">
+                            <i class="bi bi-person-badge-fill"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mt-2 text-muted" style="font-size: 0.68rem;">
+                        <span class="text-truncate">{{ auth()->user()->unit ?? 'Universitas' }}</span>
+                        <span>{{ date('d/m') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @unless(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+        <!-- Quick Scan Absensi Card for Regular Users -->
+        <div class="card shadow-sm border-0 mb-3" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0 !important;">
+            <div class="card-body p-3">
+                <div class="row align-items-center g-2">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fs-5 shadow-sm" style="width: 42px; height: 42px; min-width: 42px; background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+                                <i class="bi bi-qr-code-scan"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-bold m-0 fs-6 text-dark">Scan Absensi Kehadiran</h6>
+                                    @if($defaultSession)
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 0.68rem;">Sesi Aktif</span>
+                                    @endif
+                                </div>
+                                <p class="m-0 text-muted small" style="font-size: 0.78rem;">
+                                    @if($defaultSession)
+                                        Sesi: <strong>{{ $defaultSession->nama_sesi }}</strong> ({{ $defaultSession->kepanitiaan->uraian_tugas ?? 'Kepanitiaan' }}).
+                                    @else
+                                        Scan QR Code untuk mencatat kehadiran Anda pada sesi kegiatan yang aktif.
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <button type="button" 
+                                class="btn btn-success btn-sm rounded-pill shadow-sm btn-scan-barcode-modal d-inline-flex align-items-center justify-content-center px-3 py-1.5 fw-semibold"
+                                @if($defaultSession)
+                                    data-title="{{ $defaultSession->nama_sesi }}"
+                                    data-slug="{{ $defaultSession->legacy_slug ?? 'sesi-' . $defaultSession->id }}"
+                                    data-token="{{ $defaultSession->token }}"
+                                @else
+                                    data-title="Absensi Kehadiran"
+                                @endif
+                                data-active="1"
+                                onclick="window.openScanBarcodeModal(this)">
+                            <i class="bi bi-camera-fill me-1.5"></i>
+                            <span>Scan Sekarang</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endunless
+
+        @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+        <!-- Admin Scan & Session Hub -->
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-body p-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 36px; height: 36px; background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+                            <i class="bi bi-qr-code-scan" style="font-size: 0.95rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold m-0 text-dark" style="font-size: 0.92rem;">Menu Sesi & Scan Absensi Aktif</h6>
+                            <p class="m-0 text-muted" style="font-size: 0.74rem;">Akses langsung barcode QR, scanner kamera, dan rekap kehadiran.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.72rem;">
+                            <i class="bi bi-broadcast me-1"></i>{{ $activeSessions->count() }} Sesi Buka
+                        </span>
+                    </div>
+                </div>
+
+                <div class="scan-accordion">
+                    @forelse($dynamicKepanitiaanList as $kepanitiaan)
+                        @php
+                            $isExpanded = $loop->first;
+                            $collapseId = 'kepanitiaanSessions_' . $kepanitiaan->id;
+                            $activeCount = $kepanitiaan->sesiAbsensis->where('is_active', true)->count();
+                        @endphp
+                        <div class="scan-accordion-item">
+                            <div class="scan-accordion-header {{ $isExpanded ? '' : 'collapsed' }}" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
+                                <div class="left">
+                                    <span class="kepanitiaan-badge"><i class="bi bi-check2-circle"></i></span>
+                                    <div>
+                                        <span class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $kepanitiaan->uraian_tugas }}</span>
+                                        <span class="badge bg-light text-secondary border rounded-pill ms-2 fw-normal" style="font-size: 0.72rem;">
+                                            {{ $activeCount }} Sesi Buka
+                                        </span>
+                                    </div>
+                                </div>
+                                <i class="bi bi-chevron-up bi-chevron-toggle"></i>
+                            </div>
+                            <div id="{{ $collapseId }}" class="collapse {{ $isExpanded ? 'show' : '' }} scan-accordion-body">
+                                @forelse($kepanitiaan->sesiAbsensis->where('is_active', true) as $sesi)
+                                    @php
+                                        $targetUrl = route('presensi.sesi.show', $sesi->id);
+                                        $qrProcessUrl = route('presensi.scan-proses', ['token' => $sesi->token]);
+                                    @endphp
+                                    <div class="scan-session-item flex-column flex-md-row gap-2 py-2">
+                                        <!-- Info Sesi & Barcode Thumbnail -->
+                                        <div class="d-flex align-items-center gap-2.5">
+                                            <a href="javascript:void(0)" 
+                                               class="barcode-thumb-box shadow-sm btn-barcode-absensi"
+                                               data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
+                                               data-token="{{ $sesi->token }}"
+                                               data-scan-url="{{ $qrProcessUrl }}"
+                                               data-title="{{ $sesi->nama_sesi }}"
+                                               data-url="{{ $qrProcessUrl }}"
+                                               data-active="1"
+                                               onclick="window.openBarcodeModal(this)"
+                                               title="Klik untuk Perbesar Barcode QR"
+                                               style="width: 38px; height: 38px; font-size: 1.1rem;">
+                                                <i class="bi bi-qr-code"></i>
+                                            </a>
+                                            <div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="pulse-dot"></span>
+                                                    <span class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $sesi->nama_sesi }}</span>
+                                                </div>
+                                                <small class="text-muted d-flex align-items-center gap-2 mt-0.5" style="font-size: 0.74rem;">
+                                                    <span><i class="bi bi-calendar3 text-primary me-1"></i>{{ $sesi->tanggal ? date('d M Y', strtotime($sesi->tanggal)) : 'Aktif' }}</span>
+                                                    <span>&bull;</span>
+                                                    <span class="text-success fw-semibold"><i class="bi bi-broadcast me-1"></i>Buka</span>
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="d-flex flex-wrap align-items-center gap-1.5 ms-md-auto">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-dark text-white rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center shadow-sm btn-barcode-absensi"
+                                                    data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
+                                                    data-token="{{ $sesi->token }}"
+                                                    data-scan-url="{{ $qrProcessUrl }}"
+                                                    data-title="{{ $sesi->nama_sesi }}"
+                                                    data-url="{{ $qrProcessUrl }}"
+                                                    data-active="1"
+                                                    onclick="window.openBarcodeModal(this)"
+                                                    style="font-size: 0.76rem;"
+                                                    title="Tampilkan Barcode QR">
+                                                <i class="bi bi-qr-code text-warning me-1"></i>
+                                                <span>Barcode</span>
+                                            </button>
+
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-success text-white rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center shadow-sm btn-scan-barcode-modal"
+                                                    data-title="{{ $sesi->nama_sesi }}"
+                                                    data-slug="{{ $sesi->legacy_slug ?? 'sesi-' . $sesi->id }}"
+                                                    data-token="{{ $sesi->token }}"
+                                                    data-active="1"
+                                                    onclick="window.openScanBarcodeModal(this)"
+                                                    style="font-size: 0.76rem;"
+                                                    title="Buka Kamera Scanner">
+                                                <i class="bi bi-camera-fill me-1"></i>
+                                                <span>Scan</span>
+                                            </button>
+
+                                            <a href="{{ $targetUrl }}" 
+                                               class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center shadow-sm"
+                                               style="font-size: 0.76rem;"
+                                               title="Lihat Rekap &amp; Detail">
+                                                <i class="bi bi-table me-1"></i>
+                                                <span>Rekap</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="p-2.5 text-muted text-center small">Tidak ada sesi aktif pada kepanitiaan ini.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    @empty
+                        <div class="alert alert-info py-2 px-3 rounded-3 border-0 d-flex align-items-center gap-2 mb-0 small">
+                            <i class="bi bi-info-circle fs-6 text-info"></i>
+                            <div>Saat ini tidak ada sesi presensi kepanitiaan yang sedang aktif.</div>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Table 1: Rencana Kerja Utama Terbaru -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
+                        <i class="bi bi-journal-check text-success me-2"></i>Rencana Kerja Utama
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
+                            @if(request('page_kepanitiaan')) <input type="hidden" name="page_kepanitiaan" value="{{ request('page_kepanitiaan') }}"> @endif
+                            @if(request('page_insidentil')) <input type="hidden" name="page_insidentil" value="{{ request('page_insidentil') }}"> @endif
+                            <div class="input-group input-group-sm" style="max-width: 200px;">
+                                <input type="text" name="search_utama" class="form-control" placeholder="Cari..." value="{{ request('search_utama') }}">
+                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                            </div>
+                        </form>
+                        <a href="{{ route('rencana-kerja.index') }}" class="btn btn-sm btn-outline-success fw-semibold text-nowrap">
+                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="4%" class="ps-3">No</th>
+                                <th width="30%">Uraian Tugas</th>
+                                <th width="26%">Pegawai / Jabatan</th>
+                                <th width="22%">Tanggal (Estimasi & Realisasi)</th>
+                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentTasks as $index => $task)
+                                <tr>
+                                    <td class="ps-3 text-muted fw-semibold">{{ $recentTasks->firstItem() + $index }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ $task->uraian_tugas }}</div>
+                                        @if($task->file || $task->url_external)
+                                            <div class="small text-muted mt-1">
+                                                @if($task->file)
+                                                    <span class="badge bg-light text-secondary border me-1"><i class="bi bi-paperclip me-1"></i>Berkas</span>
+                                                @endif
+                                                @if($task->url_external)
+                                                    <span class="badge bg-light text-primary border"><i class="bi bi-link-45deg me-1"></i>Link</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($task->user && $task->user->jabatan)
+                                            <div class="text-dark fw-bold small">
+                                                <i class="bi bi-person-fill text-success me-1"></i>{{ $task->user->name ?? '-' }}
+                                            </div>
+                                            <div class="small mt-1">
+                                                <span class="badge bg-light text-dark border fw-semibold me-1"><i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan ?? '-' }}</span>
+                                            </div>
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            @if($task->estimasi_tanggal_mulai)
+                                                <div class="text-secondary">
+                                                    <i class="bi bi-calendar-event me-1"></i>{{ date('d/m/Y', strtotime($task->estimasi_tanggal_mulai)) }}
+                                                    @if($task->estimasi_tanggal_selesai)
+                                                        s/d {{ date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) }}
+                                                    @endif
+                                                </div>
+                                            @endif
+                                            @if($task->tanggal_mulai)
+                                                <div class="text-success mt-1">
+                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($task->tanggal_mulai)) }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="pe-3 text-center">
+                                        @if($task->status == 'Selesai')
+                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
+                                        @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
+                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="rencana-kerja" data-action="stop" data-id="{{ $task->id }}">
+                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
+                                            </button>
+                                        @else
+                                            <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="rencana-kerja" data-action="start" data-id="{{ $task->id }}">
+                                                <i class="bi bi-play-fill me-1"></i>Mulai
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                        Belum ada data Rencana Kerja Utama.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @if($recentTasks->hasPages() || $recentTasks->total() > 0)
+                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="small text-muted">
+                        Menampilkan <strong>{{ $recentTasks->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentTasks->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentTasks->total() }}</strong> data
+                    </div>
+                    <div>
+                        {{ $recentTasks->links() }}
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Table 2: Kepanitiaan Terbaru -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
+                        <i class="bi bi-people-fill text-primary me-2"></i>Tugas Kepanitiaan
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
+                            @if(request('search_utama')) <input type="hidden" name="search_utama" value="{{ request('search_utama') }}"> @endif
+                            @if(request('page_insidentil')) <input type="hidden" name="page_insidentil" value="{{ request('page_insidentil') }}"> @endif
+                            <div class="input-group input-group-sm" style="max-width: 200px;">
+                                <input type="text" name="search_kepanitiaan" class="form-control" placeholder="Cari..." value="{{ request('search_kepanitiaan') }}">
+                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                            </div>
+                        </form>
+                        <a href="{{ route('kepanitiaan.index') }}" class="btn btn-sm btn-outline-primary fw-semibold text-nowrap">
+                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="4%" class="ps-3">No</th>
+                                <th width="30%">Nama Kepanitiaan / Uraian</th>
+                                <th width="26%">Pegawai / Jabatan</th>
+                                <th width="22%">Tanggal Pelaksanaan</th>
+                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentKepanitiaan as $index => $task)
+                                <tr>
+                                    <td class="ps-3 text-muted fw-semibold">{{ $recentKepanitiaan->firstItem() + $index }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ $task->uraian_tugas }}</div>
+                                        @if($task->file || $task->url_external)
+                                            <div class="small text-muted mt-1">
+                                                @if($task->file)
+                                                    <span class="badge bg-light text-secondary border me-1"><i class="bi bi-paperclip me-1"></i>SK/Berkas</span>
+                                                @endif
+                                                @if($task->url_external)
+                                                    <span class="badge bg-light text-primary border"><i class="bi bi-link-45deg me-1"></i>Link</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($task->user)
+                                            <div class="text-dark fw-bold small">
+                                                <i class="bi bi-person-fill text-primary me-1"></i>{{ $task->user->name ?? '-' }}
+                                            </div>
+                                            <div class="small mt-1">
+                                                <span class="badge bg-light text-dark border fw-semibold me-1"><i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan ?? '-' }}</span>
+                                            </div>
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            @if($task->estimasi_tanggal_mulai)
+                                                <div class="text-secondary">
+                                                    <i class="bi bi-calendar-event me-1"></i>{{ date('d/m/Y', strtotime($task->estimasi_tanggal_mulai)) }}
+                                                    @if($task->estimasi_tanggal_selesai)
+                                                        s/d {{ date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) }}
+                                                    @endif
+                                                </div>
+                                            @endif
+                                            @if($task->tanggal_mulai)
+                                                <div class="text-success mt-1">
+                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($task->tanggal_mulai)) }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="pe-3 text-center">
+                                        @if($task->status == 'Selesai')
+                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
+                                        @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
+                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="kepanitiaan" data-action="stop" data-id="{{ $task->id }}">
+                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
+                                            </button>
+                                        @else
+                                            <button type="button" class="btn btn-sm btn-primary px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="kepanitiaan" data-action="start" data-id="{{ $task->id }}">
+                                                <i class="bi bi-play-fill me-1"></i>Mulai
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                        Belum ada data Tugas Kepanitiaan.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @if($recentKepanitiaan->hasPages() || $recentKepanitiaan->total() > 0)
+                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="small text-muted">
+                        Menampilkan <strong>{{ $recentKepanitiaan->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentKepanitiaan->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentKepanitiaan->total() }}</strong> data
+                    </div>
+                    <div>
+                        {{ $recentKepanitiaan->links() }}
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Table 3: Tugas Insidentil Terbaru -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
+                        <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Tugas Insidentil
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
+                            @if(request('search_utama')) <input type="hidden" name="search_utama" value="{{ request('search_utama') }}"> @endif
+                            @if(request('page_kepanitiaan')) <input type="hidden" name="page_kepanitiaan" value="{{ request('page_kepanitiaan') }}"> @endif
+                            <div class="input-group input-group-sm" style="max-width: 200px;">
+                                <input type="text" name="search_insidentil" class="form-control" placeholder="Cari..." value="{{ request('search_insidentil') }}">
+                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                            </div>
+                        </form>
+                        <a href="{{ route('insidentil.index') }}" class="btn btn-sm btn-outline-warning fw-semibold text-dark text-nowrap">
+                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="4%" class="ps-3">No</th>
+                                <th width="30%">Uraian Insidentil</th>
+                                <th width="26%">Pegawai / Jabatan</th>
+                                <th width="22%">Tanggal (Estimasi & Realisasi)</th>
+                                <th width="18%" class="pe-3 text-center">Status & Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentInsidentil as $index => $task)
+                                <tr>
+                                    <td class="ps-3 text-muted fw-semibold">{{ $recentInsidentil->firstItem() + $index }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ $task->uraian_tugas }}</div>
+                                        @if($task->file || $task->url_external)
+                                            <div class="small text-muted mt-1">
+                                                @if($task->file)
+                                                    <span class="badge bg-light text-secondary border me-1"><i class="bi bi-paperclip me-1"></i>Dokumen</span>
+                                                @endif
+                                                @if($task->url_external)
+                                                    <span class="badge bg-light text-primary border"><i class="bi bi-link-45deg me-1"></i>Link</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($task->user)
+                                            <div class="text-dark fw-bold small">
+                                                <i class="bi bi-person-fill text-warning me-1"></i>{{ $task->user->name ?? '-' }}
+                                            </div>
+                                            <div class="small mt-1">
+                                                <span class="badge bg-light text-dark border fw-semibold me-1"><i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan ?? '-' }}</span>
+                                            </div>
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            @if($task->estimasi_tanggal_mulai)
+                                                <div class="text-secondary">
+                                                    <i class="bi bi-calendar-event me-1"></i>{{ date('d/m/Y', strtotime($task->estimasi_tanggal_mulai)) }}
+                                                    @if($task->estimasi_tanggal_selesai)
+                                                        s/d {{ date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) }}
+                                                    @endif
+                                                </div>
+                                            @endif
+                                            @if($task->tanggal_mulai)
+                                                <div class="text-success mt-1">
+                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($task->tanggal_mulai)) }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="pe-3 text-center">
+                                        @if($task->status == 'Selesai')
+                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
+                                        @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
+                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="insidentil" data-action="stop" data-id="{{ $task->id }}">
+                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
+                                            </button>
+                                        @else
+                                            <button type="button" class="btn btn-sm btn-warning px-3 py-1 fw-bold shadow-sm btn-action-dash text-dark text-nowrap" data-type="insidentil" data-action="start" data-id="{{ $task->id }}">
+                                                <i class="bi bi-play-fill me-1"></i>Mulai
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                        Belum ada data Tugas Insidentil.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @if($recentInsidentil->hasPages() || $recentInsidentil->total() > 0)
+                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="small text-muted">
+                        Menampilkan <strong>{{ $recentInsidentil->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentInsidentil->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentInsidentil->total() }}</strong> data
+                    </div>
+                    <div>
+                        {{ $recentInsidentil->links() }}
+                    </div>
+                </div>
+            @endif
+        </div>
+
+    </div>
 </div>
+
+<!-- ============================================================== -->
+<!-- DataTables Monitoring Presensi Real-Time (Datang & Pulang)     -->
+<!-- ============================================================== -->
+<div class="card shadow-sm border-0 mb-4 attendance-monitor-card" id="section-monitoring-absensi">
+    <div class="card-body p-4">
+        
+        <!-- Header Subtitle & Full Link -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div>
+                <h5 class="fw-bold m-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-person-lines-fill text-success"></i> Monitoring Presensi Real-Time
+                </h5>
+                <p class="text-muted small mb-0 mt-1">Pantau kehadiran pegawai secara langsung pada sesi absensi yang aktif.</p>
+            </div>
+            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if($defaultSession)
+                <a id="btn-export-session-excel" 
+                   href="{{ route('presensi.sesi.export', $defaultSession->id) }}" 
+                   class="btn btn-success text-white rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm" 
+                   style="font-size: 0.86rem;" 
+                   title="Export Data Presensi Sesi Ini ke Excel">
+                    <i class="bi bi-file-earmark-excel-fill fs-6" style="margin-right: 8px;"></i> <span>Export Excel</span>
+                </a>
+                <a id="btn-open-session-full" 
+                   href="{{ route('presensi.sesi.show', $defaultSession->id) }}" 
+                   class="btn btn-outline-success rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-sm" 
+                   style="font-size: 0.86rem;" 
+                   title="Buka Halaman Kelola &amp; Rekap Sesi Ini">
+                    <i class="bi bi-box-arrow-up-right" style="margin-right: 8px;"></i> <span>Kelola &amp; Rekap Sesi Ini</span>
+                </a>
+                @endif
+            </div>
+            @endif
+        </div>
+
+        <!-- Dynamic Active Session Switcher Tabs -->
+        @if($activeSessions->count() > 0)
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 bg-light rounded-4 border">
+            <span class="text-secondary small fw-bold text-uppercase ms-2 me-1" style="font-size: 0.74rem; letter-spacing: 0.5px;">Sesi Aktif:</span>
+            @foreach($activeSessions as $sesi)
+                <button type="button" 
+                        class="btn-session-pill {{ $loop->first ? 'active' : '' }}" 
+                        data-sesi-id="{{ $sesi->id }}" 
+                        data-url="{{ route('presensi.sesi.show', $sesi->id) }}"
+                        data-export-url="{{ route('presensi.sesi.export', $sesi->id) }}"
+                        data-name="{{ $sesi->nama_sesi }}">
+                    <span class="pulse-dot"></span>
+                    <span>{{ $sesi->nama_sesi }}</span>
+                    @if($sesi->kepanitiaan)
+                        <span class="badge-pill-sub">{{ Str::limit($sesi->kepanitiaan->uraian_tugas, 24) }}</span>
+                    @endif
+                </button>
+            @endforeach
+        </div>
+        @else
+        <div class="alert alert-warning py-2.5 px-3 rounded-3 small mb-3 border-0 d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-6 text-warning"></i>
+            <span>Tidak ada sesi presensi yang sedang aktif. Silakan aktifkan sesi di menu Kepanitiaan agar data kehadiran muncul.</span>
+        </div>
+        @endif
+
+        <!-- Pill Search Bar -->
+        <div class="position-relative mb-3">
+            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            <input type="text" id="attendance-custom-search" class="form-control rounded-pill ps-5 py-2 shadow-none" placeholder="Cari nama pegawai, jabatan, atau unit kerja..." style="background-color: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.92rem;">
+        </div>
+
+        <!-- DataTables Container -->
+        <div class="table-responsive border-0">
+            <table class="table table-hover align-middle mb-0 w-100" id="dashboard-attendance-table">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e2e8f0; background-color: #f8fafc;">
+                        <th width="6%" class="ps-3 text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">NO</th>
+                        <th width="54%" class="text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">PEGAWAI / JABATAN</th>
+                        <th width="20%" class="text-center text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">DATANG</th>
+                        <th width="20%" class="text-center pe-3 text-uppercase fw-bold text-dark" style="font-size: 0.82rem; letter-spacing: 0.5px;">PULANG</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Loaded via AJAX DataTables -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legend at the Bottom -->
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 pt-4 mt-2 text-center" style="font-size: 0.85rem;">
+            <span class="fw-bold text-secondary text-uppercase me-2" style="letter-spacing: 0.5px;">KETERANGAN:</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #198754; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-check-circle me-1"></i>Hadir</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #ffc107; color: #212529; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-exclamation-circle me-1"></i>Izin</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #0dcaf0; color: #212529; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-heart-pulse me-1"></i>Sakit</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #dc3545; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-x-circle me-1"></i>Alpha</span>
+            <span class="badge px-3 py-2 fw-semibold" style="background-color: #6c757d; color: #ffffff; border-radius: 6px; font-size: 0.8rem;"><i class="bi bi-dash-circle me-1"></i>Belum Absen</span>
+        </div>
+
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
