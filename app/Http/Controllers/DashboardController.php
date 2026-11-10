@@ -33,35 +33,43 @@ class DashboardController extends Controller
         $isPureAdmin = $user && $user->isSystemAdmin() && !$user->subordinates()->exists();
         $isCampusWide = $isRealRektorat || $isPureAdmin;
 
-        // Tentukan daftar pegawai yang bernaung di bawah pimpinan sesuai struktur OTK
+        // Tentukan daftar pegawai yang bernaung di bawah pimpinan sesuai struktur OTK (sinkron dengan Pemantauan Staff)
         $otkUserIds = null;
         if ($user) {
             if ($isCampusWide) {
                 // Rektorat / Pure Admin mengawasi seluruh universitas
                 $otkUserIds = null;
-            } elseif ($user->subordinates()->exists()) {
-                // Pimpinan dengan bawahan langsung / berjenjang di OTK
-                $subs = $user->getAllSubordinateIds();
-                $unitUsers = [];
-                if ($user->unit) {
-                    $uName = trim($user->unit);
-                    $unitUsers = User::where('unit', $uName)
-                        ->orWhere('unit', 'like', "%{$uName}%")
-                        ->pluck('id')
-                        ->all();
-                }
-                $otkUserIds = array_values(array_unique([(int) $user->id, ...$subs, ...$unitUsers]));
-            } elseif ($user->isPimpinanUnit() && $user->unit) {
-                // Pimpinan unit (meskipun supervisor_id bawahan belum di-set di DB, lingkupnya adalah unit kerjanya)
-                $uName = trim($user->unit);
-                $unitUsers = User::where('unit', $uName)
-                    ->orWhere('unit', 'like', "%{$uName}%")
-                    ->pluck('id')
-                    ->all();
-                $otkUserIds = array_values(array_unique([(int) $user->id, ...$unitUsers]));
             } else {
-                // Staff biasa tanpa bawahan
-                $otkUserIds = [(int) $user->id];
+                // Tentukan pimpinan tim OTK terkait (baik jika user adalah pimpinan, maupun jika user adalah anggota tim)
+                $targetSupervisorId = null;
+                if ($user->subordinates()->exists()) {
+                    $targetSupervisorId = $user->id;
+                } elseif ($user->supervisor_id) {
+                    $targetSupervisorId = $user->supervisor_id;
+                }
+
+                if ($targetSupervisorId) {
+                    $pimpinan = User::find($targetSupervisorId);
+                    $subs = $pimpinan ? $pimpinan->getAllSubordinateIds() : [];
+                    // Ambil anggota tim yang terdaftar pada OTK
+                    $otkUserIds = User::where('users.is_active', true)
+                        ->join('otk_members', 'users.id', '=', 'otk_members.user_id')
+                        ->whereIn('users.id', $subs)
+                        ->pluck('users.id')
+                        ->map(fn($id) => (int)$id)
+                        ->all();
+                } elseif ($user->unit) {
+                    $uName = trim($user->unit);
+                    $otkUserIds = User::where('is_active', true)
+                        ->where(function ($q) use ($uName) {
+                            $q->where('unit', $uName)->orWhere('unit', 'like', "%{$uName}%");
+                        })
+                        ->pluck('id')
+                        ->map(fn($id) => (int)$id)
+                        ->all();
+                } else {
+                    $otkUserIds = [(int) $user->id];
+                }
             }
         }
 
