@@ -8,6 +8,7 @@ use App\Models\RencanaKerja;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Yajra\DataTables\Facades\DataTables;
 
 class DashboardController extends Controller
@@ -180,68 +181,134 @@ class DashboardController extends Controller
             ];
         }
 
-        // Search Filter for Rencana Kerja Utama
-        if ($request->filled('search_utama')) {
-            $search = $request->query('search_utama');
-            $tasksQuery->where(function ($q) use ($search) {
-                $q->where('uraian_tugas', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($qu) use ($search) {
-                      $qu->where('name', 'like', "%{$search}%")
-                        ->orWhere('jabatan', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Search Filter for Kepanitiaan
-        if ($request->filled('search_kepanitiaan')) {
-            $search = $request->query('search_kepanitiaan');
-            $kepanitiaanQuery->where(function ($q) use ($search) {
-                $q->where('uraian_tugas', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($qu) use ($search) {
-                      $qu->where('name', 'like', "%{$search}%")
-                        ->orWhere('jabatan', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Search Filter for Insidentil
-        if ($request->filled('search_insidentil')) {
-            $search = $request->query('search_insidentil');
-            $insidentilQuery->where(function ($q) use ($search) {
-                $q->where('uraian_tugas', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($qu) use ($search) {
-                      $qu->where('name', 'like', "%{$search}%")
-                        ->orWhere('jabatan', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Helper ordering by Status priority and Real Date / Estimasi Date
-        $applyOrdering = function ($query) {
-            return $query->with(['user', 'taggedUsers'])
-                ->orderByRaw("CASE WHEN status IN ('Proses', 'Berjalan') THEN 1 WHEN status = 'Belum Dimulai' THEN 2 ELSE 3 END")
-                ->orderByRaw("COALESCE(tanggal_mulai, estimasi_tanggal_mulai, created_at) DESC");
-        };
-
-        // Rencana Kerja Utama Stats & Paginated List (10 per page)
+        // Stats counts (berdasarkan data pengguna / personal scope)
         $totalTugas = (clone $tasksQuery)->count();
         $tugasBelumMulai = (clone $tasksQuery)->where('status', 'Belum Dimulai')->count();
         $tugasProses = (clone $tasksQuery)->whereIn('status', ['Proses', 'Berjalan'])->count();
         $tugasSelesai = (clone $tasksQuery)->where('status', 'Selesai')->count();
         $persentaseSelesai = $totalTugas > 0 ? round(($tugasSelesai / $totalTugas) * 100) : 0;
-        $recentTasks = $applyOrdering(clone $tasksQuery)->paginate(10, ['*'], 'page_utama')->withQueryString();
 
-        // Kepanitiaan Stats & Paginated List (10 per page)
         $totalKepanitiaan = (clone $kepanitiaanQuery)->count();
         $kepanitiaanSelesai = (clone $kepanitiaanQuery)->where('status', 'Selesai')->count();
-        $recentKepanitiaan = $applyOrdering(clone $kepanitiaanQuery)->paginate(10, ['*'], 'page_kepanitiaan')->withQueryString();
 
-        // Insidentil Stats & Paginated List (10 per page)
         $totalInsidentil = (clone $insidentilQuery)->count();
         $insidentilSelesai = (clone $insidentilQuery)->where('status', 'Selesai')->count();
-        $recentInsidentil = $applyOrdering(clone $insidentilQuery)->paginate(10, ['*'], 'page_insidentil')->withQueryString();
 
         $totalPegawai = $usersQuery->count();
+
+        // -------------------------------------------------------------
+        // Unified Table: Gabungan Rutinitas, Kepanitiaan, dan Insidentil
+        // -------------------------------------------------------------
+        $searchKegiatan = $request->query('search_kegiatan', $request->query('search_utama', $request->query('search_kepanitiaan', $request->query('search_insidentil'))));
+        $filterKategori = $request->query('filter_kategori', 'all');
+        $filterStatus = $request->query('filter_status', 'all');
+
+        $applySearch = function ($query) use ($searchKegiatan) {
+            if (!empty($searchKegiatan)) {
+                $query->where(function ($q) use ($searchKegiatan) {
+                    $q->where('uraian_tugas', 'like', "%{$searchKegiatan}%")
+                      ->orWhereHas('user', function ($qu) use ($searchKegiatan) {
+                          $qu->where('name', 'like', "%{$searchKegiatan}%")
+                            ->orWhere('jabatan', 'like', "%{$searchKegiatan}%");
+                      });
+                });
+            }
+        };
+
+        $applyStatusFilter = function ($query) use ($filterStatus) {
+            if (!empty($filterStatus) && $filterStatus !== 'all') {
+                if ($filterStatus === 'Proses') {
+                    $query->whereIn('status', ['Proses', 'Berjalan']);
+                } else {
+                    $query->where('status', $filterStatus);
+                }
+            }
+        };
+
+        $allTasksList = collect();
+
+        // 1. Modul Rutinitas
+        if (in_array($filterKategori, ['all', 'rutinitas'])) {
+            $qRutinitas = clone $tasksQuery;
+            $applySearch($qRutinitas);
+            $applyStatusFilter($qRutinitas);
+            $rutinitasItems = $qRutinitas->with(['user', 'taggedUsers'])->get()->map(function ($item) {
+                $item->kategori_type = 'rutinitas';
+                $item->module_type = 'rencana-kerja';
+                $item->kategori_label = 'Rutinitas';
+                $item->kategori_badge_class = 'bg-success-subtle text-success border border-success-subtle';
+                $item->kategori_icon = 'bi-journal-bookmark';
+                return $item;
+            });
+            $allTasksList = $allTasksList->concat($rutinitasItems);
+        }
+
+        // 2. Modul Kepanitiaan
+        if (in_array($filterKategori, ['all', 'kepanitiaan'])) {
+            $qKepanitiaan = clone $kepanitiaanQuery;
+            $applySearch($qKepanitiaan);
+            $applyStatusFilter($qKepanitiaan);
+            $kepanitiaanItems = $qKepanitiaan->with(['user', 'taggedUsers'])->get()->map(function ($item) {
+                $item->kategori_type = 'kepanitiaan';
+                $item->module_type = 'kepanitiaan';
+                $item->kategori_label = 'Kepanitiaan';
+                $item->kategori_badge_class = 'bg-primary-subtle text-primary border border-primary-subtle';
+                $item->kategori_icon = 'bi-people';
+                return $item;
+            });
+            $allTasksList = $allTasksList->concat($kepanitiaanItems);
+        }
+
+        // 3. Modul Insidentil
+        if (in_array($filterKategori, ['all', 'insidentil'])) {
+            $qInsidentil = clone $insidentilQuery;
+            $applySearch($qInsidentil);
+            $applyStatusFilter($qInsidentil);
+            $insidentilItems = $qInsidentil->with(['user', 'taggedUsers'])->get()->map(function ($item) {
+                $item->kategori_type = 'insidentil';
+                $item->module_type = 'insidentil';
+                $item->kategori_label = 'Insidentil';
+                $item->kategori_badge_class = 'bg-warning-subtle text-dark border border-warning-subtle';
+                $item->kategori_icon = 'bi-lightning-charge';
+                return $item;
+            });
+            $allTasksList = $allTasksList->concat($insidentilItems);
+        }
+
+        // Urutkan gabungan tugas: 1. Proses/Berjalan, 2. Belum Dimulai, 3. Selesai, lalu tanggal terbaru
+        $sortedAllTasks = $allTasksList->sort(function ($a, $b) {
+            $statusRank = function ($s) {
+                if (in_array($s, ['Proses', 'Berjalan'])) return 1;
+                if ($s === 'Belum Dimulai') return 2;
+                return 3;
+            };
+            $rankA = $statusRank($a->status);
+            $rankB = $statusRank($b->status);
+            if ($rankA !== $rankB) {
+                return $rankA <=> $rankB;
+            }
+            $dateA = $a->tanggal_mulai ?? $a->estimasi_tanggal_mulai ?? $a->created_at;
+            $dateB = $b->tanggal_mulai ?? $b->estimasi_tanggal_mulai ?? $b->created_at;
+            return $dateB <=> $dateA;
+        })->values();
+
+        // Paginasi gabungan (10 item per halaman)
+        $perPage = 10;
+        $currentPage = (int) $request->input('page', 1);
+        $totalItems = $sortedAllTasks->count();
+        $pagedSlice = $sortedAllTasks->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        $allTasks = new LengthAwarePaginator(
+            $pagedSlice,
+            $totalItems,
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        $recentTasks = $allTasks;
+        $recentKepanitiaan = $allTasks;
+        $recentInsidentil = $allTasks;
 
         \App\Models\KepanitiaanSesiAbsensi::deleteWithoutKepanitiaan();
 
@@ -271,6 +338,7 @@ class DashboardController extends Controller
             'tugasProses',
             'tugasSelesai',
             'persentaseSelesai',
+            'allTasks',
             'recentTasks',
             'totalKepanitiaan',
             'kepanitiaanSelesai',

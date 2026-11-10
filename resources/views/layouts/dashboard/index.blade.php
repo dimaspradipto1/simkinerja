@@ -905,149 +905,62 @@
         </div>
         @endunless
 
-        <!-- Table 1: Kegiatan Rutinitas Terbaru -->
+        <!-- ============================================================== -->
+        <!-- Unified Table: Gabungan Rutinitas, Kepanitiaan & Insidentil     -->
+        <!-- ============================================================== -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
-                        <i class="bi bi-journal-check text-success me-2"></i>Kegiatan Rutinitas
-                    </h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
-                            @if(request('page_kepanitiaan')) <input type="hidden" name="page_kepanitiaan" value="{{ request('page_kepanitiaan') }}"> @endif
-                            @if(request('page_insidentil')) <input type="hidden" name="page_insidentil" value="{{ request('page_insidentil') }}"> @endif
-                            <div class="input-group input-group-sm" style="max-width: 200px;">
-                                <input type="text" name="search_utama" class="form-control" placeholder="Cari..." value="{{ request('search_utama') }}">
-                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
-                            </div>
-                        </form>
-                        <a href="{{ route('rencana-kerja.index') }}" class="btn btn-sm btn-outline-success fw-semibold text-nowrap">
-                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="4%" class="ps-3">No</th>
-                                <th width="28%">Uraian Tugas</th>
-                                <th width="12%">Kategori</th>
-                                <th width="20%">Pegawai / Jabatan</th>
-                                <th width="20%">Tanggal (Estimasi & Realisasi)</th>
-                                <th width="16%" class="pe-3 text-center">Status & Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentTasks as $index => $task)
-                                <tr>
-                                    <td class="ps-3 text-muted fw-semibold">{{ $recentTasks->firstItem() + $index }}</td>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ $task->uraian_tugas }}</div>
-                                        @if($task->file || $task->url_external)
-                                            <div class="small text-muted mt-1">
-                                                @if($task->file)
-                                                    <span class="badge bg-light text-secondary border me-1"><i class="bi bi-paperclip me-1"></i>Berkas</span>
-                                                @endif
-                                                @if($task->url_external)
-                                                    <span class="badge bg-light text-primary border"><i class="bi bi-link-45deg me-1"></i>Link</span>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold px-2 py-1" style="font-size: 0.74rem;">
-                                            <i class="bi bi-journal-bookmark me-1"></i>Rutinitas
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($task->user && $task->user->jabatan)
-                                            <div class="text-dark fw-bold small">
-                                                <i class="bi bi-person-fill text-success me-1"></i>{{ $task->user->name ?? '-' }}
-                                            </div>
-                                            <div class="small mt-1">
-                                                <span class="badge bg-light text-dark border fw-semibold me-1"><i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan ?? '-' }}</span>
-                                            </div>
-                                        @else
-                                            <span class="text-muted small">-</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="small">
-                                            @if($task->estimasi_tanggal_mulai)
-                                                <div class="text-secondary">
-                                                    <i class="bi bi-calendar-event me-1"></i>{{ date('d/m/Y', strtotime($task->estimasi_tanggal_mulai)) }}
-                                                    @if($task->estimasi_tanggal_selesai)
-                                                        s/d {{ date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) }}
-                                                    @endif
-                                                </div>
-                                            @endif
-                                            @if($task->tanggal_mulai)
-                                                <div class="text-success mt-1">
-                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($task->tanggal_mulai)) }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="pe-3 text-center">
-                                        @if($task->status == 'Selesai')
-                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
-                                        @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
-                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="rencana-kerja" data-action="stop" data-id="{{ $task->id }}">
-                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
-                                            </button>
-                                        @else
-                                            <button type="button" class="btn btn-sm btn-success px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="rencana-kerja" data-action="start" data-id="{{ $task->id }}">
-                                                <i class="bi bi-play-fill me-1"></i>Mulai
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data Kegiatan Rutinitas.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @if($recentTasks->hasPages() || $recentTasks->total() > 0)
-                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="small text-muted">
-                        Menampilkan <strong>{{ $recentTasks->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentTasks->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentTasks->total() }}</strong> data
-                    </div>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div>
-                        {{ $recentTasks->links() }}
+                        <h5 class="card-title m-0 fw-bold fs-6 text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-card-checklist text-success fs-5"></i>
+                            <span>Daftar Kegiatan &amp; Tugas Kinerja</span>
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">Kegiatan rutinitas, kepanitiaan, dan insidentil milik Anda.</p>
                     </div>
-                </div>
-            @endif
-        </div>
 
-        <!-- Table 2: Kepanitiaan Terbaru -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
-                        <i class="bi bi-people-fill text-primary me-2"></i>Tugas Kepanitiaan
-                    </h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
-                            @if(request('search_utama')) <input type="hidden" name="search_utama" value="{{ request('search_utama') }}"> @endif
-                            @if(request('page_insidentil')) <input type="hidden" name="page_insidentil" value="{{ request('page_insidentil') }}"> @endif
-                            <div class="input-group input-group-sm" style="max-width: 200px;">
-                                <input type="text" name="search_kepanitiaan" class="form-control" placeholder="Cari..." value="{{ request('search_kepanitiaan') }}">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 m-0">
+                            <!-- Dropdown Filter Kategori -->
+                            <select name="filter_kategori" class="form-select form-select-sm" style="width: auto; min-width: 140px;" onchange="this.form.submit()">
+                                <option value="all" {{ request('filter_kategori') == 'all' || !request('filter_kategori') ? 'selected' : '' }}>Semua Kategori</option>
+                                <option value="rutinitas" {{ request('filter_kategori') == 'rutinitas' ? 'selected' : '' }}>Rutinitas</option>
+                                <option value="kepanitiaan" {{ request('filter_kategori') == 'kepanitiaan' ? 'selected' : '' }}>Kepanitiaan</option>
+                                <option value="insidentil" {{ request('filter_kategori') == 'insidentil' ? 'selected' : '' }}>Insidentil</option>
+                            </select>
+
+                            <!-- Dropdown Filter Status -->
+                            <select name="filter_status" class="form-select form-select-sm" style="width: auto; min-width: 130px;" onchange="this.form.submit()">
+                                <option value="all" {{ request('filter_status') == 'all' || !request('filter_status') ? 'selected' : '' }}>Semua Status</option>
+                                <option value="Belum Dimulai" {{ request('filter_status') == 'Belum Dimulai' ? 'selected' : '' }}>Belum Dimulai</option>
+                                <option value="Proses" {{ request('filter_status') == 'Proses' ? 'selected' : '' }}>Sedang Berjalan</option>
+                                <option value="Selesai" {{ request('filter_status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
+                            </select>
+
+                            <!-- Search Input -->
+                            <div class="input-group input-group-sm" style="max-width: 220px;">
+                                <input type="text" name="search_kegiatan" class="form-control" placeholder="Cari kegiatan..." value="{{ request('search_kegiatan', request('search_utama')) }}">
                                 <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
                             </div>
+
+                            @if((request('filter_kategori') && request('filter_kategori') != 'all') || (request('filter_status') && request('filter_status') != 'all') || request('search_kegiatan'))
+                                <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light border text-secondary" title="Reset Filter">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </a>
+                            @endif
                         </form>
-                        <a href="{{ route('kepanitiaan.index') }}" class="btn btn-sm btn-outline-primary fw-semibold text-nowrap">
-                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
-                        </a>
+
+                        <!-- Quick Dropdown Links ke Modul Lengkap -->
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Kelola Modul
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li><a class="dropdown-item py-2 small" href="{{ route('rencana-kerja.index') }}"><i class="bi bi-journal-bookmark text-success me-2"></i>Kegiatan Rutinitas</a></li>
+                                <li><a class="dropdown-item py-2 small" href="{{ route('kepanitiaan.index') }}"><i class="bi bi-people text-primary me-2"></i>Tugas Kepanitiaan</a></li>
+                                <li><a class="dropdown-item py-2 small" href="{{ route('insidentil.index') }}"><i class="bi bi-lightning-charge text-warning me-2"></i>Tugas Insidentil</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1057,43 +970,51 @@
                         <thead class="table-light">
                             <tr>
                                 <th width="4%" class="ps-3">No</th>
-                                <th width="28%">Nama Kepanitiaan / Uraian</th>
+                                <th width="32%">Uraian Tugas / Kegiatan</th>
                                 <th width="12%">Kategori</th>
                                 <th width="20%">Pegawai / Jabatan</th>
-                                <th width="20%">Tanggal Pelaksanaan</th>
-                                <th width="16%" class="pe-3 text-center">Status & Aksi</th>
+                                <th width="18%">Tanggal (Estimasi &amp; Realisasi)</th>
+                                <th width="14%" class="pe-3 text-center">Status &amp; Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($recentKepanitiaan as $index => $task)
+                            @forelse($allTasks as $index => $task)
                                 <tr>
-                                    <td class="ps-3 text-muted fw-semibold">{{ $recentKepanitiaan->firstItem() + $index }}</td>
+                                    <td class="ps-3 text-muted fw-semibold">{{ $allTasks->firstItem() + $index }}</td>
                                     <td>
                                         <div class="fw-semibold text-dark">{{ $task->uraian_tugas }}</div>
                                         @if($task->file || $task->url_external)
                                             <div class="small text-muted mt-1">
                                                 @if($task->file)
-                                                    <span class="badge bg-light text-secondary border me-1"><i class="bi bi-paperclip me-1"></i>SK/Berkas</span>
+                                                    <a href="{{ asset('storage/' . $task->file) }}" target="_blank" class="badge bg-light text-secondary border text-decoration-none me-1">
+                                                        <i class="bi bi-paperclip me-1"></i>Berkas
+                                                    </a>
                                                 @endif
                                                 @if($task->url_external)
-                                                    <span class="badge bg-light text-primary border"><i class="bi bi-link-45deg me-1"></i>Link</span>
+                                                    <a href="{{ $task->url_external }}" target="_blank" class="badge bg-light text-primary border text-decoration-none">
+                                                        <i class="bi bi-link-45deg me-1"></i>Link
+                                                    </a>
                                                 @endif
                                             </div>
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1" style="font-size: 0.74rem;">
-                                            <i class="bi bi-people me-1"></i>Kepanitiaan
+                                        <span class="badge {{ $task->kategori_badge_class ?? 'bg-secondary-subtle text-secondary' }} fw-semibold px-2 py-1" style="font-size: 0.74rem;">
+                                            <i class="bi {{ $task->kategori_icon ?? 'bi-tag' }} me-1"></i>{{ $task->kategori_label ?? 'Kegiatan' }}
                                         </span>
                                     </td>
                                     <td>
                                         @if($task->user)
                                             <div class="text-dark fw-bold small">
-                                                <i class="bi bi-person-fill text-primary me-1"></i>{{ $task->user->name ?? '-' }}
+                                                <i class="bi bi-person-fill text-muted me-1"></i>{{ $task->user->name ?? '-' }}
                                             </div>
-                                            <div class="small mt-1">
-                                                <span class="badge bg-light text-dark border fw-semibold me-1"><i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan ?? '-' }}</span>
-                                            </div>
+                                            @if($task->user->jabatan)
+                                                <div class="small mt-1">
+                                                    <span class="badge bg-light text-dark border fw-semibold me-1">
+                                                        <i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan }}
+                                                    </span>
+                                                </div>
+                                            @endif
                                         @else
                                             <span class="text-muted small">-</span>
                                         @endif
@@ -1119,11 +1040,14 @@
                                         @if($task->status == 'Selesai')
                                             <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
                                         @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
-                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="kepanitiaan" data-action="stop" data-id="{{ $task->id }}">
+                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="{{ $task->module_type }}" data-action="stop" data-id="{{ $task->id }}">
                                                 <i class="bi bi-stop-fill me-1"></i>Selesaikan
                                             </button>
                                         @else
-                                            <button type="button" class="btn btn-sm btn-primary px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="kepanitiaan" data-action="start" data-id="{{ $task->id }}">
+                                            @php
+                                                $btnStartClass = $task->module_type == 'rencana-kerja' ? 'btn-success' : ($task->module_type == 'kepanitiaan' ? 'btn-primary' : 'btn-warning text-dark');
+                                            @endphp
+                                            <button type="button" class="btn btn-sm {{ $btnStartClass }} px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="{{ $task->module_type }}" data-action="start" data-id="{{ $task->id }}">
                                                 <i class="bi bi-play-fill me-1"></i>Mulai
                                             </button>
                                         @endif
@@ -1133,7 +1057,7 @@
                                 <tr>
                                     <td colspan="6" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data Tugas Kepanitiaan.
+                                        Belum ada data kegiatan atau tugas.
                                     </td>
                                 </tr>
                             @endforelse
@@ -1141,137 +1065,13 @@
                     </table>
                 </div>
             </div>
-            @if($recentKepanitiaan->hasPages() || $recentKepanitiaan->total() > 0)
+            @if($allTasks->hasPages() || $allTasks->total() > 0)
                 <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <div class="small text-muted">
-                        Menampilkan <strong>{{ $recentKepanitiaan->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentKepanitiaan->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentKepanitiaan->total() }}</strong> data
+                        Menampilkan <strong>{{ $allTasks->firstItem() ?? 0 }}</strong> s/d <strong>{{ $allTasks->lastItem() ?? 0 }}</strong> dari <strong>{{ $allTasks->total() }}</strong> data
                     </div>
                     <div>
-                        {{ $recentKepanitiaan->links() }}
-                    </div>
-                </div>
-            @endif
-        </div>
-
-        <!-- Table 3: Tugas Insidentil Terbaru -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 border-bottom">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
-                        <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Tugas Insidentil
-                    </h5>
-                    <div class="d-flex align-items-center gap-2">
-                        <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center">
-                            @if(request('search_utama')) <input type="hidden" name="search_utama" value="{{ request('search_utama') }}"> @endif
-                            @if(request('page_kepanitiaan')) <input type="hidden" name="page_kepanitiaan" value="{{ request('page_kepanitiaan') }}"> @endif
-                            <div class="input-group input-group-sm" style="max-width: 200px;">
-                                <input type="text" name="search_insidentil" class="form-control" placeholder="Cari..." value="{{ request('search_insidentil') }}">
-                                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
-                            </div>
-                        </form>
-                        <a href="{{ route('insidentil.index') }}" class="btn btn-sm btn-outline-warning fw-semibold text-dark text-nowrap">
-                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="4%" class="ps-3">No</th>
-                                <th width="28%">Uraian Insidentil</th>
-                                <th width="12%">Kategori</th>
-                                <th width="20%">Pegawai / Jabatan</th>
-                                <th width="20%">Tanggal (Estimasi & Realisasi)</th>
-                                <th width="16%" class="pe-3 text-center">Status & Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentInsidentil as $index => $task)
-                                <tr>
-                                    <td class="ps-3 text-muted fw-semibold">{{ $recentInsidentil->firstItem() + $index }}</td>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ $task->uraian_tugas }}</div>
-                                        @if($task->file || $task->url_external)
-                                            <div class="small text-muted mt-1">
-                                                @if($task->file)
-                                                    <span class="badge bg-light text-secondary border me-1"><i class="bi bi-paperclip me-1"></i>Dokumen</span>
-                                                @endif
-                                                @if($task->url_external)
-                                                    <span class="badge bg-light text-primary border"><i class="bi bi-link-45deg me-1"></i>Link</span>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle fw-semibold px-2 py-1" style="font-size: 0.74rem;">
-                                            <i class="bi bi-lightning-charge me-1"></i>Insidentil
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($task->user)
-                                            <div class="text-dark fw-bold small">
-                                                <i class="bi bi-person-fill text-warning me-1"></i>{{ $task->user->name ?? '-' }}
-                                            </div>
-                                            <div class="small mt-1">
-                                                <span class="badge bg-light text-dark border fw-semibold me-1"><i class="bi bi-briefcase-fill text-secondary me-1"></i>{{ $task->user->jabatan ?? '-' }}</span>
-                                            </div>
-                                        @else
-                                            <span class="text-muted small">-</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="small">
-                                            @if($task->estimasi_tanggal_mulai)
-                                                <div class="text-secondary">
-                                                    <i class="bi bi-calendar-event me-1"></i>{{ date('d/m/Y', strtotime($task->estimasi_tanggal_mulai)) }}
-                                                    @if($task->estimasi_tanggal_selesai)
-                                                        s/d {{ date('d/m/Y', strtotime($task->estimasi_tanggal_selesai)) }}
-                                                    @endif
-                                                </div>
-                                            @endif
-                                            @if($task->tanggal_mulai)
-                                                <div class="text-success mt-1">
-                                                    <i class="bi bi-play-circle me-1"></i>Mulai: {{ date('d/m/Y', strtotime($task->tanggal_mulai)) }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="pe-3 text-center">
-                                        @if($task->status == 'Selesai')
-                                            <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
-                                        @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
-                                            <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="insidentil" data-action="stop" data-id="{{ $task->id }}">
-                                                <i class="bi bi-stop-fill me-1"></i>Selesaikan
-                                            </button>
-                                        @else
-                                            <button type="button" class="btn btn-sm btn-warning px-3 py-1 fw-bold shadow-sm btn-action-dash text-dark text-nowrap" data-type="insidentil" data-action="start" data-id="{{ $task->id }}">
-                                                <i class="bi bi-play-fill me-1"></i>Mulai
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data Tugas Insidentil.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @if($recentInsidentil->hasPages() || $recentInsidentil->total() > 0)
-                <div class="card-footer bg-white border-top py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="small text-muted">
-                        Menampilkan <strong>{{ $recentInsidentil->firstItem() ?? 0 }}</strong> s/d <strong>{{ $recentInsidentil->lastItem() ?? 0 }}</strong> dari <strong>{{ $recentInsidentil->total() }}</strong> data
-                    </div>
-                    <div>
-                        {{ $recentInsidentil->links() }}
+                        {{ $allTasks->links() }}
                     </div>
                 </div>
             @endif
