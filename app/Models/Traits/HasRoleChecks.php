@@ -337,7 +337,7 @@ trait HasRoleChecks
             return true;
         }
 
-        if (in_array($jabatan, ['ADMIN', 'SUPERADMIN', 'ADMIN ICT'])) {
+        if (in_array($jabatan, ['ADMIN', 'SUPERADMIN', 'ADMIN ICT', 'ADMIN LPTI'])) {
             return true;
         }
 
@@ -352,7 +352,7 @@ trait HasRoleChecks
         if (in_array(strtolower(trim($this->email ?? '')), ['admin@uis.ac.id', 'admin@gmail.com', 'superadmin@uis.ac.id']) || in_array(strtolower(trim($this->name ?? '')), ['admin', 'superadmin'])) {
             return true;
         }
-        return $this->hasAnyRole(['SUPER ADMIN', 'ADMIN ICT', 'SUPERADMIN', 'ADMIN']) || in_array(strtoupper(trim($this->jabatan ?? '')), ['ADMIN', 'SUPERADMIN', 'ADMIN ICT']);
+        return $this->hasAnyRole(['SUPER ADMIN', 'ADMIN ICT', 'ADMIN LPTI', 'SUPERADMIN', 'ADMIN']) || in_array(strtoupper(trim($this->jabatan ?? '')), ['ADMIN', 'SUPERADMIN', 'ADMIN ICT', 'ADMIN LPTI']);
     }
 
     /**

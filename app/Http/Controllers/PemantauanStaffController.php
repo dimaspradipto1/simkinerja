@@ -375,6 +375,7 @@ class PemantauanStaffController extends Controller
                 $query->where(function ($q) {
                     $q->where('users.unit', 'LIKE', '%LPPM%')
                       ->orWhere('users.unit', 'LIKE', '%LPMI%')
+                      ->orWhere('users.unit', 'LIKE', '%LPTI%')
                       ->orWhere('users.unit', 'LIKE', '%ICT%')
                       ->orWhere('users.unit', 'LIKE', '%PERPUSTAKAAN%');
                 });

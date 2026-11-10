@@ -1212,13 +1212,13 @@ class AnalisisKeterlambatanController extends Controller
             ];
         }
 
-        // 4. UPT ICT / LPTI
+        // 4. UPT LPTI
         if (str_contains($u, 'LPTI') || str_contains($u, 'ICT') || str_contains($j, 'ICT') || str_contains($j, 'LPTI') || str_contains($j, 'PROGRAMMER') || str_contains($j, 'IT SUPPORT')) {
             return [
                 'divisi_key' => '2. Rektorat UIS',
-                'divisi' => 'Rektorat UIS (UPT ICT)',
-                'sub_unit' => 'C. UPT Teknik Informasi dan Komunikasi (ICT/LPTI)',
-                'full_path' => 'UPT ICT ➔ ' . $user->jabatan
+                'divisi' => 'Rektorat UIS (UPT LPTI)',
+                'sub_unit' => 'C. UPT Teknik Informasi dan Komunikasi (LPTI)',
+                'full_path' => 'UPT LPTI ➔ ' . $user->jabatan
             ];
         }
 
@@ -1322,7 +1322,7 @@ class AnalisisKeterlambatanController extends Controller
                 'sub' => [
                     'A. Wakil Rektor I (BAAK & Perpustakaan)' => [],
                     'B. Wakil Rektor II (BAUK, SDM, Keuangan & Sarpras)' => [],
-                    'C. UPT Teknik Informasi dan Komunikasi (ICT/LPTI)' => [],
+                    'C. UPT Teknik Informasi dan Komunikasi (LPTI)' => [],
                     'D. Wakil Rektor III (Kemahasiswaan, Humas, Kerjasama & Perencanaan)' => [],
                 ]
             ],

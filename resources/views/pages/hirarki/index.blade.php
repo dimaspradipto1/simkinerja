@@ -213,7 +213,7 @@
                 </div>
                 <div class="card-body p-3">
                     <ul class="list-unstyled mb-0" style="font-size:.8rem;color:#374151;">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>LPTI / ICT:</strong> Khusus membawahi Divisi TI, Programmer, & Jaringan. Pegawai fakultas (seperti TU FST) tidak dicampur ke LPTI.</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>LPTI:</strong> Khusus membawahi Divisi TI, Programmer, & Jaringan. Pegawai fakultas (seperti TU FST) tidak dicampur ke LPTI.</li>
                         <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Fakultas:</strong> Dekan memegang kendali atas Wadek, Kaprodi, Sekprodi, UPPM, UPMI, TU, & Laboran fakultas masing-masing.</li>
                         <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Lembaga:</strong> LPPM & LPMI berada langsung di bawah Rektorat.</li>
                         <li class="mb-0"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Otomatisasi:</strong> Klik tombol <em>Terapkan Standar OTK</em> di atas kapan saja untuk menyelaraskan seluruh pegawai.</li>

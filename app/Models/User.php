@@ -68,6 +68,36 @@ class User extends Authenticatable
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=15432d&color=ffffff&bold=true';
     }
 
+    public function getJabatanAttribute($value): ?string
+    {
+        if ($value && preg_match('/\bICT\b/i', $value)) {
+            return preg_replace('/\bICT\b/i', 'LPTI', $value);
+        }
+        return $value;
+    }
+
+    public function setJabatanAttribute($value): void
+    {
+        $this->attributes['jabatan'] = $value && preg_match('/\bICT\b/i', $value)
+            ? preg_replace('/\bICT\b/i', 'LPTI', $value)
+            : $value;
+    }
+
+    public function getUnitAttribute($value): ?string
+    {
+        if ($value && preg_match('/\bICT\b/i', $value)) {
+            return preg_replace('/\bICT\b/i', 'LPTI', $value);
+        }
+        return $value;
+    }
+
+    public function setUnitAttribute($value): void
+    {
+        $this->attributes['unit'] = $value && preg_match('/\bICT\b/i', $value)
+            ? preg_replace('/\bICT\b/i', 'LPTI', $value)
+            : $value;
+    }
+
     public function taggedRencanaKerjas()
     {
         return $this->belongsToMany(RencanaKerja::class, 'kegiatan_user', 'user_id', 'kegiatan_id')->withTimestamps();

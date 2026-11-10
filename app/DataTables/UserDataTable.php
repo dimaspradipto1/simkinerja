@@ -40,7 +40,7 @@ class UserDataTable extends DataTable
                 $badges = array_map(function ($r) {
                     $rLower = strtolower($r);
                     $class = 'bg-secondary';
-                    if (in_array($rLower, ['super admin', 'superadmin', 'admin', 'admin ict'])) {
+                    if (in_array($rLower, ['super admin', 'superadmin', 'admin', 'admin ict', 'admin lpti'])) {
                         $class = 'bg-dark text-white';
                     } elseif (in_array($rLower, ['pimpinan rektorat', 'rektor', 'wakil rektor i', 'wakil rektor ii', 'wakil rektor iii'])) {
                         $class = 'bg-primary text-white';

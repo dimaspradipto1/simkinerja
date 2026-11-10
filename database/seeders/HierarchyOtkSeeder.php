@@ -240,13 +240,13 @@ class HierarchyOtkSeeder extends Seeder
             'WR_III' => [
                 'leader' => 'SUMARDIN',
                 'subordinates' => [
-                    'MUHAMMAD ROPIANTO',     // Ka. UPT ICT / LPTI
+                    'MUHAMMAD ROPIANTO',     // Ka. UPT LPTI
                     'HERDIANTI',             // Ka. Biro Kemahasiswaan, Alumni, Kerjasama, dsb.
                     'ICE IRAWATI',           // Ka. LPPM
                     'RONI SAPUTRA',          // Ka. LPMI
                 ],
             ],
-            // UPT ICT / LPTI (Dr. MUHAMMAD ROPIANTO)
+            // UPT LPTI (Dr. MUHAMMAD ROPIANTO)
             'LPTI' => [
                 'leader' => 'MUHAMMAD ROPIANTO',
                 'subordinates' => [
