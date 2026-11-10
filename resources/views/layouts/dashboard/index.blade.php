@@ -910,14 +910,10 @@
         <!-- ============================================================== -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 border-bottom">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div>
-                        <h5 class="card-title m-0 fw-bold fs-6 text-dark d-flex align-items-center gap-2">
-                            <i class="bi bi-card-checklist text-success fs-5"></i>
-                            <span>Daftar Kegiatan &amp; Tugas Kinerja</span>
-                        </h5>
-                        <p class="text-muted small mb-0 mt-1">Kegiatan rutinitas, kepanitiaan, dan insidentil milik Anda.</p>
-                    </div>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h5 class="card-title m-0 fw-bold fs-6 text-dark">
+                        <i class="bi bi-journal-check text-success me-2"></i>Kegiatan
+                    </h5>
 
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         <form action="{{ route('dashboard') }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 m-0">
@@ -938,8 +934,8 @@
                             </select>
 
                             <!-- Search Input -->
-                            <div class="input-group input-group-sm" style="max-width: 220px;">
-                                <input type="text" name="search_kegiatan" class="form-control" placeholder="Cari kegiatan..." value="{{ request('search_kegiatan', request('search_utama')) }}">
+                            <div class="input-group input-group-sm" style="max-width: 200px;">
+                                <input type="text" name="search_kegiatan" class="form-control" placeholder="Cari..." value="{{ request('search_kegiatan', request('search_utama')) }}">
                                 <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
                             </div>
 
@@ -950,17 +946,9 @@
                             @endif
                         </form>
 
-                        <!-- Quick Dropdown Links ke Modul Lengkap -->
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-box-arrow-up-right me-1"></i>Kelola Modul
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                <li><a class="dropdown-item py-2 small" href="{{ route('rencana-kerja.index') }}"><i class="bi bi-journal-bookmark text-success me-2"></i>Kegiatan Rutinitas</a></li>
-                                <li><a class="dropdown-item py-2 small" href="{{ route('kepanitiaan.index') }}"><i class="bi bi-people text-primary me-2"></i>Tugas Kepanitiaan</a></li>
-                                <li><a class="dropdown-item py-2 small" href="{{ route('insidentil.index') }}"><i class="bi bi-lightning-charge text-warning me-2"></i>Tugas Insidentil</a></li>
-                            </ul>
-                        </div>
+                        <a href="{{ route('kegiatan.index') }}" class="btn btn-sm btn-outline-success fw-semibold text-nowrap">
+                            Lihat Semua <i class="bi bi-arrow-right me-1"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -970,7 +958,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th width="4%" class="ps-3">No</th>
-                                <th width="32%">Uraian Tugas / Kegiatan</th>
+                                <th width="32%">Uraian Tugas</th>
                                 <th width="12%">Kategori</th>
                                 <th width="20%">Pegawai / Jabatan</th>
                                 <th width="18%">Tanggal (Estimasi &amp; Realisasi)</th>
@@ -1057,7 +1045,7 @@
                                 <tr>
                                     <td colspan="6" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                        Belum ada data kegiatan atau tugas.
+                                        Belum ada data kegiatan.
                                     </td>
                                 </tr>
                             @endforelse
