@@ -25,6 +25,8 @@ class AbsensiKinerjaController extends Controller
         $validated = $request->validate([
             'dari' => ['nullable', 'date'],
             'sampai' => ['nullable', 'date', 'after_or_equal:dari'],
+            'bulan' => ['nullable', 'integer', 'between:1,12'],
+            'tahun' => ['nullable', 'integer', 'between:2020,2035'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'cakupan' => ['nullable', 'in:semua,saya,bawahan'],
             'periode_akademik_id' => ['nullable', 'integer', 'exists:periode_akademiks,id'],
@@ -50,11 +52,21 @@ class AbsensiKinerjaController extends Controller
             $query->whereIn('user_id', $userIds);
         }
 
-        if (!empty($validated['dari'])) {
-            $query->whereDate('tanggal', '>=', $validated['dari']);
-        }
-        if (!empty($validated['sampai'])) {
-            $query->whereDate('tanggal', '<=', $validated['sampai']);
+        if (!empty($validated['bulan']) && !empty($validated['tahun'])) {
+            $startDate = Carbon::createFromDate($validated['tahun'], $validated['bulan'], 1)->startOfMonth()->toDateString();
+            $endDate = Carbon::createFromDate($validated['tahun'], $validated['bulan'], 1)->endOfMonth()->toDateString();
+            $query->whereDate('tanggal', '>=', $startDate)->whereDate('tanggal', '<=', $endDate);
+        } elseif (!empty($validated['tahun']) && empty($validated['bulan'])) {
+            $startDate = Carbon::createFromDate($validated['tahun'], 1, 1)->startOfYear()->toDateString();
+            $endDate = Carbon::createFromDate($validated['tahun'], 12, 31)->endOfYear()->toDateString();
+            $query->whereDate('tanggal', '>=', $startDate)->whereDate('tanggal', '<=', $endDate);
+        } else {
+            if (!empty($validated['dari'])) {
+                $query->whereDate('tanggal', '>=', $validated['dari']);
+            }
+            if (!empty($validated['sampai'])) {
+                $query->whereDate('tanggal', '<=', $validated['sampai']);
+            }
         }
         if (!empty($validated['user_id']) && ($isAdmin || $isPimpinan)) {
             $query->where('user_id', $validated['user_id']);
@@ -125,7 +137,11 @@ class AbsensiKinerjaController extends Controller
         });
 
         $periodText = $selectedPeriod?->nama_periode ?? 'Semua tanggal';
-        if (!$selectedPeriod && !empty($validated['dari']) && !empty($validated['sampai'])) {
+        if (!empty($validated['bulan']) && !empty($validated['tahun'])) {
+            $periodText = 'Bulan ' . $this->getNamaBulan((int)$validated['bulan']) . ' ' . $validated['tahun'];
+        } elseif (!empty($validated['tahun']) && empty($validated['bulan'])) {
+            $periodText = 'Tahun ' . $validated['tahun'];
+        } elseif (!$selectedPeriod && !empty($validated['dari']) && !empty($validated['sampai'])) {
             $periodText = Carbon::parse($validated['dari'])->format('d/m/Y')
                 . ' s/d ' . Carbon::parse($validated['sampai'])->format('d/m/Y');
         } elseif (!$selectedPeriod && !empty($validated['dari'])) {
@@ -182,6 +198,8 @@ class AbsensiKinerjaController extends Controller
         $validated = $request->validate([
             'dari' => ['nullable', 'date'],
             'sampai' => ['nullable', 'date', 'after_or_equal:dari'],
+            'bulan' => ['nullable', 'integer', 'between:1,12'],
+            'tahun' => ['nullable', 'integer', 'between:2020,2035'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'cakupan' => ['nullable', 'in:semua,saya,bawahan'],
             'periode_akademik_id' => ['nullable', 'integer', 'exists:periode_akademiks,id'],
@@ -207,11 +225,21 @@ class AbsensiKinerjaController extends Controller
             $query->whereIn('user_id', $userIds);
         }
 
-        if (!empty($validated['dari'])) {
-            $query->whereDate('tanggal', '>=', $validated['dari']);
-        }
-        if (!empty($validated['sampai'])) {
-            $query->whereDate('tanggal', '<=', $validated['sampai']);
+        if (!empty($validated['bulan']) && !empty($validated['tahun'])) {
+            $startDate = Carbon::createFromDate($validated['tahun'], $validated['bulan'], 1)->startOfMonth()->toDateString();
+            $endDate = Carbon::createFromDate($validated['tahun'], $validated['bulan'], 1)->endOfMonth()->toDateString();
+            $query->whereDate('tanggal', '>=', $startDate)->whereDate('tanggal', '<=', $endDate);
+        } elseif (!empty($validated['tahun']) && empty($validated['bulan'])) {
+            $startDate = Carbon::createFromDate($validated['tahun'], 1, 1)->startOfYear()->toDateString();
+            $endDate = Carbon::createFromDate($validated['tahun'], 12, 31)->endOfYear()->toDateString();
+            $query->whereDate('tanggal', '>=', $startDate)->whereDate('tanggal', '<=', $endDate);
+        } else {
+            if (!empty($validated['dari'])) {
+                $query->whereDate('tanggal', '>=', $validated['dari']);
+            }
+            if (!empty($validated['sampai'])) {
+                $query->whereDate('tanggal', '<=', $validated['sampai']);
+            }
         }
         if (!empty($validated['user_id']) && ($isAdmin || $isPimpinan)) {
             $query->where('user_id', $validated['user_id']);
@@ -236,7 +264,11 @@ class AbsensiKinerjaController extends Controller
             : null;
         $records = $this->filterRecordsByAcademicPeriod($records, $selectedPeriod?->id);
         $periodText = $selectedPeriod?->nama_periode ?? 'SEMUA TANGGAL';
-        if (!$selectedPeriod && !empty($validated['dari']) && !empty($validated['sampai'])) {
+        if (!empty($validated['bulan']) && !empty($validated['tahun'])) {
+            $periodText = 'BULAN ' . mb_strtoupper($this->getNamaBulan((int)$validated['bulan'])) . ' ' . $validated['tahun'];
+        } elseif (!empty($validated['tahun']) && empty($validated['bulan'])) {
+            $periodText = 'TAHUN ' . $validated['tahun'];
+        } elseif (!$selectedPeriod && !empty($validated['dari']) && !empty($validated['sampai'])) {
             $periodText = Carbon::parse($validated['dari'])->format('d/m/Y')
                 . ' s/d ' . Carbon::parse($validated['sampai'])->format('d/m/Y');
         } elseif (!$selectedPeriod && !empty($validated['dari'])) {

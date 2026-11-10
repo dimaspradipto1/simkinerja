@@ -432,7 +432,19 @@
             <div class="modal-body p-4">
                 <div class="mb-3">
                     <label class="form-label fw-bold text-dark small mb-1">Pilihan Filter Waktu</label>
-                    <div class="d-flex gap-3 p-2 bg-light rounded border">
+                    <div class="d-flex flex-wrap gap-3 p-2 bg-light rounded border">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input export-absensi-filter-choice" type="radio" name="export-absensi-filter-type" id="export-absensi-filter-month-year" value="month_year" checked>
+                            <label class="form-check-label fw-semibold text-dark" for="export-absensi-filter-month-year">
+                                <i class="bi bi-calendar-month me-1 text-primary"></i>Bulan & Tahun
+                            </label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input export-absensi-filter-choice" type="radio" name="export-absensi-filter-type" id="export-absensi-filter-range" value="range">
+                            <label class="form-check-label fw-semibold text-dark" for="export-absensi-filter-range">
+                                <i class="bi bi-calendar-range me-1 text-info"></i>Rentang Tanggal
+                            </label>
+                        </div>
                         @if($periods->isNotEmpty())
                             <div class="form-check mb-0">
                                 <input class="form-check-input export-absensi-filter-choice" type="radio" name="export-absensi-filter-type" id="export-absensi-filter-periode" value="periode">
@@ -441,11 +453,49 @@
                                 </label>
                             </div>
                         @endif
-                        <div class="form-check mb-0">
-                            <input class="form-check-input export-absensi-filter-choice" type="radio" name="export-absensi-filter-type" id="export-absensi-filter-range" value="range" checked>
-                            <label class="form-check-label fw-semibold text-dark" for="export-absensi-filter-range">
-                                <i class="bi bi-calendar-range me-1 text-primary"></i>Rentang Tanggal
-                            </label>
+                    </div>
+                </div>
+                <div class="mb-3" id="wrapper-export-absensi-month-year">
+                    <label class="form-label fw-bold text-dark small mb-1">Bulan & Tahun</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label for="export-absensi-bulan" class="form-label small text-muted mb-1">Bulan</label>
+                            <select id="export-absensi-bulan" class="form-select">
+                                <option value="all">Semua Bulan (1 Tahun Penuh)</option>
+                                @foreach([
+                                    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                                    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                                    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                                ] as $mNum => $mName)
+                                    <option value="{{ $mNum }}" {{ $mNum == ($bulan ?? now()->month) ? 'selected' : '' }}>{{ $mName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="export-absensi-tahun" class="form-label small text-muted mb-1">Tahun</label>
+                            <select id="export-absensi-tahun" class="form-select">
+                                @php
+                                    $curYear = (int) ($tahun ?? now()->year);
+                                    $startYear = min($curYear - 2, 2024);
+                                    $endYear = max($curYear + 4, 2030);
+                                @endphp
+                                @for($y = $startYear; $y <= $endYear; $y++)
+                                    <option value="{{ $y }}" {{ $y == $curYear ? 'selected' : '' }}>{{ $y }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3 d-none" id="wrapper-export-absensi-range">
+                    <label class="form-label fw-bold text-dark small mb-1">Rentang Tanggal</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label for="export-absensi-dari" class="form-label small text-muted mb-1">Tanggal dari</label>
+                            <input type="date" id="export-absensi-dari" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label for="export-absensi-sampai" class="form-label small text-muted mb-1">Tanggal sampai</label>
+                            <input type="date" id="export-absensi-sampai" class="form-control">
                         </div>
                     </div>
                 </div>
@@ -460,19 +510,6 @@
                         </select>
                     </div>
                 @endif
-                <div class="mb-3" id="wrapper-export-absensi-range">
-                    <label class="form-label fw-bold text-dark small mb-1">Rentang Tanggal</label>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label for="export-absensi-dari" class="form-label small text-muted mb-1">Tanggal dari</label>
-                            <input type="date" id="export-absensi-dari" class="form-control">
-                        </div>
-                        <div class="col-6">
-                            <label for="export-absensi-sampai" class="form-label small text-muted mb-1">Tanggal sampai</label>
-                            <input type="date" id="export-absensi-sampai" class="form-control">
-                        </div>
-                    </div>
-                </div>
                 @if($isAdmin || $isPimpinan)
                     <div class="mb-3">
                         <label for="export-absensi-user" class="form-label fw-bold text-dark small mb-1">Pegawai / Jabatan</label>
@@ -599,7 +636,7 @@
 
         $('#modalExportAbsensi').on('show.bs.modal', function () {
             const hasDateFilter = Boolean($('#filter-dari').val() || $('#filter-sampai').val());
-            const defaultFilterType = hasDateFilter ? 'range' : (@json($periods->isNotEmpty()) ? 'periode' : 'range');
+            const defaultFilterType = hasDateFilter ? 'range' : 'month_year';
             $('input[name="export-absensi-filter-type"][value="' + defaultFilterType + '"]').prop('checked', true).trigger('change');
             $('#export-absensi-dari').val($('#filter-dari').val());
             $('#export-absensi-sampai').val($('#filter-sampai').val());
@@ -612,9 +649,10 @@
         });
 
         $('.export-absensi-filter-choice').on('change', function () {
-            const usePeriod = $(this).val() === 'periode';
-            $('#wrapper-export-absensi-periode').toggleClass('d-none', !usePeriod);
-            $('#wrapper-export-absensi-range').toggleClass('d-none', usePeriod);
+            const filterType = $(this).val();
+            $('#wrapper-export-absensi-month-year').toggleClass('d-none', filterType !== 'month_year');
+            $('#wrapper-export-absensi-periode').toggleClass('d-none', filterType !== 'periode');
+            $('#wrapper-export-absensi-range').toggleClass('d-none', filterType !== 'range');
         });
 
         if (canFilterPegawai && $.fn.select2) {
@@ -640,9 +678,18 @@
 
         function exportAbsensi(format) {
             const params = new URLSearchParams();
-            const filterType = $('input[name="export-absensi-filter-type"]:checked').val() || 'range';
+            const filterType = $('input[name="export-absensi-filter-type"]:checked').val() || 'month_year';
             const search = table.search();
-            if (filterType === 'periode') {
+            if (filterType === 'month_year') {
+                const bVal = $('#export-absensi-bulan').val();
+                const yVal = $('#export-absensi-tahun').val();
+                if (bVal && bVal !== 'all') {
+                    params.set('bulan', bVal);
+                }
+                if (yVal) {
+                    params.set('tahun', yVal);
+                }
+            } else if (filterType === 'periode') {
                 const periodId = $('#export-absensi-periode').val();
                 if (!periodId) {
                     if (typeof Swal !== 'undefined') {
