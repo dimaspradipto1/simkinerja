@@ -566,14 +566,193 @@ class AbsensiKinerjaController extends Controller
         $users = collect();
         $periods = PeriodeAkademik::orderByDesc('nama_periode')->get(['id', 'nama_periode']);
         if ($isAdmin && !$hasPimpinanScope) {
-            $users = User::whereNotNull('name')->orderBy('name')->get(['id', 'name', 'jabatan']);
+            $users = User::whereNotNull('name')->orderBy('name')->get(['id', 'name', 'jabatan', 'nidn', 'unit']);
         } elseif ($hasPimpinanScope) {
             $users = User::whereIn('id', $this->getPimpinanUserIds($authUser))
                 ->orderBy('name')
-                ->get(['id', 'name', 'jabatan']);
+                ->get(['id', 'name', 'jabatan', 'nidn', 'unit']);
+        } else {
+            $users = User::where('id', $authUser->id)->get(['id', 'name', 'jabatan', 'nidn', 'unit']);
         }
 
-        return view('pages.absensi-kinerja.index', compact('users', 'periods', 'isAdmin', 'isPimpinan', 'hasPimpinanScope'));
+        // ==========================================
+        // DATA MATRIX MONITORING HARIAN (TANGGAL 01 - AKHIR BULAN)
+        // ==========================================
+        $bulan = (int) $request->input('bulan', now()->month);
+        $tahun = (int) $request->input('tahun', now()->year);
+        if ($bulan < 1 || $bulan > 12) $bulan = now()->month;
+        if ($tahun < 2020 || $tahun > 2035) $tahun = now()->year;
+
+        $namaBulanIndonesia = $this->getNamaBulan($bulan);
+        $daysInMonth = Carbon::createFromDate($tahun, $bulan, 1)->daysInMonth;
+
+        $matrixDays = [];
+        $totalWorkdays = 0;
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $cDate = Carbon::createFromDate($tahun, $bulan, $d);
+            $shortDay = match($cDate->dayOfWeek) {
+                0 => 'Minggu',
+                1 => 'Senin',
+                2 => 'Selasa',
+                3 => 'Rabu',
+                4 => 'Kamis',
+                5 => 'Jumat',
+                6 => 'Sabtu',
+            };
+            $isSunday = $cDate->isSunday();
+            if (!$isSunday) {
+                $totalWorkdays++;
+            }
+            $matrixDays[] = [
+                'day' => $d,
+                'day_padded' => str_pad($d, 2, '0', STR_PAD_LEFT),
+                'date' => $cDate->toDateString(),
+                'day_name' => $shortDay,
+                'is_sunday' => $isSunday,
+                'is_weekend' => $cDate->isWeekend(),
+            ];
+        }
+
+        // Tentukan daftar user untuk Matrix
+        $matrixUsersQuery = User::where('is_active', true);
+        if (!$isAdmin && !$isPimpinan) {
+            $matrixUsersQuery->where('id', $authUser->id);
+        } elseif ($hasPimpinanScope) {
+            $matrixUsersQuery->whereIn('id', $this->getPimpinanUserIds($authUser));
+        }
+
+        if ($request->filled('filter_user_matrix') && ($isAdmin || $isPimpinan)) {
+            $matrixUsersQuery->where('id', $request->filter_user_matrix);
+        }
+
+        $matrixUsers = $matrixUsersQuery->orderBy('name', 'asc')->get();
+        $matrixUserIds = $matrixUsers->pluck('id')->all();
+
+        $startOfMonth = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->toDateString();
+
+        // 1. Ambil data AbsensiKinerjaHarian bulan ini
+        $attendanceRecords = AbsensiKinerjaHarian::whereIn('user_id', $matrixUserIds)
+            ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+            ->get()
+            ->groupBy(function ($rec) {
+                return $rec->user_id . '_' . $rec->tanggal->format('Y-m-d');
+            });
+
+        // 2. Ambil data Kegiatan yang dimulai pada bulan ini (Rutinitas, Kepanitiaan, Insidentil)
+        // Acuan hadir: jika 1 kegiatan dimulai maka otomatis hadir
+        $kegiatanRecords = Kegiatan::where(function ($q) use ($matrixUserIds) {
+                $q->whereIn('user_id', $matrixUserIds)
+                  ->orWhereHas('taggedUsers', fn($qu) => $qu->whereIn('users.id', $matrixUserIds));
+            })
+            ->whereIn('kategori', ['Rencana Kerja', 'Kepanitiaan', 'Insidentil'])
+            ->whereIn('status', ['Berjalan', 'Proses', 'Di-pause', 'Selesai'])
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('tanggal_mulai', [$startOfMonth, $endOfMonth])
+                  ->orWhereBetween('last_started_at', [$startOfMonth . ' 00:00:00', $endOfMonth . ' 23:59:59'])
+                  ->orWhere(function ($sub) use ($startOfMonth, $endOfMonth) {
+                      $sub->whereNull('tanggal_mulai')
+                          ->whereBetween('created_at', [$startOfMonth . ' 00:00:00', $endOfMonth . ' 23:59:59']);
+                  });
+            })
+            ->with(['taggedUsers:id,name'])
+            ->get();
+
+        $startedActivitiesMap = [];
+        foreach ($kegiatanRecords as $task) {
+            $tgl = $task->tanggal_mulai 
+                ?: ($task->last_started_at ? $task->last_started_at->toDateString() : ($task->created_at ? $task->created_at->toDateString() : null));
+            if (!$tgl) continue;
+
+            $startedActivitiesMap[$task->user_id . '_' . $tgl][] = $task->uraian_tugas;
+            foreach ($task->taggedUsers as $tu) {
+                $startedActivitiesMap[$tu->id . '_' . $tgl][] = $task->uraian_tugas;
+            }
+        }
+
+        // 3. Susun data matrix per user
+        $matrixData = [];
+        foreach ($matrixUsers as $u) {
+            $userDays = [];
+            $countHadir = 0;
+            $countSakit = 0;
+            $countIzin = 0;
+            $countAlfa = 0;
+
+            foreach ($matrixDays as $dayInfo) {
+                $dDate = $dayInfo['date'];
+                $key = $u->id . '_' . $dDate;
+
+                $att = $attendanceRecords[$key][0] ?? null;
+                $hasStarted = !empty($startedActivitiesMap[$key]);
+
+                $status = null;
+                $tooltip = '';
+
+                if ($att) {
+                    $rawStatus = strtoupper(trim($att->status_datang ?? ''));
+                    if (str_starts_with($rawStatus, 'SAK') || $rawStatus === 'S') {
+                        $status = 'S';
+                        $tooltip = 'Sakit' . ($att->catatan ? ': ' . $att->catatan : '');
+                    } elseif (str_starts_with($rawStatus, 'IZ') || $rawStatus === 'I') {
+                        $status = 'I';
+                        $tooltip = 'Izin' . ($att->catatan ? ': ' . $att->catatan : '');
+                    } elseif (str_starts_with($rawStatus, 'ALF') || str_starts_with($rawStatus, 'ALP') || $rawStatus === 'A') {
+                        $status = 'A';
+                        $tooltip = 'Alfa' . ($att->catatan ? ': ' . $att->catatan : '');
+                    } elseif (str_starts_with($rawStatus, 'HAD') || $rawStatus === 'H' || !empty($att->waktu_datang) || !empty($att->keterangan_kerja)) {
+                        $status = 'H';
+                        $tooltip = 'Hadir (' . ($att->waktu_datang ? substr($att->waktu_datang, 0, 5) . ' WIB' : 'Otomatis Kinerja') . ')';
+                    }
+                }
+
+                // Jika belum ada status manual dan user memulai kegiatan pada hari tersebut -> Otomatis Hadir
+                if (!$status && $hasStarted) {
+                    $status = 'H';
+                    $firstTask = $startedActivitiesMap[$key][0] ?? 'Kegiatan dimulai';
+                    $tooltip = 'Hadir Otomatis: ' . $firstTask;
+                }
+
+                if ($status === 'H') $countHadir++;
+                elseif ($status === 'S') $countSakit++;
+                elseif ($status === 'I') $countIzin++;
+                elseif ($status === 'A') $countAlfa++;
+
+                $userDays[$dayInfo['day']] = [
+                    'status' => $status,
+                    'tooltip' => $tooltip,
+                    'is_sunday' => $dayInfo['is_sunday'],
+                ];
+            }
+
+            // Hitung persentase kehadiran
+            $persentase = $totalWorkdays > 0 ? round(($countHadir / $totalWorkdays) * 100) : 0;
+
+            $matrixData[] = [
+                'user' => $u,
+                'nik' => $u->nidn ?: '-',
+                'days' => $userDays,
+                'hadir' => $countHadir,
+                'sakit' => $countSakit,
+                'izin' => $countIzin,
+                'alfa' => $countAlfa,
+                'persentase' => $persentase,
+            ];
+        }
+
+        return view('pages.absensi-kinerja.index', compact(
+            'users',
+            'periods',
+            'isAdmin',
+            'isPimpinan',
+            'hasPimpinanScope',
+            'matrixDays',
+            'matrixData',
+            'bulan',
+            'tahun',
+            'namaBulanIndonesia',
+            'totalWorkdays'
+        ));
     }
 
     private function filterRecordsByAcademicPeriod($records, ?int $periodId)
@@ -761,5 +940,110 @@ class AbsensiKinerjaController extends Controller
             'insidentil', 'Insidentil' => 'Insidentil',
             default => 'Lainnya',
         };
+    }
+
+    /**
+     * Simpan absensi manual (Sakit, Izin, Alfa, Hadir).
+     */
+    public function storeManual(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return redirect()->route('login');
+        }
+
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'tanggal_dari' => ['required', 'date'],
+            'tanggal_sampai' => ['required', 'date', 'after_or_equal:tanggal_dari'],
+            'status' => ['required', 'in:Hadir,Sakit,Izin,Alfa'],
+            'waktu_datang' => ['nullable', 'string', 'max:10'],
+            'waktu_pulang' => ['nullable', 'string', 'max:10'],
+            'catatan' => ['nullable', 'string', 'max:1000'],
+            'bukti_izin' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+        ]);
+
+        $isAdmin = $authUser->isAdmin() || $authUser->isSuperAdmin();
+        $isPimpinan = $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
+
+        // Cek izin akses: jika staff biasa, hanya boleh menginput untuk dirinya sendiri
+        if (!$isAdmin && !$isPimpinan && (int)$validated['user_id'] !== (int)$authUser->id) {
+            abort(403, 'Anda hanya dapat mengisi absensi untuk diri sendiri.');
+        }
+
+        // Upload bukti jika ada
+        $buktiPath = null;
+        if ($request->hasFile('bukti_izin')) {
+            $buktiPath = $request->file('bukti_izin')->store('bukti_izin', 'public');
+        }
+
+        $startDate = Carbon::parse($validated['tanggal_dari']);
+        $endDate = Carbon::parse($validated['tanggal_sampai']);
+
+        $current = $startDate->copy();
+        while ($current->lte($endDate)) {
+            $tglStr = $current->toDateString();
+
+            $record = AbsensiKinerjaHarian::firstOrNew([
+                'user_id' => $validated['user_id'],
+                'tanggal' => $tglStr,
+            ]);
+
+            $record->status_datang = $validated['status'];
+            $record->status_pulang = $validated['status'];
+
+            if ($validated['status'] === 'Hadir') {
+                $record->waktu_datang = !empty($validated['waktu_datang']) ? substr($validated['waktu_datang'], 0, 5) : '08:00';
+                $record->waktu_pulang = !empty($validated['waktu_pulang']) ? substr($validated['waktu_pulang'], 0, 5) : '16:00';
+            } else {
+                $record->waktu_datang = null;
+                $record->waktu_pulang = null;
+            }
+
+            if (!empty($validated['catatan'])) {
+                $record->catatan = $validated['catatan'];
+            }
+            if ($buktiPath) {
+                $record->bukti_izin = $buktiPath;
+            }
+
+            $record->save();
+
+            $current->addDay();
+        }
+
+        return redirect()->back()->with('success', 'Data absensi manual (' . $validated['status'] . ') berhasil disimpan.');
+    }
+
+    /**
+     * Hapus absensi manual.
+     */
+    public function destroyManual($id)
+    {
+        $authUser = Auth::user();
+        $record = AbsensiKinerjaHarian::findOrFail($id);
+
+        $isAdmin = $authUser->isAdmin() || $authUser->isSuperAdmin();
+        $isPimpinan = $authUser->isPimpinanRektorat() || $authUser->isPimpinanUnit();
+
+        if (!$isAdmin && !$isPimpinan && (int)$record->user_id !== (int)$authUser->id) {
+            abort(403);
+        }
+
+        $record->delete();
+        return redirect()->back()->with('success', 'Data absensi manual berhasil dihapus.');
+    }
+
+    /**
+     * Helper nama bulan bahasa Indonesia.
+     */
+    protected function getNamaBulan(int $bulan): string
+    {
+        $daftarBulan = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        return $daftarBulan[$bulan] ?? 'Bulan ' . $bulan;
     }
 }

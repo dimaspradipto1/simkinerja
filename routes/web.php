@@ -240,6 +240,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     // Absensi Kinerja Harian
     Route::get('absensi-kinerja', [AbsensiKinerjaController::class, 'index'])->name('absensi-kinerja.index');
+    Route::post('absensi-kinerja/manual', [AbsensiKinerjaController::class, 'storeManual'])->name('absensi-kinerja.manual');
+    Route::delete('absensi-kinerja/manual/{id}', [AbsensiKinerjaController::class, 'destroyManual'])->name('absensi-kinerja.manual.destroy');
     Route::get('absensi-kinerja/export', [AbsensiKinerjaController::class, 'export'])->name('absensi-kinerja.export');
     Route::get('absensi-kinerja/export-pdf', [AbsensiKinerjaController::class, 'exportPdf'])->name('absensi-kinerja.export-pdf');
 

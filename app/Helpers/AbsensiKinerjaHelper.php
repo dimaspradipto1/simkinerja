@@ -94,9 +94,10 @@ class AbsensiKinerjaHelper
                 $attendance = AbsensiKinerjaHarian::getOrCreate($userId, $tanggal);
                 $attendance->addOrUpdateKeterangan($entry);
 
-                if ((int) $userId === (int) $task->user_id) {
-                    $attendance->setWaktuDatang(substr($task->waktu_mulai, 0, 5));
-                }
+                $waktuMulai = !empty($task->waktu_mulai) && $task->waktu_mulai !== '00:00:00'
+                    ? substr($task->waktu_mulai, 0, 5)
+                    : date('H:i');
+                $attendance->setWaktuDatang($waktuMulai);
             }
         });
     }
