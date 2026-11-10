@@ -64,14 +64,14 @@
                     <!-- Bordered Tabs -->
                     <ul class="nav nav-tabs nav-tabs-bordered" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#profile-overview" role="tab">
-                                <i class="bi bi-person-lines-fill me-1"></i> Ringkasan Profil
+                            <button class="nav-link active fw-semibold d-inline-flex align-items-center gap-2" data-bs-toggle="tab" data-bs-target="#profile-overview" role="tab">
+                                <i class="bi bi-person-lines-fill"></i><span>Ringkasan Profil</span>
                             </button>
                         </li>
 
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#profile-edit" role="tab">
-                                <i class="bi bi-pencil-square me-1"></i> Edit Profil
+                            <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2" data-bs-toggle="tab" data-bs-target="#profile-edit" role="tab">
+                                <i class="bi bi-pencil-square"></i><span>Edit Profil</span>
                             </button>
                         </li>
                     </ul>

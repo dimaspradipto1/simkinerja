@@ -41,13 +41,15 @@
     <!-- Tab Switcher Navigation -->
     <ul class="nav nav-tabs nav-tabs-bordered mb-3" id="tabAbsensi" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-bold text-dark px-3 py-2.5" id="monitoring-harian-tab" data-bs-toggle="tab" data-bs-target="#monitoring-harian" type="button" role="tab" aria-controls="monitoring-harian" aria-selected="true">
-                <i class="bi bi-grid-3x3-gap-fill me-1.5 text-primary"></i>Monitoring Harian
+            <button class="nav-link active fw-bold text-dark px-3.5 py-2.5 d-inline-flex align-items-center gap-2" id="monitoring-harian-tab" data-bs-toggle="tab" data-bs-target="#monitoring-harian" type="button" role="tab" aria-controls="monitoring-harian" aria-selected="true">
+                <i class="bi bi-grid-3x3-gap-fill text-primary" style="font-size: 1.05rem; margin-right: 8px;"></i>
+                <span>Monitoring Harian</span>
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold text-secondary px-3 py-2.5" id="rekap-karyawan-tab" data-bs-toggle="tab" data-bs-target="#rekap-karyawan" type="button" role="tab" aria-controls="rekap-karyawan" aria-selected="false">
-                <i class="bi bi-person-lines-fill me-1.5 text-success"></i>Rekap Per Karyawan
+            <button class="nav-link fw-semibold text-secondary px-3.5 py-2.5 d-inline-flex align-items-center gap-2" id="rekap-karyawan-tab" data-bs-toggle="tab" data-bs-target="#rekap-karyawan" type="button" role="tab" aria-controls="rekap-karyawan" aria-selected="false">
+                <i class="bi bi-person-lines-fill text-success" style="font-size: 1.05rem; margin-right: 8px;"></i>
+                <span>Rekap Per Karyawan</span>
             </button>
         </li>
     </ul>

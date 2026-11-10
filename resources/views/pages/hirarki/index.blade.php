@@ -66,38 +66,38 @@
     <!-- FILTER TAB KATEGORI OTK -->
     <ul class="nav nav-tabs nav-tabs-custom" id="otkCategoryTabs" role="tablist">
         <li class="nav-item">
-            <button class="nav-link active" onclick="filterCategory('all', this)">
-                <i class="bi bi-grid-fill me-1"></i>Semua Struktur
+            <button class="nav-link active d-inline-flex align-items-center gap-2" onclick="filterCategory('all', this)">
+                <i class="bi bi-grid-fill"></i><span>Semua Struktur</span>
                 <span class="badge-tab">{{ $hierarchyTree->count() }}</span>
             </button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" onclick="filterCategory('rektorat', this)">
-                <i class="bi bi-bank2 me-1"></i>Rektorat & Biro
+            <button class="nav-link d-inline-flex align-items-center gap-2" onclick="filterCategory('rektorat', this)">
+                <i class="bi bi-bank2"></i><span>Rektorat & Biro</span>
                 <span class="badge-tab">{{ $hierarchyTree->where('category', 'rektorat')->count() }}</span>
             </button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" onclick="filterCategory('lembaga', this)">
-                <i class="bi bi-shield-check me-1"></i>Lembaga (LPPM & LPMI)
+            <button class="nav-link d-inline-flex align-items-center gap-2" onclick="filterCategory('lembaga', this)">
+                <i class="bi bi-shield-check"></i><span>Lembaga (LPPM & LPMI)</span>
                 <span class="badge-tab">{{ $hierarchyTree->where('category', 'lembaga')->count() }}</span>
             </button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" onclick="filterCategory('feb', this)">
-                <i class="bi bi-briefcase-fill me-1"></i>Fakultas Ekonomi & Bisnis
+            <button class="nav-link d-inline-flex align-items-center gap-2" onclick="filterCategory('feb', this)">
+                <i class="bi bi-briefcase-fill"></i><span>Fakultas Ekonomi & Bisnis</span>
                 <span class="badge-tab">{{ $hierarchyTree->where('category', 'feb')->count() }}</span>
             </button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" onclick="filterCategory('fst', this)">
-                <i class="bi bi-cpu-fill me-1"></i>Fakultas Sains & Teknologi
+            <button class="nav-link d-inline-flex align-items-center gap-2" onclick="filterCategory('fst', this)">
+                <i class="bi bi-cpu-fill"></i><span>Fakultas Sains & Teknologi</span>
                 <span class="badge-tab">{{ $hierarchyTree->where('category', 'fst')->count() }}</span>
             </button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" onclick="filterCategory('fikes', this)">
-                <i class="bi bi-heart-pulse-fill me-1"></i>Fakultas Ilmu Kesehatan
+            <button class="nav-link d-inline-flex align-items-center gap-2" onclick="filterCategory('fikes', this)">
+                <i class="bi bi-heart-pulse-fill"></i><span>Fakultas Ilmu Kesehatan</span>
                 <span class="badge-tab">{{ $hierarchyTree->where('category', 'fikes')->count() }}</span>
             </button>
         </li>
