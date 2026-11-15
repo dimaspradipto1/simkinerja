@@ -33,34 +33,34 @@ class LayananLptiController extends Controller
     {
         $user = Auth::user();
         if (!$user) return redirect()->route('login');
-        return redirect()->route('rencana-kerja.index', ['jabatan' => 'KEPALA LPTI']);
+        return redirect()->route('rencana-kerja.index', ['jabatan' => 'KEPALA LPTI', 'from' => 'layanan']);
     }
 
     public function pengembanganSi()
     {
         $user = Auth::user();
         if (!$user) return redirect()->route('login');
-        return redirect()->route('rencana-kerja.index', ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK']);
+        return redirect()->route('rencana-kerja.index', ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK', 'from' => 'layanan']);
     }
 
     public function infrastruktur()
     {
         $user = Auth::user();
         if (!$user) return redirect()->route('login');
-        return redirect()->route('rencana-kerja.index', ['jabatan' => 'DIVISI INFRASTRUKTUR DAN JARINGAN']);
+        return redirect()->route('rencana-kerja.index', ['jabatan' => 'DIVISI INFRASTRUKTUR DAN JARINGAN', 'from' => 'layanan']);
     }
 
     public function pemeliharaan()
     {
         $user = Auth::user();
         if (!$user) return redirect()->route('login');
-        return redirect()->route('rencana-kerja.index', ['jabatan' => 'PROGRAMMER']);
+        return redirect()->route('rencana-kerja.index', ['jabatan' => 'PROGRAMMER', 'from' => 'layanan']);
     }
 
     public function dukunganTeknis()
     {
         $user = Auth::user();
         if (!$user) return redirect()->route('login');
-        return redirect()->route('rencana-kerja.index', ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING']);
+        return redirect()->route('rencana-kerja.index', ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING', 'from' => 'layanan']);
     }
 }

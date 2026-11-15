@@ -5,13 +5,40 @@
 
 
 <div class="pagetitle">
-    <h1>Rencana Kerja</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active">Rencana Kerja</li>
-        </ol>
-    </nav>
+    @if(request('from') === 'layanan' || request()->filled('jabatan'))
+        @php
+            $jbtUpper = strtoupper(request('jabatan', ''));
+            $titleLayanan = 'Layanan LPTI';
+            if (str_contains($jbtUpper, 'TROUBLESHOOTING')) {
+                $titleLayanan = 'Layanan Dukungan Teknis';
+            } elseif (str_contains($jbtUpper, 'PROGRAMMER')) {
+                $titleLayanan = 'Pengembangan dan Pemeliharaan Aplikasi';
+            } elseif (str_contains($jbtUpper, 'INFRASTRUKTUR') || str_contains($jbtUpper, 'JARINGAN')) {
+                $titleLayanan = 'Pengelolaan Infrastruktur dan Jaringan';
+            } elseif (str_contains($jbtUpper, 'SISTEM INFORMASI')) {
+                $titleLayanan = 'Pengembangan Sistem Informasi dan Aplikasi';
+            } elseif (str_contains($jbtUpper, 'KEPALA')) {
+                $titleLayanan = 'Manajemen LPTI';
+            }
+        @endphp
+        <h1>{{ $titleLayanan }}</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+                <li class="breadcrumb-item">Modul Layanan</li>
+                <li class="breadcrumb-item">Layanan LPTI</li>
+                <li class="breadcrumb-item active">{{ $titleLayanan }}</li>
+            </ol>
+        </nav>
+    @else
+        <h1>Rencana Kerja</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Rencana Kerja</li>
+            </ol>
+        </nav>
+    @endif
 </div><!-- End Page Title -->
 
 <section class="section">
@@ -563,6 +590,7 @@
                         d.jabatan = $('#filter-jabatan').val();
                     }
                     d.status = $('#filter-status').val();
+                    d.from = "{{ request('from', '') }}";
                 }
             },
             columns: [
