@@ -165,9 +165,9 @@
                                 <!-- Baris 2: Nama Hari & Angka Tanggal (01, 02, ... 31) -->
                                 <tr class="text-center align-middle" style="background-color: #f1f5f9; font-size: 0.69rem;">
                                     @foreach($matrixDays as $d)
-                                        <th class="p-1 {{ $d['is_sunday'] ? 'text-danger bg-danger-subtle bg-opacity-50' : 'text-primary' }}" style="min-width: 32px; font-weight: 600;">
-                                            <div>{{ substr($d['day_name'], 0, 3) }}</div>
-                                            <div class="fw-bold fs-7 {{ $d['is_sunday'] ? 'text-danger' : 'text-dark' }}">{{ $d['day_padded'] }}</div>
+                                        <th class="p-1 {{ $d['is_weekend'] ? 'text-danger bg-danger-subtle bg-opacity-50' : 'text-primary' }}" style="min-width: 32px; font-weight: 600; {{ $d['is_weekend'] ? 'color: #dc3545 !important; background-color: #fee2e2 !important;' : '' }}">
+                                            <div style="{{ $d['is_weekend'] ? 'color: #dc3545 !important;' : '' }}">{{ substr($d['day_name'], 0, 3) }}</div>
+                                            <div class="fw-bold fs-7 {{ $d['is_weekend'] ? 'text-danger' : 'text-dark' }}" style="{{ $d['is_weekend'] ? 'color: #dc3545 !important;' : '' }}">{{ $d['day_padded'] }}</div>
                                         </th>
                                     @endforeach
                                 </tr>
@@ -194,7 +194,7 @@
                                                 $cell = $row['days'][$d['day']];
                                                 $st = $cell['status'];
                                             @endphp
-                                            <td class="text-center p-1 {{ $d['is_sunday'] ? 'bg-danger-subtle bg-opacity-25' : '' }}">
+                                            <td class="text-center p-1 {{ $d['is_weekend'] ? 'bg-danger-subtle bg-opacity-25' : '' }}" style="{{ $d['is_weekend'] ? 'background-color: #fef2f2 !important;' : '' }}">
                                                 @if($st === 'H')
                                                     <span class="badge bg-success text-white fw-bold d-inline-flex align-items-center justify-content-center shadow-xs" 
                                                           style="width: 22px; height: 22px; font-size: 0.72rem; border-radius: 4px;"

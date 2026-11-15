@@ -800,6 +800,7 @@ class AbsensiKinerjaController extends Controller
                     'status' => $status,
                     'tooltip' => $tooltip,
                     'is_sunday' => $dayInfo['is_sunday'],
+                    'is_weekend' => $dayInfo['is_weekend'],
                 ];
             }
 
