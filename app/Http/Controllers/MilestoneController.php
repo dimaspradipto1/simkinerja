@@ -21,12 +21,14 @@ class MilestoneController extends Controller
         ]);
 
         $typeMap = [
-            'rencana_kerja' => \App\Models\RencanaKerja::class,
+            'rencana_kerja' => \App\Models\Kegiatan::class,
             'kepanitiaan'   => \App\Models\Kepanitiaan::class,
-            'insidentil'    => \App\Models\Insidentil::class,
-            \App\Models\RencanaKerja::class => \App\Models\RencanaKerja::class,
+            'insidentil'    => \App\Models\Kegiatan::class,
+            'kegiatan'      => \App\Models\Kegiatan::class,
+            \App\Models\Kegiatan::class     => \App\Models\Kegiatan::class,
+            \App\Models\RencanaKerja::class => \App\Models\Kegiatan::class,
             \App\Models\Kepanitiaan::class   => \App\Models\Kepanitiaan::class,
-            \App\Models\Insidentil::class    => \App\Models\Insidentil::class,
+            \App\Models\Insidentil::class    => \App\Models\Kegiatan::class,
         ];
 
         $targetType = $typeMap[$request->milestonable_type] ?? $request->milestonable_type;
@@ -253,15 +255,25 @@ class MilestoneController extends Controller
     public function index(Request $request)
     {
         $typeMap = [
-            'rencana_kerja' => \App\Models\RencanaKerja::class,
+            'rencana_kerja' => \App\Models\Kegiatan::class,
             'kepanitiaan'   => \App\Models\Kepanitiaan::class,
-            'insidentil'    => \App\Models\Insidentil::class,
+            'insidentil'    => \App\Models\Kegiatan::class,
+            'kegiatan'      => \App\Models\Kegiatan::class,
+            \App\Models\Kegiatan::class     => \App\Models\Kegiatan::class,
+            \App\Models\RencanaKerja::class => \App\Models\Kegiatan::class,
+            \App\Models\Kepanitiaan::class   => \App\Models\Kepanitiaan::class,
+            \App\Models\Insidentil::class    => \App\Models\Kegiatan::class,
         ];
 
         $targetType = $typeMap[$request->milestonable_type] ?? $request->milestonable_type;
         $targetId   = $request->milestonable_id;
 
-        $milestones = Milestone::where('milestonable_type', $targetType)
+        $types = [$targetType];
+        if (in_array($targetType, [\App\Models\Kegiatan::class, \App\Models\RencanaKerja::class, 'kegiatan', 'rencana_kerja'])) {
+            $types = [\App\Models\Kegiatan::class, \App\Models\RencanaKerja::class, 'kegiatan', 'rencana_kerja'];
+        }
+
+        $milestones = Milestone::whereIn('milestonable_type', $types)
             ->where('milestonable_id', $targetId)
             ->orderBy('id', 'asc')
             ->get();

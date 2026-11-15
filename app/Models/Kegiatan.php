@@ -206,7 +206,14 @@ class Kegiatan extends Model
 
     public function milestones()
     {
-        return $this->morphMany(Milestone::class, 'milestonable');
+        return $this->hasMany(Milestone::class, 'milestonable_id')
+            ->whereIn('milestonable_type', [
+                \App\Models\Kegiatan::class,
+                \App\Models\RencanaKerja::class,
+                'kegiatan',
+                'rencana_kerja'
+            ])
+            ->orderBy('id', 'asc');
     }
 
     public function sesiAbsensis()

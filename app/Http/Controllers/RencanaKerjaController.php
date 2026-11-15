@@ -159,14 +159,16 @@ class RencanaKerjaController extends Controller
                 })
                 ->addColumn('total_jam', function ($row) {
                     $seconds = \App\Helpers\KinerjaWaktuHelper::hitungDetikRealisasi($row);
+                    $st = $row->status ?? 'Belum Dimulai';
                     if ($seconds > 0) {
-                        $jamNum = round($seconds / 3600, 1);
-                        $formatted = str_replace('.', ',', (string)$jamNum) . ' jam';
-                        return '<span class="fw-semibold text-dark small">' . e($formatted) . '</span>';
+                        $displayText = \App\Helpers\KinerjaWaktuHelper::formatJamKerjaRingkas($seconds, $st);
+                        $badgeClass = in_array($st, ['Proses', 'Berjalan']) ? 'text-primary' : 'text-dark';
+                        $runningIcon = in_array($st, ['Proses', 'Berjalan']) ? '<span class="spinner-grow spinner-grow-sm text-primary me-1" style="width: 7px; height: 7px; vertical-align: middle;" role="status"></span>' : '';
+                        return '<span class="fw-semibold ' . $badgeClass . ' small text-nowrap">' . $runningIcon . e($displayText) . '</span>';
                     }
                     if (!empty($row->estimasi_durasi_jam) || !empty($row->estimasi_durasi_hari)) {
                         $estStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget($row->estimasi_durasi_hari, $row->estimasi_durasi_jam);
-                        return '<span class="text-muted small">' . e($estStr) . '</span>';
+                        return '<span class="text-muted small text-nowrap">' . e($estStr) . '</span>';
                     }
                     return '<span class="text-muted small">-</span>';
                 })
@@ -217,27 +219,35 @@ class RencanaKerjaController extends Controller
                 ->addColumn('action', function ($row) use ($authUser) {
                     $html = '<div class="d-inline-flex align-items-center justify-content-center flex-nowrap" style="gap: 6px;">';
                     
-                    // Tombol Eye: Buka Modal Detail (pengganti dropdown)
-                    $html .= '<button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center btn-detail-task" data-id="' . $row->id . '" title="Tampilkan Rincian (Modal Pengganti Dropdown)" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-eye fs-6"></i></button>';
+                    // 1. Tombol Eye: Buka Modal Detail (Detail rincian & timeline milestone)
+                    $html .= '<button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center btn-detail-task" data-id="' . $row->id . '" title="Tampilkan Rincian (Detail & Milestone)" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-eye fs-6"></i></button>';
 
-                    // Action button (Start/Pause/Stop/Reopen)
+                    // 2. Action buttons (Play / Pause & Stop / Resume & Stop / Unlock)
                     $st = $row->status ?? 'Belum Dimulai';
                     $wMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
                     $wSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
                     
-                    if (!$wMulai && $st !== 'Selesai') {
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center" onclick="window.startTaskQuick(' . $row->id . ')" title="Mulai Kerjakan" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-play-fill fs-5"></i></button>';
-                    } elseif ($st === 'Proses' || ($wMulai && !$wSelesai)) {
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center" onclick="window.stopTaskQuick(' . $row->id . ')" title="Selesaikan Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-check-lg fs-5"></i></button>';
-                    } elseif ($st === 'Selesai') {
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis d-inline-flex align-items-center justify-content-center" onclick="window.reopenTaskQuick(' . $row->id . ')" title="Buka Kunci / Kerjakan Lagi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-unlock-fill fs-6"></i></button>';
+                    if ($st === 'Selesai' || $wSelesai) {
+                        // Selesai -> Tombol Buka Kunci
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis d-inline-flex align-items-center justify-content-center" onclick="window.reopenTaskQuick(' . $row->id . ')" title="Buka Kunci / Kerjakan Lagi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-unlock-fill fs-6"></i></button>';
+                    } elseif ($st === 'Di-pause') {
+                        // Di-pause -> Tombol Lanjut (Play hijau) dan Stop (Stop merah)
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center" onclick="window.startTaskQuick(' . $row->id . ')" title="Lanjutkan Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-play-fill fs-5"></i></button>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.stopTaskQuick(' . $row->id . ')" title="Berhenti / Selesaikan Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-stop-fill fs-5"></i></button>';
+                    } elseif (in_array($st, ['Proses', 'Berjalan']) || ($wMulai && !$wSelesai)) {
+                        // Sedang Berjalan -> Tombol Pause (Kuning) dan Tombol Stop (Merah)
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis d-inline-flex align-items-center justify-content-center" onclick="window.pauseTaskQuick(' . $row->id . ')" title="Jeda / Pause Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-pause-fill fs-5"></i></button>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.stopTaskQuick(' . $row->id . ')" title="Berhenti / Selesaikan Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-stop-fill fs-5"></i></button>';
+                    } else {
+                        // Belum Dimulai -> Tombol Mulai (Play biru)
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center" onclick="window.startTaskQuick(' . $row->id . ')" title="Mulai Kerjakan" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-play-fill fs-5"></i></button>';
                     }
 
-                    // Edit & Delete
+                    // 3. Edit & Delete
                     $canEdit = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanUnit() || $row->user_id === $authUser->id);
                     if ($canEdit) {
-                        $html .= '<a href="' . route('rencana-kerja.edit', $row->id) . '" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center" title="Edit Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-pencil-square fs-6"></i></a>';
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.deleteRencanaKerja(' . $row->id . ')" title="Hapus" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-trash fs-6"></i></button>';
+                        $html .= '<a href="' . route('rencana-kerja.edit', $row->id) . '" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center" title="Edit Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-pencil-square fs-6"></i></a>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.deleteRencanaKerja(' . $row->id . ')" title="Hapus" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-trash fs-6"></i></button>';
                     }
 
                     $html .= '</div>';
@@ -350,6 +360,23 @@ class RencanaKerjaController extends Controller
     {
         $authUser = Auth::user();
         $rencanaKerja->load(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
+
+        // Jika tugas sedang Berjalan / Proses tapi belum memiliki milestone,
+        // inisialisasi milestone awal agar timeline otomatis berjalan
+        if (in_array($rencanaKerja->status, ['Berjalan', 'Proses']) && $rencanaKerja->milestones->isEmpty()) {
+            $now = Carbon::now();
+            $startTime = !empty($rencanaKerja->last_started_at) ? $rencanaKerja->last_started_at : $now;
+            $rencanaKerja->milestones()->create([
+                'milestonable_type' => \App\Models\Kegiatan::class,
+                'nama_milestone'    => 'Mulai Pelaksanaan Pekerjaan',
+                'status'            => 'Berjalan',
+                'waktu_mulai'       => $startTime,
+                'last_started_at'   => $startTime,
+                'durasi_detik'      => 0,
+                'urutan'            => 1,
+            ]);
+            $rencanaKerja->load('milestones');
+        }
 
         return view('pages.rencanakerja.modal_detail', [
             'row' => $rencanaKerja,
@@ -532,6 +559,10 @@ class RencanaKerjaController extends Controller
         }
 
         $rencanaKerja = Kegiatan::create($validated);
+
+        if ($request->has('start_now') && $request->start_now) {
+            $this->autoLogMilestone($rencanaKerja, 'start', now());
+        }
 
         if ($request->has('tagged_users')) {
             $rencanaKerja->taggedUsers()->sync($request->input('tagged_users'));

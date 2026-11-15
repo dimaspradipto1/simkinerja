@@ -951,6 +951,7 @@
     $(document).on('click', '.btn-detail-task', function() {
         let id = $(this).data('id');
         if (!id) return;
+        window.activeDetailTaskId = id;
 
         $('#modalDetailRencanaKerjaContent').html(
             '<div class="text-center py-5">' +
@@ -1032,6 +1033,14 @@
 
     window.startTaskQuick = function(id) {
         window.startTimer(id);
+    };
+
+    window.pauseTaskQuick = function(id) {
+        if (typeof window.pauseTaskTimer === 'function') {
+            window.pauseTaskTimer(id, 'rencana-kerja');
+        } else {
+            console.error('pauseTaskTimer function not found');
+        }
     };
 
     window.stopTaskQuick = function(id) {

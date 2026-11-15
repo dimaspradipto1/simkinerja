@@ -395,6 +395,16 @@
 
         // Helper to refresh datatables across different pages
         function refreshTables() {
+            // Live reload modal detail if it is currently open
+            if ($('#modalDetailRencanaKerja').length && ($('#modalDetailRencanaKerja').hasClass('show') || $('#modalDetailRencanaKerja').is(':visible'))) {
+                const currentTaskId = window.activeDetailTaskId || $('#modal_milestonable_id').val();
+                if (currentTaskId) {
+                    $.get("{{ url('rencana-kerja') }}/" + currentTaskId + "/modal-detail", function (html) {
+                        $('#modalDetailRencanaKerjaContent').html(html);
+                    });
+                }
+            }
+
             if (typeof refreshAnyTable === 'function') {
                 refreshAnyTable();
                 return;

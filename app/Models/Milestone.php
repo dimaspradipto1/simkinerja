@@ -37,6 +37,15 @@ class Milestone extends Model
         'formatted_durasi',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function ($model) {
+            if (empty($model->milestonable_type)) {
+                $model->milestonable_type = \App\Models\Kegiatan::class;
+            }
+        });
+    }
+
     public function milestonable()
     {
         return $this->morphTo();
@@ -50,7 +59,7 @@ class Milestone extends Model
         $detik = $this->durasi_detik ?? 0;
 
         if ($this->status === 'Berjalan' && $this->last_started_at) {
-            $detik += Carbon::now()->diffInSeconds($this->last_started_at);
+            $detik += (int) abs(Carbon::now()->diffInSeconds($this->last_started_at));
         }
 
         return (int) max(0, $detik);

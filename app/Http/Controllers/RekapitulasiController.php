@@ -410,7 +410,7 @@ class RekapitulasiController extends Controller
                     $isBerjalan = true;
                 }
             } elseif (!empty($item->last_started_at)) {
-                $diff = now()->diffInSeconds($item->last_started_at);
+                $diff = (int) abs(now()->diffInSeconds($item->last_started_at));
                 if ($diff > 0) {
                     $durasiDetik = (int) $diff + (int) ($item->durasi_detik ?? 0);
                     $isBerjalan = true;

@@ -46,8 +46,24 @@ class KinerjaWaktuHelper
     {
         $durasiDetik = 0;
 
-        // 1. Jika waktu mulai & selesai ada dan bukan 00:00:00
-        if (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
+        // 1. Jika sedang berjalan / proses, hitung akumulasi durasi live
+        if (in_array($item->status ?? '', ['Proses', 'Berjalan'])) {
+            $baseDetik = (int) ($item->durasi_detik ?? 0);
+            $runningDetik = 0;
+            if (!empty($item->last_started_at)) {
+                $lastStarted = \Carbon\Carbon::parse($item->last_started_at);
+                $runningDetik = (int) abs(now()->diffInSeconds($lastStarted));
+            } elseif (!empty($item->waktu_mulai) && $item->waktu_mulai !== '00:00:00') {
+                $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+                $startTs = strtotime($tglM . ' ' . $item->waktu_mulai);
+                if ($startTs && time() > $startTs) {
+                    $runningDetik = max(0, time() - $startTs);
+                }
+            }
+            $durasiDetik = $baseDetik + $runningDetik;
+        }
+        // 2. Jika tugas selesai dan memiliki waktu mulai & selesai
+        elseif (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
             $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
             $tglS = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglM;
             $startTs = strtotime($tglM . ' ' . $item->waktu_mulai);
@@ -60,31 +76,27 @@ class KinerjaWaktuHelper
                     $durasiDetik = $tDiff;
                 }
             }
+            if ($durasiDetik <= 0 && !empty($item->durasi_detik)) {
+                $durasiDetik = (int) $item->durasi_detik;
+            }
         }
-
-        // 2. Gunakan durasi_detik jika ada dan belum terisi
-        if ($durasiDetik <= 0 && !empty($item->durasi_detik) && $item->durasi_detik > 0) {
+        // 3. Jika status Di-pause atau ada durasi_detik tersimpan
+        elseif (!empty($item->durasi_detik) && $item->durasi_detik > 0) {
             $durasiDetik = (int) $item->durasi_detik;
         }
 
-        // 3. Jika sedang berjalan / proses
-        if ($durasiDetik <= 0 && in_array($item->status, ['Proses', 'Berjalan'])) {
-            if (!empty($item->waktu_mulai)) {
-                $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
-                $diff = time() - strtotime($tglM . ' ' . $item->waktu_mulai);
-                if ($diff > 0) {
-                    $durasiDetik = $diff;
-                }
-            } elseif (!empty($item->last_started_at)) {
-                $diff = now()->diffInSeconds($item->last_started_at);
-                if ($diff > 0) {
-                    $durasiDetik = (int) $diff + (int) ($item->durasi_detik ?? 0);
-                }
+        // 4. Periksa apakah ada akumulasi durasi milestone yang lebih besar
+        if (method_exists($item, 'milestones') && $item->relationLoaded('milestones')) {
+            $milestonesSum = $item->milestones->sum(function ($m) {
+                return $m->total_durasi_detik ?? ($m->durasi_detik ?? 0);
+            });
+            if ($milestonesSum > $durasiDetik) {
+                $durasiDetik = $milestonesSum;
             }
         }
 
-        // 4. Fallback selisih tanggal jika waktu tidak ada
-        if ($durasiDetik <= 0 && !empty($item->tanggal_mulai) && !empty($item->tanggal_selesai)) {
+        // 5. Fallback selisih tanggal jika tugas selesai tapi waktu jam tidak dicatat
+        if ($durasiDetik <= 0 && !empty($item->tanggal_mulai) && !empty($item->tanggal_selesai) && ($item->status ?? '') === 'Selesai') {
             $d1 = strtotime($item->tanggal_mulai);
             $d2 = strtotime($item->tanggal_selesai);
             if ($d2 >= $d1) {
@@ -94,6 +106,35 @@ class KinerjaWaktuHelper
         }
 
         return max(0, (int) $durasiDetik);
+    }
+
+    /**
+     * Format detik menjadi ringkasan jam kerja yang sangat informatif (contoh: 15m (0,3 jam), 1j 30m (1,5 jam))
+     */
+    public static function formatJamKerjaRingkas(int $seconds, string $status = ''): string
+    {
+        if ($seconds <= 0) {
+            return '-';
+        }
+
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $jamDecimal = round($seconds / 3600, 1);
+        $jamDecimalStr = str_replace('.', ',', (string)$jamDecimal);
+
+        if ($hours > 0) {
+            if ($minutes > 0) {
+                return "{$hours}j {$minutes}m ({$jamDecimalStr} jam)";
+            }
+            return "{$hours} jam";
+        }
+
+        if ($minutes > 0) {
+            return "{$minutes}m ({$jamDecimalStr} jam)";
+        }
+
+        $detik = $seconds % 60;
+        return "{$detik}s (< 0,1 jam)";
     }
 
     /**
