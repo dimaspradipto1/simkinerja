@@ -15,35 +15,7 @@
 </div><!-- End Page Title -->
 
 <section class="section">
-    @if(auth()->check() && (auth()->user()->isRektorOrSuperAdmin() || auth()->user()->isPimpinanUnit()))
-    <!-- Top Section: Kriteria Checklist Jabatan (Khusus Pimpinan & Admin) -->
-    <div class="row mb-4">
-        <div class="col-lg-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                    <span class="header-title-text">Kriteria Checklist Jabatan</span>
-                </div>
-                <div class="card-body pt-3">
-                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-                        <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap">Kriteria Checklist untuk jabatan:</label>
-                        <div style="min-width: 250px; max-width: 650px;" class="flex-grow-1">
-                            <select class="form-select" id="filter-jabatan">
-                                <option value=""></option>
-                                <option value="__own__">-- Data Saya Sendiri ({{ auth()->user()->name }}) --</option>
-                                <option value="__all__">-- Semua Jabatan (Semua Pegawai) --</option>
-                                @foreach($usersWithJabatan as $u)
-                                    <option value="{{ $u->jabatan }}" data-user-id="{{ $u->id }}" {{ request('jabatan') == $u->jabatan ? 'selected' : '' }}>
-                                        {{ $u->jabatan }} - {{ $u->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
+    <input type="hidden" id="filter-jabatan" value="{{ request('jabatan', '') }}">
 
     @if(isset($pendingRequests) && $pendingRequests->isNotEmpty())
     <!-- Section: Permohonan Perpanjangan Waktu Masuk -->
@@ -159,7 +131,16 @@
                         <span class="fw-bold text-white fs-6 mb-0">Rencana Kerja</span>
                         <span class="text-white d-none d-sm-inline">:</span>
                         <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
-                            {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}
+                            @if(request()->filled('jabatan'))
+                                @php
+                                    $matchedUser = isset($usersWithJabatan) ? $usersWithJabatan->first(function($item) {
+                                        return $item->jabatan === request('jabatan') || str_contains($item->jabatan, request('jabatan')) || str_contains(request('jabatan'), $item->jabatan);
+                                    }) : null;
+                                @endphp
+                                {{ $matchedUser ? $matchedUser->jabatan . ' - ' . $matchedUser->name : request('jabatan') }}
+                            @else
+                                {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}
+                            @endif
                         </span>
                     </div>
                     <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-xl-0">
@@ -552,7 +533,7 @@
             }
         });
 
-        if ($('#filter-jabatan').length) {
+        if ($('#filter-jabatan').is('select')) {
             $('#filter-jabatan').select2({
                 theme: 'bootstrap-5',
                 placeholder: "Cari & pilih jabatan - nama...",
@@ -619,7 +600,7 @@
             table.ajax.reload();
         });
 
-        if ($('#filter-jabatan').length) {
+        if ($('#filter-jabatan').is('select')) {
             $('#filter-jabatan').on('change', function() {
                 var selectedText = $(this).find('option:selected').text();
                 var val = $(this).val();
