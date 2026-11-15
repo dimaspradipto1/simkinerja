@@ -159,12 +159,10 @@ class RencanaKerjaController extends Controller
                 })
                 ->addColumn('total_jam', function ($row) {
                     $seconds = \App\Helpers\KinerjaWaktuHelper::hitungDetikRealisasi($row);
-                    $st = $row->status ?? 'Belum Dimulai';
                     if ($seconds > 0) {
-                        $displayText = \App\Helpers\KinerjaWaktuHelper::formatJamKerjaRingkas($seconds, $st);
-                        $badgeClass = in_array($st, ['Proses', 'Berjalan']) ? 'text-primary' : 'text-dark';
-                        $runningIcon = in_array($st, ['Proses', 'Berjalan']) ? '<span class="spinner-grow spinner-grow-sm text-primary me-1" style="width: 7px; height: 7px; vertical-align: middle;" role="status"></span>' : '';
-                        return '<span class="fw-semibold ' . $badgeClass . ' small text-nowrap">' . $runningIcon . e($displayText) . '</span>';
+                        $jamNum = round($seconds / 3600, 1);
+                        $formatted = str_replace('.', ',', (string)$jamNum) . ' jam';
+                        return '<span class="fw-medium text-dark small text-nowrap">' . e($formatted) . '</span>';
                     }
                     if (!empty($row->estimasi_durasi_jam) || !empty($row->estimasi_durasi_hari)) {
                         $estStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget($row->estimasi_durasi_hari, $row->estimasi_durasi_jam);
@@ -172,9 +170,12 @@ class RencanaKerjaController extends Controller
                     }
                     return '<span class="text-muted small">-</span>';
                 })
+                ->addColumn('durasi_detik_raw', function ($row) {
+                    return \App\Helpers\KinerjaWaktuHelper::hitungDetikRealisasi($row);
+                })
                 ->addColumn('kegiatan', function ($row) {
-                    $html = '<div class="d-flex flex-column gap-1 py-1">';
-                    $html .= '<div class="fw-bold text-dark fs-6" style="font-size: 0.88rem !important; line-height: 1.4;">' . e($row->uraian_tugas) . '</div>';
+                    $html = '<div class="d-flex flex-column gap-1 py-0.5 text-start">';
+                    $html .= '<div class="fw-bold text-dark fs-6" style="font-size: 0.88rem !important; line-height: 1.35;">' . e($row->uraian_tugas) . '</div>';
                     
                     $subItems = [];
                     if ($row->user) {
@@ -185,9 +186,9 @@ class RencanaKerjaController extends Controller
                         $subItems[] = '<span class="text-info small fw-medium" title="' . e($taggedNames) . '"><i class="bi bi-people-fill me-1"></i>' . e(\Illuminate\Support\Str::limit($taggedNames, 35)) . '</span>';
                     }
                     if ($row->file) {
-                        $subItems[] = '<a href="' . asset('storage/' . $row->file) . '" target="_blank" class="text-success text-decoration-none small fw-semibold"><i class="bi bi-paperclip me-1"></i>Bukti Berkas</a>';
+                        $subItems[] = '<a href="' . asset('storage/' . $row->file) . '" target="_blank" class="text-primary text-decoration-none small fw-semibold"><i class="bi bi-link-45deg me-1"></i>Bukti</a>';
                     } elseif ($row->url_external) {
-                        $subItems[] = '<a href="' . e($row->url_external) . '" target="_blank" class="text-primary text-decoration-none small fw-semibold"><i class="bi bi-link-45deg me-1"></i>Bukti Link</a>';
+                        $subItems[] = '<a href="' . e($row->url_external) . '" target="_blank" class="text-primary text-decoration-none small fw-semibold"><i class="bi bi-link-45deg me-1"></i>Bukti</a>';
                     }
 
                     if (!empty($subItems)) {
@@ -199,22 +200,26 @@ class RencanaKerjaController extends Controller
                 ->addColumn('jenis', function ($row) {
                     $kat = strtolower($row->kategori ?? 'rutin');
                     if (str_contains($kat, 'insidentil') || str_contains($kat, 'insidental')) {
-                        return '<span class="badge rounded-pill border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600; background-color: #fff8e6 !important; color: #9a6700 !important; border-color: #ffd580 !important;"><span class="me-1" style="color: #e67700; font-size: 8px;">●</span> Insidentil</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #334155; border-color: #cbd5e1;"><span class="me-1" style="color: #64748b; font-size: 8px;">●</span> Insidental</span>';
                     } elseif (str_contains($kat, 'panitia') || str_contains($kat, 'kepanitiaan')) {
-                        return '<span class="badge rounded-pill border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600; background-color: #e7f5ff !important; color: #1864ab !important; border-color: #a5d8ff !important;"><span class="me-1" style="color: #228be6; font-size: 8px;">●</span> Kepanitiaan</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #1864ab; border-color: #cbd5e1;"><span class="me-1" style="color: #228be6; font-size: 8px;">●</span> Kepanitiaan</span>';
                     }
-                    return '<span class="badge rounded-pill border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600; background-color: #ecfdf5 !important; color: #065f46 !important; border-color: #a7f3d0 !important;"><span class="me-1" style="color: #10b981; font-size: 8px;">●</span> Rutin</span>';
+                    return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #334155; border-color: #cbd5e1;"><span class="me-1" style="color: #64748b; font-size: 8px;">●</span> Rutin</span>';
                 })
                 ->addColumn('status_badge', function ($row) {
                     $st = $row->status ?? 'Belum Dimulai';
                     if ($st === 'Selesai') {
-                        return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #ecfdf5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important;"><i class="bi bi-check-circle-fill me-1" style="color: #059669 !important;"></i>Selesai</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #ecfdf5; color: #065f46; border-color: #a7f3d0;"><i class="bi bi-check-circle-fill me-1" style="color: #059669;"></i>Selesai</span>';
                     } elseif (in_array($st, ['Proses', 'Berjalan'])) {
-                        return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #fff8e6 !important; color: #9a6700 !important; border: 1px solid #fcd34d !important;"><i class="bi bi-play-circle-fill me-1" style="color: #d97706 !important;"></i>Proses</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 600; background-color: #fff8e6; color: #9a6700; border-color: #fcd34d;"><i class="bi bi-play-circle-fill me-1" style="color: #d97706;"></i>Proses</span>';
                     } elseif ($st === 'Di-pause') {
-                        return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #fef2f2 !important; color: #991b1b !important; border: 1px solid #fecaca !important;"><i class="bi bi-pause-circle-fill me-1" style="color: #dc2626 !important;"></i>Di-pause</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 600; background-color: #fef2f2; color: #991b1b; border-color: #fecaca;"><i class="bi bi-pause-circle-fill me-1" style="color: #dc2626;"></i>Di-pause</span>';
+                    } elseif ($st === 'Draft') {
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #475569; border-color: #cbd5e1;">Draft</span>';
+                    } elseif ($st === 'Terverifikasi') {
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #334155; border-color: #cbd5e1;">Terverifikasi</span>';
                     }
-                    return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #f8fafc !important; color: #475569 !important; border: 1px solid #cbd5e1 !important;"><i class="bi bi-dash-circle me-1" style="color: #64748b !important;"></i>Belum Dimulai</span>';
+                    return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #475569; border-color: #cbd5e1;">Belum Dimulai</span>';
                 })
                 ->addColumn('action', function ($row) use ($authUser) {
                     $html = '<div class="d-inline-flex align-items-center justify-content-center flex-nowrap" style="gap: 6px;">';

@@ -3,6 +3,47 @@
 @section('page-style-class', 'menu-page-rencana-kerja')
 @section('content')
 
+<style>
+    /* Styling tabel dan header presisi seperti contoh referensi */
+    #rencanakerja-table {
+        border: 1px solid #cbd5e1 !important;
+        border-collapse: collapse !important;
+        width: 100% !important;
+    }
+    #rencanakerja-table thead,
+    body.menu-page-rencana-kerja #rencanakerja-table > thead {
+        display: table-header-group !important;
+        background-color: #1e293b !important;
+    }
+    #rencanakerja-table thead th,
+    body.menu-page-rencana-kerja #rencanakerja-table > thead > tr > th {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        border: 1px solid #334155 !important;
+        padding: 12px 10px !important;
+        vertical-align: middle !important;
+        letter-spacing: 0.2px;
+    }
+    #rencanakerja-table tbody td,
+    body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr > td {
+        border: 1px solid #e2e8f0 !important;
+        vertical-align: middle !important;
+        padding: 10px 12px !important;
+        background-color: #ffffff;
+    }
+    #rencanakerja-table tbody tr:hover td {
+        background-color: #f8fafc !important;
+    }
+    #rencanakerja-table tbody tr.group-header-row td {
+        background-color: #f8fafc !important;
+        border-top: 1px solid #cbd5e1 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        padding: 9px 14px !important;
+    }
+</style>
+
 
 <div class="pagetitle">
     @if(request('from') === 'layanan' || request()->filled('jabatan'))
@@ -211,37 +252,16 @@
                         </div>
                     </div>
 
-                    <!-- Toolbar Pilih Semua (Select All) & Hapus Terpilih -->
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 px-3 mb-3 rounded-3 border border-light-subtle shadow-2xs" id="selectAllToolbarRencanaKerja" style="background: #f8fafc; border-left: 4px solid #15432d !important;">
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="checkbox" id="check-all" class="form-check-input my-0" style="cursor: pointer; width: 19px; height: 19px;" title="Pilih Semua">
-                            <label for="check-all" class="form-check-label fw-bold text-dark user-select-none mb-0 cursor-pointer" style="cursor: pointer; font-size: 0.88rem;">
-                                Pilih Semua (Select All)
-                            </label>
-                            <span id="selected-badge" class="badge bg-primary-subtle text-primary border border-primary-subtle d-none ms-1" style="font-size: 0.78rem;">
-                                <span id="selected-count">0</span> tugas dipilih
-                            </span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 d-none shadow-xs" style="border-radius: 6px; font-size: 0.82rem; padding: 6px 14px;">
-                                <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span class="selected-count-num">0</span>)
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 w-100" id="rencanakerja-table">
-                            <thead style="background-color: #10223d; color: #ffffff;">
+                        <table class="table table-bordered table-hover align-middle mb-0 w-100" id="rencanakerja-table" style="border: 1px solid #cbd5e1; border-collapse: collapse;">
+                            <thead style="background-color: #1e293b !important; color: #ffffff !important;">
                                 <tr>
-                                    <th width="32px" class="text-center align-middle" style="background-color: #10223d; color: #ffffff; border: none;">
-                                        <input type="checkbox" class="form-check-input" style="cursor: pointer; width: 17px; height: 17px;" id="th-check-all">
-                                    </th>
-                                    <th width="115px" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Jam</th>
-                                    <th width="125px" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Total jam kerja</th>
-                                    <th style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Kegiatan</th>
-                                    <th width="110px" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Jenis</th>
-                                    <th width="130px" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Status</th>
-                                    <th width="165px" class="text-center" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Aksi</th>
+                                    <th width="115px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Jam</th>
+                                    <th width="125px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Total jam kerja</th>
+                                    <th class="align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 14px;">Kegiatan</th>
+                                    <th width="110px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Jenis</th>
+                                    <th width="125px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Status</th>
+                                    <th width="145px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -605,28 +625,46 @@
                 }
             },
             columns: [
-                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-middle', width: '32px' },
-                { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'align-middle small text-secondary text-nowrap px-2', width: '115px' },
-                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'align-middle small text-dark fw-medium text-nowrap px-2', width: '125px' },
-                { data: 'kegiatan', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle px-3 py-2' },
-                { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'align-middle px-2', width: '110px' },
-                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'align-middle px-2', width: '130px' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center align-middle text-nowrap px-2', width: '165px' },
-                { data: 'date_group', name: 'date_group', visible: false, searchable: false }
+                { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'text-center align-middle small text-secondary text-nowrap px-2', width: '115px' },
+                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'text-center align-middle small text-dark fw-medium text-nowrap px-2', width: '125px' },
+                { data: 'kegiatan', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle px-3 py-2 text-start' },
+                { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'text-center align-middle px-2', width: '110px' },
+                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'text-center align-middle px-2', width: '125px' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center align-middle text-nowrap px-2', width: '145px' },
+                { data: 'date_group', name: 'date_group', visible: false, searchable: false },
+                { data: 'durasi_detik_raw', name: 'durasi_detik_raw', visible: false, searchable: false }
             ],
             drawCallback: function(settings) {
                 var api = this.api();
                 var rows = api.rows({ page: 'current' }).nodes();
                 var last = null;
 
-                api.column(7, { page: 'current' }).data().each(function(group, i) {
+                // Hitung ringkasan jumlah kegiatan dan total durasi jam per tanggal (persis seperti contoh)
+                var dateStats = {};
+                api.rows({ page: 'current' }).every(function() {
+                    var data = this.data();
+                    var grp = data.date_group || 'Kegiatan';
+                    if (!dateStats[grp]) {
+                        dateStats[grp] = { count: 0, seconds: 0 };
+                    }
+                    dateStats[grp].count += 1;
+                    dateStats[grp].seconds += (parseInt(data.durasi_detik_raw) || 0);
+                });
+
+                api.column(6, { page: 'current' }).data().each(function(group, i) {
                     if (last !== group) {
+                        var stats = dateStats[group] || { count: 0, seconds: 0 };
+                        var hoursVal = Math.round((stats.seconds / 3600) * 10) / 10;
+                        var hoursText = hoursVal.toString().replace('.', ',') + ' jam';
+                        var summaryText = stats.count + ' kegiatan • ' + hoursText;
+
                         $(rows).eq(i).before(
-                            '<tr class="group-header-row bg-light" style="background-color: #f8fafc !important;">' +
-                                '<td colspan="7" class="py-2.5 px-3 border-top border-bottom" style="background-color: #f8fafc !important;">' +
-                                    '<div class="d-flex align-items-center gap-2 text-dark fw-bold" style="font-size: 0.84rem;">' +
-                                        '<i class="bi bi-calendar-event text-secondary"></i>' +
-                                        '<span>' + (group || 'Kegiatan') + '</span>' +
+                            '<tr class="group-header-row">' +
+                                '<td colspan="6" class="py-2.5 px-3 align-middle" style="background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important;">' +
+                                    '<div class="d-flex align-items-center text-dark" style="font-size: 0.85rem;">' +
+                                        '<i class="bi bi-calendar-event text-secondary me-2"></i>' +
+                                        '<span class="fw-bold text-dark">' + (group || 'Kegiatan') + '</span>' +
+                                        '<span class="text-muted small ms-3 fw-normal">' + summaryText + '</span>' +
                                     '</div>' +
                                 '</td>' +
                             '</tr>'
@@ -641,9 +679,6 @@
                 zeroRecords: "Belum ada kegiatan / checklist tugas untuk filter ini",
                 info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ tugas",
                 infoEmpty: "Tidak ada data"
-            },
-            initComplete: function() {
-                $('#selectAllToolbarRencanaKerja').insertBefore('#rencanakerja-table');
             }
         });
 

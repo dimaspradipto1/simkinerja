@@ -3444,15 +3444,30 @@ body.menu-page-rencana-kerja .table-responsive,body.menu-page-rencana-kerja .dat
     width: 100% !important;
 }
 body.menu-page-rencana-kerja #rencanakerja-table > thead {
-    display: none;
+    display: table-header-group !important;
+    background-color: #1e293b !important;
+}
+body.menu-page-rencana-kerja #rencanakerja-table > thead > tr > th {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    border: 1px solid #334155 !important;
+    padding: 12px 10px !important;
+    vertical-align: middle !important;
 }
 body.menu-page-rencana-kerja #rencanakerja-table {
     margin-bottom: 24px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-collapse: collapse !important;
 }
 body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr > td {
-    vertical-align: top !important;
-    padding: 10px 4px 16px 4px !important;
-    border-bottom: 1px solid #edf2f7;
+    vertical-align: middle !important;
+    padding: 10px 12px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr:hover > td {
+    background-color: #f8fafc !important;
 }
 body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr:last-child > td {
     padding-bottom: 28px !important;
@@ -3562,7 +3577,7 @@ body.menu-page-rencana-kerja .btn-filter-pill:hover:not(.active) {
         padding: 12px 10px !important;
     }
     body.menu-page-rencana-kerja .table-responsive {
-        overflow-x: hidden !important;
+        overflow-x: auto !important;
         padding: 0 !important;
         margin: 0 !important;
         border: none !important;
@@ -3572,54 +3587,23 @@ body.menu-page-rencana-kerja .btn-filter-pill:hover:not(.active) {
     }
     body.menu-page-rencana-kerja #rencanakerja-table {
         width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        display: block !important;
-        border-collapse: separate !important;
-        border: none !important;
-        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        border: 1px solid #cbd5e1 !important;
     }
     body.menu-page-rencana-kerja #rencanakerja-table > thead {
-        display: none !important;
+        display: table-header-group !important;
+        background-color: #1e293b !important;
     }
-    body.menu-page-rencana-kerja #rencanakerja-table > tbody {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-    }
-    body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        margin-bottom: 12px !important;
-        box-shadow: none !important;
-        box-sizing: border-box !important;
+    body.menu-page-rencana-kerja #rencanakerja-table > thead > tr > th {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+        border: 1px solid #334155 !important;
+        padding: 10px 8px !important;
     }
     body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr > td {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-        border: none !important;
-        padding: 0 !important;
-    }
-    body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr > td:first-child,body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr > td:nth-child(2) {
-        display: none !important;
-    }
-    body.menu-page-rencana-kerja #rencanakerja-table > tbody > tr > td:last-child {
-        margin: 0 !important;
-        padding: 0 !important;
-        border-top: none !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
+        vertical-align: middle !important;
+        border: 1px solid #e2e8f0 !important;
+        padding: 8px 10px !important;
     }
     body.menu-page-rencana-kerja .task-card-item {
         width: 100% !important;
