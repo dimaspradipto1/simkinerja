@@ -191,10 +191,10 @@ class RencanaKerjaController extends Controller
                     return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;">Belum Dimulai</span>';
                 })
                 ->addColumn('action', function ($row) use ($authUser) {
-                    $html = '<div class="d-inline-flex align-items-center gap-1.5">';
+                    $html = '<div class="d-inline-flex align-items-center justify-content-center flex-nowrap" style="gap: 6px;">';
                     
                     // Tombol Eye: Buka Modal Detail (pengganti dropdown)
-                    $html .= '<button type="button" class="btn btn-sm btn-outline-secondary p-1 px-2 btn-detail-task" data-id="' . $row->id . '" title="Tampilkan Rincian (Modal Pengganti Dropdown)"><i class="bi bi-eye fs-6"></i></button>';
+                    $html .= '<button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center btn-detail-task" data-id="' . $row->id . '" title="Tampilkan Rincian (Modal Pengganti Dropdown)" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-eye fs-6"></i></button>';
 
                     // Action button (Start/Pause/Stop/Reopen)
                     $st = $row->status ?? 'Belum Dimulai';
@@ -202,18 +202,18 @@ class RencanaKerjaController extends Controller
                     $wSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
                     
                     if (!$wMulai && $st !== 'Selesai') {
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-primary p-1 px-2" onclick="window.startTaskQuick(' . $row->id . ')" title="Mulai Kerjakan"><i class="bi bi-play-fill fs-6"></i></button>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center" onclick="window.startTaskQuick(' . $row->id . ')" title="Mulai Kerjakan" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-play-fill fs-5"></i></button>';
                     } elseif ($st === 'Proses' || ($wMulai && !$wSelesai)) {
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-success p-1 px-2" onclick="window.stopTaskQuick(' . $row->id . ')" title="Selesaikan Tugas"><i class="bi bi-check-lg fs-6"></i></button>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center" onclick="window.stopTaskQuick(' . $row->id . ')" title="Selesaikan Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-check-lg fs-5"></i></button>';
                     } elseif ($st === 'Selesai') {
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-warning p-1 px-2" onclick="window.reopenTaskQuick(' . $row->id . ')" title="Buka Kunci / Kerjakan Lagi"><i class="bi bi-unlock-fill fs-6"></i></button>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis d-inline-flex align-items-center justify-content-center" onclick="window.reopenTaskQuick(' . $row->id . ')" title="Buka Kunci / Kerjakan Lagi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-unlock-fill fs-6"></i></button>';
                     }
 
                     // Edit & Delete
                     $canEdit = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanUnit() || $row->user_id === $authUser->id);
                     if ($canEdit) {
-                        $html .= '<a href="' . route('rencana-kerja.edit', $row->id) . '" class="btn btn-sm btn-outline-secondary p-1 px-2" title="Edit Tugas"><i class="bi bi-pencil-square fs-6"></i></a>';
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-danger p-1 px-2" onclick="window.deleteRencanaKerja(' . $row->id . ')" title="Hapus"><i class="bi bi-trash fs-6"></i></button>';
+                        $html .= '<a href="' . route('rencana-kerja.edit', $row->id) . '" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center" title="Edit Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-pencil-square fs-6"></i></a>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.deleteRencanaKerja(' . $row->id . ')" title="Hapus" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;"><i class="bi bi-trash fs-6"></i></button>';
                     }
 
                     $html .= '</div>';

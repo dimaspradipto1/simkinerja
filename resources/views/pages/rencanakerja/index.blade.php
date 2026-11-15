@@ -204,7 +204,7 @@
                                     <th style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Kegiatan</th>
                                     <th width="110px" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Jenis</th>
                                     <th width="130px" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Status</th>
-                                    <th width="135px" class="text-center" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Aksi</th>
+                                    <th width="165px" class="text-center" style="background-color: #10223d; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -567,12 +567,12 @@
             },
             columns: [
                 { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-middle', width: '32px' },
-                { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'align-middle small text-secondary text-nowrap', width: '115px' },
-                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'align-middle small text-dark fw-medium text-nowrap', width: '125px' },
-                { data: 'kegiatan', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle' },
-                { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'align-middle', width: '110px' },
-                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'align-middle', width: '130px' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center align-middle', width: '135px' },
+                { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'align-middle small text-secondary text-nowrap px-2', width: '115px' },
+                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'align-middle small text-dark fw-medium text-nowrap px-2', width: '125px' },
+                { data: 'kegiatan', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle px-3 py-2' },
+                { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'align-middle px-2', width: '110px' },
+                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'align-middle px-2', width: '130px' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center align-middle text-nowrap px-2', width: '165px' },
                 { data: 'date_group', name: 'date_group', visible: false, searchable: false }
             ],
             drawCallback: function(settings) {
