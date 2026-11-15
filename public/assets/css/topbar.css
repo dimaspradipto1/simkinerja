@@ -522,6 +522,50 @@ a:hover {
   gap: 16px !important;
 }
 
+/* Explicit High-Contrast Role Badges */
+.badge-role-kepala {
+  background-color: #e0edff !important;
+  color: #0d6efd !important;
+  border: 1px solid #b6d4fe !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+.badge-role-si {
+  background-color: #cff4fc !important;
+  color: #055160 !important;
+  border: 1px solid #9eeaf9 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+.badge-role-jaringan {
+  background-color: #fff3cd !important;
+  color: #7a4f01 !important;
+  border: 1px solid #ffc107 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+.badge-role-programmer {
+  background-color: #f8d7da !important;
+  color: #842029 !important;
+  border: 1px solid #f5c2c7 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+.badge-role-troubleshooting {
+  background-color: #d1e7dd !important;
+  color: #0f5132 !important;
+  border: 1px solid #badbcc !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+.badge-role-active {
+  background-color: #198754 !important;
+  color: #ffffff !important;
+  border: 1px solid #198754 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+
 .topbar-nav .dropdown-submenu-menu .dropdown-item:hover,
 .topbar-nav .dropdown-submenu-menu .dropdown-item.active {
   background-color: #e8f5ec !important;

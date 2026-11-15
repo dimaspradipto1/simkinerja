@@ -140,11 +140,11 @@
                                                     <span>Manajemen LPTI</span>
                                                 </span>
                                                 @if($isUserKepalaLpti && !$isAdmin)
-                                                    <span class="badge bg-primary text-white ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 600;">
+                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #0d6efd !important; color: #ffffff !important; border: 1px solid #0d6efd !important; font-size: 10px; font-weight: 600;">
                                                         <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Kepala LPTI)
                                                     </span>
                                                 @else
-                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 500;">
+                                                    <span class="badge badge-role-kepala ms-3 px-2 py-0.5 rounded-pill" style="background-color: #e0edff !important; color: #0d6efd !important; border: 1px solid #b6d4fe !important; font-size: 10px; font-weight: 600;">
                                                         Kepala LPTI
                                                     </span>
                                                 @endif
@@ -159,11 +159,11 @@
                                                     <span>Pengembangan Sistem Informasi dan Aplikasi</span>
                                                 </span>
                                                 @if($isUserSi)
-                                                    <span class="badge bg-info text-white ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 600;">
+                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #087990 !important; color: #ffffff !important; border: 1px solid #087990 !important; font-size: 10px; font-weight: 600;">
                                                         <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Divisi SI)
                                                     </span>
                                                 @else
-                                                    <span class="badge bg-info-subtle text-info border border-info-subtle ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 500;">
+                                                    <span class="badge badge-role-si ms-3 px-2 py-0.5 rounded-pill" style="background-color: #cff4fc !important; color: #055160 !important; border: 1px solid #9eeaf9 !important; font-size: 10px; font-weight: 600;">
                                                         Divisi SI
                                                     </span>
                                                 @endif
@@ -178,11 +178,11 @@
                                                     <span>Pengelolaan Infrastruktur dan Jaringan</span>
                                                 </span>
                                                 @if($isUserJaringan)
-                                                    <span class="badge bg-warning text-dark ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 600;">
+                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #b78103 !important; color: #ffffff !important; border: 1px solid #b78103 !important; font-size: 10px; font-weight: 600;">
                                                         <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Divisi Jaringan)
                                                     </span>
                                                 @else
-                                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 500;">
+                                                    <span class="badge badge-role-jaringan ms-3 px-2 py-0.5 rounded-pill" style="background-color: #fff3cd !important; color: #7a4f01 !important; border: 1px solid #ffc107 !important; font-size: 10px; font-weight: 600;">
                                                         Divisi Jaringan
                                                     </span>
                                                 @endif
@@ -197,11 +197,11 @@
                                                     <span>Pengembangan dan Pemeliharaan Aplikasi</span>
                                                 </span>
                                                 @if($isUserProgrammer)
-                                                    <span class="badge bg-danger text-white ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 600;">
+                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #dc3545 !important; color: #ffffff !important; border: 1px solid #dc3545 !important; font-size: 10px; font-weight: 600;">
                                                         <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Programmer)
                                                     </span>
                                                 @else
-                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 500;">
+                                                    <span class="badge badge-role-programmer ms-3 px-2 py-0.5 rounded-pill" style="background-color: #f8d7da !important; color: #842029 !important; border: 1px solid #f5c2c7 !important; font-size: 10px; font-weight: 600;">
                                                         Programmer
                                                     </span>
                                                 @endif
@@ -216,11 +216,11 @@
                                                     <span>Layanan Dukungan Teknis</span>
                                                 </span>
                                                 @if($isUserTroubleshooting)
-                                                    <span class="badge bg-success text-white ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 600;">
+                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #198754 !important; color: #ffffff !important; border: 1px solid #198754 !important; font-size: 10px; font-weight: 600;">
                                                         <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Troubleshooting)
                                                     </span>
                                                 @else
-                                                    <span class="badge bg-success-subtle text-success border border-success-subtle ms-3 px-2 py-0.5 rounded-pill" style="font-size: 10px; font-weight: 500;">
+                                                    <span class="badge badge-role-troubleshooting ms-3 px-2 py-0.5 rounded-pill" style="background-color: #d1e7dd !important; color: #0f5132 !important; border: 1px solid #badbcc !important; font-size: 10px; font-weight: 600;">
                                                         Troubleshooting
                                                     </span>
                                                 @endif

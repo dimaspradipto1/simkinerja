@@ -29,15 +29,25 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="badge bg-{{ $roleBadgeColor }}-subtle text-{{ $roleBadgeColor }} border border-{{ $roleBadgeColor }}-subtle px-2.5 py-1.5 rounded-pill small">
+                        @php
+                            $roleStyleMap = [
+                                'Kepala LPTI' => 'background-color: #e0edff !important; color: #0d6efd !important; border: 1px solid #b6d4fe !important;',
+                                'Divisi SI' => 'background-color: #cff4fc !important; color: #055160 !important; border: 1px solid #9eeaf9 !important;',
+                                'Divisi Jaringan' => 'background-color: #fff3cd !important; color: #7a4f01 !important; border: 1px solid #ffc107 !important;',
+                                'Programmer' => 'background-color: #f8d7da !important; color: #842029 !important; border: 1px solid #f5c2c7 !important;',
+                                'Troubleshooting' => 'background-color: #d1e7dd !important; color: #0f5132 !important; border: 1px solid #badbcc !important;',
+                            ];
+                            $currentRoleStyle = $roleStyleMap[$roleBadge] ?? 'background-color: #e0edff !important; color: #0d6efd !important; border: 1px solid #b6d4fe !important;';
+                        @endphp
+                        <span class="badge px-2.5 py-1.5 rounded-pill small" style="{{ $currentRoleStyle }} font-weight: 600;">
                             <i class="bi bi-shield-lock me-1"></i>Role: {{ $roleBadge }}
                         </span>
                         @if($hasAccess)
-                            <span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill small">
+                            <span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill small" style="background-color: #198754 !important; color: #ffffff !important;">
                                 <i class="bi bi-check-circle-fill me-1"></i>Akses Anda Aktif
                             </span>
                         @endif
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
+                        <span class="badge rounded-pill small" style="background-color: #d1e7dd !important; color: #0f5132 !important; border: 1px solid #badbcc !important; font-weight: 600; padding: 0.35rem 0.65rem;">
                             <i class="bi bi-check-circle-fill me-1"></i>Layanan Aktif
                         </span>
                     </div>
@@ -126,23 +136,23 @@
                     <div class="list-group list-group-flush small">
                         <a href="{{ route('layanan.lpti.manajemen') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'manajemen' ? 'active' : '' }}">
                             <span class="d-flex align-items-center gap-2"><i class="bi bi-briefcase"></i>Manajemen LPTI</span>
-                            <span class="badge {{ $key === 'manajemen' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border border-primary-subtle' }} rounded-pill" style="font-size: 10px;">Kepala LPTI</span>
+                            <span class="badge rounded-pill" style="{{ $key === 'manajemen' ? 'background-color: #fff !important; color: #0d6efd !important;' : 'background-color: #e0edff !important; color: #0d6efd !important; border: 1px solid #b6d4fe !important;' }} font-size: 10px; font-weight: 600;">Kepala LPTI</span>
                         </a>
                         <a href="{{ route('layanan.lpti.pengembangan-si') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pengembangan-si' ? 'active' : '' }}">
                             <span class="d-flex align-items-center gap-2"><i class="bi bi-window-stack"></i>Pengembangan Sistem Informasi</span>
-                            <span class="badge {{ $key === 'pengembangan-si' ? 'bg-white text-info' : 'bg-info-subtle text-info border border-info-subtle' }} rounded-pill" style="font-size: 10px;">Divisi SI</span>
+                            <span class="badge rounded-pill" style="{{ $key === 'pengembangan-si' ? 'background-color: #fff !important; color: #055160 !important;' : 'background-color: #cff4fc !important; color: #055160 !important; border: 1px solid #9eeaf9 !important;' }} font-size: 10px; font-weight: 600;">Divisi SI</span>
                         </a>
                         <a href="{{ route('layanan.lpti.infrastruktur') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'infrastruktur' ? 'active' : '' }}">
                             <span class="d-flex align-items-center gap-2"><i class="bi bi-diagram-3"></i>Pengelolaan Infrastruktur &amp; Jaringan</span>
-                            <span class="badge {{ $key === 'infrastruktur' ? 'bg-white text-warning' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' }} rounded-pill" style="font-size: 10px;">Divisi Jaringan</span>
+                            <span class="badge rounded-pill" style="{{ $key === 'infrastruktur' ? 'background-color: #fff !important; color: #7a4f01 !important;' : 'background-color: #fff3cd !important; color: #7a4f01 !important; border: 1px solid #ffc107 !important;' }} font-size: 10px; font-weight: 600;">Divisi Jaringan</span>
                         </a>
                         <a href="{{ route('layanan.lpti.pemeliharaan') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pemeliharaan' ? 'active' : '' }}">
                             <span class="d-flex align-items-center gap-2"><i class="bi bi-code-slash"></i>Pengembangan &amp; Pemeliharaan Aplikasi</span>
-                            <span class="badge {{ $key === 'pemeliharaan' ? 'bg-white text-danger' : 'bg-danger-subtle text-danger border border-danger-subtle' }} rounded-pill" style="font-size: 10px;">Programmer</span>
+                            <span class="badge rounded-pill" style="{{ $key === 'pemeliharaan' ? 'background-color: #fff !important; color: #842029 !important;' : 'background-color: #f8d7da !important; color: #842029 !important; border: 1px solid #f5c2c7 !important;' }} font-size: 10px; font-weight: 600;">Programmer</span>
                         </a>
                         <a href="{{ route('layanan.lpti.dukungan-teknis') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'dukungan-teknis' ? 'active' : '' }}">
                             <span class="d-flex align-items-center gap-2"><i class="bi bi-headset"></i>Layanan Dukungan Teknis</span>
-                            <span class="badge {{ $key === 'dukungan-teknis' ? 'bg-white text-success' : 'bg-success-subtle text-success border border-success-subtle' }} rounded-pill" style="font-size: 10px;">Troubleshooting</span>
+                            <span class="badge rounded-pill" style="{{ $key === 'dukungan-teknis' ? 'background-color: #fff !important; color: #0f5132 !important;' : 'background-color: #d1e7dd !important; color: #0f5132 !important; border: 1px solid #badbcc !important;' }} font-size: 10px; font-weight: 600;">Troubleshooting</span>
                         </a>
                     </div>
                 </div>
