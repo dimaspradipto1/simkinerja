@@ -137,7 +137,7 @@
                                             <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && request('jabatan') == 'KEPALA LPTI') || request()->routeIs('layanan.lpti.manajemen') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'KEPALA LPTI']) }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-briefcase me-2 text-dark"></i>
-                                                    <span>Kegiatan Rutinitas Manajemen LPTI</span>
+                                                    <span>Manajemen LPTI</span>
                                                 </span>
                                                 @if($isUserKepalaLpti && !$isAdmin)
                                                     <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #0d6efd !important; color: #ffffff !important; border: 1px solid #0d6efd !important; font-size: 10px; font-weight: 600;">
@@ -156,7 +156,7 @@
                                             <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'SISTEM INFORMASI')) || request()->routeIs('layanan.lpti.pengembangan-si') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK']) : route('rencana-kerja.index') }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-window me-2 text-dark"></i>
-                                                    <span>Kegiatan Rutinitas {{ $isAdminOrKepala ? 'Divisi SI' : '' }}</span>
+                                                    <span>Pengembangan Sistem Informasi dan Aplikasi</span>
                                                 </span>
                                                 @if($isUserSi)
                                                     <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #087990 !important; color: #ffffff !important; border: 1px solid #087990 !important; font-size: 10px; font-weight: 600;">
@@ -175,7 +175,7 @@
                                             <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'INFRASTRUKTUR')) || request()->routeIs('layanan.lpti.infrastruktur') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'DIVISI INFRASTRUKTUR, JARINGAN, DAN LAYANAN TROUBLESHOOTING']) : route('rencana-kerja.index') }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-diagram-3 me-2 text-dark"></i>
-                                                    <span>Kegiatan Rutinitas {{ $isAdminOrKepala ? 'Divisi Jaringan' : '' }}</span>
+                                                    <span>Pengelolaan Infrastruktur dan Jaringan</span>
                                                 </span>
                                                 @if($isUserJaringan)
                                                     <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #b78103 !important; color: #ffffff !important; border: 1px solid #b78103 !important; font-size: 10px; font-weight: 600;">
@@ -194,7 +194,7 @@
                                             <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'PROGRAMMER')) || request()->routeIs('layanan.lpti.pemeliharaan') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'PROGRAMMER']) : route('rencana-kerja.index') }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-code-slash me-2 text-dark"></i>
-                                                    <span>Kegiatan Rutinitas {{ $isAdminOrKepala ? 'Programmer' : '' }}</span>
+                                                    <span>Pengembangan dan Pemeliharaan Aplikasi</span>
                                                 </span>
                                                 @if($isUserProgrammer)
                                                     <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #dc3545 !important; color: #ffffff !important; border: 1px solid #dc3545 !important; font-size: 10px; font-weight: 600;">
@@ -213,7 +213,7 @@
                                             <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'TROUBLESHOOTING')) || request()->routeIs('layanan.lpti.dukungan-teknis') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING']) : route('rencana-kerja.index') }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-headset me-2 text-dark"></i>
-                                                    <span>Kegiatan Rutinitas {{ $isAdminOrKepala ? 'Troubleshooting' : '' }}</span>
+                                                    <span>Layanan Dukungan Teknis</span>
                                                 </span>
                                                 @if($isUserTroubleshooting)
                                                     <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #198754 !important; color: #ffffff !important; border: 1px solid #198754 !important; font-size: 10px; font-weight: 600;">
