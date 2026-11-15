@@ -147,7 +147,7 @@ a:hover {
   display: flex;
   align-items: center;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 500;
   color: #334155;
   padding: 5px 8px !important;
@@ -239,7 +239,7 @@ a:hover {
 .topbar-nav .dropdown-item {
   display: flex;
   align-items: center;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 500;
   color: #012970 !important;
   padding: 6px 14px !important;
@@ -465,7 +465,7 @@ a:hover {
 }
 
 /*--------------------------------------------------------------
-# Ukuran Font Menu (11px) untuk Seluruh Menu Navigasi (Top-level & Dropdowns)
+# Ukuran Font Menu (12px) untuk Seluruh Menu Navigasi (Top-level & Dropdowns)
 --------------------------------------------------------------*/
 .topbar-menu .nav-link,
 .topbar-menu .nav-link span,
@@ -475,7 +475,7 @@ a:hover {
 .sidebar-nav .nav-link span,
 .sidebar-nav .nav-content a,
 .sidebar-nav .nav-content a span {
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 
 .topbar-menu .nav-link {
