@@ -34,11 +34,14 @@ class RencanaKerjaController extends Controller
                 if ($request->jabatan === '__all__' || $request->jabatan === 'all') {
                     // Tampilkan semua jabatan (hanya jika eksplisit dipilih opsi "Semua Jabatan")
                 } else {
-                    $query->where(function ($q) use ($request) {
-                        $q->whereHas('user', function ($qu) use ($request) {
-                            $qu->where('jabatan', $request->jabatan);
-                        })->orWhereHas('taggedUsers', function ($qt) use ($request) {
-                            $qt->where('jabatan', $request->jabatan);
+                    $targetJabatan = $request->jabatan;
+                    $query->where(function ($q) use ($targetJabatan) {
+                        $q->whereHas('user', function ($qu) use ($targetJabatan) {
+                            $qu->where('jabatan', $targetJabatan)
+                              ->orWhere('jabatan', 'like', '%' . $targetJabatan . '%');
+                        })->orWhereHas('taggedUsers', function ($qt) use ($targetJabatan) {
+                            $qt->where('jabatan', $targetJabatan)
+                              ->orWhere('jabatan', 'like', '%' . $targetJabatan . '%');
                         });
                     });
                 }
