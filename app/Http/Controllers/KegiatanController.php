@@ -295,8 +295,9 @@ class KegiatanController extends Controller
         $defaultPeriode = PeriodeAkademik::first();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
         $usersWithJabatan = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->orderBy('name')->get();
+        $users = $usersWithJabatan;
 
-        return view('pages.kegiatan.index', compact('jabatanList', 'periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan'));
+        return view('pages.kegiatan.index', compact('jabatanList', 'periodeAkademiks', 'defaultPeriodeId', 'usersWithJabatan', 'users'));
     }
 
     /**

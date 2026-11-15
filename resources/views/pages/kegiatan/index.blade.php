@@ -164,7 +164,7 @@
                     <div class="mb-3">
                         <label for="quick_tagged_users" class="form-label fw-semibold small">Pilih Rekan Kerja:</label>
                         <select class="form-select select2-modal" id="quick_tagged_users" name="tagged_users[]" multiple style="width: 100%;">
-                            @foreach($users as $u)
+                            @foreach($usersWithJabatan ?? ($users ?? []) as $u)
                                 <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->jabatan ?? '-' }})</option>
                             @endforeach
                         </select>
