@@ -263,4 +263,14 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::put('presensi/sesi/{id}', [\App\Http\Controllers\UniversalPresensiController::class, 'updateSesi'])->name('presensi.sesi.update');
     Route::delete('presensi/sesi/{id}', [\App\Http\Controllers\UniversalPresensiController::class, 'destroySesi'])->name('presensi.sesi.destroy');
     Route::get('presensi/sesi/{id}/export', [\App\Http\Controllers\UniversalPresensiController::class, 'exportExcel'])->name('presensi.sesi.export');
+
+    // Modul Layanan - Layanan LPTI
+    Route::prefix('layanan/lpti')->name('layanan.lpti.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\LayananLptiController::class, 'index'])->name('index');
+        Route::get('manajemen', [\App\Http\Controllers\LayananLptiController::class, 'manajemen'])->name('manajemen');
+        Route::get('pengembangan-sistem-informasi', [\App\Http\Controllers\LayananLptiController::class, 'pengembanganSi'])->name('pengembangan-si');
+        Route::get('pengelolaan-infrastruktur-jaringan', [\App\Http\Controllers\LayananLptiController::class, 'infrastruktur'])->name('infrastruktur');
+        Route::get('pengembangan-pemeliharaan-aplikasi', [\App\Http\Controllers\LayananLptiController::class, 'pemeliharaan'])->name('pemeliharaan');
+        Route::get('layanan-dukungan-teknis', [\App\Http\Controllers\LayananLptiController::class, 'dukunganTeknis'])->name('dukungan-teknis');
+    });
 });

@@ -486,3 +486,95 @@ a:hover {
 .topbar-menu {
   gap: 2px !important;
 }
+
+/*--------------------------------------------------------------
+# Nested Dropdown Submenu (Modul Layanan -> Layanan LPTI -> ...)
+--------------------------------------------------------------*/
+.topbar-nav .dropdown-submenu {
+  position: relative;
+}
+
+.topbar-nav .dropdown-submenu > .dropdown-submenu-menu {
+  position: absolute !important;
+  top: 0 !important;
+  left: 100% !important;
+  margin-top: -6px !important;
+  border: 1px solid #ebeef4 !important;
+  border-top: 3px solid #046B26 !important;
+  border-radius: 0 8px 8px 8px !important;
+  min-width: 300px !important;
+  box-shadow: 0px 10px 30px rgba(1, 41, 112, 0.15) !important;
+  background-color: #ffffff !important;
+  display: none;
+  z-index: 1060 !important;
+  padding: 6px 0 !important;
+}
+
+.topbar-nav .dropdown-submenu-menu .dropdown-item {
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  font-weight: 500;
+  color: #1e293b !important;
+  white-space: nowrap;
+}
+
+.topbar-nav .dropdown-submenu-menu .dropdown-item:hover,
+.topbar-nav .dropdown-submenu-menu .dropdown-item.active {
+  background-color: #e8f5ec !important;
+  color: #046B26 !important;
+}
+
+.topbar-nav .dropdown-submenu-menu .dropdown-item:hover i,
+.topbar-nav .dropdown-submenu-menu .dropdown-item.active i {
+  color: #046B26 !important;
+}
+
+.topbar-nav .dropdown-item i.bi {
+  font-size: 14px !important;
+  line-height: 1 !important;
+  vertical-align: middle;
+}
+
+.topbar-nav .dropdown-chevron-sub {
+  font-size: 10px !important;
+  color: #64748b;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+/* Desktop behavior for nested submenu */
+@media (min-width: 992px) {
+  .topbar-nav .dropdown-submenu:hover > .dropdown-submenu-menu,
+  .topbar-nav .dropdown-submenu.show > .dropdown-submenu-menu {
+    display: block !important;
+    animation: topbarFadeIn 0.2s ease-in-out;
+  }
+
+  .topbar-nav .dropdown-submenu:hover > .dropdown-item .dropdown-chevron-sub,
+  .topbar-nav .dropdown-submenu.show > .dropdown-item .dropdown-chevron-sub {
+    transform: rotate(90deg);
+    color: #046B26 !important;
+  }
+}
+
+/* Mobile & Tablet behavior for nested submenu (< 992px) */
+@media (max-width: 991px) {
+  .topbar-nav .dropdown-submenu > .dropdown-submenu-menu {
+    position: static !important;
+    display: none;
+    border: none !important;
+    border-left: 2px solid #046B26 !important;
+    box-shadow: none !important;
+    padding-left: 8px !important;
+    margin: 4px 0 6px 12px !important;
+    background-color: #f1f5f9 !important;
+    border-radius: 4px !important;
+  }
+
+  .topbar-nav .dropdown-submenu.show > .dropdown-submenu-menu {
+    display: block !important;
+  }
+
+  .topbar-nav .dropdown-submenu.show > .dropdown-item .dropdown-chevron-sub {
+    transform: rotate(90deg);
+  }
+}

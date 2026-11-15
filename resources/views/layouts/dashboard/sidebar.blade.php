@@ -95,6 +95,63 @@
                     </li>
                 @endif
 
+                <!-- MODUL LAYANAN -->
+                @if ($u && !$isOnlyPanitia)
+                    @php
+                        $isLayananActive = request()->is('layanan*');
+                    @endphp
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ $isLayananActive ? 'active' : '' }}" href="#" id="modulLayananDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                            <span>Modul Layanan</span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="modulLayananDropdown">
+                            <!-- Submenu Layanan LPTI -->
+                            <li class="dropdown-submenu">
+                                <a class="dropdown-item dropdown-toggle d-flex align-items-center justify-content-between {{ request()->is('layanan/lpti*') ? 'active' : '' }}" href="#" id="layananLptiSubmenu" role="button">
+                                    <span class="d-flex align-items-center">
+                                        <i class="bi bi-hdd-network me-2 text-dark"></i>
+                                        <span>Layanan LPTI</span>
+                                    </span>
+                                    <i class="bi bi-chevron-right ms-2 dropdown-chevron-sub"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-submenu-menu" aria-labelledby="layananLptiSubmenu">
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('layanan.lpti.manajemen') ? 'active' : '' }}" href="{{ route('layanan.lpti.manajemen') }}">
+                                            <i class="bi bi-briefcase me-2 text-dark"></i>
+                                            <span>Manajemen LPTI</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('layanan.lpti.pengembangan-si') ? 'active' : '' }}" href="{{ route('layanan.lpti.pengembangan-si') }}">
+                                            <i class="bi bi-window me-2 text-dark"></i>
+                                            <span>Pengembangan Sistem Informasi dan Aplikasi</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('layanan.lpti.infrastruktur') ? 'active' : '' }}" href="{{ route('layanan.lpti.infrastruktur') }}">
+                                            <i class="bi bi-diagram-3 me-2 text-dark"></i>
+                                            <span>Pengelolaan Infrastruktur dan Jaringan</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('layanan.lpti.pemeliharaan') ? 'active' : '' }}" href="{{ route('layanan.lpti.pemeliharaan') }}">
+                                            <i class="bi bi-code-slash me-2 text-dark"></i>
+                                            <span>Pengembangan dan Pemeliharaan Aplikasi</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('layanan.lpti.dukungan-teknis') ? 'active' : '' }}" href="{{ route('layanan.lpti.dukungan-teknis') }}">
+                                            <i class="bi bi-headset me-2 text-dark"></i>
+                                            <span>Layanan Dukungan Teknis</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                @endif
+
                 <!-- 3. MONITORING & LAPORAN -->
                 @php
                     $hasOtkSubordinates = $u && $u->subordinates()->exists();
