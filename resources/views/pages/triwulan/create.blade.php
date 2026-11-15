@@ -6,7 +6,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('triwulan.index') }}">Triwulan</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('triwulan.index') }}">Triwulan (TW)</a></li>
             <li class="breadcrumb-item active">Tambah</li>
         </ol>
     </nav>
@@ -46,24 +46,6 @@
 
                     <form action="{{ route('triwulan.store') }}" method="POST" class="row g-3">
                         @csrf
-
-                        <!-- Periode Akademik -->
-                        <div class="col-md-6">
-                            <label for="periode_akademik_id" class="form-label fw-semibold text-dark">
-                                Periode Akademik <span class="text-danger">*</span>
-                            </label>
-                            <select name="periode_akademik_id" id="periode_akademik_id" class="form-select @error('periode_akademik_id') is-invalid @enderror" required>
-                                <option value="">-- Pilih Periode Akademik --</option>
-                                @foreach($periodeAkademiks as $p)
-                                    <option value="{{ $p->id }}" {{ old('periode_akademik_id', $selectedPeriodeId) == $p->id ? 'selected' : '' }}>
-                                        {{ $p->formatted_ta }} {{ $p->is_active ? '★ (Aktif)' : '' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('periode_akademik_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
 
                         <!-- Nama Triwulan -->
                         <div class="col-md-6">
@@ -147,7 +129,7 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active') ? 'checked' : '' }}>
                                 <label class="form-check-label fw-semibold text-dark" for="is_active">
-                                    Jadikan Triwulan Aktif untuk Periode Akademik Ini
+                                    Jadikan Triwulan Aktif
                                 </label>
                             </div>
                         </div>
@@ -155,7 +137,7 @@
                         <!-- Tombol Submit -->
                         <div class="col-12 mt-4 pt-2 border-top">
                             <button type="submit" class="btn btn-primary px-4 fw-semibold"><i class="bi bi-save me-1"></i> Simpan Triwulan</button>
-                            <a href="{{ route('triwulan.index', ['periode_id' => $selectedPeriodeId]) }}" class="btn btn-secondary px-3"><i class="bi bi-arrow-left me-1"></i> Batal</a>
+                            <a href="{{ route('triwulan.index') }}" class="btn btn-secondary px-3"><i class="bi bi-arrow-left me-1"></i> Batal</a>
                         </div>
                     </form>
                 </div>

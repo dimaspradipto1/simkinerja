@@ -6,7 +6,6 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('periode-akademik.index') }}">Periode Akademik</a></li>
             <li class="breadcrumb-item active">Triwulan (TW)</li>
         </ol>
     </nav>
@@ -53,43 +52,22 @@
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3">
-                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <h5 class="card-title m-0 fw-bold text-dark fs-6 d-flex align-items-center gap-2">
-                                <i class="bi bi-calendar2-range text-primary"></i>
-                                <span>Daftar Triwulan (TW)</span>
-                            </h5>
-                            @if($activePeriode)
-                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" style="font-size: 0.76rem;">
-                                    <i class="bi bi-check-circle-fill me-1"></i>T.A. Aktif: {{ $activePeriode->formatted_ta }}
-                                </span>
-                            @endif
-                        </div>
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
+                        <h5 class="card-title m-0 fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                            <i class="bi bi-calendar2-range text-primary"></i>
+                            <span>Daftar Triwulan (TW)</span>
+                        </h5>
 
-                        <!-- Filter Periode & Action Buttons -->
+                        <!-- Action Buttons -->
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <form action="{{ route('triwulan.index') }}" method="GET" class="d-inline-flex align-items-center gap-2">
-                                <select name="periode_id" class="form-select form-select-sm" style="min-width: 220px;" onchange="this.form.submit()">
-                                    <option value="">-- Semua Periode Akademik --</option>
-                                    @foreach($periodeAkademiks as $p)
-                                        <option value="{{ $p->id }}" {{ $selectedPeriodeId == $p->id ? 'selected' : '' }}>
-                                            {{ $p->formatted_ta }} {{ $p->is_active ? '★ (Aktif)' : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <form action="{{ route('triwulan.generate-standard') }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-2xs fw-semibold" title="Sinkronkan atau buat kembali 4 Triwulan standar sesuai ketentuan">
+                                    <i class="bi bi-arrow-clockwise"></i> Sinkronkan Standar
+                                </button>
                             </form>
 
-                            @if($selectedPeriodeId)
-                                <form action="{{ route('triwulan.generate-standard') }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <input type="hidden" name="periode_id" value="{{ $selectedPeriodeId }}">
-                                    <button type="submit" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-2xs fw-semibold" title="Generate atau sesuaikan 4 Triwulan standar untuk periode ini">
-                                        <i class="bi bi-magic"></i> Generate TW1–TW4
-                                    </button>
-                                </form>
-                            @endif
-
-                            <a href="{{ route('triwulan.create', ['periode_id' => $selectedPeriodeId]) }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-2xs fw-semibold">
+                            <a href="{{ route('triwulan.create') }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-2xs fw-semibold">
                                 <i class="bi bi-plus-circle"></i> Tambah Triwulan
                             </a>
                         </div>
@@ -102,28 +80,17 @@
                             <thead class="table-light">
                                 <tr>
                                     <th width="5%" class="text-center">No</th>
-                                    <th>Periode Akademik</th>
-                                    <th>Nama Triwulan</th>
-                                    <th>Rentang Bulan</th>
+                                    <th width="15%">Nama Triwulan</th>
+                                    <th width="20%">Rentang Bulan</th>
                                     <th>Bulan Pengerjaan</th>
-                                    <th class="text-center" width="12%">Status</th>
-                                    <th class="text-center" width="18%">Aksi</th>
+                                    <th class="text-center" width="15%">Status</th>
+                                    <th class="text-center" width="15%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($triwulans as $index => $item)
                                     <tr>
                                         <td class="text-center text-muted fw-bold small">{{ $index + 1 }}</td>
-                                        <td>
-                                            @if($item->periodeAkademik)
-                                                <span class="fw-semibold text-dark">{{ $item->periodeAkademik->formatted_ta }}</span>
-                                                @if($item->periodeAkademik->is_active)
-                                                    <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.7rem;">Aktif</span>
-                                                @endif
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
                                         <td>
                                             <span class="badge bg-primary px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.82rem;">
                                                 {{ $item->nama }}
@@ -133,7 +100,7 @@
                                             <span class="fw-bold text-dark">{{ $item->rentang_bulan ?? '-' }}</span>
                                         </td>
                                         <td>
-                                            <span class="text-secondary small">{{ $item->keterangan ?? '-' }}</span>
+                                            <span class="text-dark small fw-medium">{{ $item->keterangan ?? '-' }}</span>
                                             <span class="text-muted small ms-1">(Bulan {{ $item->bulan_mulai }} s/d {{ $item->bulan_selesai }})</span>
                                         </td>
                                         <td class="text-center">
@@ -165,12 +132,10 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-5 text-muted">
+                                        <td colspan="6" class="text-center py-5 text-muted">
                                             <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                                            <div class="fw-semibold">Belum ada data Triwulan (TW) untuk periode ini.</div>
-                                            @if($selectedPeriodeId)
-                                                <div class="small mt-1">Klik tombol <strong>Generate TW1–TW4</strong> di atas untuk membuat 4 triwulan standar secara otomatis.</div>
-                                            @endif
+                                            <div class="fw-semibold">Belum ada data Triwulan (TW).</div>
+                                            <div class="small mt-1">Klik tombol <strong>Sinkronkan Standar</strong> di atas untuk membuat 4 triwulan standar secara otomatis.</div>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -189,7 +154,7 @@
     function setActiveTriwulan(id, label) {
         Swal.fire({
             title: 'Aktifkan Triwulan?',
-            text: "Triwulan " + label + " akan dijadikan triwulan aktif utama untuk periode akademik terkait.",
+            text: "Triwulan " + label + " akan dijadikan triwulan aktif saat ini.",
             icon: 'question',
             showCancelButton: true,
             confirmColor: '#198754',
