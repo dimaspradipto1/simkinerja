@@ -153,7 +153,7 @@
                                     @endif
                                     @if($showSi)
                                         <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'SISTEM INFORMASI')) || request()->routeIs('layanan.lpti.pengembangan-si') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK']) : route('rencana-kerja.index') }}">
+                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'SISTEM INFORMASI')) || request()->routeIs('layanan.lpti.pengembangan-si') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK']) }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-window me-2 text-dark"></i>
                                                     <span>Pengembangan Sistem Informasi dan Aplikasi</span>
@@ -172,7 +172,7 @@
                                     @endif
                                     @if($showJaringan)
                                         <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'INFRASTRUKTUR')) || request()->routeIs('layanan.lpti.infrastruktur') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'DIVISI INFRASTRUKTUR, JARINGAN, DAN LAYANAN TROUBLESHOOTING']) : route('rencana-kerja.index') }}">
+                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && (str_contains(request('jabatan', ''), 'INFRASTRUKTUR') || str_contains(request('jabatan', ''), 'JARINGAN'))) || request()->routeIs('layanan.lpti.infrastruktur') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'DIVISI INFRASTRUKTUR DAN JARINGAN']) }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-diagram-3 me-2 text-dark"></i>
                                                     <span>Pengelolaan Infrastruktur dan Jaringan</span>
@@ -191,7 +191,7 @@
                                     @endif
                                     @if($showProgrammer)
                                         <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'PROGRAMMER')) || request()->routeIs('layanan.lpti.pemeliharaan') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'PROGRAMMER']) : route('rencana-kerja.index') }}">
+                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'PROGRAMMER')) || request()->routeIs('layanan.lpti.pemeliharaan') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'PROGRAMMER']) }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-code-slash me-2 text-dark"></i>
                                                     <span>Pengembangan dan Pemeliharaan Aplikasi</span>
@@ -210,7 +210,7 @@
                                     @endif
                                     @if($showTroubleshooting)
                                         <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'TROUBLESHOOTING')) || request()->routeIs('layanan.lpti.dukungan-teknis') ? 'active' : '' }}" href="{{ $isAdminOrKepala ? route('rencana-kerja.index', ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING']) : route('rencana-kerja.index') }}">
+                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(request('jabatan', ''), 'TROUBLESHOOTING')) || request()->routeIs('layanan.lpti.dukungan-teknis') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING']) }}">
                                                 <span class="d-flex align-items-center">
                                                     <i class="bi bi-headset me-2 text-dark"></i>
                                                     <span>Layanan Dukungan Teknis</span>

@@ -131,16 +131,7 @@
                         <span class="fw-bold text-white fs-6 mb-0">Rencana Kerja</span>
                         <span class="text-white d-none d-sm-inline">:</span>
                         <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
-                            @if(request()->filled('jabatan'))
-                                @php
-                                    $matchedUser = isset($usersWithJabatan) ? $usersWithJabatan->first(function($item) {
-                                        return $item->jabatan === request('jabatan') || str_contains($item->jabatan, request('jabatan')) || str_contains(request('jabatan'), $item->jabatan);
-                                    }) : null;
-                                @endphp
-                                {{ $matchedUser ? $matchedUser->jabatan . ' - ' . $matchedUser->name : request('jabatan') }}
-                            @else
-                                {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}
-                            @endif
+                            {{ $judulJabatan ?? (auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name) }}
                         </span>
                     </div>
                     <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-xl-0">
@@ -544,7 +535,7 @@
         var table = $('#rencanakerja-table').DataTable({
             processing: true,
             serverSide: true,
-            stateSave: true,
+            stateSave: false,
             ordering: false,
             autoWidth: false,
             ajax: {

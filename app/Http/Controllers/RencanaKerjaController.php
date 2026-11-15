@@ -35,14 +35,25 @@ class RencanaKerjaController extends Controller
                     // Tampilkan semua jabatan (hanya jika eksplisit dipilih opsi "Semua Jabatan")
                 } else {
                     $targetJabatan = $request->jabatan;
-                    $query->where(function ($q) use ($targetJabatan) {
-                        $q->whereHas('user', function ($qu) use ($targetJabatan) {
+                    $targetUpper = strtoupper(trim($targetJabatan));
+                    $query->whereHas('user', function ($qu) use ($targetUpper, $targetJabatan) {
+                        if (str_contains($targetUpper, 'KEPALA') || str_contains($targetUpper, 'MANAJEMEN')) {
+                            $qu->where('jabatan', 'like', '%KEPALA LPTI%');
+                        } elseif (str_contains($targetUpper, 'SISTEM INFORMASI') || str_contains($targetUpper, 'PENGEMBANGAN SISTEM')) {
+                            $qu->where('jabatan', 'like', '%PENGEMBANGAN SISTEM INFORMASI%');
+                        } elseif (str_contains($targetUpper, 'INFRASTRUKTUR') || str_contains($targetUpper, 'JARINGAN')) {
+                            $qu->where(function ($qj) {
+                                $qj->where('jabatan', 'like', '%INFRASTRUKTUR%')
+                                   ->orWhere('jabatan', 'like', '%JARINGAN%');
+                            });
+                        } elseif (str_contains($targetUpper, 'PROGRAMMER') || str_contains($targetUpper, 'PEMELIHARAAN')) {
+                            $qu->where('jabatan', 'like', '%PROGRAMMER%');
+                        } elseif (str_contains($targetUpper, 'TROUBLESHOOTING') || str_contains($targetUpper, 'DUKUNGAN TEKNIS') || str_contains($targetUpper, 'HELPDESK')) {
+                            $qu->where('jabatan', 'like', '%TROUBLESHOOTING%');
+                        } else {
                             $qu->where('jabatan', $targetJabatan)
-                              ->orWhere('jabatan', 'like', '%' . $targetJabatan . '%');
-                        })->orWhereHas('taggedUsers', function ($qt) use ($targetJabatan) {
-                            $qt->where('jabatan', $targetJabatan)
-                              ->orWhere('jabatan', 'like', '%' . $targetJabatan . '%');
-                        });
+                               ->orWhere('jabatan', 'like', '%' . $targetJabatan . '%');
+                        }
                     });
                 }
             } else {
@@ -524,7 +535,41 @@ class RencanaKerjaController extends Controller
             $pendingRequests = $pendingRequestsQuery->with(['user', 'periodeAkademik'])->latest('estimasi_unlock_requested_at')->get();
         }
 
-        return view('pages.rencanakerja.index', compact('usersWithJabatan', 'periodeAkademiks', 'defaultPeriodeId', 'pendingRequests'));
+        $judulJabatan = null;
+        if ($request->filled('jabatan') && $request->jabatan !== '__own__' && $request->jabatan !== '__all__' && $request->jabatan !== 'all') {
+            $targetUpper = strtoupper(trim($request->jabatan));
+            $matchedUser = null;
+            if (str_contains($targetUpper, 'KEPALA') || str_contains($targetUpper, 'MANAJEMEN')) {
+                $matchedUser = User::where('jabatan', 'like', '%KEPALA LPTI%')->first();
+            } elseif (str_contains($targetUpper, 'SISTEM INFORMASI') || str_contains($targetUpper, 'PENGEMBANGAN SISTEM')) {
+                $matchedUser = User::where('jabatan', 'like', '%PENGEMBANGAN SISTEM INFORMASI%')->first();
+            } elseif (str_contains($targetUpper, 'INFRASTRUKTUR') || str_contains($targetUpper, 'JARINGAN')) {
+                $matchedUser = User::where(function ($qj) {
+                    $qj->where('jabatan', 'like', '%INFRASTRUKTUR%')
+                       ->orWhere('jabatan', 'like', '%JARINGAN%');
+                })->first();
+            } elseif (str_contains($targetUpper, 'PROGRAMMER') || str_contains($targetUpper, 'PEMELIHARAAN')) {
+                $matchedUser = User::where('jabatan', 'like', '%PROGRAMMER%')->first();
+            } elseif (str_contains($targetUpper, 'TROUBLESHOOTING') || str_contains($targetUpper, 'DUKUNGAN TEKNIS') || str_contains($targetUpper, 'HELPDESK')) {
+                $matchedUser = User::where('jabatan', 'like', '%TROUBLESHOOTING%')->first();
+            } else {
+                $matchedUser = User::where('jabatan', $request->jabatan)
+                    ->orWhere('jabatan', 'like', '%' . $request->jabatan . '%')
+                    ->first();
+            }
+
+            if ($matchedUser) {
+                $judulJabatan = $matchedUser->jabatan . ' - ' . $matchedUser->name;
+            } else {
+                $judulJabatan = $request->jabatan;
+            }
+        } elseif ($request->jabatan === '__all__' || $request->jabatan === 'all') {
+            $judulJabatan = 'Semua Jabatan & Pegawai';
+        } else {
+            $judulJabatan = ($authUser && $authUser->jabatan) ? ($authUser->jabatan . ' - ' . $authUser->name) : ($authUser->name ?? 'Kegiatan Rutinitas');
+        }
+
+        return view('pages.rencanakerja.index', compact('usersWithJabatan', 'periodeAkademiks', 'defaultPeriodeId', 'pendingRequests', 'judulJabatan'));
     }
 
     /**
