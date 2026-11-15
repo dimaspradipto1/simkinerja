@@ -39,23 +39,37 @@
                   </a><!-- End Notification Icon -->
 
                   <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications shadow-lg border-0 p-0" 
-                      style="min-width: 340px; max-width: 400px; border-radius: 12px; overflow: hidden;" 
+                      style="min-width: 320px; max-width: 340px; border-radius: 10px; overflow: hidden; font-size: 10px;" 
                       aria-labelledby="notificationDropdownBtn">
                       
-                      <li class="dropdown-header d-flex align-items-center justify-content-between py-2.5 px-3 bg-light border-bottom">
-                          <span class="fw-bold text-dark" id="notificationHeaderTitle" style="font-size: 0.82rem;">
-                              @if($notifCount > 0)
-                                  Anda memiliki {{ $notifCount }} pemberitahuan
-                              @else
-                                  Tidak ada pemberitahuan baru
-                              @endif
-                          </span>
-                          <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none text-muted" id="btnRefreshNotif" title="Segarkan notifikasi" onclick="window.refreshNotifications(true)">
-                              <i class="bi bi-arrow-clockwise fs-6" id="iconRefreshNotif"></i>
-                          </button>
+                      <li class="dropdown-header d-flex align-items-center justify-content-between py-2 px-3 bg-light border-bottom" style="font-size: 10px;">
+                          <div class="d-flex align-items-center gap-1.5">
+                              <i class="bi bi-bell-fill text-primary" style="font-size: 11px;"></i>
+                              <span class="fw-bold text-dark" id="notificationHeaderTitle" style="font-size: 10px;">
+                                  @if($notifCount > 0)
+                                      Anda memiliki {{ $notifCount }} pemberitahuan
+                                  @else
+                                      Tidak ada pemberitahuan baru
+                                  @endif
+                              </span>
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                              <button type="button" 
+                                      class="btn btn-link p-0 text-decoration-none text-success fw-bold d-inline-flex align-items-center gap-1 border-0 bg-transparent {{ $notifCount > 0 ? '' : 'd-none' }}" 
+                                      id="btnMarkAllNotifRead" 
+                                      onclick="window.markAllNotificationsRead()" 
+                                      title="Tandai semua sudah dibaca" 
+                                      style="font-size: 10px; cursor: pointer;">
+                                  <i class="bi bi-check2-all" style="font-size: 12px;"></i>
+                                  <span>Tandai sudah dibaca</span>
+                              </button>
+                              <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none text-secondary border-0 bg-transparent" id="btnRefreshNotif" title="Segarkan notifikasi" onclick="window.refreshNotifications(true)">
+                                  <i class="bi bi-arrow-clockwise" id="iconRefreshNotif" style="font-size: 11px;"></i>
+                              </button>
+                          </div>
                       </li>
 
-                      <div id="notificationItemsContainer" style="max-height: 420px; overflow-y: auto;">
+                      <div id="notificationItemsContainer" style="max-height: 380px; overflow-y: auto;">
                           @include('layouts.dashboard.notification_items', ['notifications' => $notifications])
                       </div>
 
@@ -140,6 +154,41 @@
       (function() {
           let isFetchingNotif = false;
 
+          function updateNotificationUI(data) {
+              const badge = document.getElementById('notificationBadge');
+              const headerTitle = document.getElementById('notificationHeaderTitle');
+              const container = document.getElementById('notificationItemsContainer');
+              const btnMarkAll = document.getElementById('btnMarkAllNotifRead');
+
+              if (badge) {
+                  if (data.count > 0) {
+                      badge.textContent = data.count;
+                      badge.classList.remove('d-none');
+                  } else {
+                      badge.textContent = '';
+                      badge.classList.add('d-none');
+                  }
+              }
+
+              if (headerTitle) {
+                  headerTitle.textContent = data.count > 0 
+                      ? `Anda memiliki ${data.count} pemberitahuan` 
+                      : 'Tidak ada pemberitahuan baru';
+              }
+
+              if (btnMarkAll) {
+                  if (data.count > 0) {
+                      btnMarkAll.classList.remove('d-none');
+                  } else {
+                      btnMarkAll.classList.add('d-none');
+                  }
+              }
+
+              if (container) {
+                  container.innerHTML = data.html;
+              }
+          }
+
           window.refreshNotifications = function(showSpinner = false) {
               if (isFetchingNotif) return;
               isFetchingNotif = true;
@@ -161,29 +210,7 @@
               })
               .then(data => {
                   if (data && data.success) {
-                      const badge = document.getElementById('notificationBadge');
-                      const headerTitle = document.getElementById('notificationHeaderTitle');
-                      const container = document.getElementById('notificationItemsContainer');
-
-                      if (badge) {
-                          if (data.count > 0) {
-                              badge.textContent = data.count;
-                              badge.classList.remove('d-none');
-                          } else {
-                              badge.textContent = '';
-                              badge.classList.add('d-none');
-                          }
-                      }
-
-                      if (headerTitle) {
-                          headerTitle.textContent = data.count > 0 
-                              ? `Anda memiliki ${data.count} pemberitahuan` 
-                              : 'Tidak ada pemberitahuan baru';
-                      }
-
-                      if (container) {
-                          container.innerHTML = data.html;
-                      }
+                      updateNotificationUI(data);
                   }
               })
               .catch(err => {
@@ -195,6 +222,58 @@
                       iconRefresh.classList.remove('spin-animation');
                   }
               });
+          };
+
+          window.markAllNotificationsRead = function() {
+              const iconRefresh = document.getElementById('iconRefreshNotif');
+              if (iconRefresh) iconRefresh.classList.add('spin-animation');
+
+              fetch('{{ route('notifications.mark-read') }}', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'Accept': 'application/json'
+                  },
+                  body: JSON.stringify({ key: 'all' })
+              })
+              .then(res => {
+                  if (!res.ok) throw new Error('Network error ' + res.status);
+                  return res.json();
+              })
+              .then(data => {
+                  if (data && data.success) {
+                      updateNotificationUI(data);
+                  }
+              })
+              .catch(err => console.error('Error marking all notifications read:', err))
+              .finally(() => {
+                  if (iconRefresh) iconRefresh.classList.remove('spin-animation');
+              });
+          };
+
+          window.markSingleNotificationRead = function(key) {
+              fetch('{{ route('notifications.mark-read') }}', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'Accept': 'application/json'
+                  },
+                  body: JSON.stringify({ key: key })
+              })
+              .then(res => {
+                  if (!res.ok) throw new Error('Network error ' + res.status);
+                  return res.json();
+              })
+              .then(data => {
+                  if (data && data.success) {
+                      updateNotificationUI(data);
+                  }
+              })
+              .catch(err => console.error('Error marking single notification read:', err));
           };
 
           document.addEventListener('DOMContentLoaded', function() {

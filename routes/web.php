@@ -56,6 +56,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
         ->name('dashboard.attendance-data');
     Route::get('/notifications/data', [NotificationController::class, 'getNotifications'])
         ->name('notifications.data');
+    Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead'])
+        ->name('notifications.mark-read');
     Route::get('profile', [ProfileController::class, 'index'])->name('profile');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('profile/password', [ProfileController::class, 'editPassword'])->name('profile.password');

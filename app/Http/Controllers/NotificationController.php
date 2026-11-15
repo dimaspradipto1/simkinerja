@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\RencanaKerja;
@@ -28,6 +29,17 @@ class NotificationController extends Controller
         }
 
         $today = Carbon::now()->format('Y-m-d');
+        $readKeys = Cache::get('notif_read_keys_' . $authUser->id, []);
+        $readAllAt = Cache::get('notif_read_all_' . $authUser->id, 0);
+
+        $pushNotif = function ($data) use (&$notifications, $readKeys, $readAllAt) {
+            $key = $data['key'] ?? null;
+            $timestamp = $data['timestamp'] ?? 0;
+            if ($key && (in_array($key, $readKeys) || ($readAllAt > 0 && $timestamp <= $readAllAt))) {
+                return;
+            }
+            $notifications->push($data);
+        };
 
         // 1. Permintaan Perubahan Estimasi dari bawahan (khusus Kepala Unit / Pimpinan & Admin, tidak ke Rektor)
         if (!$authUser->isRektor() && ($authUser->isAdmin() || $authUser->isPimpinanUnit())) {
@@ -72,8 +84,10 @@ class NotificationController extends Controller
                 $unlockRequests = $unlockQuery->latest('estimasi_unlock_requested_at')->take(5)->get();
 
                 foreach ($unlockRequests as $r) {
-                    $notifications->push([
+                    $ts = Carbon::parse($r->estimasi_unlock_requested_at)->timestamp;
+                    $pushNotif([
                         'id' => $r->id,
+                        'key' => 'ext_req_' . $r->id . '_' . $ts,
                         'type' => 'extension_request',
                         'action_type' => 'modal_approve',
                         'icon' => 'bi-unlock-fill text-warning',
@@ -90,7 +104,7 @@ class NotificationController extends Controller
                         'jam_selesai' => $r->estimasi_jam_selesai ? substr($r->estimasi_jam_selesai, 0, 5) : '23:59',
                         'route' => route($src['approve_route'], $r->id),
                         'url' => route($src['index_route']),
-                        'timestamp' => Carbon::parse($r->estimasi_unlock_requested_at)->timestamp,
+                        'timestamp' => $ts,
                     ]);
                 }
             }
@@ -113,8 +127,10 @@ class NotificationController extends Controller
                 ->get();
 
             foreach ($approvedTasks as $t) {
-                $notifications->push([
+                $ts = Carbon::parse($t->estimasi_unlock_approved_at)->timestamp;
+                $pushNotif([
                     'id' => $t->id,
+                    'key' => 'ext_app_' . $t->id . '_' . $ts,
                     'type' => 'extension_approved',
                     'action_type' => 'navigate',
                     'icon' => 'bi-check-circle-fill text-success',
@@ -125,7 +141,7 @@ class NotificationController extends Controller
                     'message' => 'Estimasi tugas "' . Str::limit($t->uraian_tugas ?? $t->nama_kegiatan, 40) . '" disetujui s/d ' . ($t->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($t->estimasi_tanggal_selesai)) : '-'),
                     'time' => Carbon::parse($t->estimasi_unlock_approved_at)->diffForHumans(),
                     'url' => route($src['route']),
-                    'timestamp' => Carbon::parse($t->estimasi_unlock_approved_at)->timestamp,
+                    'timestamp' => $ts,
                 ]);
             }
         }
@@ -145,8 +161,10 @@ class NotificationController extends Controller
             ->get();
 
         foreach ($overdueTasks as $t) {
-            $notifications->push([
+            $ts = Carbon::parse($t->estimasi_tanggal_selesai)->timestamp;
+            $pushNotif([
                 'id' => $t->id,
+                'key' => 'overdue_' . $t->id . '_' . $ts,
                 'type' => 'overdue',
                 'action_type' => 'navigate',
                 'icon' => 'bi-exclamation-triangle-fill text-danger',
@@ -157,7 +175,7 @@ class NotificationController extends Controller
                 'message' => Str::limit($t->uraian_tugas, 45),
                 'time' => 'Batas: ' . date('d/m/Y', strtotime($t->estimasi_tanggal_selesai)),
                 'url' => route('rencana-kerja.index'),
-                'timestamp' => Carbon::parse($t->estimasi_tanggal_selesai)->timestamp,
+                'timestamp' => $ts,
             ]);
         }
 
@@ -174,8 +192,10 @@ class NotificationController extends Controller
             ->get();
 
         foreach ($runningTasks as $t) {
-            $notifications->push([
+            $ts = Carbon::parse($t->last_started_at ?? $t->updated_at ?? now())->timestamp;
+            $pushNotif([
                 'id' => $t->id,
+                'key' => 'running_' . $t->id . '_' . $ts,
                 'type' => 'running',
                 'action_type' => 'navigate',
                 'icon' => 'bi-play-circle-fill text-primary',
@@ -186,7 +206,7 @@ class NotificationController extends Controller
                 'message' => Str::limit($t->uraian_tugas, 45),
                 'time' => 'Timer aktif saat ini',
                 'url' => route('rencana-kerja.index'),
-                'timestamp' => Carbon::now()->timestamp,
+                'timestamp' => $ts,
             ]);
         }
 
@@ -199,8 +219,10 @@ class NotificationController extends Controller
                 ->get();
 
             foreach ($taggedKepanitiaans as $k) {
-                $notifications->push([
+                $ts = Carbon::parse($k->updated_at ?? $k->created_at)->timestamp;
+                $pushNotif([
                     'id' => $k->id,
+                    'key' => 'tagged_' . $k->id . '_' . $ts,
                     'type' => 'tagged_kepanitiaan',
                     'action_type' => 'navigate',
                     'icon' => 'bi-people-fill text-info',
@@ -211,7 +233,7 @@ class NotificationController extends Controller
                     'message' => Str::limit($k->nama_kegiatan ?? $k->uraian_tugas, 45),
                     'time' => 'Terdaftar dalam tim',
                     'url' => route('kepanitiaan.index'),
-                    'timestamp' => Carbon::parse($k->updated_at ?? $k->created_at)->timestamp,
+                    'timestamp' => $ts,
                 ]);
             }
         }
@@ -251,6 +273,39 @@ class NotificationController extends Controller
 
         return response()->json([
             'success' => true,
+            'count' => $count,
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint to mark notifications as read.
+     */
+    public function markAsRead(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $key = $request->input('key');
+        if ($key && $key !== 'all') {
+            $readKeys = Cache::get('notif_read_keys_' . $authUser->id, []);
+            if (!in_array($key, $readKeys)) {
+                $readKeys[] = $key;
+                Cache::put('notif_read_keys_' . $authUser->id, $readKeys, now()->addDays(30));
+            }
+        } else {
+            Cache::put('notif_read_all_' . $authUser->id, Carbon::now()->timestamp, now()->addDays(30));
+        }
+
+        $notifications = self::fetchData($authUser);
+        $count = $notifications->count();
+        $html = view('layouts.dashboard.notification_items', compact('notifications'))->render();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pemberitahuan berhasil ditandai sudah dibaca.',
             'count' => $count,
             'html' => $html,
         ]);
