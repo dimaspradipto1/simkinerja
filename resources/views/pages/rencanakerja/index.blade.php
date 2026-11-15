@@ -3,31 +3,29 @@
 @section('page-style-class', 'menu-page-rencana-kerja')
 @section('content')
 
-
 <div class="pagetitle">
-    <h1>Rencana Kerja</h1>
+    <h1>Catatan Kegiatan &amp; Rencana Kerja</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active">Rencana Kerja</li>
+            <li class="breadcrumb-item"><a href="javascript:void(0)">Kegiatan</a></li>
+            <li class="breadcrumb-item active">Catatan Kegiatan</li>
         </ol>
     </nav>
 </div><!-- End Page Title -->
 
 <section class="section">
     @if(auth()->check() && (auth()->user()->isRektorOrSuperAdmin() || auth()->user()->isPimpinanUnit()))
-    <!-- Top Section: Kriteria Checklist Jabatan (Khusus Pimpinan & Admin) -->
-    <div class="row mb-4">
+    <!-- Top Filter Section: Kriteria Checklist Jabatan (Khusus Pimpinan & Admin) -->
+    <div class="row mb-3">
         <div class="col-lg-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                    <span class="header-title-text">Kriteria Checklist Jabatan</span>
-                </div>
-                <div class="card-body pt-3">
-                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-                        <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap">Kriteria Checklist untuk jabatan:</label>
+            <div class="card shadow-2xs border-0 bg-white rounded-3">
+                <div class="card-body py-2.5 px-3">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <i class="bi bi-person-lines-fill text-success fs-5"></i>
+                        <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap">Pantau Kinerja Jabatan / Personel:</label>
                         <div style="min-width: 250px; max-width: 650px;" class="flex-grow-1">
-                            <select class="form-select" id="filter-jabatan">
+                            <select class="form-select form-select-sm" id="filter-jabatan">
                                 <option value=""></option>
                                 <option value="__own__">-- Data Saya Sendiri ({{ auth()->user()->name }}) --</option>
                                 <option value="__all__">-- Semua Jabatan (Semua Pegawai) --</option>
@@ -47,11 +45,10 @@
 
     @if(isset($pendingRequests) && $pendingRequests->isNotEmpty())
     <!-- Section: Permohonan Perpanjangan Waktu Masuk -->
-    <div class="row mb-3">
+    <div class="row mb-3" id="wrapper-pending-requests">
         <div class="col-12">
-            <div class="p-3 p-sm-3.5 rounded-3 shadow-xs" style="background-color: #fffdf5; border: 1px solid #fde68a; border-left: 5px solid #f59e0b; width: 100%; max-width: 100%; box-sizing: border-box;">
-                <!-- Header Banner -->
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5 pb-2 border-bottom" style="border-color: #fef08a !important;">
+            <div class="p-3 rounded-3 shadow-xs" style="background-color: #fffdf5; border: 1px solid #fde68a; border-left: 5px solid #f59e0b; width: 100%;">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom" style="border-color: #fef08a !important;">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="badge bg-danger rounded-pill px-2.5 py-1 fw-bold shadow-2xs" style="font-size: 0.78rem;">
                             <i class="bi bi-bell-fill me-1"></i> {{ $pendingRequests->count() }} Permohonan Masuk
@@ -59,88 +56,26 @@
                         <span class="text-dark small fw-semibold">Tugas melewati estimasi dan membutuhkan persetujuan perpanjangan waktu:</span>
                     </div>
                 </div>
-
-                <!-- List of Items -->
-                <div class="d-flex flex-column gap-3">
+                <div class="d-flex flex-column gap-2">
                     @foreach($pendingRequests as $pr)
-                    @php
-                        $rReason = $pr->estimasi_unlock_reason;
-                        $tujuanPimpinan = null;
-                        if (preg_match('/^\[Tujuan:\s*([^\]]+)\]\s*(.*)$/s', $rReason, $mMatches)) {
-                            $tujuanPimpinan = $mMatches[1];
-                            $rReason = $mMatches[2];
-                        }
-                    @endphp
-                    <div class="p-3 bg-white rounded-3 border shadow-2xs" style="border-color: #fed7aa !important; width: 100%; max-width: 100%; box-sizing: border-box;">
-                        <!-- 1. Header: Pegawai & Timestamp -->
-                        <div class="d-flex align-items-start justify-content-between gap-2 mb-2 pb-2 border-bottom border-light-subtle">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary flex-shrink-0" style="width: 34px; height: 34px; font-size: 1rem;">
-                                    <i class="bi bi-person-fill"></i>
-                                </div>
-                                <div>
-                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                        <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ $pr->user->name ?? '-' }}</span>
-                                        @if(!empty($pr->user->jabatan))
-                                            <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.68rem; padding: 2px 6px;">{{ $pr->user->jabatan }}</span>
-                                        @endif
-                                    </div>
-                                    <div class="text-muted d-flex align-items-center gap-1 mt-0.5" style="font-size: 0.72rem;">
-                                        <i class="bi bi-clock"></i>
-                                        <span>{{ \Carbon\Carbon::parse($pr->estimasi_unlock_requested_at)->diffForHumans() }}</span>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="p-2.5 bg-white rounded-2 border d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-2xs">
+                        <div>
+                            <span class="fw-bold text-dark small">{{ $pr->user->name ?? '-' }}</span>: 
+                            <span class="text-secondary small">{{ $pr->uraian_tugas }}</span>
                         </div>
-
-                        <!-- 2. Uraian Tugas -->
-                        <div class="mb-2.5" style="word-break: break-word;">
-                            <div class="d-flex align-items-baseline gap-1.5">
-                                <span class="badge bg-primary text-white flex-shrink-0" style="font-size: 0.68rem; padding: 3px 6px; border-radius: 4px;">Tugas</span>
-                                <span class="fw-bold text-dark" style="font-size: 0.88rem; line-height: 1.45;">{{ $pr->uraian_tugas }}</span>
-                            </div>
-                        </div>
-
-                        <!-- 3. Tujuan & Kendala -->
-                        <div class="d-flex flex-column gap-1.5 mb-2.5" style="font-size: 0.78rem;">
-                            @if($tujuanPimpinan)
-                                <div class="d-flex align-items-center gap-2 p-1.5 px-2.5 rounded-2 bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.76rem;">
-                                    <i class="bi bi-person-badge-fill flex-shrink-0"></i>
-                                    <span class="text-truncate">Tujuan: <strong>{{ $tujuanPimpinan }}</strong></span>
-                                </div>
-                            @endif
-                            <div class="d-flex align-items-start gap-2 p-1.5 px-2.5 rounded-2 bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.76rem; word-break: break-word;">
-                                <i class="bi bi-exclamation-circle-fill flex-shrink-0 mt-0.5"></i>
-                                <div>
-                                    <span class="fw-bold me-1">Kendala:</span>
-                                    <span class="text-dark fw-medium">{{ strip_tags($rReason) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 4. Tombol di Bawah -->
-                        <div class="pt-2 border-top" style="border-color: #f1f5f9 !important;">
-                            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit()))
-                            <button type="button" 
-                                    class="btn btn-warning btn-sm w-100 fw-bold d-flex align-items-center justify-content-center text-dark shadow-2xs" 
-                                    style="background-color: #ffc107; border-color: #ffc107; padding: 8px 14px; font-size: 0.85rem; border-radius: 7px;"
-                                    data-id="{{ $pr->id }}" 
-                                    data-uraian="{{ e($pr->uraian_tugas) }}" 
-                                    data-pegawai="{{ e($pr->user->name ?? '-') }}" 
-                                    data-reason="{{ e($pr->estimasi_unlock_reason) }}" 
-                                    data-tgl-selesai="{{ e($pr->estimasi_tanggal_selesai ?? date('Y-m-d')) }}" 
-                                    data-jam-selesai="{{ e($pr->estimasi_jam_selesai ? substr($pr->estimasi_jam_selesai, 0, 5) : '23:59') }}" 
-                                    data-route="{{ route('rencana-kerja.approve-extension', $pr->id) }}" 
-                                    onclick="window.openApproveExtensionModal(this)">
-                                <i class="bi bi-clock-history me-2 fs-6"></i>
-                                <span>Beri Perpanjangan Waktu</span>
-                            </button>
-                            @else
-                            <div class="text-center text-muted small py-1" style="font-size: 0.75rem;">
-                                <i class="bi bi-hourglass-split me-1 text-warning"></i> Menunggu Persetujuan Pimpinan
-                            </div>
-                            @endif
-                        </div>
+                        @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit()))
+                        <button type="button" class="btn btn-warning btn-sm text-dark fw-bold py-1 px-2.5" style="font-size: 0.8rem;"
+                                data-id="{{ $pr->id }}" 
+                                data-uraian="{{ e($pr->uraian_tugas) }}" 
+                                data-pegawai="{{ e($pr->user->name ?? '-') }}" 
+                                data-reason="{{ e($pr->estimasi_unlock_reason) }}" 
+                                data-tgl-selesai="{{ e($pr->estimasi_tanggal_selesai ?? date('Y-m-d')) }}" 
+                                data-jam-selesai="{{ e($pr->estimasi_jam_selesai ? substr($pr->estimasi_jam_selesai, 0, 5) : '23:59') }}" 
+                                data-route="{{ route('rencana-kerja.approve-extension', $pr->id) }}" 
+                                onclick="window.openApproveExtensionModal(this)">
+                            <i class="bi bi-clock-history me-1"></i> Beri Perpanjangan Waktu
+                        </button>
+                        @endif
                     </div>
                     @endforeach
                 </div>
@@ -149,109 +84,330 @@
     </div>
     @endif
 
-    <!-- Bottom Section: Checklist Tugas -->
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header-green d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
-                    <div class="header-title-text d-flex align-items-center gap-2 flex-wrap text-white py-1">
-                        <i class="bi bi-kanban-fill text-warning me-1" style="font-size: 1.15rem;"></i>
-                        <span class="fw-bold text-white fs-6 mb-0">Rencana Kerja</span>
-                        <span class="text-white d-none d-sm-inline">:</span>
-                        <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
-                            {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}
-                        </span>
-                    </div>
-                    <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-xl-0">
-                        <div class="filter-status-modern" title="Filter checklist berdasarkan status">
-                            <i class="bi bi-funnel-fill text-success" style="font-size: 0.85rem;"></i>
-                            <span class="small fw-semibold text-secondary text-nowrap d-none d-xxl-inline" style="font-size: 0.78rem;">Status:</span>
-                            <select id="filter-status" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark p-0 pe-3 shadow-none">
-                                <option value="">Semua Status</option>
-                                <option value="Selesai">Selesai</option>
-                                <option value="Proses">Proses / Berjalan</option>
-                                <option value="Belum Dimulai">Belum Dimulai</option>
-                            </select>
+    <!-- 1. TOP TABS (Sesuai Referensi Gambar) -->
+    <div class="d-flex align-items-center gap-4 mb-3 border-bottom px-2 pt-1 flex-wrap" style="background: transparent;">
+        @if(auth()->check() && (auth()->user()->isRektorOrSuperAdmin() || auth()->user()->isPimpinanUnit() || auth()->user()->subordinates()->exists()))
+            <a href="{{ route('pemantauan-staff.index') }}" class="tab-item-link text-decoration-none py-2 fw-semibold d-inline-flex align-items-center gap-2 text-secondary" style="font-size: 0.95rem; border-bottom: 2px solid transparent;">
+                <i class="bi bi-people"></i>
+                <span>Tim saya</span>
+                <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" id="nav-team-count">0</span>
+            </a>
+            <a href="javascript:void(0)" id="tab-btn-menunggu-verif" class="tab-item-link text-decoration-none py-2 fw-semibold d-inline-flex align-items-center gap-2 text-secondary" style="font-size: 0.95rem; border-bottom: 2px solid transparent;">
+                <i class="bi bi-file-earmark-check"></i>
+                <span>Menunggu verifikasi</span>
+                <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" id="nav-pending-count">{{ isset($pendingRequests) ? $pendingRequests->count() : 0 }}</span>
+            </a>
+        @endif
+        <a href="javascript:void(0)" class="tab-item-link active text-decoration-none py-2 fw-bold d-inline-flex align-items-center gap-2 text-dark" style="font-size: 0.95rem; border-bottom: 3px solid #046B26;">
+            <i class="bi bi-person"></i>
+            <span id="tab-active-name">{{ auth()->user()->name }}</span>
+        </a>
+    </div>
+
+    <!-- 2. SUB-HEADER CARD (Sesuai Referensi Gambar) -->
+    <div class="card shadow-sm border-0 mb-3 rounded-3 bg-white">
+        <div class="card-body p-3">
+            <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                <!-- Left Title & Metadata -->
+                <div class="d-flex align-items-center gap-2.5">
+                    <span class="p-2 rounded-3 bg-light border text-dark fs-5 flex-shrink-0 d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-clipboard2-check text-success"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1 fs-6 d-flex align-items-center gap-2 flex-wrap">
+                            <span>Catatan kegiatan - <span id="header-staff-name">{{ auth()->user()->name }}</span></span>
+                        </h5>
+                        <div class="text-secondary small fw-medium d-flex align-items-center gap-1.5 flex-wrap" style="font-size: 0.82rem;" id="header-staff-meta">
+                            <span id="meta-jabatan">{{ auth()->user()->jabatan ?: 'Staff' }}</span>
+                            <span>•</span>
+                            <span id="meta-unit">{{ auth()->user()->unit ?: 'Universitas Ibnu Sina' }}</span>
+                            <span>•</span>
+                            <span><span id="meta-total-kegiatan">0</span> kegiatan (<span id="meta-selesai-kegiatan">0</span> terverifikasi)</span>
+                            <span>•</span>
+                            <span id="meta-total-jam" class="fw-semibold text-dark">0 jam</span>
                         </div>
-                        <button type="button" id="btn-toggle-all-cards" class="btn btn-header-action btn-light-modern" title="Buka atau tutup semua rincian">
-                            <i class="bi bi-arrows-expand me-1.5 text-secondary"></i>
-                            <span id="toggle-all-text">Buka Semua</span>
-                        </button>
-                        <button type="button" id="btn-voice-rencanakerja" class="btn btn-header-action btn-voice-modern" title="Dengarkan / Perintah Suara">
-                            <i class="bi bi-volume-up-fill me-1.5"></i>
-                            <span>Suara</span>
-                        </button>
-                        <button type="button" class="btn btn-header-action btn-light-modern" data-bs-toggle="modal" data-bs-target="#modalImportExcel" title="Import Rencana Kerja dari Excel">
-                            <i class="bi bi-file-earmark-excel-fill text-success me-1.5"></i>
-                            <span>Import Excel</span>
-                        </button>
                     </div>
                 </div>
-                <div class="card-body p-3">
-                    <!-- Quick Status Filter Pills -->
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
-                        <div class="d-flex flex-wrap align-items-center gap-2" id="filter-status-pills">
-                            <button type="button" class="btn btn-sm btn-filter-pill active fw-semibold shadow-2xs" data-status="">
-                                <i class="bi bi-grid-fill me-1"></i> Semua (<span id="count-status-all">0</span>)
-                            </button>
-                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-success" data-status="Selesai">
-                                <i class="bi bi-check-circle-fill me-1 text-success"></i> Selesai (<span id="count-status-selesai">0</span>)
-                            </button>
-                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-warning" data-status="Proses">
-                                <i class="bi bi-hourglass-split me-1 text-warning"></i> Proses / Berjalan (<span id="count-status-proses">0</span>)
-                            </button>
-                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-secondary" data-status="Belum Dimulai">
-                                <i class="bi bi-dash-circle me-1 text-secondary"></i> Belum Dimulai (<span id="count-status-belum">0</span>)
-                            </button>
-                        </div>
+
+                <!-- Right Action Controls (Periode, Beri umpan balik, Evaluasi, Tambah, Import) -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <!-- Dropdown Periode -->
+                    <div>
+                        <select id="filter-periode" class="form-select form-select-sm bg-white border fw-semibold text-secondary shadow-none px-3 py-1.5" style="border-radius: 8px; font-size: 0.82rem; min-width: 160px; cursor: pointer;">
+                            <option value="all" selected>Sepanjang periode</option>
+                            <option value="today">Hari Ini</option>
+                            <option value="week">Minggu Ini</option>
+                            <option value="month">Bulan Ini</option>
+                            <option value="year">Tahun Ini</option>
+                        </select>
                     </div>
 
-                    <!-- Toolbar Pilih Semua (Select All) & Hapus Terpilih -->
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 px-3 mb-3 rounded-3 border border-light-subtle shadow-2xs" id="selectAllToolbarRencanaKerja" style="background: #f8fafc; border-left: 4px solid #15432d !important;">
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="checkbox" id="check-all" class="form-check-input my-0" style="cursor: pointer; width: 19px; height: 19px;" title="Pilih Semua">
-                            <label for="check-all" class="form-check-label fw-bold text-dark user-select-none mb-0 cursor-pointer" style="cursor: pointer; font-size: 0.88rem;">
-                                Pilih Semua (Select All)
-                            </label>
-                            <span id="selected-badge" class="badge bg-primary-subtle text-primary border border-primary-subtle d-none ms-1" style="font-size: 0.78rem;">
-                                <span id="selected-count">0</span> tugas dipilih
-                            </span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 d-none shadow-xs" style="border-radius: 6px; font-size: 0.82rem; padding: 6px 14px;">
-                                <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span class="selected-count-num">0</span>)
-                            </button>
-                        </div>
+                    <!-- Filter Jenis Kegiatan (Rutin, Panitia, Insidental) -->
+                    <div>
+                        <select id="filter-jenis" class="form-select form-select-sm bg-white border fw-semibold text-secondary shadow-none px-2.5 py-1.5" style="border-radius: 8px; font-size: 0.82rem; min-width: 135px; cursor: pointer;">
+                            <option value="all" selected>Semua Jenis</option>
+                            <option value="rutin">Rutin</option>
+                            <option value="panitia">Panitia</option>
+                            <option value="insidentil">Insidental</option>
+                        </select>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover w-100" id="rencanakerja-table">
-                            <thead>
-                                <tr>
-                                    <th width="3%" class="text-center align-middle">
-                                        <input type="checkbox" class="form-check-input" style="cursor: pointer; width: 18px; height: 18px;" title="Pilih Semua">
-                                    </th>
-                                    <th width="4%">No</th>
-                                    <th>Uraian Tugas & Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
+                    <!-- Tombol Beri Umpan Balik -->
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 shadow-2xs" data-bs-toggle="modal" data-bs-target="#modalBeriUmpanBalik" style="border-radius: 8px; font-size: 0.82rem;">
+                        <i class="bi bi-chat-left-text"></i>
+                        <span>Beri umpan balik</span>
+                    </button>
+
+                    <!-- Tombol Evaluasi -->
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 shadow-2xs" data-bs-toggle="modal" data-bs-target="#modalEvaluasiKinerja" style="border-radius: 8px; font-size: 0.82rem;">
+                        <i class="bi bi-check2-square"></i>
+                        <span>Evaluasi</span>
+                    </button>
+
+                    <!-- Tombol Tambah Kegiatan -->
+                    <a href="{{ route('rencana-kerja.create') }}" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-3 py-1.5 shadow-2xs text-white" style="background-color: #046B26; border-color: #046B26; border-radius: 8px; font-size: 0.82rem;">
+                        <i class="bi bi-plus-lg"></i>
+                        <span>Tambah</span>
+                    </a>
+
+                    <!-- Tombol Import Excel -->
+                    <button type="button" class="btn btn-sm btn-light border fw-semibold d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 shadow-2xs" data-bs-toggle="modal" data-bs-target="#modalImportExcel" style="border-radius: 8px; font-size: 0.82rem;">
+                        <i class="bi bi-file-earmark-excel text-success"></i>
+                        <span>Import</span>
+                    </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TABLE SECTION (Dark Navy Header & Date Row Grouping) -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden">
+        <div class="card-body p-0">
+            <!-- Toolbar Pilih Semua (Select All) & Hapus Terpilih -->
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 px-3 bg-light border-bottom" id="selectAllToolbarRencanaKerja">
+                <div class="d-flex align-items-center gap-2">
+                    <input type="checkbox" id="check-all" class="form-check-input my-0" style="cursor: pointer; width: 17px; height: 17px;" title="Pilih Semua">
+                    <label for="check-all" class="form-check-label fw-bold text-dark user-select-none mb-0 cursor-pointer" style="cursor: pointer; font-size: 0.84rem;">
+                        Pilih Semua (Select All)
+                    </label>
+                    <span id="selected-badge" class="badge bg-primary-subtle text-primary border border-primary-subtle d-none ms-1" style="font-size: 0.78rem;">
+                        <span id="selected-count">0</span> tugas dipilih
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 d-none shadow-xs" style="border-radius: 6px; font-size: 0.8rem; padding: 4px 12px;">
+                        <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span class="selected-count-num">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 w-100" id="rencanakerja-table">
+                    <thead style="background-color: #0b1a30; color: #ffffff;">
+                        <tr>
+                            <th width="35px" class="text-center align-middle" style="background-color: #0b1a30; color: #ffffff; border: none;">
+                                <input type="checkbox" class="form-check-input" style="cursor: pointer; width: 16px; height: 16px;" id="th-check-all">
+                            </th>
+                            <th width="115px" style="background-color: #0b1a30; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Jam</th>
+                            <th width="125px" style="background-color: #0b1a30; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Total jam kerja</th>
+                            <th style="background-color: #0b1a30; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Kegiatan</th>
+                            <th width="105px" style="background-color: #0b1a30; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Jenis</th>
+                            <th width="145px" style="background-color: #0b1a30; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Status</th>
+                            <th width="135px" class="text-center" style="background-color: #0b1a30; color: #ffffff; border: none; font-weight: 600; font-size: 0.82rem;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </section>
 
+<!-- MODAL 1: Detail Lengkap Kegiatan -->
+<div class="modal fade" id="modalDetailKegiatan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white py-3 border-bottom">
+                <h5 class="modal-title fs-6 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-card-checklist text-success"></i>
+                    <span>Rincian Catatan Kegiatan</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Uraian Tugas / Kegiatan:</label>
+                    <div id="detailTaskTitle" class="fs-6 fw-bold text-dark p-2 bg-light rounded border"></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1">Pegawai Penanggung Jawab:</label>
+                        <div id="detailTaskPegawai" class="small text-dark fw-semibold p-2 bg-light rounded border"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold mb-1">Kategori / Jenis:</label>
+                        <div id="detailTaskKategori" class="small text-dark fw-semibold p-2 bg-light rounded border"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold mb-1">Status Kegiatan:</label>
+                        <div id="detailTaskStatus" class="p-1"></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold mb-1"><i class="bi bi-calendar3 me-1"></i>Tanggal:</label>
+                        <div id="detailTaskTanggal" class="small text-dark p-2 bg-light rounded border"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold mb-1"><i class="bi bi-clock me-1"></i>Jam Kegiatan:</label>
+                        <div id="detailTaskJam" class="small text-dark p-2 bg-light rounded border"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold mb-1"><i class="bi bi-stopwatch me-1"></i>Total Jam Kerja:</label>
+                        <div id="detailTaskTotalJam" class="small text-dark fw-bold p-2 bg-light rounded border"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Hasil Kerja / Output yang Dicapai:</label>
+                    <div id="detailTaskHasil" class="small text-dark p-2 bg-light rounded border" style="min-height: 50px;"></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1">Rencana Tindak Lanjut:</label>
+                        <div id="detailTaskRTL" class="small text-secondary p-2 bg-light rounded border" style="min-height: 40px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1">Catatan / Arahan Pimpinan:</label>
+                        <div id="detailTaskSaran" class="small text-secondary p-2 bg-light rounded border" style="min-height: 40px;"></div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1"><i class="bi bi-people-fill text-info me-1"></i>Rekan Kerja:</label>
+                        <div id="detailTaskTagged" class="p-2 bg-light rounded border small"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1"><i class="bi bi-link-45deg text-primary me-1"></i>Dokumen / Tautan Bukti:</label>
+                        <div id="detailTaskBukti" class="p-2 bg-light rounded border"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: Beri Umpan Balik -->
+<div class="modal fade" id="modalBeriUmpanBalik" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white py-3 border-bottom">
+                <h5 class="modal-title fs-6 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-chat-left-quote text-success"></i>
+                    <span>Beri Umpan Balik Kinerja</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-secondary small mb-3">
+                    Kirim apresiasi, arahan, atau catatan evaluasi untuk staf yang sedang dipantau.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-dark">Penerima Umpan Balik:</label>
+                    <input type="text" class="form-control form-control-sm bg-light" id="feedback-receiver-name" readonly value="{{ auth()->user()->name }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-dark">Catatan / Umpan Balik:</label>
+                    <textarea class="form-control form-control-sm" id="feedback-message" rows="4" placeholder="Tuliskan umpan balik Anda secara konstruktif..."></textarea>
+                </div>
+                <div class="alert alert-light border small text-muted p-2.5 mb-0">
+                    <i class="bi bi-info-circle me-1 text-primary"></i> Anda juga dapat mengirimkan catatan ini langsung via WhatsApp ke staf bersangkutan.
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-success btn-sm px-3 fw-bold d-inline-flex align-items-center gap-1" id="btn-send-wa-feedback">
+                        <i class="bi bi-whatsapp"></i> Kirim ke WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 3: Evaluasi Kinerja -->
+<div class="modal fade" id="modalEvaluasiKinerja" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white py-3 border-bottom">
+                <h5 class="modal-title fs-6 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-check2-square text-success"></i>
+                    <span>Evaluasi &amp; Rekap Kinerja</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 bg-light border text-center">
+                            <div class="text-secondary small fw-semibold">Total Kegiatan</div>
+                            <div class="fs-4 fw-bold text-dark" id="eval-total-kegiatan">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 bg-success-subtle border border-success-subtle text-center">
+                            <div class="text-success small fw-semibold">Terverifikasi / Selesai</div>
+                            <div class="fs-4 fw-bold text-success" id="eval-selesai-kegiatan">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-semibold text-secondary">Rasio Kinerja Selesai:</span>
+                        <span class="small fw-bold text-dark" id="eval-percent-text">0%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" id="eval-progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between p-2.5 rounded-3 bg-light border">
+                    <span class="small fw-semibold text-secondary">Total Realisasi Jam Kerja:</span>
+                    <span class="small fw-bold text-dark fs-6" id="eval-total-jam">0 jam</span>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Tutup</button>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('rencana-kerja.export-excel') }}" class="btn btn-sm btn-outline-success fw-bold d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </a>
+                    <a href="{{ route('rencana-kerja.export-pdf') }}" class="btn btn-sm btn-outline-danger fw-bold d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Import Excel -->
 <div class="modal fade" id="modalImportExcel" tabindex="-1" aria-labelledby="modalImportExcelLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header text-white" style="background-color: #2d6a4f;">
-                <h5 class="modal-title fw-bold" id="modalImportExcelLabel">
-                    <i class="bi bi-file-earmark-excel me-2"></i> Import Rencana Kerja Excel
+            <div class="modal-header text-white" style="background-color: #046B26;">
+                <h5 class="modal-title fw-bold fs-6" id="modalImportExcelLabel">
+                    <i class="bi bi-file-earmark-excel me-2"></i> Import Catatan Kegiatan Excel
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -262,38 +418,26 @@
                         <div class="d-flex align-items-start gap-2 mb-2">
                             <i class="bi bi-check-circle-fill text-success fs-5 mt-0.5"></i>
                             <div style="font-size: 0.88rem;" class="text-dark">
-                                <span class="fw-bold text-success d-block mb-1">Sistem Dinamis Multi-Format:</span>
-                                Anda dapat mengunggah <strong>File Hasil "Export Laporan"</strong> secara langsung, atau menggunakan <strong>Template Standar Excel</strong>. Sistem akan mendeteksi formatnya secara otomatis.
+                                <span class="fw-bold text-success d-block mb-1">Format Excel Kompatibel:</span>
+                                Anda dapat mengunggah template kegiatan standar atau file laporan.
                             </div>
                         </div>
                         <div class="pt-2 border-top border-success-subtle d-flex align-items-center justify-content-between flex-wrap gap-2">
-                            <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Belum punya format?</span>
+                            <span class="text-muted small">Butuh template?</span>
                             <a href="{{ route('rencana-kerja.download-template') }}" class="btn btn-sm btn-outline-success fw-bold py-1 px-2.5" style="font-size: 0.82rem; border-radius: 6px;">
-                                <i class="bi bi-download me-1"></i> Download Template Standar
+                                <i class="bi bi-download me-1"></i> Download Template
                             </a>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-dark mb-2">Periode Akademik Default <span class="text-muted fw-normal" style="font-size: 0.85rem;">(Opsional, jika di Excel kosong)</span></label>
-                        <select name="periode_akademik_id" class="form-select bg-white">
-                            <option value="">-- Otomatis Sesuai Data Excel --</option>
-                            @if(isset($periodeAkademiks))
-                                @foreach($periodeAkademiks as $p)
-                                    <option value="{{ $p->id }}">{{ $p->formatted_ta ?? $p->nama_periode }}</option>
-                                @endforeach
-                            @endif
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark mb-2">Pilih File Excel (.xlsx, .xls, .csv)</label>
-                        <input type="file" name="file_excel" class="form-control bg-white" accept=".xlsx,.xls,.csv" required>
+                        <label class="form-label fw-bold text-dark mb-2 small">Pilih File Excel (.xlsx, .xls, .csv)</label>
+                        <input type="file" name="file_excel" class="form-control form-control-sm bg-white" accept=".xlsx,.xls,.csv" required>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success px-4 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4 text-white fw-bold" style="background-color: #046B26; border-color: #046B26;">
                         <i class="bi bi-cloud-arrow-up-fill me-1"></i> Import
                     </button>
                 </div>
@@ -306,8 +450,8 @@
 <div class="modal fade" id="modalQuickTag" tabindex="-1" aria-labelledby="modalQuickTagLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header text-white" style="background-color: #15432d;">
-                <h5 class="modal-title fw-bold" id="modalQuickTagLabel">
+            <div class="modal-header text-white" style="background-color: #046B26;">
+                <h5 class="modal-title fw-bold fs-6" id="modalQuickTagLabel">
                     <i class="bi bi-person-plus-fill me-2"></i> Tag Rekan Kerja
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -316,11 +460,11 @@
                 @csrf
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-secondary mb-1">Uraian Tugas</label>
-                        <div id="quick-tag-uraian" class="fw-semibold text-dark p-2 bg-light border rounded" style="font-size: 0.95rem; word-break: break-word;"></div>
+                        <label class="form-label fw-bold text-secondary small mb-1">Uraian Tugas:</label>
+                        <div id="quick-tag-uraian" class="fw-semibold text-dark p-2 bg-light border rounded small" style="word-break: break-word;"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="quick_tagged_users" class="form-label fw-bold text-dark mb-1">
+                        <label for="quick_tagged_users" class="form-label fw-bold text-dark small mb-1">
                             Pilih Rekan Kerja <span class="text-danger">*</span>
                         </label>
                         <select name="tagged_users[]" id="quick_tagged_users" class="form-select select2-multiple" multiple="multiple" style="width: 100%;">
@@ -328,12 +472,11 @@
                                 <option value="{{ $u->id }}">{{ $u->jabatan ?? '-' }} - {{ $u->name }}</option>
                             @endforeach
                         </select>
-                        <div class="form-text text-muted small mt-1">Pilih satu atau beberapa rekan kerja untuk pengerjaan tugas yang sama.</div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light d-flex justify-content-between">
-                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success px-4 text-white fw-bold btn-save-quick-tag" style="background-color: #15432d; border-color: #15432d; height: 38px;">
+                <div class="modal-footer bg-light py-2 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4 text-white fw-bold btn-save-quick-tag" style="background-color: #046B26; border-color: #046B26;">
                         <i class="bi bi-save me-1"></i> Simpan
                     </button>
                 </div>
@@ -341,217 +484,66 @@
         </div>
     </div>
 </div>
-@include('partials.milestone-scripts')
+
+<style>
+    /* Styling Sesuai Referensi Gambar */
+    .tab-item-link {
+        color: #64748b;
+        transition: all 0.2s ease;
+    }
+    .tab-item-link:hover {
+        color: #046B26;
+    }
+    .btn-icon-table {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-size: 13px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        transition: all 0.15s ease-in-out;
+        text-decoration: none;
+    }
+    .btn-icon-table:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+        color: #0f172a;
+    }
+    .btn-icon-table.btn-action-success:hover {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #046B26;
+    }
+    .btn-icon-table.btn-action-warning:hover {
+        background: #fffbeb;
+        border-color: #fde68a;
+        color: #d97706;
+    }
+    .group-date-header-row td {
+        background-color: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 8px 14px !important;
+    }
+    #rencanakerja-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    #rencanakerja-table td {
+        padding: 9px 12px;
+        font-size: 12.5px;
+    }
+</style>
+
 @endsection
 
 @push('scripts')
 <script>
     $(document).ready(function() {
-        $('#btn-voice-rencanakerja').on('click', function() {
-            let jabatanVal = $('#filter-jabatan').length ? $('#filter-jabatan').val() : '';
-            let voiceText = "Halaman Laporan Rencana Kerja untuk " + (jabatanVal ? "jabatan " + jabatanVal : "{{ auth()->user()->name }}") + ". ";
-
-            let taskItems = [];
-            if (typeof table !== 'undefined' && table.rows) {
-                let rowsData = table.rows({ search: 'applied' }).data();
-                for (let i = 0; i < rowsData.length; i++) {
-                    let rData = rowsData[i];
-                    if (rData && rData.voice_narration) {
-                        let parts = rData.voice_narration.split('|||');
-                        let uraianTitle = parts[0] || '';
-                        let detailsStr = parts[1] || '';
-                        taskItems.push("Uraian Kerja " + (i + 1) + ": " + uraianTitle + ". " + detailsStr);
-                    }
-                }
-            }
-
-            // Fallback to DOM parsing if DataTables rows are empty or initializing
-            if (taskItems.length === 0) {
-                $('#rencanakerja-table tbody tr').each(function(idx) {
-                    let row = $(this);
-                    let taskTitle = row.find('.text-dark.fw-semibold, .fw-semibold.text-dark, .lh-sm').first().text().trim();
-                    if (taskTitle) {
-                        let textContent = row.text();
-                        let no = idx + 1;
-                        let uraianStr = "Uraian Kerja " + no + ": " + taskTitle + ". ";
-
-                        // Estimasi
-                        let estStr = "Estimasi: ";
-                        let estMatch = textContent.match(/Estimasi Pelaksanaan:\s*([^\n\r\t]+)/i);
-                        if (estMatch && estMatch[1] && estMatch[1].trim() !== '-') {
-                            estStr += estMatch[1].trim() + ". ";
-                        } else {
-                            estStr += "Belum ada. ";
-                        }
-
-                        // Waktu Mulai
-                        let mulaiStr = "Waktu mulai: ";
-                        let mulaiMatch = textContent.match(/Waktu Mulai:\s*([^\n\r\t]+)/i);
-                        if (mulaiMatch && mulaiMatch[1] && mulaiMatch[1].trim() !== '-') {
-                            mulaiStr += mulaiMatch[1].trim() + ". ";
-                        } else {
-                            mulaiStr += "Belum dimulai. ";
-                        }
-
-                        // Waktu Selesai
-                        let selesaiStr = "Waktu selesai: ";
-                        let selesaiMatch = textContent.match(/Waktu Selesai:\s*([^\n\r\t]+)/i);
-                        if (selesaiMatch && selesaiMatch[1] && selesaiMatch[1].trim() !== '-') {
-                            selesaiStr += selesaiMatch[1].trim() + ". ";
-                        } else {
-                            selesaiStr += "Belum selesai. ";
-                        }
-
-                        // Durasi
-                        let durasiStr = "Durasi: ";
-                        let durasiMatch = textContent.match(/Total Durasi:\s*([^\n\r\t]+)/i);
-                        if (durasiMatch && durasiMatch[1] && durasiMatch[1].trim() !== '-') {
-                            durasiStr += durasiMatch[1].trim() + ". ";
-                        } else {
-                            durasiStr += "Belum ada. ";
-                        }
-
-                        // Target Durasi jika ada
-                        let targetMatch = textContent.match(/Target Durasi:\s*([^\n\r\t]+)/i);
-                        if (targetMatch && targetMatch[1] && targetMatch[1].trim() !== '-') {
-                            durasiStr += "Target durasi " + targetMatch[1].trim() + ". ";
-                        }
-
-                        // Analisis & Ketepatan Waktu Real
-                        let statusText = "Belum Dimulai";
-                        if (textContent.includes("Selesai")) statusText = "Selesai";
-                        else if (textContent.includes("Proses")) statusText = "Proses";
-
-                        let analisisStr = "Analisis: ";
-                        if (statusText === "Selesai") {
-                            // Cek apakah ada indikator terlambat dari perbandingan tanggal
-                            let isLate = false;
-                            if (selesaiMatch && selesaiMatch[1] && estMatch && estMatch[1]) {
-                                try {
-                                    let sParts = selesaiMatch[1].match(/(\d{2})\/(\d{2})\/(\d{4})/);
-                                    let eParts = estMatch[1].match(/(\d{2})\/(\d{2})\/(\d{4})/g);
-                                    if (sParts && eParts && eParts.length > 0) {
-                                        let lastEst = eParts[eParts.length - 1].match(/(\d{2})\/(\d{2})\/(\d{4})/);
-                                        if (lastEst) {
-                                            let sDate = new Date(sParts[3], sParts[2]-1, sParts[1]);
-                                            let eDate = new Date(lastEst[3], lastEst[2]-1, lastEst[1]);
-                                            if (sDate > eDate) isLate = true;
-                                        }
-                                    }
-                                } catch (e) {}
-                            }
-                            if (isLate) {
-                                analisisStr += "Selesai tetapi terlambat melewati estimasi target. ";
-                            } else {
-                                analisisStr += "Selesai tepat waktu. ";
-                            }
-                        } else if (statusText === "Proses") {
-                            analisisStr += "Masih berproses. ";
-                        } else {
-                            analisisStr += "Belum dikerjakan. ";
-                        }
-
-                        // Link Eksternal Only
-                        let hasLink = row.find('.bi-link-45deg, .bi-box-arrow-up-right').length > 0 || textContent.includes('Link External') || textContent.includes('http');
-                        let linkStr = "Link eksternal: " + (hasLink ? "Ada link eksternal." : "Tidak ada link eksternal.") + " ";
-
-                        taskItems.push(uraianStr + estStr + mulaiStr + selesaiStr + durasiStr + analisisStr + linkStr);
-                    }
-                });
-            }
-
-            if (taskItems.length > 0) {
-                voiceText += "Menampilkan " + taskItems.length + " uraian kerja: " + taskItems.join(" ");
-
-                // Combined Rekapitulasi Capaian Kinerja across ALL tasks in dataset
-                let totalCount = taskItems.length;
-                let selesaiCount = 0;
-                let prosesCount = 0;
-                let belumCount = 0;
-
-                if (typeof window.latestOverallRekap !== 'undefined' && window.latestOverallRekap) {
-                    totalCount = window.latestOverallRekap.total || taskItems.length;
-                    selesaiCount = window.latestOverallRekap.selesai || 0;
-                    prosesCount = window.latestOverallRekap.proses || 0;
-                    belumCount = window.latestOverallRekap.belum || 0;
-                } else if (typeof table !== 'undefined' && table.rows) {
-                    let rowsData = table.rows().data();
-                    totalCount = rowsData.length;
-                    for (let i = 0; i < rowsData.length; i++) {
-                        let rData = rowsData[i];
-                        let txt = rData ? (rData.task_details || '') + (rData.voice_narration || '') : '';
-                        if (txt.includes('Selesai')) selesaiCount++;
-                        else if (txt.includes('Proses')) prosesCount++;
-                        else belumCount++;
-                    }
-                }
-
-                let percent = totalCount > 0 ? Math.round((selesaiCount / totalCount) * 100) : 0;
-                let rekapStr = " Rekapitulasi keseluruhan capaian kinerja: Dari gabungan " + totalCount + " rencana kerja, sebanyak " + selesaiCount + " tugas telah selesai, " + prosesCount + " tugas sedang berproses, dan " + belumCount + " tugas belum dimulai. ";
-                rekapStr += "Tingkat capaian kinerja Anda secara keseluruhan mencapai " + percent + " persen. ";
-
-                if (percent >= 80) {
-                    rekapStr += "Capaian kinerja Anda sangat bagus dan sangat memuaskan! Pertahankan prestasi kinerja luar biasa ini!";
-                } else if (percent >= 50) {
-                    rekapStr += "Capaian kinerja Anda sudah baik, mari tingkatkan penyelesaian tugas-tugas yang masih berproses!";
-                } else {
-                    rekapStr += "Capaian kinerja Anda perlu peningkatan dan percepatan agar seluruh target tugas dapat rampung tepat waktu!";
-                }
-
-                voiceText += rekapStr;
-            } else {
-                voiceText += "Belum ada rincian uraian kerja yang ditampilkan pada tabel.";
-            }
-
-            toggleSpeech(voiceText, 'btn-voice-rencanakerja', 'Suara');
-        });
-
-        function toggleSpeech(text, btnId, defaultText) {
-            if (!('speechSynthesis' in window)) {
-                alert('Peramban Anda belum mendukung fitur narasi suara.');
-                return;
-            }
-
-            const btn = $('#' + btnId);
-
-            if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-                window.speechSynthesis.cancel();
-                btn.removeClass('btn-danger').addClass('btn-warning').html('<i class="bi bi-volume-up-fill me-1"></i> ' + defaultText);
-                return;
-            }
-
-            window.speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'id-ID';
-            utterance.rate = 0.95;
-
-            const voices = window.speechSynthesis.getVoices();
-            const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
-            if (idVoice) utterance.voice = idVoice;
-
-            utterance.onstart = function() {
-                btn.removeClass('btn-warning').addClass('btn-danger').html('<i class="bi bi-stop-fill me-1"></i> Stop');
-            };
-
-            utterance.onend = function() {
-                btn.removeClass('btn-danger').addClass('btn-warning').html('<i class="bi bi-volume-up-fill me-1"></i> ' + defaultText);
-            };
-
-            utterance.onerror = function() {
-                btn.removeClass('btn-danger').addClass('btn-warning').html('<i class="bi bi-volume-up-fill me-1"></i> ' + defaultText);
-            };
-
-            window.speechSynthesis.speak(utterance);
-        }
-
-        // Prevent Bootstrap 5 Modal focus trap from blocking Select2 search field input
-        $(document).on('focusin', function(e) {
-            if ($(e.target).closest('.select2-container').length) {
-                e.stopImmediatePropagation();
-            }
-        });
-
         if ($('#filter-jabatan').length) {
             $('#filter-jabatan').select2({
                 theme: 'bootstrap-5',
@@ -560,88 +552,16 @@
             });
         }
 
-        var table = $('#rencanakerja-table').DataTable({
-            processing: true,
-            serverSide: true,
-            stateSave: true,
-            ordering: false,
-            autoWidth: false,
-            ajax: {
-                url: "{{ app()->environment('production') ? str_replace('http:', 'https:', route('rencana-kerja.index')) : route('rencana-kerja.index') }}",
-                data: function(d) {
-                    if ($('#filter-jabatan').length) {
-                        d.jabatan = $('#filter-jabatan').val();
-                    }
-                    d.status = $('#filter-status').val();
-                }
-            },
-            columns: [
-                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-top pt-2', width: '28px' },
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-bold text-center align-top pt-2 small', width: '32px' },
-                { data: 'task_details', name: 'uraian_tugas', searchable: true, className: 'align-top p-0' },
-            ],
-            language: {
-                search: "Cari Tugas:",
-                lengthMenu: "Tampilkan _MENU_ data",
-                zeroRecords: "Belum ada rencana kerja / checklist tugas untuk filter ini",
-                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ tugas",
-                infoEmpty: "Tidak ada data"
-            },
-            initComplete: function() {
-                $('#selectAllToolbarRencanaKerja').insertBefore('#rencanakerja-table');
-            }
-        });
-
-        table.on('xhr.dt', function(e, settings, json, xhr) {
-            if (json && json.overall_rekap) {
-                window.latestOverallRekap = json.overall_rekap;
-                $('#count-status-all').text(json.overall_rekap.total || 0);
-                $('#count-status-selesai').text(json.overall_rekap.selesai || 0);
-                $('#count-status-proses').text(json.overall_rekap.proses || 0);
-                $('#count-status-belum').text(json.overall_rekap.belum || 0);
-            }
-        });
-
-        // Filter Status Dropdown Change
-        $('#filter-status').on('change', function() {
-            var val = $(this).val();
-            $('.btn-filter-pill').removeClass('active');
-            $('.btn-filter-pill[data-status="' + val + '"]').addClass('active');
-            table.ajax.reload();
-        });
-
-        // Filter Status Pills Click
-        $('.btn-filter-pill').on('click', function() {
-            var status = $(this).data('status');
-            $('.btn-filter-pill').removeClass('active');
-            $(this).addClass('active');
-            $('#filter-status').val(status);
-            table.ajax.reload();
-        });
-
-        if ($('#filter-jabatan').length) {
-            $('#filter-jabatan').on('change', function() {
-                var selectedText = $(this).find('option:selected').text();
-                var val = $(this).val();
-                let ownTitle = "{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}";
-
-                if (!val || val === '__own__') {
-                    $('#judul-jabatan').text(ownTitle);
-                } else if (val === '__all__' || val === 'all') {
-                    $('#judul-jabatan').text('Semua Jabatan');
-                } else {
-                    $('#judul-jabatan').text(selectedText.trim());
-                }
-
-                if ($('#export_jabatan').length) {
-                    $('#export_jabatan').val(val).trigger('change');
-                }
-
-                table.ajax.reload();
+        if ($('#quick_tagged_users').length) {
+            $('#quick_tagged_users').select2({
+                theme: 'bootstrap-5',
+                dropdownParent: $('#modalQuickTag'),
+                placeholder: "Cari & pilih rekan kerja...",
+                allowClear: true
             });
         }
 
-        // Multi Select & Bulk Delete State Management
+        // Multi Select State
         let selectedIds = new Set();
 
         function updateBulkDeleteButton() {
@@ -657,207 +577,193 @@
             }
         }
 
-        // Toggle check-all
-        $(document).on('change', '#check-all', function() {
+        // DataTables Init
+        var table = $('#rencanakerja-table').DataTable({
+            processing: true,
+            serverSide: true,
+            stateSave: true,
+            ordering: false,
+            autoWidth: false,
+            pageLength: 25,
+            ajax: {
+                url: "{{ app()->environment('production') ? str_replace('http:', 'https:', route('rencana-kerja.index')) : route('rencana-kerja.index') }}",
+                data: function(d) {
+                    d.jabatan = $('#filter-jabatan').length ? $('#filter-jabatan').val() : '';
+                    d.status = $('#filter-status').length ? $('#filter-status').val() : '';
+                    d.periode = $('#filter-periode').val();
+                    d.jenis = $('#filter-jenis').val();
+                }
+            },
+            columns: [
+                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-middle', width: '35px' },
+                { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'align-middle small text-secondary text-nowrap', width: '115px' },
+                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'align-middle small text-dark fw-medium text-nowrap', width: '125px' },
+                { data: 'kegiatan_details', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle' },
+                { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'align-middle', width: '105px' },
+                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'align-middle', width: '145px' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center align-middle', width: '135px' }
+            ],
+            language: {
+                search: "Cari Tugas:",
+                lengthMenu: "Tampilkan _MENU_ data",
+                zeroRecords: "Belum ada catatan kegiatan untuk filter ini",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ kegiatan",
+                infoEmpty: "Tidak ada data"
+            },
+            drawCallback: function(settings) {
+                var api = this.api();
+                var rows = api.rows({ page: 'current' }).nodes();
+                var data = api.rows({ page: 'current' }).data();
+                var lastDate = null;
+
+                // Group statistics accumulator
+                var groupStats = {};
+                data.each(function(row) {
+                    var d = row.date_group_label || 'Tanpa Tanggal';
+                    if (!groupStats[d]) {
+                        groupStats[d] = { count: 0, seconds: 0, draft: 0 };
+                    }
+                    groupStats[d].count++;
+                    groupStats[d].seconds += (row.durasi_detik || 0);
+                    if (row.raw_status === 'Draft' || row.raw_status === 'Belum Dimulai') {
+                        groupStats[d].draft++;
+                    }
+                });
+
+                // Insert group banner rows
+                data.each(function(row, i) {
+                    var group = row.date_group_label || 'Tanpa Tanggal';
+                    if (lastDate !== group) {
+                        var stats = groupStats[group] || { count: 1, seconds: 0, draft: 0 };
+                        var hours = stats.seconds > 0 ? (Math.round((stats.seconds / 3600) * 10) / 10).toLocaleString('id-ID') + ' jam' : '0 jam';
+                        var metaParts = [stats.count + ' kegiatan', hours];
+                        if (stats.draft > 0) {
+                            metaParts.push(stats.draft + ' draft');
+                        }
+
+                        var groupRow = $('<tr class="group-date-header-row">' +
+                            '<td colspan="7" class="py-2 px-3 border-top border-bottom" style="background-color: #f8fafc !important;">' +
+                                '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2">' +
+                                    '<div class="d-flex align-items-center gap-2 fw-bold text-dark" style="font-size: 0.86rem;">' +
+                                        '<i class="bi bi-calendar3 text-secondary"></i>' +
+                                        '<span>' + group + '</span>' +
+                                    '</div>' +
+                                    '<div class="text-secondary small fw-medium" style="font-size: 0.8rem;">' +
+                                        metaParts.join(' • ') +
+                                    '</div>' +
+                                '</div>' +
+                            '</td>' +
+                        '</tr>');
+
+                        $(rows).eq(i).before(groupRow);
+                        lastDate = group;
+                    }
+                });
+
+                // Sync checkboxes
+                let totalOnPage = $('.select-row-checkbox').length;
+                let checkedOnPage = 0;
+                $('.select-row-checkbox').each(function() {
+                    let val = parseInt($(this).val());
+                    if (selectedIds.has(val)) {
+                        $(this).prop('checked', true);
+                        checkedOnPage++;
+                    } else {
+                        $(this).prop('checked', false);
+                    }
+                });
+                $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+                $('#th-check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+                updateBulkDeleteButton();
+            }
+        });
+
+        // XHR Response handler to update Header and Statistics
+        table.on('xhr.dt', function(e, settings, json, xhr) {
+            if (json && json.overall_rekap) {
+                var r = json.overall_rekap;
+                $('#meta-total-kegiatan').text(r.total || 0);
+                $('#meta-selesai-kegiatan').text(r.selesai || 0);
+                $('#meta-total-jam').text(r.total_jam_label || '0 jam');
+
+                if (r.staff_name) {
+                    $('#tab-active-name').text(r.staff_name);
+                    $('#header-staff-name').text(r.staff_name);
+                    $('#feedback-receiver-name').val(r.staff_name);
+                }
+                if (r.staff_jabatan) $('#meta-jabatan').text(r.staff_jabatan);
+                if (r.staff_unit) $('#meta-unit').text(r.staff_unit);
+                if (r.team_count !== undefined) $('#nav-team-count').text(r.team_count);
+                if (r.pending_verif_count !== undefined) $('#nav-pending-count').text(r.pending_verif_count);
+
+                // Update Evaluasi Modal
+                $('#eval-total-kegiatan').text(r.total || 0);
+                $('#eval-selesai-kegiatan').text(r.selesai || 0);
+                $('#eval-total-jam').text(r.total_jam_label || '0 jam');
+                $('#eval-percent-text').text((r.percent || 0) + '%');
+                $('#eval-progress-bar').css('width', (r.percent || 0) + '%');
+            }
+        });
+
+        // Filters Change
+        $('#filter-periode, #filter-jenis').on('change', function() {
+            table.ajax.reload();
+        });
+
+        if ($('#filter-jabatan').length) {
+            $('#filter-jabatan').on('change', function() {
+                table.ajax.reload();
+            });
+        }
+
+        // Tab "Menunggu Verifikasi" Click Filter
+        $('#tab-btn-menunggu-verif').on('click', function(e) {
+            e.preventDefault();
+            if ($('#wrapper-pending-requests').length) {
+                $('html, body').animate({
+                    scrollTop: $("#wrapper-pending-requests").offset().top - 120
+                }, 400);
+            }
+        });
+
+        // Toggle Check All
+        $(document).on('change', '#check-all, #th-check-all', function() {
             let isChecked = $(this).is(':checked');
+            $('#check-all, #th-check-all').prop('checked', isChecked);
             $('.select-row-checkbox').prop('checked', isChecked);
             $('.select-row-checkbox').each(function() {
                 let val = parseInt($(this).val());
-                if (isChecked) {
-                    selectedIds.add(val);
-                } else {
-                    selectedIds.delete(val);
-                }
+                if (isChecked) selectedIds.add(val);
+                else selectedIds.delete(val);
             });
             updateBulkDeleteButton();
         });
 
-        // Individual row checkbox change
+        // Individual Checkbox Change
         $(document).on('change', '.select-row-checkbox', function() {
             let val = parseInt($(this).val());
-            if ($(this).is(':checked')) {
-                selectedIds.add(val);
-            } else {
-                selectedIds.delete(val);
-            }
+            if ($(this).is(':checked')) selectedIds.add(val);
+            else selectedIds.delete(val);
 
             let totalOnPage = $('.select-row-checkbox').length;
             let checkedOnPage = $('.select-row-checkbox:checked').length;
-            $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
-            $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
-
+            $('#check-all, #th-check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
             updateBulkDeleteButton();
         });
 
-    function initTinyMCEEditors() {
-        if (typeof tinymce !== 'undefined') {
-            tinymce.remove('.tinymce-editor');
-            tinymce.init({
-                selector: '.tinymce-editor',
-                height: 150,
-                menubar: false,
-                plugins: 'lists link table',
-                toolbar: 'undo redo | bold italic underline | bullist numlist | removeformat',
-                content_style: 'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 13px; }',
-                setup: function (editor) {
-                    editor.on('change blur', function () {
-                        editor.save();
-                    });
-                }
-            });
-        }
-    }
-
-    // Sync checkbox status on table redraw (pagination, search, reload)
-    table.on('draw', function() {
-        let totalOnPage = $('.select-row-checkbox').length;
-        let checkedOnPage = 0;
-
-        $('.select-row-checkbox').each(function() {
-            let val = parseInt($(this).val());
-            if (selectedIds.has(val)) {
-                $(this).prop('checked', true);
-                checkedOnPage++;
-            } else {
-                $(this).prop('checked', false);
-            }
-        });
-
-        $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
-        $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
-
-        if ($('#selectAllToolbarRencanaKerja').length && $('#rencanakerja-table').length) {
-            $('#selectAllToolbarRencanaKerja').insertBefore('#rencanakerja-table');
-        }
-
-        updateBulkDeleteButton();
-        setTimeout(initTinyMCEEditors, 150);
-    });
-
-    // Re-init TinyMCE when a task collapse is shown to ensure correct rendering dimensions
-    $(document).on('shown.bs.collapse', function (e) {
-        if (typeof tinymce !== 'undefined') {
-            $(e.target).find('.tinymce-editor').each(function() {
-                let id = $(this).attr('id');
-                if (id) {
-                    tinymce.remove('#' + id);
-                    tinymce.init({
-                        selector: '#' + id,
-                        height: 150,
-                        menubar: false,
-                        plugins: 'lists link table',
-                        toolbar: 'undo redo | bold italic underline | bullist numlist | removeformat',
-                        content_style: 'body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 13px; }',
-                        setup: function (editor) {
-                            editor.on('change blur', function () {
-                                editor.save();
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    });
-
-    // Toggle All Task Details (Buka Semua / Tutup Semua)
-    let allTaskCardsExpanded = false;
-    $('#btn-toggle-all-cards').on('click', function() {
-        allTaskCardsExpanded = !allTaskCardsExpanded;
-        if (allTaskCardsExpanded) {
-            $('.collapse[id^="collapseTask_"]').collapse('show');
-            $('#toggle-all-text').text('Tutup Semua');
-            $(this).find('i').removeClass('bi-arrows-expand').addClass('bi-arrows-collapse');
-        } else {
-            $('.collapse[id^="collapseTask_"]').collapse('hide');
-            $('#toggle-all-text').text('Buka Semua');
-            $(this).find('i').removeClass('bi-arrows-collapse').addClass('bi-arrows-expand');
-        }
-    });
-
-        // Quick Tag Modal Handlers
-        let currentQuickTagId = null;
-
-        if ($('#quick_tagged_users').length) {
-            $('#quick_tagged_users').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('#modalQuickTag'),
-                placeholder: "Cari & pilih rekan kerja...",
-                allowClear: true
-            });
-        }
-
-        $(document).on('click', '.btn-quick-tag', function() {
-            let btn = $(this);
-            currentQuickTagId = btn.data('id');
-            let uraian = btn.data('uraian');
-            let tags = btn.data('tags'); // Array of user IDs
-
-            $('#quick-tag-uraian').text(uraian);
-            
-            // Set select values
-            $('#quick_tagged_users').val(tags).trigger('change');
-
-            $('#modalQuickTag').modal('show');
-        });
-
-        $('#form-quick-tag').on('submit', function(e) {
-            e.preventDefault();
-            if (!currentQuickTagId) return;
-
-            let form = $(this);
-            let btn = form.find('.btn-save-quick-tag');
-            let formData = form.serialize();
-
-            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...');
-
-            $.ajax({
-                url: "{{ url('rencana-kerja') }}/" + currentQuickTagId + "/update-tags",
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i> Simpan');
-                    if (response.success) {
-                        $('#modalQuickTag').modal('hide');
-                        Swal.fire({
-                            toast: true,
-                            position: 'top-end',
-                            icon: 'success',
-                            title: response.message,
-                            showConfirmButton: false,
-                            timer: 4000,
-                            timerProgressBar: true
-                        });
-                        table.ajax.reload(null, false);
-                    }
-                },
-                error: function(xhr) {
-                    btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i> Simpan');
-                    let msg = 'Terjadi kesalahan saat memperbarui rekan kerja.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        msg = xhr.responseJSON.message;
-                    }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: msg
-                    });
-                }
-            });
-        });
-
-        // Handle Bulk Delete Click
+        // Bulk Delete Handler
         $(document).on('click', '#btn-bulk-delete', function() {
             let ids = Array.from(selectedIds);
             if (ids.length === 0) return;
 
             Swal.fire({
-                title: 'Hapus Rencana Kerja Terpilih?',
-                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' data rencana kerja terpilih ini secara permanen?',
+                title: 'Hapus Kegiatan Terpilih?',
+                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' kegiatan terpilih secara permanen?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmColor: '#d33',
                 cancelColor: '#6c757d',
-                confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Ya, Hapus ' + ids.length + ' Data',
+                confirmButtonText: 'Ya, Hapus ' + ids.length + ' Data',
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -876,217 +782,214 @@
                                     icon: 'success',
                                     title: response.message,
                                     showConfirmButton: false,
-                                    timer: 4000,
-                                    timerProgressBar: true
+                                    timer: 3500
                                 });
                                 selectedIds.clear();
                                 updateBulkDeleteButton();
-                                $('#check-all').prop('checked', false).prop('indeterminate', false);
-                                $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                                $('#check-all, #th-check-all').prop('checked', false);
+                                table.ajax.reload(null, false);
                             }
                         },
                         error: function(xhr) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal',
-                                text: xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat menghapus data terpilih.'
-                            });
+                            Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data terpilih.', 'error');
                         }
                     });
                 }
             });
         });
-    });
 
-    $(document).on('click', '.btn-start-timer', function(e) {
-        e.preventDefault();
-        var id = $(this).data('id');
-        if (id) window.startTimer(id);
-    });
+        // Detail Modal Viewer (Eye Icon)
+        $(document).on('click', '.btn-detail-task', function() {
+            var rowData = table.row($(this).closest('tr')).data();
+            if (rowData && rowData.task_json) {
+                var d = rowData.task_json;
+                $('#detailTaskTitle').text(d.uraian_tugas || '-');
+                $('#detailTaskPegawai').text(d.user_name + ' (' + d.user_jabatan + ' - ' + d.user_unit + ')');
+                $('#detailTaskTanggal').text(d.tanggal || '-');
+                $('#detailTaskJam').text(d.jam || '-');
+                $('#detailTaskTotalJam').text(d.total_jam || '-');
+                $('#detailTaskKategori').text(d.kategori || '-');
+                $('#detailTaskStatus').html('<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">' + (d.status || '-') + '</span>');
+                $('#detailTaskHasil').text(d.hasil_kerja || '-');
+                $('#detailTaskRTL').text(d.rencana_tindak_lanjut || '-');
+                $('#detailTaskSaran').text(d.saran_pimpinan || '-');
 
-    $(document).on('click', '.btn-stop-timer', function(e) {
-        e.preventDefault();
-        var id = $(this).data('id');
-        if (id) window.stopTimer(id);
-    });
+                if (d.file_url) {
+                    $('#detailTaskBukti').html('<a href="' + d.file_url + '" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-paperclip me-1"></i>Unduh Bukti Lampiran</a>');
+                } else if (d.url_external) {
+                    $('#detailTaskBukti').html('<a href="' + d.url_external + '" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right me-1"></i>Buka Tautan Bukti</a>');
+                } else {
+                    $('#detailTaskBukti').html('<span class="text-muted small">Tidak ada bukti lampiran.</span>');
+                }
 
-    $(document).on('click', '.btn-delete-timer', function(e) {
-        e.preventDefault();
-        var id = $(this).data('id');
-        if (id) window.deleteRencanaKerja(id);
-    });
-
-    // Handle inline file and url_external upload form submit
-    $(document).on('submit', '.form-inline-upload', function(e) {
-        e.preventDefault();
-        if (typeof tinymce !== 'undefined') {
-            tinymce.triggerSave();
-        }
-        var form = $(this);
-        var id = form.data('id');
-        var btn = form.find('.btn-simpan-inline');
-        var formData = new FormData(this);
-        formData.append('_token', "{{ csrf_token() }}");
-
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>');
-
-        $.ajax({
-            url: "{{ url('rencana-kerja') }}/" + id + "/upload-attachment",
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function(response) {
-                btn.prop('disabled', false).html('<i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan');
-                if (response.success) {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: response.message,
-                        showConfirmButton: false,
-                        timer: 4000,
-                        timerProgressBar: true
+                var taggedHtml = '';
+                if (d.tagged_users && d.tagged_users.length > 0) {
+                    taggedHtml = '<ul class="list-unstyled mb-0">';
+                    d.tagged_users.forEach(function(tu) {
+                        taggedHtml += '<li class="mb-1"><i class="bi bi-person me-1"></i>' + tu.name + ' <span class="text-muted">(' + tu.jabatan + ')</span></li>';
                     });
-                    $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                    taggedHtml += '</ul>';
+                } else {
+                    taggedHtml = '<span class="text-muted small">Tidak ada rekan kerja yang di-tag.</span>';
                 }
-            },
-            error: function(xhr) {
-                btn.prop('disabled', false).html('<i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan');
-                var msg = 'Terjadi kesalahan saat menyimpan berkas/link.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    msg = xhr.responseJSON.message;
-                }
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Menyimpan',
-                    text: msg
-                });
+                $('#detailTaskTagged').html(taggedHtml);
+
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetailKegiatan'));
+                modal.show();
             }
+        });
+
+        // Quick Tag Modal Handlers
+        let currentQuickTagId = null;
+        window.openQuickTagModal = function(id, uraian) {
+            currentQuickTagId = id;
+            $('#quick-tag-uraian').text(uraian);
+            var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalQuickTag'));
+            modal.show();
+        };
+
+        $('#form-quick-tag').on('submit', function(e) {
+            e.preventDefault();
+            if (!currentQuickTagId) return;
+
+            let form = $(this);
+            let btn = form.find('.btn-save-quick-tag');
+            let formData = form.serialize();
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>');
+
+            $.ajax({
+                url: "{{ url('rencana-kerja') }}/" + currentQuickTagId + "/update-tags",
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i> Simpan');
+                    if (response.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('modalQuickTag')).hide();
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: response.message,
+                            showConfirmButton: false,
+                            timer: 3500
+                        });
+                        table.ajax.reload(null, false);
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i> Simpan');
+                    Swal.fire('Gagal', 'Terjadi kesalahan saat menyimpan rekan kerja.', 'error');
+                }
+            });
+        });
+
+        // WhatsApp Feedback Sender
+        $('#btn-send-wa-feedback').on('click', function() {
+            var msg = $('#feedback-message').val();
+            if (!msg.trim()) {
+                Swal.fire('Peringatan', 'Silakan tuliskan catatan umpan balik terlebih dahulu.', 'warning');
+                return;
+            }
+            var targetName = $('#feedback-receiver-name').val();
+            var text = encodeURIComponent("Halo " + targetName + ",\nBerikut umpan balik terkait kegiatan Anda:\n\n" + msg);
+            window.open("https://wa.me/?text=" + text, "_blank");
         });
     });
 
-    // Get current laptop time formatted as HH:mm:ss and date YYYY-MM-DD
-    window.getLaptopDateTime = function() {
-        var now = new Date();
-        var year = now.getFullYear();
-        var month = String(now.getMonth() + 1).padStart(2, '0');
-        var day = String(now.getDate()).padStart(2, '0');
-        var hours = String(now.getHours()).padStart(2, '0');
-        var minutes = String(now.getMinutes()).padStart(2, '0');
-        var seconds = String(now.getSeconds()).padStart(2, '0');
-
-        return {
-            date: year + '-' + month + '-' + day,
-            time: hours + ':' + minutes + ':' + seconds
-        };
-    };
-
-    window.startTimer = function(id) {
-        var dt = window.getLaptopDateTime();
-        
+    // Quick Complete Task Handler
+    window.quickCompleteTask = function(id) {
         Swal.fire({
-            title: 'Konfirmasi Pelaksanaan Tugas',
-            text: 'Waktu mulai pelaksanaan tugas akan dicatat secara otomatis sesuai waktu sistem Anda (' + dt.time + ')',
+            title: 'Tandai Selesai?',
+            text: 'Apakah kegiatan ini telah selesai dilaksanakan?',
             icon: 'question',
             showCancelButton: true,
-            confirmColor: '#15432d',
-            cancelColor: '#6c757d',
-            confirmButtonText: '<i class="bi bi-play-fill"></i> Ya, Mulai Pelaksanaan',
-            cancelButtonText: 'Batal'
+            confirmButtonText: 'Ya, Selesai',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#046B26'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.ajax({
-                    url: "{{ url('rencana-kerja') }}/" + id + "/start",
-                    type: 'POST',
-                    data: {
-                        "_token": "{{ csrf_token() }}",
-                        "client_time": dt.time,
-                        "client_date": dt.date
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                toast: true,
-                                position: 'top-end',
-                                icon: 'success',
-                                title: response.message,
-                                showConfirmButton: false,
-                                timer: 4000,
-                                timerProgressBar: true
-                            });
-                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: 'Terjadi kesalahan saat mencatat waktu mulai.'
-                        });
-                    }
-                });
-            }
-        });
-    };
+                var now = new Date();
+                var time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+                var date = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
-    window.stopTimer = function(id) {
-        var dt = window.getLaptopDateTime();
-
-        Swal.fire({
-            title: 'Konfirmasi Penyelesaian Tugas',
-            text: 'Waktu penyelesaian tugas akan dicatat secara otomatis sesuai waktu sistem Anda (' + dt.time + ')',
-            icon: 'question',
-            showCancelButton: true,
-            confirmColor: '#8b0000',
-            cancelColor: '#6c757d',
-            confirmButtonText: '<i class="bi bi-stop-fill"></i> Ya, Selesaikan Tugas',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
                 $.ajax({
                     url: "{{ url('rencana-kerja') }}/" + id + "/stop",
                     type: 'POST',
                     data: {
                         "_token": "{{ csrf_token() }}",
-                        "client_time": dt.time,
-                        "client_date": dt.date
+                        "client_time": time,
+                        "client_date": date
                     },
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                toast: true,
-                                position: 'top-end',
-                                icon: 'success',
-                                title: response.message,
-                                showConfirmButton: false,
-                                timer: 4000,
-                                timerProgressBar: true
-                            });
-                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
-                        }
-                    },
-                    error: function(xhr) {
+                    success: function(res) {
                         Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: 'Terjadi kesalahan saat mencatat waktu selesai.'
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Kegiatan berhasil ditandai selesai.',
+                            showConfirmButton: false,
+                            timer: 3500
                         });
+                        $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                    },
+                    error: function() {
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menyelesaikan kegiatan.', 'error');
                     }
                 });
             }
         });
     };
 
+    // Reopen Task Handler
+    window.reopenTask = function(btn) {
+        var id = $(btn).data('id');
+        var uraian = $(btn).data('uraian');
+
+        Swal.fire({
+            title: 'Buka Kunci Tugas?',
+            text: 'Tugas "' + uraian + '" akan dibuka kembali agar dapat dikerjakan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Buka Kunci',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#ffc107'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "{{ url('rencana-kerja') }}/" + id + "/reopen",
+                    type: 'POST',
+                    data: {
+                        "_token": "{{ csrf_token() }}"
+                    },
+                    success: function(res) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Tugas berhasil dibuka kunci.',
+                            showConfirmButton: false,
+                            timer: 3500
+                        });
+                        $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                    },
+                    error: function() {
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat membuka kunci tugas.', 'error');
+                    }
+                });
+            }
+        });
+    };
+
+    // Delete Single Task Handler
     window.deleteRencanaKerja = function(id) {
         Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: "Data rencana kerja ini akan dihapus permanen!",
+            title: 'Hapus Kegiatan?',
+            text: "Kegiatan ini akan dihapus secara permanen!",
             icon: 'warning',
             showCancelButton: true,
             confirmColor: '#d33',
-            cancelColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
+            cancelColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -1097,36 +1000,22 @@
                         "_token": "{{ csrf_token() }}"
                     },
                     success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                toast: true,
-                                position: 'top-end',
-                                icon: 'success',
-                                title: response.message,
-                                showConfirmButton: false,
-                                timer: 4000,
-                                timerProgressBar: true
-                            });
-                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
-                        }
-                    },
-                    error: function(xhr) {
                         Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: 'Terjadi kesalahan saat menghapus data.'
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Kegiatan berhasil dihapus.',
+                            showConfirmButton: false,
+                            timer: 3500
                         });
+                        $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                    },
+                    error: function() {
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data.', 'error');
                     }
                 });
             }
         });
     };
 </script>
-@if(isset($dataTable))
-    @if(app()->environment('production'))
-        {!! str_replace('http:', 'https:', $dataTable->scripts()) !!}
-    @else
-        {!! $dataTable->scripts() !!}
-    @endif
-@endif
 @endpush
