@@ -175,28 +175,7 @@ class RencanaKerjaController extends Controller
                     return \App\Helpers\KinerjaWaktuHelper::hitungDetikRealisasi($row);
                 })
                 ->addColumn('kegiatan', function ($row) {
-                    $html = '<div class="d-flex flex-column gap-1 py-0.5 text-start">';
-                    $html .= '<div class="fw-bold text-dark fs-6" style="font-size: 0.88rem !important; line-height: 1.35;">' . e($row->uraian_tugas) . '</div>';
-                    
-                    $subItems = [];
-                    if ($row->user) {
-                        $subItems[] = '<span class="text-secondary small"><i class="bi bi-person-fill text-muted me-1"></i>' . e($row->user->name) . '</span>';
-                    }
-                    if ($row->taggedUsers->count() > 0) {
-                        $taggedNames = $row->taggedUsers->pluck('name')->implode(', ');
-                        $subItems[] = '<span class="text-info small fw-medium" title="' . e($taggedNames) . '"><i class="bi bi-people-fill me-1"></i>' . e(\Illuminate\Support\Str::limit($taggedNames, 35)) . '</span>';
-                    }
-                    if ($row->file) {
-                        $subItems[] = '<a href="' . asset('storage/' . $row->file) . '" target="_blank" class="text-primary text-decoration-none small fw-semibold"><i class="bi bi-link-45deg me-1"></i>Bukti</a>';
-                    } elseif ($row->url_external) {
-                        $subItems[] = '<a href="' . e($row->url_external) . '" target="_blank" class="text-primary text-decoration-none small fw-semibold"><i class="bi bi-link-45deg me-1"></i>Bukti</a>';
-                    }
-
-                    if (!empty($subItems)) {
-                        $html .= '<div class="d-flex flex-wrap align-items-center gap-2 mt-0.5">' . implode('<span class="text-muted small">•</span>', $subItems) . '</div>';
-                    }
-                    $html .= '</div>';
-                    return $html;
+                    return '<div class="fw-bold text-dark fs-6 py-0.5 text-start" style="font-size: 0.88rem !important; line-height: 1.35;">' . e($row->uraian_tugas) . '</div>';
                 })
                 ->addColumn('jenis', function ($row) {
                     $kat = strtolower($row->kategori ?? 'rutin');
