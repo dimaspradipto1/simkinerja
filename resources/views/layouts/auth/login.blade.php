@@ -390,10 +390,10 @@
                 <!-- Left Column: Quote / Motto Card -->
                 <div class="col-lg-6 col-xl-5 d-none d-lg-block ps-0">
                     <div class="hero-quote-card">
-                        <h2 class="hero-quote-title">Because Stays Should Feel Like Destinations</h2>
+                        <h2 class="hero-quote-title">Mewujudkan Profesionalisme &amp; Kinerja Staff Unggul</h2>
                         <p class="hero-quote-desc">
-                            Sistem Informasi Manajemen Kinerja Terpadu untuk monitoring rencana kerja, tridharma perguruan
-                            tinggi, absensi kepanitiaan, serta evaluasi kinerja dosen dan tenaga kependidikan.
+                            Sistem Informasi Manajemen Kinerja Terpadu untuk monitoring rencana kerja, pencatatan kegiatan harian,
+                            absensi kinerja, serta evaluasi akuntabilitas seluruh staff dan tenaga kependidikan Universitas Ibnu Sina.
                         </p>
                     </div>
 
