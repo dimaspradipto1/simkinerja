@@ -425,6 +425,7 @@
                     @php
                         $isSettingsActive = request()->routeIs('user.*') || 
                                             request()->routeIs('periode-akademik.*') || 
+                                            request()->routeIs('triwulan.*') || 
                                             request()->routeIs('kategori.*') ||
                                             request()->routeIs('hirarki.*') ||
                                             request()->routeIs('sk-kepanitiaan.*') ||
@@ -440,6 +441,7 @@
                             <li><a class="dropdown-item {{ request()->routeIs('sk-kepanitiaan.*') ? 'active' : '' }}" href="{{ route('sk-kepanitiaan.index') }}"><span>SK Kepanitiaan</span></a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}"><span>Kelola Pengguna</span></a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('periode-akademik.*') ? 'active' : '' }}" href="{{ route('periode-akademik.index') }}"><span>Periode Akademik</span></a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('triwulan.*') ? 'active' : '' }}" href="{{ route('triwulan.index') }}"><span>Triwulan (TW)</span></a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('kategori.*') ? 'active' : '' }}" href="{{ route('kategori.index') }}"><span>Kategori Kegiatan</span></a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('pengaturan-pesan-whatsapp.*') ? 'active' : '' }}" href="{{ route('pengaturan-pesan-whatsapp.create') }}"><span>Pesan WhatsApp</span></a></li>
                             <li><a class="dropdown-item {{ request()->routeIs('hirarki.*') ? 'active' : '' }}" href="{{ route('hirarki.index') }}"><span>Struktur OTK</span></a></li>

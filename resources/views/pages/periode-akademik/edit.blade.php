@@ -31,6 +31,16 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-12">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $periodeAkademik->is_active) ? 'checked' : '' }}>
+                                <label class="form-check-label fw-semibold text-dark" for="is_active">
+                                    Jadikan sebagai Periode Akademik Aktif Utama
+                                </label>
+                                <div class="form-text text-muted small">Jika diaktifkan, periode ini akan terpilih secara otomatis pada setiap formulir kegiatan / rencana kerja.</div>
+                            </div>
+                        </div>
+
                         <div class="col-12 mt-4">
                             <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Perbarui</button>
                             <a href="{{ route('periode-akademik.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Kembali</a>

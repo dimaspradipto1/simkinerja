@@ -66,7 +66,11 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('user/bulk-delete', [UserController::class, 'bulkDelete'])->name('user.bulk-delete');
     Route::put('user/{user}/password', [UserController::class, 'updatePassword'])->name('user.update-password');
     Route::resource('user', UserController::class);
+    Route::post('periode-akademik/{periode_akademik}/set-active', [PeriodeAkademikController::class, 'setActive'])->name('periode-akademik.set-active');
     Route::resource('periode-akademik', PeriodeAkademikController::class);
+    Route::post('triwulan/{triwulan}/set-active', [\App\Http\Controllers\TriwulanController::class, 'setActive'])->name('triwulan.set-active');
+    Route::post('triwulan/generate-standard', [\App\Http\Controllers\TriwulanController::class, 'generateStandard'])->name('triwulan.generate-standard');
+    Route::resource('triwulan', \App\Http\Controllers\TriwulanController::class);
     Route::resource('kategori', KategoriController::class);
     Route::get('pengaturan-pesan-whatsapp', [PengaturanPesanWhatsappController::class, 'create'])
         ->name('pengaturan-pesan-whatsapp.create');

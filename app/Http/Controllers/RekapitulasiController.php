@@ -28,8 +28,8 @@ class RekapitulasiController extends Controller
             return redirect()->route('login');
         }
 
-        $periodeAkademiks = PeriodeAkademik::orderBy('nama_periode', 'desc')->get();
-        $defaultPeriode = PeriodeAkademik::first();
+        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('nama_periode', 'desc')->get();
+        $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
         $usersWithJabatan = $this->getDirectSubordinatesQuery($authUser)->get();

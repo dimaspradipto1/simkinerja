@@ -43,6 +43,54 @@
     @endif
 
     <script>
+        function setActivePeriode(id, name) {
+            Swal.fire({
+                title: 'Jadikan Periode Aktif?',
+                text: "Periode " + name + " akan dijadikan periode akademik aktif utama pada sistem.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmColor: '#198754',
+                cancelColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-check2-circle me-1"></i> Ya, Aktifkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ url('periode-akademik') }}/" + id + "/set-active",
+                        type: 'POST',
+                        data: {
+                            "_token": "{{ csrf_token() }}"
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    timer: 1800,
+                                    showConfirmButton: false
+                                });
+                                $('#periodeakademik-table').DataTable().ajax.reload();
+                            } else {
+                                Swal.fire({
+                                    title: 'Gagal!',
+                                    text: response.message || 'Gagal mengaktifkan periode.',
+                                    icon: 'error'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                title: 'Gagal!',
+                                text: xhr.responseJSON?.message || 'Terjadi kesalahan saat mengaktifkan periode.',
+                                icon: 'error'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
         function deletePeriode(id) {
             Swal.fire({
                 title: 'Apakah Anda yakin?',

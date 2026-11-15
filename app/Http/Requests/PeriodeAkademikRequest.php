@@ -26,6 +26,7 @@ class PeriodeAkademikRequest extends FormRequest
 
         return [
             'nama_periode' => 'required|string|max:255|unique:periode_akademiks,nama_periode,' . $id,
+            'is_active' => 'nullable|boolean',
         ];
     }
 

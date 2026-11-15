@@ -291,8 +291,8 @@ class KegiatanController extends Controller
         }
 
         $jabatanList = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->distinct()->orderBy('jabatan')->pluck('jabatan');
-        $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
-        $defaultPeriode = PeriodeAkademik::first();
+        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
+        $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
         $usersWithJabatan = User::whereNotNull('jabatan')->where('jabatan', '!=', '')->orderBy('name')->get();
         $users = $usersWithJabatan;
@@ -472,9 +472,9 @@ class KegiatanController extends Controller
     {
         $authUser = Auth::user();
         $users = User::orderBy('name')->get();
-        $periodeAkademiks = PeriodeAkademik::orderBy('id', 'asc')->get();
+        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
         $kategoris = Kategori::orderBy('id', 'asc')->get();
-        $defaultPeriode = PeriodeAkademik::first();
+        $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
         $pendingRequests = collect([]);

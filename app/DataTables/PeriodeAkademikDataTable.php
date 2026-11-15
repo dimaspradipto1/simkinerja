@@ -23,15 +23,24 @@ class PeriodeAkademikDataTable extends DataTable
     {
         return (new EloquentDataTable($query))
             ->addIndexColumn()
+            ->addColumn('status', function ($row) {
+                if ($row->is_active) {
+                    return '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.78rem;"><i class="bi bi-check-circle-fill me-1"></i>Aktif</span>';
+                }
+                return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">Tidak Aktif</span>';
+            })
             ->addColumn('action', function ($row) {
                 $editUrl = route('periode-akademik.edit', $row->id);
-                $btn = '<div class="d-inline-flex gap-1 flex-nowrap align-items-center">';
+                $btn = '<div class="d-inline-flex gap-1.5 flex-nowrap align-items-center">';
+                if (!$row->is_active) {
+                    $btn .= '<button type="button" onclick="setActivePeriode(' . $row->id . ', \'' . addslashes($row->formatted_ta) . '\')" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 text-nowrap" title="Jadikan Periode Aktif"><i class="bi bi-check2-circle"></i> Aktifkan</button>';
+                }
                 $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-pencil-square"></i> Edit</a>';
                 $btn .= '<button type="button" onclick="deletePeriode(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-trash"></i> Hapus</button>';
                 $btn .= '</div>';
                 return $btn;
             })
-            ->rawColumns(['action']);
+            ->rawColumns(['status', 'action']);
     }
 
     /**
@@ -41,7 +50,7 @@ class PeriodeAkademikDataTable extends DataTable
      */
     public function query(PeriodeAkademik $model): QueryBuilder
     {
-        return $model->newQuery()->orderBy('id', 'asc');
+        return $model->newQuery()->orderByDesc('is_active')->orderBy('id', 'asc');
     }
 
     /**
@@ -86,6 +95,12 @@ class PeriodeAkademikDataTable extends DataTable
                 ->width('4%')
                 ->addClass('text-center align-middle'),
             Column::make('nama_periode')->title('Nama Periode')->addClass('text-nowrap align-middle'),
+            Column::computed('status')
+                ->title('Status')
+                ->orderable(false)
+                ->searchable(false)
+                ->width('12%')
+                ->addClass('text-center text-nowrap align-middle'),
             Column::computed('action')
                 ->title('Aksi')
                 ->exportable(false)

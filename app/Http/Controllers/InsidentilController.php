@@ -530,7 +530,7 @@ class InsidentilController extends Controller
             $pendingRequests = $pendingRequestsQuery->with(['user', 'periodeAkademik'])->latest('estimasi_unlock_requested_at')->get();
         }
 
-        $defaultPeriode = PeriodeAkademik::first();
+        $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
         return view('pages.insidentil.index', compact('periodeAkademiks', 'users', 'usersWithJabatan', 'extensionSupervisors', 'pendingRequests', 'defaultPeriodeId'));

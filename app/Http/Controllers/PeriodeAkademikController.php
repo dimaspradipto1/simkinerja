@@ -32,6 +32,10 @@ class PeriodeAkademikController extends Controller
     public function store(PeriodeAkademikRequest $request)
     {
         $validated = $request->validated();
+        $validated['is_active'] = $request->boolean('is_active');
+        if ($validated['is_active']) {
+            PeriodeAkademik::query()->update(['is_active' => false]);
+        }
         PeriodeAkademik::create($validated);
 
         Alert::success('Berhasil', 'Periode Akademik berhasil ditambahkan.');
@@ -61,9 +65,34 @@ class PeriodeAkademikController extends Controller
     public function update(PeriodeAkademikRequest $request, string $id)
     {
         $periodeAkademik = PeriodeAkademik::findOrFail($id);
-        $periodeAkademik->update($request->validated());
+        $validated = $request->validated();
+        $validated['is_active'] = $request->boolean('is_active');
+        if ($validated['is_active']) {
+            PeriodeAkademik::where('id', '!=', $id)->update(['is_active' => false]);
+        }
+        $periodeAkademik->update($validated);
 
         Alert::success('Berhasil', 'Data periode akademik berhasil diperbarui.');
+        return redirect()->route('periode-akademik.index');
+    }
+
+    /**
+     * Jadikan periode akademik sebagai periode aktif
+     */
+    public function setActive(string $id)
+    {
+        $periodeAkademik = PeriodeAkademik::findOrFail($id);
+        PeriodeAkademik::where('id', '!=', $id)->update(['is_active' => false]);
+        $periodeAkademik->update(['is_active' => true]);
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Periode Akademik ' . $periodeAkademik->formatted_ta . ' berhasil diaktifkan.',
+            ]);
+        }
+
+        Alert::success('Berhasil', 'Periode Akademik ' . $periodeAkademik->formatted_ta . ' berhasil diaktifkan.');
         return redirect()->route('periode-akademik.index');
     }
 
