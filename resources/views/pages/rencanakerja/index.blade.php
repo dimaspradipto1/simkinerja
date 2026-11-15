@@ -13,15 +13,15 @@
     #rencanakerja-table thead,
     body.menu-page-rencana-kerja #rencanakerja-table > thead {
         display: table-header-group !important;
-        background-color: #1e293b !important;
+        background-color: #046B26 !important;
     }
     #rencanakerja-table thead th,
     body.menu-page-rencana-kerja #rencanakerja-table > thead > tr > th {
-        background-color: #1e293b !important;
+        background-color: #046B26 !important;
         color: #ffffff !important;
         font-weight: 600 !important;
         font-size: 0.85rem !important;
-        border: 1px solid #334155 !important;
+        border: 1px solid #03541e !important;
         padding: 12px 10px !important;
         vertical-align: middle !important;
         letter-spacing: 0.2px;
@@ -41,6 +41,30 @@
         border-top: 1px solid #cbd5e1 !important;
         border-bottom: 1px solid #cbd5e1 !important;
         padding: 9px 14px !important;
+    }
+    body.menu-page-rencana-kerja .card-header-green {
+        background: linear-gradient(135deg, #046B26 0%, #03541e 100%) !important;
+    }
+    body.menu-page-rencana-kerja .btn-filter-pill.active {
+        background-color: #046B26 !important;
+        border-color: #046B26 !important;
+        color: #ffffff !important;
+    }
+    body.menu-page-rencana-kerja .pagination .page-item.active .page-link {
+        background-color: #046B26 !important;
+        border-color: #046B26 !important;
+        color: #ffffff !important;
+    }
+    body.menu-page-rencana-kerja .btn-voice-modern {
+        background: #FED802 !important;
+        color: #046B26 !important;
+        font-weight: 700 !important;
+        border: none !important;
+        box-shadow: 0 1px 3px rgba(4, 107, 38, 0.25) !important;
+    }
+    body.menu-page-rencana-kerja .btn-voice-modern:hover {
+        background: #ebd002 !important;
+        color: #03541e !important;
     }
 </style>
 
@@ -254,14 +278,14 @@
 
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle mb-0 w-100" id="rencanakerja-table" style="border: 1px solid #cbd5e1; border-collapse: collapse;">
-                            <thead style="background-color: #1e293b !important; color: #ffffff !important;">
+                            <thead style="background-color: #046B26 !important; color: #ffffff !important;">
                                 <tr>
-                                    <th width="115px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Jam</th>
-                                    <th width="125px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Total jam kerja</th>
-                                    <th class="align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 14px;">Kegiatan</th>
-                                    <th width="110px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Jenis</th>
-                                    <th width="125px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Status</th>
-                                    <th width="145px" class="text-center align-middle" style="background-color: #1e293b !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #334155; padding: 12px 10px;">Aksi</th>
+                                    <th width="115px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Jam</th>
+                                    <th width="125px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Total jam kerja</th>
+                                    <th class="align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 14px;">Kegiatan</th>
+                                    <th width="110px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Jenis</th>
+                                    <th width="125px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Status</th>
+                                    <th width="145px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -322,7 +346,7 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success px-4 text-white fw-bold" style="background-color: #15432d; border-color: #15432d;">
+                    <button type="submit" class="btn btn-success px-4 text-white fw-bold" style="background-color: #046B26; border-color: #046B26;">
                         <i class="bi bi-cloud-arrow-up-fill me-1"></i> Import
                     </button>
                 </div>
@@ -335,7 +359,7 @@
 <div class="modal fade" id="modalQuickTag" tabindex="-1" aria-labelledby="modalQuickTagLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header text-white" style="background-color: #15432d;">
+            <div class="modal-header text-white" style="background-color: #046B26;">
                 <h5 class="modal-title fw-bold" id="modalQuickTagLabel">
                     <i class="bi bi-person-plus-fill me-2"></i> Tag Rekan Kerja
                 </h5>
@@ -362,7 +386,7 @@
                 </div>
                 <div class="modal-footer bg-light d-flex justify-content-between">
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success px-4 text-white fw-bold btn-save-quick-tag" style="background-color: #15432d; border-color: #15432d; height: 38px;">
+                    <button type="submit" class="btn btn-success px-4 text-white fw-bold btn-save-quick-tag" style="background-color: #046B26; border-color: #046B26; height: 38px;">
                         <i class="bi bi-save me-1"></i> Simpan
                     </button>
                 </div>
@@ -375,9 +399,9 @@
 <div class="modal fade" id="modalDetailRencanaKerja" tabindex="-1" aria-labelledby="modalDetailRencanaKerjaLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header text-white" style="background-color: #15432d;">
+            <div class="modal-header text-white" style="background-color: #046B26;">
                 <h5 class="modal-title fs-6 fw-bold text-white d-flex align-items-center gap-2" id="modalDetailRencanaKerjaLabel">
-                    <i class="bi bi-card-checklist text-warning"></i>
+                    <i class="bi bi-card-checklist" style="color: #FED802 !important;"></i>
                     <span>Rincian Kegiatan</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1221,7 +1245,7 @@
             text: 'Waktu mulai pelaksanaan tugas akan dicatat secara otomatis sesuai waktu sistem Anda (' + dt.time + ')',
             icon: 'question',
             showCancelButton: true,
-            confirmColor: '#15432d',
+            confirmColor: '#046B26',
             cancelColor: '#6c757d',
             confirmButtonText: '<i class="bi bi-play-fill"></i> Ya, Mulai Pelaksanaan',
             cancelButtonText: 'Batal'

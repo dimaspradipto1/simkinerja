@@ -19,7 +19,7 @@ class MilestoneHelper
             return $m->total_durasi_detik;
         });
 
-        $html = '<div class="milestone-widget-container mt-2 p-2 px-3 rounded-2 bg-white border shadow-xs w-100" style="border-left: 4px solid #15432d !important; max-width: 100%; box-sizing: border-box;" data-task-id="' . $milestonableId . '" data-task-type="' . e($milestonableType) . '">';
+        $html = '<div class="milestone-widget-container mt-2 p-2 px-3 rounded-2 bg-white border shadow-xs w-100" style="border-left: 4px solid #046B26 !important; max-width: 100%; box-sizing: border-box;" data-task-id="' . $milestonableId . '" data-task-type="' . e($milestonableType) . '">';
         
         // Header Row: Title, Progress & Total Waktu
         $html .= '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-1 border-bottom">';
@@ -58,7 +58,7 @@ class MilestoneHelper
                 $statusBadgeText = $m->status;
 
                 if ($m->status === 'Selesai') {
-                    $nodeBg = '#15432d';
+                    $nodeBg = '#046B26';
                     $nodeColor = '#ffffff';
                     $nodeRing = '#a7f3d0';
                     $nodeIcon = 'bi-check-lg';
