@@ -28,9 +28,19 @@
                             <span class="text-muted small">{{ $category }}</span>
                         </div>
                     </div>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
-                        <i class="bi bi-check-circle-fill me-1"></i>Layanan Aktif
-                    </span>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-{{ $roleBadgeColor }}-subtle text-{{ $roleBadgeColor }} border border-{{ $roleBadgeColor }}-subtle px-2.5 py-1.5 rounded-pill small">
+                            <i class="bi bi-shield-lock me-1"></i>Role: {{ $roleBadge }}
+                        </span>
+                        @if($hasAccess)
+                            <span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill small">
+                                <i class="bi bi-check-circle-fill me-1"></i>Akses Anda Aktif
+                            </span>
+                        @endif
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
+                            <i class="bi bi-check-circle-fill me-1"></i>Layanan Aktif
+                        </span>
+                    </div>
                 </div>
                 <div class="card-body pt-3">
                     <p class="text-secondary mb-4" style="line-height: 1.6;">
@@ -109,23 +119,23 @@
                 <div class="list-group list-group-flush small">
                     <a href="{{ route('layanan.lpti.manajemen') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'manajemen' ? 'active' : '' }}">
                         <span class="d-flex align-items-center gap-2"><i class="bi bi-briefcase"></i>Manajemen LPTI</span>
-                        <i class="bi bi-chevron-right" style="font-size: 10px;"></i>
+                        <span class="badge {{ $key === 'manajemen' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border border-primary-subtle' }} rounded-pill" style="font-size: 10px;">Kepala LPTI</span>
                     </a>
                     <a href="{{ route('layanan.lpti.pengembangan-si') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pengembangan-si' ? 'active' : '' }}">
                         <span class="d-flex align-items-center gap-2"><i class="bi bi-window-stack"></i>Pengembangan Sistem Informasi</span>
-                        <i class="bi bi-chevron-right" style="font-size: 10px;"></i>
+                        <span class="badge {{ $key === 'pengembangan-si' ? 'bg-white text-info' : 'bg-info-subtle text-info border border-info-subtle' }} rounded-pill" style="font-size: 10px;">Divisi SI</span>
                     </a>
                     <a href="{{ route('layanan.lpti.infrastruktur') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'infrastruktur' ? 'active' : '' }}">
                         <span class="d-flex align-items-center gap-2"><i class="bi bi-diagram-3"></i>Pengelolaan Infrastruktur &amp; Jaringan</span>
-                        <i class="bi bi-chevron-right" style="font-size: 10px;"></i>
+                        <span class="badge {{ $key === 'infrastruktur' ? 'bg-white text-warning' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' }} rounded-pill" style="font-size: 10px;">Divisi Jaringan</span>
                     </a>
                     <a href="{{ route('layanan.lpti.pemeliharaan') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pemeliharaan' ? 'active' : '' }}">
                         <span class="d-flex align-items-center gap-2"><i class="bi bi-code-slash"></i>Pengembangan &amp; Pemeliharaan Aplikasi</span>
-                        <i class="bi bi-chevron-right" style="font-size: 10px;"></i>
+                        <span class="badge {{ $key === 'pemeliharaan' ? 'bg-white text-danger' : 'bg-danger-subtle text-danger border border-danger-subtle' }} rounded-pill" style="font-size: 10px;">Programmer</span>
                     </a>
                     <a href="{{ route('layanan.lpti.dukungan-teknis') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'dukungan-teknis' ? 'active' : '' }}">
                         <span class="d-flex align-items-center gap-2"><i class="bi bi-headset"></i>Layanan Dukungan Teknis</span>
-                        <i class="bi bi-chevron-right" style="font-size: 10px;"></i>
+                        <span class="badge {{ $key === 'dukungan-teknis' ? 'bg-white text-success' : 'bg-success-subtle text-success border border-success-subtle' }} rounded-pill" style="font-size: 10px;">Troubleshooting</span>
                     </a>
                 </div>
             </div>

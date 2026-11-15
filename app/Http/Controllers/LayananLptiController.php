@@ -3,24 +3,50 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LayananLptiController extends Controller
 {
     public function index()
     {
+        $user = Auth::user();
+        if (!$user) return redirect()->route('login');
+
+        $userJabatan = strtoupper($user->jabatan ?? '');
+        if (str_contains($userJabatan, 'TROUBLESHOOTING') || str_contains($userJabatan, 'HELPDESK')) {
+            return redirect()->route('layanan.lpti.dukungan-teknis');
+        }
+        if (str_contains($userJabatan, 'SISTEM INFORMASI') || str_contains($userJabatan, 'PENGEMBANGAN SISTEM')) {
+            return redirect()->route('layanan.lpti.pengembangan-si');
+        }
+        if (str_contains($userJabatan, 'INFRASTRUKTUR') || str_contains($userJabatan, 'JARINGAN')) {
+            return redirect()->route('layanan.lpti.infrastruktur');
+        }
+        if (str_contains($userJabatan, 'PROGRAMMER') || str_contains($userJabatan, 'PEMELIHARAAN')) {
+            return redirect()->route('layanan.lpti.pemeliharaan');
+        }
+
         return redirect()->route('layanan.lpti.manajemen');
     }
 
     public function manajemen()
     {
+        $user = Auth::user();
+        $userJabatan = strtoupper($user->jabatan ?? '');
+        $hasAccess = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+
         return view('pages.layanan-lpti.index', [
             'key' => 'manajemen',
             'title' => 'Manajemen LPTI',
+            'roleAkses' => 'Kepala LPTI & Administrator',
+            'roleBadge' => 'Kepala LPTI',
+            'roleBadgeColor' => 'primary',
+            'hasAccess' => $hasAccess,
             'icon' => 'bi-briefcase',
             'iconColor' => 'text-primary',
             'description' => 'Tata kelola, perencanaan strategis, dan manajemen administrasi operasional Lembaga Pengembangan Teknologi Informasi (LPTI) Universitas Ibnu Sina.',
             'category' => 'Manajemen & Administrasi LPTI',
-            'pic' => 'Kepala LPTI & Divisi Tata Usaha',
+            'pic' => 'Dr. MUHAMMAD ROPIANTO, S.Kom., M.Kom (Kepala LPTI)',
             'services' => [
                 'Perencanaan dan Kebijakan Tata Kelola TI Kampus',
                 'Penyusunan Anggaran dan Rencana Kerja Tahunan LPTI',
@@ -32,14 +58,23 @@ class LayananLptiController extends Controller
 
     public function pengembanganSi()
     {
+        $user = Auth::user();
+        $userJabatan = strtoupper($user->jabatan ?? '');
+        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $hasAccess = $isLeader || str_contains($userJabatan, 'SISTEM INFORMASI') || str_contains($userJabatan, 'PENGEMBANGAN SISTEM');
+
         return view('pages.layanan-lpti.index', [
             'key' => 'pengembangan-si',
             'title' => 'Pengembangan Sistem Informasi dan Aplikasi',
+            'roleAkses' => 'Divisi Pengembangan Sistem Informasi',
+            'roleBadge' => 'Divisi SI',
+            'roleBadgeColor' => 'info',
+            'hasAccess' => $hasAccess,
             'icon' => 'bi-window-stack',
             'iconColor' => 'text-info',
             'description' => 'Layanan perancangan, analisis kebutuhan, dan pengembangan sistem informasi terintegrasi untuk mendukung kegiatan tridharma dan operasional universitas.',
             'category' => 'Divisi Pengembangan Sistem Informasi',
-            'pic' => 'Divisi Sistem Informasi dan Programmer',
+            'pic' => 'ANDI MUAMAR, S.Kom (Divisi Pengembangan Sistem Informasi & Aplikasi)',
             'services' => [
                 'Pengembangan Sistem Informasi Baru Sesuai Kebutuhan Unit',
                 'Integrasi API Antarsistem (PDDikti, Feeder, Bank, SIM Kinerja)',
@@ -51,14 +86,23 @@ class LayananLptiController extends Controller
 
     public function infrastruktur()
     {
+        $user = Auth::user();
+        $userJabatan = strtoupper($user->jabatan ?? '');
+        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $hasAccess = $isLeader || str_contains($userJabatan, 'INFRASTRUKTUR') || str_contains($userJabatan, 'JARINGAN');
+
         return view('pages.layanan-lpti.index', [
             'key' => 'infrastruktur',
             'title' => 'Pengelolaan Infrastruktur dan Jaringan',
+            'roleAkses' => 'Divisi Infrastruktur, Jaringan & Keamanan',
+            'roleBadge' => 'Divisi Jaringan',
+            'roleBadgeColor' => 'warning',
+            'hasAccess' => $hasAccess,
             'icon' => 'bi-diagram-3',
             'iconColor' => 'text-warning',
             'description' => 'Pengelolaan dan pemeliharaan pusat data (data center), server kampus, konektivitas internet, hotspot Wi-Fi, dan keamanan jaringan universitas.',
             'category' => 'Divisi Infrastruktur, Jaringan & Keamanan',
-            'pic' => 'Network Administrator & Staff Jaringan',
+            'pic' => 'DICKY ASHRUL IBRAHIM, S.Kom (Divisi Infrastruktur & Jaringan)',
             'services' => [
                 'Pemeliharaan Server Kampus, Cloud VPS & Database Server',
                 'Pengelolaan Bandwidth dan Akses Internet / Wi-Fi Kampus',
@@ -70,14 +114,23 @@ class LayananLptiController extends Controller
 
     public function pemeliharaan()
     {
+        $user = Auth::user();
+        $userJabatan = strtoupper($user->jabatan ?? '');
+        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $hasAccess = $isLeader || str_contains($userJabatan, 'PEMELIHARAAN') || str_contains($userJabatan, 'APLIKASI') || str_contains($userJabatan, 'PROGRAMMER') || str_contains($userJabatan, 'DATABASE');
+
         return view('pages.layanan-lpti.index', [
             'key' => 'pemeliharaan',
             'title' => 'Pengembangan dan Pemeliharaan Aplikasi',
+            'roleAkses' => 'Programmer & Pemeliharaan Aplikasi',
+            'roleBadge' => 'Programmer',
+            'roleBadgeColor' => 'danger',
+            'hasAccess' => $hasAccess,
             'icon' => 'bi-code-slash',
             'iconColor' => 'text-danger',
             'description' => 'Pemeliharaan berkala, perbaikan bug, patching keamanan, serta pembaruan fitur pada seluruh aplikasi dan portal web di lingkungan Universitas Ibnu Sina.',
             'category' => 'Divisi Pemeliharaan Aplikasi & Database',
-            'pic' => 'Programmer & Database Administrator',
+            'pic' => 'Programmer & Database Administrator LPTI',
             'services' => [
                 'Perbaikan Error / Bug Sistem Operasional Kampus',
                 'Pembaruan Versi dan Optimasi Kinerja Database',
@@ -89,14 +142,23 @@ class LayananLptiController extends Controller
 
     public function dukunganTeknis()
     {
+        $user = Auth::user();
+        $userJabatan = strtoupper($user->jabatan ?? '');
+        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $hasAccess = $isLeader || str_contains($userJabatan, 'TROUBLESHOOTING') || str_contains($userJabatan, 'HELPDESK') || str_contains($userJabatan, 'DUKUNGAN TEKNIS');
+
         return view('pages.layanan-lpti.index', [
             'key' => 'dukungan-teknis',
             'title' => 'Layanan Dukungan Teknis',
+            'roleAkses' => 'Staff Layanan Troubleshooting & Helpdesk',
+            'roleBadge' => 'Troubleshooting',
+            'roleBadgeColor' => 'success',
+            'hasAccess' => $hasAccess,
             'icon' => 'bi-headset',
             'iconColor' => 'text-success',
             'description' => 'Helpdesk dan dukungan teknis langsung untuk civitas akademika, meliputi troubleshooting perangkat, instalasi software resmi, dan akun pengguna.',
             'category' => 'Helpdesk & Layanan Troubleshooting',
-            'pic' => 'Staff Layanan Troubleshooting & Helpdesk',
+            'pic' => 'Rusdiyanto, S.Kom (Staff Layanan Troubleshooting & Helpdesk)',
             'services' => [
                 'Troubleshooting Perangkat Komputer / Laptop Staff dan Dosen',
                 'Bantuan Akun Resmi Kampus (Email, SIAKAD, SIM Kinerja, Wi-Fi)',

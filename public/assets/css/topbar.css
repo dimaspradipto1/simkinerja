@@ -502,7 +502,7 @@ a:hover {
   border: 1px solid #ebeef4 !important;
   border-top: 3px solid #046B26 !important;
   border-radius: 0 8px 8px 8px !important;
-  min-width: 300px !important;
+  min-width: 480px !important;
   box-shadow: 0px 10px 30px rgba(1, 41, 112, 0.15) !important;
   background-color: #ffffff !important;
   display: none;
@@ -516,6 +516,10 @@ a:hover {
   font-weight: 500;
   color: #1e293b !important;
   white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
 }
 
 .topbar-nav .dropdown-submenu-menu .dropdown-item:hover,
