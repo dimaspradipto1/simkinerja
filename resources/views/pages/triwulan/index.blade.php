@@ -148,17 +148,17 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-inline-flex gap-1.5 flex-nowrap align-items-center">
+                                            <div class="d-inline-flex align-items-center justify-content-center flex-nowrap" style="gap: 6px;">
                                                 @if(!$item->is_active)
-                                                    <button type="button" onclick="setActiveTriwulan({{ $item->id }}, '{{ $item->nama }} ({{ $item->rentang_bulan }})')" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1" title="Aktifkan Triwulan Ini">
-                                                        <i class="bi bi-check2-circle"></i> Aktifkan
+                                                    <button type="button" onclick="setActiveTriwulan({{ $item->id }}, '{{ $item->nama }} ({{ $item->rentang_bulan }})')" class="btn btn-outline-success btn-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Aktifkan Triwulan Ini">
+                                                        <i class="bi bi-check2-circle fs-6"></i>
                                                     </button>
                                                 @endif
-                                                <a href="{{ route('triwulan.edit', $item->id) }}" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center gap-1" title="Edit Triwulan">
-                                                    <i class="bi bi-pencil-square"></i> Edit
+                                                <a href="{{ route('triwulan.edit', $item->id) }}" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Edit Triwulan">
+                                                    <i class="bi bi-pencil-square fs-6"></i>
                                                 </a>
-                                                <button type="button" onclick="deleteTriwulan({{ $item->id }})" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1" title="Hapus Triwulan">
-                                                    <i class="bi bi-trash"></i> Hapus
+                                                <button type="button" onclick="deleteTriwulan({{ $item->id }})" class="btn btn-danger btn-sm text-white d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Hapus Triwulan">
+                                                    <i class="bi bi-trash fs-6"></i>
                                                 </button>
                                             </div>
                                         </td>

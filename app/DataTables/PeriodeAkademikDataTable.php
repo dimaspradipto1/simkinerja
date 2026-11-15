@@ -31,12 +31,12 @@ class PeriodeAkademikDataTable extends DataTable
             })
             ->addColumn('action', function ($row) {
                 $editUrl = route('periode-akademik.edit', $row->id);
-                $btn = '<div class="d-inline-flex gap-1.5 flex-nowrap align-items-center">';
+                $btn = '<div class="d-inline-flex align-items-center justify-content-center flex-nowrap" style="gap: 6px;">';
                 if (!$row->is_active) {
-                    $btn .= '<button type="button" onclick="setActivePeriode(' . $row->id . ', \'' . addslashes($row->formatted_ta) . '\')" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1 text-nowrap" title="Jadikan Periode Aktif"><i class="bi bi-check2-circle"></i> Aktifkan</button>';
+                    $btn .= '<button type="button" onclick="setActivePeriode(' . $row->id . ', \'' . addslashes($row->formatted_ta) . '\')" class="btn btn-outline-success btn-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Jadikan Periode Aktif"><i class="bi bi-check2-circle fs-6"></i></button>';
                 }
-                $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-pencil-square"></i> Edit</a>';
-                $btn .= '<button type="button" onclick="deletePeriode(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-trash"></i> Hapus</button>';
+                $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Edit Periode"><i class="bi bi-pencil-square fs-6"></i></a>';
+                $btn .= '<button type="button" onclick="deletePeriode(' . $row->id . ')" class="btn btn-danger btn-sm text-white d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Hapus Periode"><i class="bi bi-trash fs-6"></i></button>';
                 $btn .= '</div>';
                 return $btn;
             })
@@ -105,7 +105,8 @@ class PeriodeAkademikDataTable extends DataTable
                 ->title('Aksi')
                 ->exportable(false)
                 ->printable(false)
-                ->addClass('text-center text-nowrap align-middle'),
+                ->width('120px')
+                ->addClass('text-center text-nowrap align-middle px-2'),
         ];
     }
 

@@ -22,9 +22,9 @@ class KategoriDataTable extends DataTable
             ->addIndexColumn()
             ->addColumn('action', function ($row) {
                 $editUrl = route('kategori.edit', $row->id);
-                $btn = '<div class="d-inline-flex gap-1 flex-nowrap align-items-center">';
-                $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-pencil-square"></i> Edit</a>';
-                $btn .= '<button type="button" onclick="deleteKategori(' . $row->id . ')" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 text-nowrap"><i class="bi bi-trash"></i> Hapus</button>';
+                $btn = '<div class="d-inline-flex align-items-center justify-content-center flex-nowrap" style="gap: 6px;">';
+                $btn .= '<a href="' . $editUrl . '" class="btn btn-warning btn-sm text-white d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Edit Kategori"><i class="bi bi-pencil-square fs-6"></i></a>';
+                $btn .= '<button type="button" onclick="deleteKategori(' . $row->id . ')" class="btn btn-danger btn-sm text-white d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; margin: 0 2px; flex-shrink: 0;" title="Hapus Kategori"><i class="bi bi-trash fs-6"></i></button>';
                 $btn .= '</div>';
                 return $btn;
             })
