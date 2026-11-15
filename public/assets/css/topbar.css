@@ -332,15 +332,11 @@ a:hover {
 --------------------------------------------------------------*/
 @media (min-width: 992px) {
   .header,
+  .topbar-nav .topbar-container,
   #main,
   #footer {
     padding-left: 103px !important;
     padding-right: 103px !important;
-  }
-
-  .topbar-nav .topbar-container {
-    padding-left: 30px !important;
-    padding-right: 30px !important;
   }
 }
 
