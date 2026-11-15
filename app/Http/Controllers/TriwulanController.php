@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TriwulanRequest;
-use App\Models\PeriodeAkademik;
 use App\Models\Triwulan;
 use Illuminate\Http\Request;
 use RealRashid\SweetAlert\Facades\Alert;
@@ -13,32 +12,26 @@ class TriwulanController extends Controller
     /**
      * Tampilkan daftar Triwulan (TW)
      */
-    public function index(Request $request)
+    public function index()
     {
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
-        $activePeriode = PeriodeAkademik::getActive();
-        $selectedPeriodeId = $request->input('periode_id', $activePeriode ? $activePeriode->id : null);
+        $triwulans = Triwulan::orderBy('urutan', 'asc')->get();
 
-        $query = Triwulan::with('periodeAkademik');
-        if ($selectedPeriodeId) {
-            $query->where('periode_akademik_id', $selectedPeriodeId);
+        // Jika belum ada data, buat 4 Triwulan standar otomatis
+        if ($triwulans->isEmpty()) {
+            $this->seedStandardTws();
+            $triwulans = Triwulan::orderBy('urutan', 'asc')->get();
         }
-        $triwulans = $query->orderBy('urutan', 'asc')->get();
 
-        return view('pages.triwulan.index', compact('triwulans', 'periodeAkademiks', 'selectedPeriodeId', 'activePeriode'));
+        return view('pages.triwulan.index', compact('triwulans'));
     }
 
     /**
      * Form tambah Triwulan
      */
-    public function create(Request $request)
+    public function create()
     {
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
-        $activePeriode = PeriodeAkademik::getActive();
-        $selectedPeriodeId = $request->input('periode_id', $activePeriode ? $activePeriode->id : null);
         $standardTws = Triwulan::getStandardDefinitions();
-
-        return view('pages.triwulan.create', compact('periodeAkademiks', 'selectedPeriodeId', 'standardTws'));
+        return view('pages.triwulan.create', compact('standardTws'));
     }
 
     /**
@@ -50,14 +43,13 @@ class TriwulanController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
 
         if ($validated['is_active']) {
-            Triwulan::where('periode_akademik_id', $validated['periode_akademik_id'])
-                ->update(['is_active' => false]);
+            Triwulan::query()->update(['is_active' => false]);
         }
 
         Triwulan::create($validated);
 
         Alert::success('Berhasil', 'Data Triwulan berhasil ditambahkan.');
-        return redirect()->route('triwulan.index', ['periode_id' => $validated['periode_akademik_id']]);
+        return redirect()->route('triwulan.index');
     }
 
     /**
@@ -65,10 +57,8 @@ class TriwulanController extends Controller
      */
     public function edit(Triwulan $triwulan)
     {
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
         $standardTws = Triwulan::getStandardDefinitions();
-
-        return view('pages.triwulan.edit', compact('triwulan', 'periodeAkademiks', 'standardTws'));
+        return view('pages.triwulan.edit', compact('triwulan', 'standardTws'));
     }
 
     /**
@@ -80,15 +70,13 @@ class TriwulanController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
 
         if ($validated['is_active']) {
-            Triwulan::where('periode_akademik_id', $validated['periode_akademik_id'])
-                ->where('id', '!=', $triwulan->id)
-                ->update(['is_active' => false]);
+            Triwulan::where('id', '!=', $triwulan->id)->update(['is_active' => false]);
         }
 
         $triwulan->update($validated);
 
         Alert::success('Berhasil', 'Data Triwulan berhasil diperbarui.');
-        return redirect()->route('triwulan.index', ['periode_id' => $validated['periode_akademik_id']]);
+        return redirect()->route('triwulan.index');
     }
 
     /**
@@ -109,10 +97,7 @@ class TriwulanController extends Controller
      */
     public function setActive(Triwulan $triwulan)
     {
-        Triwulan::where('periode_akademik_id', $triwulan->periode_akademik_id)
-            ->where('id', '!=', $triwulan->id)
-            ->update(['is_active' => false]);
-
+        Triwulan::where('id', '!=', $triwulan->id)->update(['is_active' => false]);
         $triwulan->update(['is_active' => true]);
 
         if (request()->ajax() || request()->wantsJson()) {
@@ -123,22 +108,29 @@ class TriwulanController extends Controller
         }
 
         Alert::success('Berhasil', 'Triwulan ' . $triwulan->nama . ' berhasil diaktifkan.');
-        return redirect()->back();
+        return redirect()->route('triwulan.index');
     }
 
     /**
-     * Generate otomatis 4 Triwulan standar untuk periode akademik terpilih
-     * Sesuai Ketentuan:
+     * Reset / Sinkronisasi 4 Triwulan Standar:
      * TW1 (Sep–Nov)
      * TW2 (Des–Feb)
      * TW3 (Mar–Mei)
      * TW4 (Jun–Agu)
      */
-    public function generateStandard(Request $request)
+    public function generateStandard()
     {
-        $periodeId = $request->input('periode_id');
-        $periode = PeriodeAkademik::findOrFail($periodeId);
+        $this->seedStandardTws();
 
+        Alert::success('Berhasil', '4 Triwulan standar (TW1 s/d TW4) berhasil disinkronkan.');
+        return redirect()->route('triwulan.index');
+    }
+
+    /**
+     * Helper internal seed 4 TW
+     */
+    private function seedStandardTws(): void
+    {
         $standardTws = Triwulan::getStandardDefinitions();
         $currentMonth = (int) now()->format('n');
         $currentTwCode = Triwulan::determineTwCodeByMonth($currentMonth);
@@ -147,7 +139,6 @@ class TriwulanController extends Controller
             $isActive = ($def['nama'] === $currentTwCode);
             Triwulan::updateOrCreate(
                 [
-                    'periode_akademik_id' => $periode->id,
                     'nama' => $def['nama'],
                 ],
                 [
@@ -161,8 +152,5 @@ class TriwulanController extends Controller
                 ]
             );
         }
-
-        Alert::success('Berhasil', '4 Triwulan (TW1 s/d TW4) berhasil dibuat/disinkronkan untuk ' . $periode->formatted_ta);
-        return redirect()->route('triwulan.index', ['periode_id' => $periode->id]);
     }
 }

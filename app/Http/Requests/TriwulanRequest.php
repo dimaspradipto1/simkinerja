@@ -20,7 +20,7 @@ class TriwulanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'periode_akademik_id' => 'required|exists:periode_akademiks,id',
+            'periode_akademik_id' => 'nullable|exists:periode_akademiks,id',
             'nama' => 'required|string|max:50',
             'label' => 'nullable|string|max:100',
             'rentang_bulan' => 'nullable|string|max:100',
