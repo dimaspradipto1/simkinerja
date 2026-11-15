@@ -2,11 +2,11 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Tambah Rencana Kerja Insidentil</h1>
+    <h1>Tambah Kegiatan Insidentil</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('insidentil.index') }}">Rencana Kerja Insidentil</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('insidentil.index') }}">Kegiatan Insidentil</a></li>
             <li class="breadcrumb-item active">Tambah</li>
         </ol>
     </nav>
@@ -17,7 +17,7 @@
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">Form Tambah Rencana Kerja Insidentil</h5>
+                    <h5 class="card-title fw-bold">Form Tambah Kegiatan Insidentil</h5>
 
                     <form action="{{ route('insidentil.store') }}" method="POST" enctype="multipart/form-data" class="row g-3">
                         @csrf

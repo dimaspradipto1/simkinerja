@@ -31,11 +31,11 @@
             </ol>
         </nav>
     @else
-        <h1>Rencana Kerja</h1>
+        <h1>Kegiatan</h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-                <li class="breadcrumb-item active">Rencana Kerja</li>
+                <li class="breadcrumb-item active">Kegiatan</li>
             </ol>
         </nav>
     @endif
@@ -154,14 +154,24 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header-green d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
                     <div class="header-title-text d-flex align-items-center gap-2 flex-wrap text-white py-1">
-                        <i class="bi bi-kanban-fill text-warning me-1" style="font-size: 1.15rem;"></i>
-                        <span class="fw-bold text-white fs-6 mb-0">Rencana Kerja</span>
+                        <i class="bi bi-calendar-check-fill text-warning me-1" style="font-size: 1.15rem;"></i>
+                        <span class="fw-bold text-white fs-6 mb-0">Kegiatan</span>
                         <span class="text-white d-none d-sm-inline">:</span>
                         <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
                             {{ $judulJabatan ?? (auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name) }}
                         </span>
                     </div>
                     <div class="header-action-group d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-xl-0">
+                        <div class="filter-status-modern" title="Filter checklist berdasarkan kategori">
+                            <i class="bi bi-tag-fill text-warning" style="font-size: 0.85rem;"></i>
+                            <span class="small fw-semibold text-secondary text-nowrap d-none d-xxl-inline" style="font-size: 0.78rem;">Kategori:</span>
+                            <select id="filter-kategori" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark p-0 pe-3 shadow-none">
+                                <option value="">Semua Kategori</option>
+                                <option value="Rencana Kerja">Rutin</option>
+                                <option value="Insidentil">Insidentil</option>
+                                <option value="Kepanitiaan">Kepanitiaan</option>
+                            </select>
+                        </div>
                         <div class="filter-status-modern" title="Filter checklist berdasarkan status">
                             <i class="bi bi-funnel-fill text-success" style="font-size: 0.85rem;"></i>
                             <span class="small fw-semibold text-secondary text-nowrap d-none d-xxl-inline" style="font-size: 0.78rem;">Status:</span>
@@ -176,7 +186,7 @@
                             <i class="bi bi-volume-up-fill me-1.5"></i>
                             <span>Suara</span>
                         </button>
-                        <button type="button" class="btn btn-header-action btn-light-modern" data-bs-toggle="modal" data-bs-target="#modalImportExcel" title="Import Rencana Kerja dari Excel">
+                        <button type="button" class="btn btn-header-action btn-light-modern" data-bs-toggle="modal" data-bs-target="#modalImportExcel" title="Import Kegiatan dari Excel">
                             <i class="bi bi-file-earmark-excel-fill text-success me-1.5"></i>
                             <span>Import Excel</span>
                         </button>
@@ -250,7 +260,7 @@
         <div class="modal-content border-0 shadow">
             <div class="modal-header text-white" style="background-color: #2d6a4f;">
                 <h5 class="modal-title fw-bold" id="modalImportExcelLabel">
-                    <i class="bi bi-file-earmark-excel me-2"></i> Import Rencana Kerja Excel
+                    <i class="bi bi-file-earmark-excel me-2"></i> Import Kegiatan Excel
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -348,7 +358,7 @@
             <div class="modal-header text-white" style="background-color: #15432d;">
                 <h5 class="modal-title fs-6 fw-bold text-white d-flex align-items-center gap-2" id="modalDetailRencanaKerjaLabel">
                     <i class="bi bi-card-checklist text-warning"></i>
-                    <span>Rincian Rencana Kerja</span>
+                    <span>Rincian Kegiatan</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -366,7 +376,7 @@
     $(document).ready(function() {
         $('#btn-voice-rencanakerja').on('click', function() {
             let jabatanVal = $('#filter-jabatan').length ? $('#filter-jabatan').val() : '';
-            let voiceText = "Halaman Laporan Rencana Kerja untuk " + (jabatanVal ? "jabatan " + jabatanVal : "{{ auth()->user()->name }}") + ". ";
+            let voiceText = "Halaman Laporan Kegiatan untuk " + (jabatanVal ? "jabatan " + jabatanVal : "{{ auth()->user()->name }}") + ". ";
 
             let taskItems = [];
             if (typeof table !== 'undefined' && table.rows) {
@@ -590,6 +600,7 @@
                         d.jabatan = $('#filter-jabatan').val();
                     }
                     d.status = $('#filter-status').val();
+                    d.kategori = $('#filter-kategori').val();
                     d.from = "{{ request('from', '') }}";
                 }
             },
@@ -627,7 +638,7 @@
             language: {
                 search: "Cari Tugas:",
                 lengthMenu: "Tampilkan _MENU_ data",
-                zeroRecords: "Belum ada rencana kerja / checklist tugas untuk filter ini",
+                zeroRecords: "Belum ada kegiatan / checklist tugas untuk filter ini",
                 info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ tugas",
                 infoEmpty: "Tidak ada data"
             },
@@ -644,6 +655,11 @@
                 $('#count-status-proses').text(json.overall_rekap.proses || 0);
                 $('#count-status-belum').text(json.overall_rekap.belum || 0);
             }
+        });
+
+        // Filter Kategori Dropdown Change
+        $('#filter-kategori').on('change', function() {
+            table.ajax.reload();
         });
 
         // Filter Status Dropdown Change
@@ -884,8 +900,8 @@
             if (ids.length === 0) return;
 
             Swal.fire({
-                title: 'Hapus Rencana Kerja Terpilih?',
-                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' data rencana kerja terpilih ini secara permanen?',
+                title: 'Hapus Kegiatan Terpilih?',
+                text: 'Apakah Anda yakin ingin menghapus ' + ids.length + ' kegiatan terpilih ini secara permanen?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmColor: '#d33',

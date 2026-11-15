@@ -5,11 +5,11 @@
 
 
 <div class="pagetitle">
-    <h1>Rencana Kerja Insidentil</h1>
+    <h1>Kegiatan Insidentil</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active">Rencana Kerja Insidentil</li>
+            <li class="breadcrumb-item active">Kegiatan Insidentil</li>
         </ol>
     </nav>
 </div><!-- End Page Title -->
@@ -156,7 +156,7 @@
                 <div class="card-header-green d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
                     <div class="header-title-text d-flex align-items-center gap-2 flex-wrap text-white py-1">
                         <i class="bi bi-lightning-charge-fill text-warning me-1" style="font-size: 1.15rem;"></i>
-                        <span class="fw-bold text-white fs-6 mb-0">Rencana Kerja Insidentil</span>
+                        <span class="fw-bold text-white fs-6 mb-0">Kegiatan Insidentil</span>
                         <span class="text-white d-none d-sm-inline">:</span>
                         <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
                             {{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name }}

@@ -2,11 +2,11 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Tambah Rencana Kerja</h1>
+    <h1>Tambah Kegiatan</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('rencana-kerja.index') }}">Rencana Kerja</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('rencana-kerja.index') }}">Kegiatan</a></li>
             <li class="breadcrumb-item active">Tambah</li>
         </ol>
     </nav>
@@ -17,7 +17,7 @@
         <div class="col-lg-12">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">Form Tambah Rencana Kerja</h5>
+                    <h5 class="card-title fw-bold">Form Tambah Kegiatan</h5>
 
                     <form action="{{ route('rencana-kerja.store') }}" method="POST" class="row g-3">
                         @csrf
@@ -205,7 +205,7 @@
                         </div>
 
                         <div class="col-12 mt-4 d-flex align-items-center gap-2">
-                            <button type="submit" class="btn text-white px-4 fw-bold shadow-sm" style="background-color: #15432d; border-radius: 8px; min-height: 40px;"><i class="bi bi-save me-1"></i> Simpan Rencana Kerja</button>
+                            <button type="submit" class="btn text-white px-4 fw-bold shadow-sm" style="background-color: #15432d; border-radius: 8px; min-height: 40px;"><i class="bi bi-save me-1"></i> Simpan Kegiatan</button>
                             <a href="{{ route('rencana-kerja.index') }}" class="btn btn-secondary px-3" style="border-radius: 8px; min-height: 40px;"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
                         </div>
                     </form>

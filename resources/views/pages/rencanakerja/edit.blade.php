@@ -2,11 +2,11 @@
 
 @section('content')
 <div class="pagetitle">
-    <h1>Edit Rencana Kerja</h1>
+    <h1>Edit Kegiatan</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('rencana-kerja.index') }}">Rencana Kerja</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('rencana-kerja.index') }}">Kegiatan</a></li>
             <li class="breadcrumb-item active">Edit</li>
         </ol>
     </nav>
@@ -17,7 +17,7 @@
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Form Edit Rencana Kerja</h5>
+                    <h5 class="card-title">Form Edit Kegiatan</h5>
 
                     <form action="{{ route('rencana-kerja.update', $rencanaKerja->id) }}" method="POST" enctype="multipart/form-data" class="row g-3">
                         @csrf
@@ -290,7 +290,7 @@
                         @endif
 
                         <div class="col-12 mt-4 d-flex flex-wrap align-items-center gap-2">
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Perbarui Rencana Kerja</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Perbarui Kegiatan</button>
                             <a href="{{ route('rencana-kerja.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Kembali</a>
                             @if($estimasiLocked)
                                 @if($rencanaKerja->estimasi_unlock_requested_at)

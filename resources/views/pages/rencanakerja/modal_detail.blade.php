@@ -85,20 +85,20 @@
                         </span>
                     @endif
                     @if($status === 'Selesai')
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.76rem;">
-                            <i class="bi bi-check-circle-fill me-1"></i>Selesai
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #ecfdf5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important;">
+                            <i class="bi bi-check-circle-fill me-1" style="color: #059669 !important;"></i>Selesai
                         </span>
                     @elseif($status === 'Proses' || ($waktuMulai && !$waktuSelesai))
-                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.76rem;">
-                            <i class="bi bi-play-circle-fill me-1"></i>Proses
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #fff8e6 !important; color: #9a6700 !important; border: 1px solid #fcd34d !important;">
+                            <i class="bi bi-play-circle-fill me-1" style="color: #d97706 !important;"></i>Proses
                         </span>
                     @elseif($status === 'Di-pause')
-                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.76rem;">
-                            <i class="bi bi-pause-circle-fill me-1"></i>Di-pause
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #fef2f2 !important; color: #991b1b !important; border: 1px solid #fecaca !important;">
+                            <i class="bi bi-pause-circle-fill me-1" style="color: #dc2626 !important;"></i>Di-pause
                         </span>
                     @else
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.76rem;">
-                            Belum Dimulai
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #f8fafc !important; color: #475569 !important; border: 1px solid #cbd5e1 !important;">
+                            <i class="bi bi-dash-circle me-1" style="color: #64748b !important;"></i>Belum Dimulai
                         </span>
                     @endif
                 </div>

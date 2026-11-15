@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RencanaKerjaRequest;
 use App\Models\Kategori;
+use App\Models\Kegiatan;
 use App\Models\PeriodeAkademik;
 use App\Models\RencanaKerja;
 use App\Models\User;
@@ -28,7 +29,7 @@ class RencanaKerjaController extends Controller
         $authUser = Auth::user();
 
         if ($request->ajax()) {
-            $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
+            $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
             if ($request->filled('jabatan') && $request->jabatan !== '__own__') {
                 if ($request->jabatan === '__all__' || $request->jabatan === 'all') {
@@ -65,6 +66,29 @@ class RencanaKerjaController extends Controller
                               $qu->where('users.id', $authUser->id);
                           });
                     });
+                }
+            }
+
+            if ($request->filled('kategori')) {
+                $katFilter = $request->kategori;
+                if ($katFilter === 'Rencana Kerja' || $katFilter === 'Rutin') {
+                    $query->where(function($q) {
+                        $q->where('kategori', 'Rencana Kerja')
+                          ->orWhere('kategori', 'Rutin')
+                          ->orWhereNull('kategori');
+                    });
+                } elseif ($katFilter === 'Insidentil') {
+                    $query->where(function($q) {
+                        $q->where('kategori', 'like', '%insidentil%')
+                          ->orWhere('kategori', 'like', '%insidental%');
+                    });
+                } elseif ($katFilter === 'Kepanitiaan') {
+                    $query->where(function($q) {
+                        $q->where('kategori', 'like', '%panitia%')
+                          ->orWhere('kategori', 'like', '%kepanitiaan%');
+                    });
+                } else {
+                    $query->where('kategori', $katFilter);
                 }
             }
 
@@ -173,22 +197,22 @@ class RencanaKerjaController extends Controller
                 ->addColumn('jenis', function ($row) {
                     $kat = strtolower($row->kategori ?? 'rutin');
                     if (str_contains($kat, 'insidentil') || str_contains($kat, 'insidental')) {
-                        return '<span class="badge rounded-pill bg-light text-dark border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 500;"><span class="text-warning me-1" style="font-size: 8px;">●</span> Insidental</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600; background-color: #fff8e6 !important; color: #9a6700 !important; border-color: #ffd580 !important;"><span class="me-1" style="color: #e67700; font-size: 8px;">●</span> Insidentil</span>';
                     } elseif (str_contains($kat, 'panitia') || str_contains($kat, 'kepanitiaan')) {
-                        return '<span class="badge rounded-pill bg-light text-dark border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 500;"><span class="text-info me-1" style="font-size: 8px;">●</span> Panitia</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600; background-color: #e7f5ff !important; color: #1864ab !important; border-color: #a5d8ff !important;"><span class="me-1" style="color: #228be6; font-size: 8px;">●</span> Kepanitiaan</span>';
                     }
-                    return '<span class="badge rounded-pill bg-light text-dark border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 500;"><span class="text-success me-1" style="font-size: 8px;">●</span> Rutin</span>';
+                    return '<span class="badge rounded-pill border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 600; background-color: #ecfdf5 !important; color: #065f46 !important; border-color: #a7f3d0 !important;"><span class="me-1" style="color: #10b981; font-size: 8px;">●</span> Rutin</span>';
                 })
                 ->addColumn('status_badge', function ($row) {
                     $st = $row->status ?? 'Belum Dimulai';
                     if ($st === 'Selesai') {
-                        return '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>';
+                        return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #ecfdf5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important;"><i class="bi bi-check-circle-fill me-1" style="color: #059669 !important;"></i>Selesai</span>';
                     } elseif (in_array($st, ['Proses', 'Berjalan'])) {
-                        return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;"><i class="bi bi-play-circle-fill me-1"></i>Proses</span>';
+                        return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #fff8e6 !important; color: #9a6700 !important; border: 1px solid #fcd34d !important;"><i class="bi bi-play-circle-fill me-1" style="color: #d97706 !important;"></i>Proses</span>';
                     } elseif ($st === 'Di-pause') {
-                        return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;"><i class="bi bi-pause-circle-fill me-1"></i>Di-pause</span>';
+                        return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #fef2f2 !important; color: #991b1b !important; border: 1px solid #fecaca !important;"><i class="bi bi-pause-circle-fill me-1" style="color: #dc2626 !important;"></i>Di-pause</span>';
                     }
-                    return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;">Belum Dimulai</span>';
+                    return '<span class="badge rounded-pill px-2.5 py-1" style="font-size: 0.78rem; font-weight: 600; background-color: #f8fafc !important; color: #475569 !important; border: 1px solid #cbd5e1 !important;"><i class="bi bi-dash-circle me-1" style="color: #64748b !important;"></i>Belum Dimulai</span>';
                 })
                 ->addColumn('action', function ($row) use ($authUser) {
                     $html = '<div class="d-inline-flex align-items-center justify-content-center flex-nowrap" style="gap: 6px;">';
@@ -263,7 +287,7 @@ class RencanaKerjaController extends Controller
 
         $pendingRequests = collect([]);
         if ($authUser && !$authUser->isRektor()) {
-            $pendingRequestsQuery = RencanaKerja::whereNotNull('estimasi_unlock_requested_at');
+            $pendingRequestsQuery = Kegiatan::whereNotNull('estimasi_unlock_requested_at');
 
             if ($authUser->isAdmin()) {
                 // Admin can see all pending requests
@@ -507,23 +531,25 @@ class RencanaKerjaController extends Controller
             $validated['status'] = 'Belum Dimulai';
         }
 
-        $rencanaKerja = RencanaKerja::create($validated);
+        $rencanaKerja = Kegiatan::create($validated);
 
         if ($request->has('tagged_users')) {
             $rencanaKerja->taggedUsers()->sync($request->input('tagged_users'));
-            $rencanaKerja->syncToKegiatan();
+            if (method_exists($rencanaKerja, 'syncToKegiatan')) {
+                $rencanaKerja->syncToKegiatan();
+            }
         }
         \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($rencanaKerja);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Sub Kegiatan berhasil ditambahkan.',
+                'message' => 'Kegiatan berhasil ditambahkan.',
                 'data' => $rencanaKerja
             ]);
         }
 
-        Alert::success('Berhasil', 'Rencana Kerja berhasil ditambahkan')
+        Alert::success('Berhasil', 'Kegiatan berhasil ditambahkan')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
@@ -726,7 +752,7 @@ class RencanaKerjaController extends Controller
         ]);
 
         $authUser = Auth::user();
-        $query = RencanaKerja::whereIn('id', $request->ids);
+        $query = Kegiatan::whereIn('id', $request->ids);
 
         if ($authUser && ($authUser->isAdmin() || $authUser->isPimpinanRektorat())) {
             // Admin & Pimpinan Rektorat dapat menghapus semua tugas tanpa batas unit
@@ -1292,7 +1318,7 @@ class RencanaKerjaController extends Controller
     {
         $authUser = Auth::user();
 
-        $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
+        $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
@@ -1623,7 +1649,7 @@ class RencanaKerjaController extends Controller
     public function exportPdf(Request $request)
     {
         $authUser = auth()->user();
-        $query = RencanaKerja::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
+        $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
         if ($authUser) {
             if ($authUser->isAdmin() || $authUser->isPimpinanRektorat()) {
