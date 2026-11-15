@@ -88,11 +88,6 @@
                                     <span>Kegiatan Kepanitiaan</span>
                                 </a>
                             </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('insidentil.*') ? 'active' : '' }}" href="{{ route('insidentil.index') }}">
-                                    <span>Kegiatan Insidentil</span>
-                                </a>
-                            </li>
                         </ul>
                     </li>
                 @endif
