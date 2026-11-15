@@ -109,36 +109,44 @@
                 </div>
             </div>
 
-            <!-- Quick Navigation Card -->
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="card-title m-0 fw-bold text-dark fs-6">
-                        <i class="bi bi-grid-fill me-2 text-primary"></i>Menu Layanan LPTI Lainnya
-                    </h6>
+            @php
+                $u = Auth::user();
+                $uJabatan = strtoupper($u->jabatan ?? '');
+                $isAdminOrKepala = $u && ($u->isAdmin() || $u->isSuperAdmin() || $u->isRektorOrSuperAdmin() || $u->isPimpinanRektorat() || $u->isPimpinanUnit() || str_contains($uJabatan, 'KEPALA') || str_contains($uJabatan, 'KA.'));
+            @endphp
+
+            @if($isAdminOrKepala)
+                <!-- Quick Navigation Card (Hanya Tampil untuk Admin & Kepala) -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h6 class="card-title m-0 fw-bold text-dark fs-6">
+                            <i class="bi bi-grid-fill me-2 text-primary"></i>Menu Layanan LPTI Lainnya
+                        </h6>
+                    </div>
+                    <div class="list-group list-group-flush small">
+                        <a href="{{ route('layanan.lpti.manajemen') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'manajemen' ? 'active' : '' }}">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-briefcase"></i>Manajemen LPTI</span>
+                            <span class="badge {{ $key === 'manajemen' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border border-primary-subtle' }} rounded-pill" style="font-size: 10px;">Kepala LPTI</span>
+                        </a>
+                        <a href="{{ route('layanan.lpti.pengembangan-si') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pengembangan-si' ? 'active' : '' }}">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-window-stack"></i>Pengembangan Sistem Informasi</span>
+                            <span class="badge {{ $key === 'pengembangan-si' ? 'bg-white text-info' : 'bg-info-subtle text-info border border-info-subtle' }} rounded-pill" style="font-size: 10px;">Divisi SI</span>
+                        </a>
+                        <a href="{{ route('layanan.lpti.infrastruktur') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'infrastruktur' ? 'active' : '' }}">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-diagram-3"></i>Pengelolaan Infrastruktur &amp; Jaringan</span>
+                            <span class="badge {{ $key === 'infrastruktur' ? 'bg-white text-warning' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' }} rounded-pill" style="font-size: 10px;">Divisi Jaringan</span>
+                        </a>
+                        <a href="{{ route('layanan.lpti.pemeliharaan') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pemeliharaan' ? 'active' : '' }}">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-code-slash"></i>Pengembangan &amp; Pemeliharaan Aplikasi</span>
+                            <span class="badge {{ $key === 'pemeliharaan' ? 'bg-white text-danger' : 'bg-danger-subtle text-danger border border-danger-subtle' }} rounded-pill" style="font-size: 10px;">Programmer</span>
+                        </a>
+                        <a href="{{ route('layanan.lpti.dukungan-teknis') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'dukungan-teknis' ? 'active' : '' }}">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-headset"></i>Layanan Dukungan Teknis</span>
+                            <span class="badge {{ $key === 'dukungan-teknis' ? 'bg-white text-success' : 'bg-success-subtle text-success border border-success-subtle' }} rounded-pill" style="font-size: 10px;">Troubleshooting</span>
+                        </a>
+                    </div>
                 </div>
-                <div class="list-group list-group-flush small">
-                    <a href="{{ route('layanan.lpti.manajemen') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'manajemen' ? 'active' : '' }}">
-                        <span class="d-flex align-items-center gap-2"><i class="bi bi-briefcase"></i>Manajemen LPTI</span>
-                        <span class="badge {{ $key === 'manajemen' ? 'bg-white text-primary' : 'bg-primary-subtle text-primary border border-primary-subtle' }} rounded-pill" style="font-size: 10px;">Kepala LPTI</span>
-                    </a>
-                    <a href="{{ route('layanan.lpti.pengembangan-si') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pengembangan-si' ? 'active' : '' }}">
-                        <span class="d-flex align-items-center gap-2"><i class="bi bi-window-stack"></i>Pengembangan Sistem Informasi</span>
-                        <span class="badge {{ $key === 'pengembangan-si' ? 'bg-white text-info' : 'bg-info-subtle text-info border border-info-subtle' }} rounded-pill" style="font-size: 10px;">Divisi SI</span>
-                    </a>
-                    <a href="{{ route('layanan.lpti.infrastruktur') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'infrastruktur' ? 'active' : '' }}">
-                        <span class="d-flex align-items-center gap-2"><i class="bi bi-diagram-3"></i>Pengelolaan Infrastruktur &amp; Jaringan</span>
-                        <span class="badge {{ $key === 'infrastruktur' ? 'bg-white text-warning' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' }} rounded-pill" style="font-size: 10px;">Divisi Jaringan</span>
-                    </a>
-                    <a href="{{ route('layanan.lpti.pemeliharaan') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'pemeliharaan' ? 'active' : '' }}">
-                        <span class="d-flex align-items-center gap-2"><i class="bi bi-code-slash"></i>Pengembangan &amp; Pemeliharaan Aplikasi</span>
-                        <span class="badge {{ $key === 'pemeliharaan' ? 'bg-white text-danger' : 'bg-danger-subtle text-danger border border-danger-subtle' }} rounded-pill" style="font-size: 10px;">Programmer</span>
-                    </a>
-                    <a href="{{ route('layanan.lpti.dukungan-teknis') }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between py-2.5 {{ $key === 'dukungan-teknis' ? 'active' : '' }}">
-                        <span class="d-flex align-items-center gap-2"><i class="bi bi-headset"></i>Layanan Dukungan Teknis</span>
-                        <span class="badge {{ $key === 'dukungan-teknis' ? 'bg-white text-success' : 'bg-success-subtle text-success border border-success-subtle' }} rounded-pill" style="font-size: 10px;">Troubleshooting</span>
-                    </a>
-                </div>
-            </div>
+            @endif
         </div>
     </div>
 </section>

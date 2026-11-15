@@ -32,8 +32,13 @@ class LayananLptiController extends Controller
     public function manajemen()
     {
         $user = Auth::user();
+        if (!$user) return redirect()->route('login');
         $userJabatan = strtoupper($user->jabatan ?? '');
-        $hasAccess = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $hasAccess = $user->isAdmin() || $user->isSuperAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || $user->isPimpinanUnit() || str_contains($userJabatan, 'KEPALA') || str_contains($userJabatan, 'KA.');
+
+        if (!$hasAccess) {
+            return $this->index();
+        }
 
         return view('pages.layanan-lpti.index', [
             'key' => 'manajemen',
@@ -59,9 +64,14 @@ class LayananLptiController extends Controller
     public function pengembanganSi()
     {
         $user = Auth::user();
+        if (!$user) return redirect()->route('login');
         $userJabatan = strtoupper($user->jabatan ?? '');
-        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $isLeader = $user->isAdmin() || $user->isSuperAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || $user->isPimpinanUnit() || str_contains($userJabatan, 'KEPALA') || str_contains($userJabatan, 'KA.');
         $hasAccess = $isLeader || str_contains($userJabatan, 'SISTEM INFORMASI') || str_contains($userJabatan, 'PENGEMBANGAN SISTEM');
+
+        if (!$hasAccess) {
+            return $this->index();
+        }
 
         return view('pages.layanan-lpti.index', [
             'key' => 'pengembangan-si',
@@ -87,9 +97,14 @@ class LayananLptiController extends Controller
     public function infrastruktur()
     {
         $user = Auth::user();
+        if (!$user) return redirect()->route('login');
         $userJabatan = strtoupper($user->jabatan ?? '');
-        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $isLeader = $user->isAdmin() || $user->isSuperAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || $user->isPimpinanUnit() || str_contains($userJabatan, 'KEPALA') || str_contains($userJabatan, 'KA.');
         $hasAccess = $isLeader || str_contains($userJabatan, 'INFRASTRUKTUR') || str_contains($userJabatan, 'JARINGAN');
+
+        if (!$hasAccess) {
+            return $this->index();
+        }
 
         return view('pages.layanan-lpti.index', [
             'key' => 'infrastruktur',
@@ -115,9 +130,14 @@ class LayananLptiController extends Controller
     public function pemeliharaan()
     {
         $user = Auth::user();
+        if (!$user) return redirect()->route('login');
         $userJabatan = strtoupper($user->jabatan ?? '');
-        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
+        $isLeader = $user->isAdmin() || $user->isSuperAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || $user->isPimpinanUnit() || str_contains($userJabatan, 'KEPALA') || str_contains($userJabatan, 'KA.');
         $hasAccess = $isLeader || str_contains($userJabatan, 'PEMELIHARAAN') || str_contains($userJabatan, 'APLIKASI') || str_contains($userJabatan, 'PROGRAMMER') || str_contains($userJabatan, 'DATABASE');
+
+        if (!$hasAccess) {
+            return $this->index();
+        }
 
         return view('pages.layanan-lpti.index', [
             'key' => 'pemeliharaan',
@@ -143,9 +163,17 @@ class LayananLptiController extends Controller
     public function dukunganTeknis()
     {
         $user = Auth::user();
+        if (!$user) return redirect()->route('login');
         $userJabatan = strtoupper($user->jabatan ?? '');
-        $isLeader = $user && ($user->isAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || str_contains($userJabatan, 'KEPALA LPTI') || str_contains($userJabatan, 'KA. LPTI') || str_contains($userJabatan, 'KA. UPT LPTI'));
-        $hasAccess = $isLeader || str_contains($userJabatan, 'TROUBLESHOOTING') || str_contains($userJabatan, 'HELPDESK') || str_contains($userJabatan, 'DUKUNGAN TEKNIS');
+        $isLeader = $user->isAdmin() || $user->isSuperAdmin() || $user->isRektorOrSuperAdmin() || $user->isPimpinanRektorat() || $user->isPimpinanUnit() || str_contains($userJabatan, 'KEPALA') || str_contains($userJabatan, 'KA.');
+        $isUserTroubleshooting = str_contains($userJabatan, 'TROUBLESHOOTING') || str_contains($userJabatan, 'HELPDESK') || str_contains($userJabatan, 'DUKUNGAN TEKNIS');
+        $isOtherLptiStaff = str_contains($userJabatan, 'SISTEM INFORMASI') || str_contains($userJabatan, 'PENGEMBANGAN SISTEM') || str_contains($userJabatan, 'INFRASTRUKTUR') || str_contains($userJabatan, 'JARINGAN') || str_contains($userJabatan, 'PROGRAMMER') || str_contains($userJabatan, 'PEMELIHARAAN');
+
+        if (!$isLeader && $isOtherLptiStaff && !$isUserTroubleshooting) {
+            return $this->index();
+        }
+
+        $hasAccess = $isLeader || $isUserTroubleshooting;
 
         return view('pages.layanan-lpti.index', [
             'key' => 'dukungan-teknis',
