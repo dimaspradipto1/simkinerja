@@ -313,24 +313,6 @@
         </div>
     </div>
 </div>
-
-<!-- Modal Detail Rencana Kerja (Pengganti Dropdown) -->
-<div class="modal fade" id="modalDetailRencanaKerja" tabindex="-1" aria-labelledby="modalDetailRencanaKerjaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header text-white" style="background-color: #15432d;">
-                <h5 class="modal-title fs-6 fw-bold text-white d-flex align-items-center gap-2" id="modalDetailRencanaKerjaLabel">
-                    <i class="bi bi-card-checklist text-warning"></i>
-                    <span>Rincian Rencana Kerja</span>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-3 p-sm-4" id="modalDetailRencanaKerjaContent">
-                <!-- Konten rincian akan dimuat melalui AJAX -->
-            </div>
-        </div>
-    </div>
-</div>
 @include('partials.milestone-scripts')
 @endsection
 
@@ -566,36 +548,10 @@
                 }
             },
             columns: [
-                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-middle', width: '32px' },
-                { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'align-middle small text-secondary text-nowrap', width: '115px' },
-                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'align-middle small text-dark fw-medium text-nowrap', width: '125px' },
-                { data: 'kegiatan', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle' },
-                { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'align-middle', width: '110px' },
-                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'align-middle', width: '130px' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center align-middle', width: '135px' },
-                { data: 'date_group', name: 'date_group', visible: false, searchable: false }
+                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-top pt-2', width: '28px' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-muted fw-bold text-center align-top pt-2 small', width: '32px' },
+                { data: 'task_details', name: 'uraian_tugas', searchable: true, className: 'align-top p-0' },
             ],
-            drawCallback: function(settings) {
-                var api = this.api();
-                var rows = api.rows({ page: 'current' }).nodes();
-                var last = null;
-
-                api.column(7, { page: 'current' }).data().each(function(group, i) {
-                    if (last !== group) {
-                        $(rows).eq(i).before(
-                            '<tr class="group-header-row bg-light" style="background-color: #f8fafc !important;">' +
-                                '<td colspan="7" class="py-2.5 px-3 border-top border-bottom" style="background-color: #f8fafc !important;">' +
-                                    '<div class="d-flex align-items-center gap-2 text-dark fw-bold" style="font-size: 0.84rem;">' +
-                                        '<i class="bi bi-calendar-event text-secondary"></i>' +
-                                        '<span>' + (group || 'Kegiatan') + '</span>' +
-                                    '</div>' +
-                                '</td>' +
-                            '</tr>'
-                        );
-                        last = group;
-                    }
-                });
-            },
             language: {
                 search: "Cari Tugas:",
                 lengthMenu: "Tampilkan _MENU_ data",
@@ -674,9 +630,8 @@
         }
 
         // Toggle check-all
-        $(document).on('change', '#check-all, #th-check-all', function() {
+        $(document).on('change', '#check-all', function() {
             let isChecked = $(this).is(':checked');
-            $('#check-all, #th-check-all').prop('checked', isChecked);
             $('.select-row-checkbox').prop('checked', isChecked);
             $('.select-row-checkbox').each(function() {
                 let val = parseInt($(this).val());
@@ -700,10 +655,8 @@
 
             let totalOnPage = $('.select-row-checkbox').length;
             let checkedOnPage = $('.select-row-checkbox:checked').length;
-            let allChecked = totalOnPage > 0 && totalOnPage === checkedOnPage;
-            let indet = checkedOnPage > 0 && checkedOnPage < totalOnPage;
-            $('#check-all, #th-check-all').prop('checked', allChecked);
-            $('#check-all, #th-check-all').prop('indeterminate', indet);
+            $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+            $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
 
             updateBulkDeleteButton();
         });
@@ -742,8 +695,8 @@
             }
         });
 
-        $('#check-all, #th-check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
-        $('#check-all, #th-check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
+        $('#check-all').prop('checked', totalOnPage > 0 && totalOnPage === checkedOnPage);
+        $('#check-all').prop('indeterminate', checkedOnPage > 0 && checkedOnPage < totalOnPage);
 
         if ($('#selectAllToolbarRencanaKerja').length && $('#rencanakerja-table').length) {
             $('#selectAllToolbarRencanaKerja').insertBefore('#rencanakerja-table');
@@ -778,6 +731,20 @@
         }
     });
 
+    // Toggle All Task Details (Buka Semua / Tutup Semua)
+    let allTaskCardsExpanded = false;
+    $('#btn-toggle-all-cards').on('click', function() {
+        allTaskCardsExpanded = !allTaskCardsExpanded;
+        if (allTaskCardsExpanded) {
+            $('.collapse[id^="collapseTask_"]').collapse('show');
+            $('#toggle-all-text').text('Tutup Semua');
+            $(this).find('i').removeClass('bi-arrows-expand').addClass('bi-arrows-collapse');
+        } else {
+            $('.collapse[id^="collapseTask_"]').collapse('hide');
+            $('#toggle-all-text').text('Buka Semua');
+            $(this).find('i').removeClass('bi-arrows-collapse').addClass('bi-arrows-expand');
+        }
+    });
 
         // Quick Tag Modal Handlers
         let currentQuickTagId = null;
@@ -902,144 +869,6 @@
             });
         });
     });
-
-    // Open Detail Modal (pengganti dropdown)
-    $(document).on('click', '.btn-detail-task', function() {
-        let id = $(this).data('id');
-        if (!id) return;
-
-        $('#modalDetailRencanaKerjaContent').html(
-            '<div class="text-center py-5">' +
-                '<div class="spinner-border text-success" role="status"></div>' +
-                '<div class="text-muted mt-2 small">Memuat rincian tugas...</div>' +
-            '</div>'
-        );
-        $('#modalDetailRencanaKerja').modal('show');
-
-        $.ajax({
-            url: "{{ url('rencana-kerja') }}/" + id + "/modal-detail",
-            type: 'GET',
-            success: function(html) {
-                $('#modalDetailRencanaKerjaContent').html(html);
-            },
-            error: function() {
-                $('#modalDetailRencanaKerjaContent').html(
-                    '<div class="alert alert-danger my-3">Gagal memuat rincian tugas. Silakan coba lagi.</div>'
-                );
-            }
-        });
-    });
-
-    // Handle Modal Upload and Hasil Kerja Form Submit
-    $(document).on('submit', '.form-modal-upload', function(e) {
-        e.preventDefault();
-        var form = $(this);
-        var id = form.data('id');
-        var btn = form.find('button[type="submit"]');
-        var formData = new FormData(this);
-        formData.append('_token', "{{ csrf_token() }}");
-
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...');
-
-        $.ajax({
-            url: "{{ url('rencana-kerja') }}/" + id + "/upload-attachment",
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function(response) {
-                btn.prop('disabled', false).html('<i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Berkas');
-                if (response.success) {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: response.message,
-                        showConfirmButton: false,
-                        timer: 3500,
-                        timerProgressBar: true
-                    });
-                    $('#rencanakerja-table').DataTable().ajax.reload(null, false);
-
-                    // Re-fetch modal content so updated uploaded files and text are visible
-                    $.ajax({
-                        url: "{{ url('rencana-kerja') }}/" + id + "/modal-detail",
-                        type: 'GET',
-                        success: function(html) {
-                            $('#modalDetailRencanaKerjaContent').html(html);
-                        }
-                    });
-                }
-            },
-            error: function(xhr) {
-                btn.prop('disabled', false).html('<i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Berkas');
-                var msg = 'Terjadi kesalahan saat menyimpan berkas/hasil kerja.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    msg = xhr.responseJSON.message;
-                }
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Menyimpan',
-                    text: msg
-                });
-            }
-        });
-    });
-
-    window.startTaskQuick = function(id) {
-        window.startTimer(id);
-    };
-
-    window.stopTaskQuick = function(id) {
-        window.stopTimer(id);
-    };
-
-    window.reopenTaskQuick = function(id) {
-        Swal.fire({
-            title: 'Buka Kunci Tugas?',
-            text: 'Apakah Anda ingin membuka kunci tugas ini agar dapat dikerjakan kembali?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmColor: '#f59e0b',
-            cancelColor: '#6c757d',
-            confirmButtonText: '<i class="bi bi-unlock-fill me-1"></i> Ya, Buka Kunci',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: "{{ url('rencana-kerja') }}/" + id + "/reopen",
-                    type: 'POST',
-                    data: {
-                        "_token": "{{ csrf_token() }}"
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                toast: true,
-                                position: 'top-end',
-                                icon: 'success',
-                                title: response.message || 'Kunci tugas berhasil dibuka.',
-                                showConfirmButton: false,
-                                timer: 3500,
-                                timerProgressBar: true
-                            });
-                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
-                            if ($('#modalDetailRencanaKerja').is(':visible')) {
-                                $('#modalDetailRencanaKerja').modal('hide');
-                            }
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat membuka kunci tugas.'
-                        });
-                    }
-                });
-            }
-        });
-    };
 
     $(document).on('click', '.btn-start-timer', function(e) {
         e.preventDefault();
