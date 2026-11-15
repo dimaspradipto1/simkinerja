@@ -59,7 +59,9 @@
                             request()->routeIs('rencana-kerja.*') || 
                             request()->routeIs('kepanitiaan.*') || 
                             request()->routeIs('insidentil.*') || 
-                            request()->routeIs('kegiatan.*')
+                            request()->routeIs('kegiatan.*') ||
+                            request()->routeIs('pemantauan-staff.*') ||
+                            request()->routeIs('analisis-keterlambatan.*')
                         );
                     @endphp
                     <li class="nav-item dropdown">
@@ -79,13 +81,13 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item {{ (!$isFromLayanan && request()->routeIs('rencana-kerja.*')) ? 'active' : '' }}" href="{{ route('rencana-kerja.index') }}">
-                                    <span>Daftar Kegiatan</span>
+                                <a class="dropdown-item {{ request()->routeIs('pemantauan-staff.*') ? 'active' : '' }}" href="{{ route('pemantauan-staff.index') }}">
+                                    <span>Pemantauan Staff</span>
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item {{ request()->routeIs('kepanitiaan.*') ? 'active' : '' }}" href="{{ route('kepanitiaan.index') }}">
-                                    <span>Kegiatan Kepanitiaan</span>
+                                <a class="dropdown-item {{ request()->routeIs('analisis-keterlambatan.*') ? 'active' : '' }}" href="{{ route('analisis-keterlambatan.index') }}">
+                                    <span>Analisis Keterlambatan</span>
                                 </a>
                             </li>
                         </ul>
@@ -230,57 +232,17 @@
                     </li>
                 @endif
 
-                <!-- 3. MONITORING & LAPORAN -->
-                @php
-                    $hasOtkSubordinates = $u && $u->subordinates()->exists();
-                @endphp
-                @if($isAdmin || $isRektorat || $isPimpinanUnit || $hasOtkSubordinates)
-                    @php
-                        $isMonitoringActive = request()->routeIs('rekapitulasi.*') || 
-                                              request()->routeIs('rekapitulasi-kepanitiaan.*') || 
-                                              request()->routeIs('rekapitulasi-insidentil.*') || 
-                                              request()->routeIs('pemantauan-staff.*') ||
-                                              request()->routeIs('analisis-keterlambatan.*');
-                    @endphp
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ $isMonitoringActive ? 'active' : '' }}" href="#" id="monitoringDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-                            
-                            <span>
-                                @if($isAdmin || $isRektorat) Monitoring &amp; Evaluasi
-                                @else Monitoring Unit
-                                @endif
-                            </span>
-                             <i class="bi bi-chevron-down dropdown-chevron"></i></a>
-                        <ul class="dropdown-menu" aria-labelledby="monitoringDropdown">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('pemantauan-staff.*') ? 'active' : '' }}" href="{{ route('pemantauan-staff.index') }}">
-                                    <span>Pemantauan Staff</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('analisis-keterlambatan.*') ? 'active' : '' }}" href="{{ route('analisis-keterlambatan.index') }}">
-                                    <span>Analisis Keterlambatan</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*') ? 'active' : '' }}" href="{{ route('rekapitulasi.index') }}">
-                                    <span>
-                                        @if($isPimpinanUnit) Rekapitulasi Kinerja Unit
-                                        @else Rekapitulasi Kinerja
-                                        @endif
-                                    </span>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                @else
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*') ? 'active' : '' }}" href="{{ route('rekapitulasi.index') }}">
-                            
-                            <span>Rekapitulasi Capaian Saya</span>
-                        </a>
-                    </li>
-                @endif
+                <!-- 3. REKAPITULASI CAPAIAN / KINERJA -->
+                <li class="nav-item">
+                    <a class="nav-link {{ (request()->routeIs('rekapitulasi.*') || request()->routeIs('rekapitulasi-kepanitiaan.*') || request()->routeIs('rekapitulasi-insidentil.*')) ? 'active' : '' }}" href="{{ route('rekapitulasi.index') }}">
+                        <span>
+                            @if($isPimpinanUnit) Rekapitulasi Kinerja Unit
+                            @elseif($isAdmin || $isRektorat) Rekapitulasi Kinerja
+                            @else Rekapitulasi Capaian Saya
+                            @endif
+                        </span>
+                    </a>
+                </li>
 
                 <!-- 4. LPJ (Jika punya akses LPJ) -->
                 @if ($u && $u->canAccessLpj())
