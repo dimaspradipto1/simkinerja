@@ -675,8 +675,10 @@ class InsidentilController extends Controller
     public function create()
     {
         $periodeAkademiks = PeriodeAkademik::orderBy('nama_periode', 'desc')->get();
+        $defaultPeriode = PeriodeAkademik::getActive();
+        $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
         $users = User::orderBy('name', 'asc')->get();
-        return view('pages.insidentil.create', compact('periodeAkademiks', 'users'));
+        return view('pages.insidentil.create', compact('periodeAkademiks', 'defaultPeriodeId', 'users'));
     }
 
     /**

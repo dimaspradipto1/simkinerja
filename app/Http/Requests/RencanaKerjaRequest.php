@@ -15,6 +15,19 @@ class RencanaKerjaRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (empty($this->periode_akademik_id)) {
+            $active = \App\Models\PeriodeAkademik::getActive();
+            if ($active) {
+                $this->merge(['periode_akademik_id' => $active->id]);
+            }
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
@@ -24,7 +37,7 @@ class RencanaKerjaRequest extends FormRequest
         return [
             'kategori' => ['nullable', 'string', 'max:50'],
             'uraian_tugas' => ['required', 'string'],
-            'periode_akademik_id' => ['required', 'exists:periode_akademiks,id'],
+            'periode_akademik_id' => ['nullable', 'exists:periode_akademiks,id'],
             'user_id' => ['nullable', 'exists:users,id'],
             'hari' => ['nullable', 'string', 'max:50'],
             'estimasi_jam_mulai' => ['nullable'],

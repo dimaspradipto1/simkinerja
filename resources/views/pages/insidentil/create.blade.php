@@ -42,18 +42,21 @@
                         @endif
 
                         <div class="col-md-6">
-                            <label for="periode_akademik_id" class="form-label fw-semibold">Periode Akademik <span class="text-danger">*</span></label>
-                            <select class="form-select @error('periode_akademik_id') is-invalid @enderror" id="periode_akademik_id" name="periode_akademik_id" required>
-                                <option value="" disabled {{ old('periode_akademik_id') ? '' : 'selected' }}>-- Pilih Periode Akademik --</option>
+                            <label class="form-label fw-semibold text-dark d-flex align-items-center justify-content-between">
+                                <span>Periode Akademik <span class="text-danger">*</span></span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2" style="font-size: 0.72rem;">
+                                    <i class="bi bi-lock-fill me-1"></i>Otomatis Aktif
+                                </span>
+                            </label>
+                            <input type="hidden" name="periode_akademik_id" value="{{ old('periode_akademik_id', $defaultPeriodeId ?? '') }}">
+                            <select class="form-select bg-light text-dark fw-semibold" disabled tabindex="-1" style="cursor: not-allowed; background-color: #f8fafc !important;">
                                 @foreach($periodeAkademiks as $pa)
-                                    <option value="{{ $pa->id }}" {{ old('periode_akademik_id') == $pa->id ? 'selected' : '' }}>
-                                        {{ $pa->nama_periode }}
+                                    <option value="{{ $pa->id }}" {{ old('periode_akademik_id', $defaultPeriodeId ?? '') == $pa->id ? 'selected' : '' }}>
+                                        {{ $pa->formatted_ta ?? $pa->nama_periode }} {{ $pa->is_active ? '★ (Aktif)' : '' }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('periode_akademik_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <div class="form-text text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Otomatis diset sesuai Periode Akademik yang sedang aktif.</div>
                         </div>
 
                         <div class="col-md-6">
