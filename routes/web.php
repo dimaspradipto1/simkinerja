@@ -120,6 +120,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('rencana-kerja/{rencana_kerja}/approve-extension', [RencanaKerjaController::class, 'approveExtension'])->name('rencana-kerja.approve-extension');
     Route::post('rencana-kerja/{rencana_kerja}/reopen', [RencanaKerjaController::class, 'reopen'])->name('rencana-kerja.reopen');
     Route::post('rencana-kerja/{rencana_kerja}/request-reopen', [RencanaKerjaController::class, 'requestReopen'])->name('rencana-kerja.request-reopen');
+    Route::get('rencana-kerja/{rencana_kerja}/modal-detail', [RencanaKerjaController::class, 'modalDetail'])->name('rencana-kerja.modal-detail');
     Route::resource('rencana-kerja', RencanaKerjaController::class);
 
     Route::get('rekapitulasi/data', [RekapitulasiController::class, 'getData'])->name('rekapitulasi.data');

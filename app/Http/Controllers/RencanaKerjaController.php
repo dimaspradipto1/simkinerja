@@ -107,7 +107,7 @@ class RencanaKerjaController extends Controller
                     }
                     return '';
                 })
-                ->filterColumn('task_details', function ($query, $keyword) {
+                ->filterColumn('kegiatan', function ($query, $keyword) {
                     $query->where(function ($q) use ($keyword) {
                         $q->where('uraian_tugas', 'like', "%{$keyword}%")
                           ->orWhere('kategori', 'like', "%{$keyword}%")
@@ -120,368 +120,115 @@ class RencanaKerjaController extends Controller
                           });
                     });
                 })
-                ->addColumn('task_details', function ($row) use ($authUser) {
-                    $html = '<div class="d-flex flex-column gap-2 py-1 w-100" style="max-width: 100%; box-sizing: border-box;">';
+                ->addColumn('jam', function ($row) {
+                    if (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00') {
+                        $start = substr($row->waktu_mulai, 0, 5);
+                        $end = (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') ? substr($row->waktu_selesai, 0, 5) : '';
+                        return '<span class="text-secondary small font-monospace">' . e($start . ($end ? '-' . $end : '-')) . '</span>';
+                    }
+                    if (!empty($row->estimasi_jam_mulai)) {
+                        $start = substr($row->estimasi_jam_mulai, 0, 5);
+                        $end = !empty($row->estimasi_jam_selesai) ? substr($row->estimasi_jam_selesai, 0, 5) : '';
+                        return '<span class="text-secondary small font-monospace">' . e($start . ($end ? '-' . $end : '')) . '</span>';
+                    }
+                    return '<span class="text-muted small">-</span>';
+                })
+                ->addColumn('total_jam', function ($row) {
+                    $seconds = \App\Helpers\KinerjaWaktuHelper::hitungDetikRealisasi($row);
+                    if ($seconds > 0) {
+                        $jamNum = round($seconds / 3600, 1);
+                        $formatted = str_replace('.', ',', (string)$jamNum) . ' jam';
+                        return '<span class="fw-semibold text-dark small">' . e($formatted) . '</span>';
+                    }
+                    if (!empty($row->estimasi_durasi_jam) || !empty($row->estimasi_durasi_hari)) {
+                        $estStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget($row->estimasi_durasi_hari, $row->estimasi_durasi_jam);
+                        return '<span class="text-muted small">' . e($estStr) . '</span>';
+                    }
+                    return '<span class="text-muted small">-</span>';
+                })
+                ->addColumn('kegiatan', function ($row) {
+                    $html = '<div class="d-flex flex-column gap-1 py-1">';
+                    $html .= '<div class="fw-bold text-dark fs-6" style="font-size: 0.88rem !important; line-height: 1.4;">' . e($row->uraian_tugas) . '</div>';
                     
-                    // 1. Task Title & Action Buttons Bar (Responsive Mobile Optimized)
-                    $collapseId = 'collapseTask_' . $row->id;
-                    $actionBtns = $this->renderActionButtons($row, $authUser, 'rencana-kerja', 'deleteRencanaKerja', $collapseId);
-
-                    $html .= '<div class="task-card-item p-3 bg-white rounded-3 border mb-3 shadow-2xs d-flex flex-column gap-2" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;">';
-                    $html .= '  <div class="d-flex align-items-center justify-content-between gap-2 pb-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '" title="Klik untuk membuka / menutup rincian">';
-                    $html .= '      <div class="text-dark fw-bold fs-6 lh-sm d-flex align-items-center gap-2 text-break flex-grow-1" style="font-size: 0.95rem;">';
-                    $html .= '          <i class="bi bi-card-checklist text-primary fs-5 flex-shrink-0"></i>';
-                    $html .= '          <span class="text-break">' . e($row->uraian_tugas) . '</span>';
-                    $html .= '      </div>';
-                    $html .= '      <i class="bi bi-chevron-down text-secondary fs-6 transition-transform toggle-icon flex-shrink-0"></i>';
-                    $html .= '  </div>';
-                    $html .= '  <div class="mt-2 pt-2.5 border-top task-action-container">';
-                    $html .= '      <span class="text-secondary small fw-semibold task-action-label"><i class="bi bi-gear-fill me-1"></i>Aksi & Status:</span>';
-                    $html .=        $actionBtns;
-                    $html .= '  </div>';
-                    $html .= '</div>';
-
-                    // Collapsible Content Container (Dropdown section)
-                    $html .= '<div class="collapse" id="' . $collapseId . '">';
-                    $html .= '  <div class="d-flex flex-column gap-2 pt-1">';
-
-                    // 2. Metadata Chips (Kategori, Periode, Hari, Pegawai)
-                    $chips = [];
-                    if ($row->kategori) {
-                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-tag-fill me-1"></i>' . e($row->kategori) . '</span>';
-                    }
-
-                    if ($row->periodeAkademik) {
-                        $taLabel = $row->periodeAkademik->formatted_ta ?? ('T.A. ' . $row->periodeAkademik->nama_periode);
-                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-mortarboard-fill me-1"></i>' . e($taLabel) . '</span>';
-                    }
-
+                    $subItems = [];
                     if ($row->user) {
-                        $chips[] = '<span class="badge px-2 py-1 bg-light text-dark border fw-normal" style="font-size: 0.78rem;"><i class="bi bi-person-fill text-secondary me-1"></i>' . e($row->user->name) . ' <span class="text-muted">(' . e($row->user->jabatan ?? '-') . ')</span></span>';
+                        $subItems[] = '<span class="text-secondary small"><i class="bi bi-person-fill text-muted me-1"></i>' . e($row->user->name) . '</span>';
                     }
-
-                    if ($row->hari) {
-                        $chips[] = '<span class="badge px-2 py-1" style="background-color: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; font-weight: 600; font-size: 0.78rem;"><i class="bi bi-calendar-day me-1"></i>' . e($row->hari) . '</span>';
-                    }
-
-                    if (!empty($chips)) {
-                        $html .= '<div class="d-flex flex-wrap align-items-center gap-2 mb-1">' . implode('', $chips) . '</div>';
-                    }
-
-                    // 2.5 Special Card for Tagged Users (Rekan Kerja) - Kartu Tersendiri
                     if ($row->taggedUsers->count() > 0) {
-                        $html .= '<div class="mt-1 p-2 px-3 bg-white rounded border shadow-sm d-flex flex-column gap-1" style="border-left: 4px solid #0284c7 !important; word-break: break-word; overflow-wrap: break-word;">';
-                        $html .= '<span class="text-secondary small fw-bold mb-1 d-inline-flex align-items-center"><i class="bi bi-people-fill text-info me-2" style="margin-right: 8px !important;"></i>Rekan Kerja:</span>';
-                        $html .= '<div class="d-flex flex-column gap-1 ps-1 ps-sm-2">';
-
-                        $sortedUsers = $row->taggedUsers->sortByDesc(function ($u) {
-                            $name = $u->name;
-                            if (preg_match('/^Prof\./i', $name)) return 100;
-                            if (preg_match('/^Assoc\./i', $name)) return 90;
-                            if (preg_match('/^Dr\./i', $name)) return 80;
-                            if (preg_match('/^dr\./i', $name)) return 70;
-                            if (preg_match('/^Ir\./i', $name)) return 60;
-                            if (preg_match('/,\s*M\.[A-Za-z]/i', $name)) return 40;
-                            if (preg_match('/,\s*S\.[A-Za-z]/i', $name)) return 20;
-                            return 0;
-                        });
-
-                        $idx = 1;
-                        foreach ($sortedUsers as $tu) {
-                            $html .= '<div class="fw-semibold text-dark text-break" style="font-size: 0.83rem; line-height: 1.35;">' . $idx . '. ' . e($tu->name) . ' <span class="text-muted fw-normal d-block d-sm-inline" style="font-size: 0.76rem;">(' . e($tu->jabatan ?? '-') . ')</span></div>';
-                            $idx++;
-                        }
-                        $html .= '</div>';
-                        $html .= '</div>';
+                        $taggedNames = $row->taggedUsers->pluck('name')->implode(', ');
+                        $subItems[] = '<span class="text-info small fw-medium" title="' . e($taggedNames) . '"><i class="bi bi-people-fill me-1"></i>' . e(\Illuminate\Support\Str::limit($taggedNames, 35)) . '</span>';
                     }
-
-                    // 3. Time Details Card Box (Kiri: Estimasi & Mulai | Kanan: Selesai & Durasi)
-                    $estFormatted = '-';
-                    if ($row->estimasi_jam_mulai || $row->estimasi_tanggal_mulai) {
-                        $tglEstMulai = $row->estimasi_tanggal_mulai ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '';
-                        $tglEstSelesai = $row->estimasi_tanggal_selesai ? date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) : '';
-                        $jamEstMulai = $row->estimasi_jam_mulai ? substr($row->estimasi_jam_mulai, 0, 5) : '';
-                        $jamEstSelesai = $row->estimasi_jam_selesai ? substr($row->estimasi_jam_selesai, 0, 5) : '';
-
-                        if ($tglEstMulai && $tglEstSelesai && $tglEstMulai === $tglEstSelesai) {
-                            $jamPart = '';
-                            if ($jamEstMulai && $jamEstSelesai) {
-                                $jamPart = ' (' . $jamEstMulai . ' - ' . $jamEstSelesai . ' WIB)';
-                            } elseif ($jamEstMulai) {
-                                $jamPart = ' (' . $jamEstMulai . ' WIB)';
-                            } elseif ($jamEstSelesai) {
-                                $jamPart = ' (' . $jamEstSelesai . ' WIB)';
-                            }
-                            $estFormatted = $tglEstMulai . $jamPart;
-                        } else {
-                            $startPart = trim($tglEstMulai . ($jamEstMulai ? ' (' . $jamEstMulai . ' WIB)' : ''));
-                            $endPart = trim($tglEstSelesai . ($jamEstSelesai ? ' (' . $jamEstSelesai . ' WIB)' : ''));
-                            $estFormatted = trim($startPart . ($endPart ? ' - ' . $endPart : ''));
-                        }
-                    }
-
-                    $mulaiFormatted = '-';
-                    if ($row->waktu_mulai) {
-                        $tglMulai = $row->tanggal_mulai ? date('d/m/Y', strtotime($row->tanggal_mulai)) : '';
-                        $jamMulai = substr($row->waktu_mulai, 0, 5);
-                        $mulaiFormatted = $tglMulai ? ($tglMulai . ' (' . $jamMulai . ' WIB)') : '(' . $jamMulai . ' WIB)';
-                    }
-
-                    $selesaiFormatted = '-';
-                    if ($row->waktu_selesai && $row->waktu_selesai !== '00:00:00') {
-                        $tglSelesai = $row->tanggal_selesai ? date('d/m/Y', strtotime($row->tanggal_selesai)) : '';
-                        $jamSelesai = substr($row->waktu_selesai, 0, 5);
-                        $selesaiFormatted = $tglSelesai ? ($tglSelesai . ' (' . $jamSelesai . ' WIB)') : '(' . $jamSelesai . ' WIB)';
-                    }
-
-                    $durasiStr = '-';
-                    if (!empty($row->waktu_mulai) && !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') {
-                        try {
-                            $tglMulaiStr = !empty($row->tanggal_mulai) ? $row->tanggal_mulai : now()->format('Y-m-d');
-                            $tglSelesaiStr = !empty($row->tanggal_selesai) ? $row->tanggal_selesai : $tglMulaiStr;
-
-                            $startTs = strtotime($tglMulaiStr . ' ' . $row->waktu_mulai);
-                            $endTs = strtotime($tglSelesaiStr . ' ' . $row->waktu_selesai);
-
-                            $diffInSeconds = max(0, $endTs - $startTs);
-
-                            $days = floor($diffInSeconds / 86400);
-                            $hours = floor(($diffInSeconds % 86400) / 3600);
-                            $minutes = floor(($diffInSeconds % 3600) / 60);
-                            $seconds = $diffInSeconds % 60;
-
-                            $durasiParts = [];
-                            if ($days > 0) $durasiParts[] = $days . 'h';
-                            if ($hours > 0) $durasiParts[] = $hours . 'j';
-                            if ($minutes > 0) $durasiParts[] = $minutes . 'm';
-                            if ($seconds > 0 || empty($durasiParts)) $durasiParts[] = $seconds . 's';
-
-                            $durasiStr = implode(' ', $durasiParts);
-                        } catch (\Exception $e) {
-                            $durasiStr = '-';
-                        }
-                    }
-
-                    $html .= '<div class="mt-2 p-2 p-sm-3 bg-light rounded border shadow-sm" style="word-break: break-word;">';
-                    $html .= '<div class="row g-2 align-items-center">';
-                    
-                    // Left Column: Estimasi & Mulai
-                    $html .= '<div class="col-12 col-md-6">';
-                    
-                    $html .= '<div class="mb-2">';
-                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-clock-history me-1"></i>Estimasi Pelaksanaan:</label>';
-                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($estFormatted) . '</div>';
-                    $targetDurasiStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget($row->estimasi_durasi_hari ?? null, $row->estimasi_durasi_jam ?? null);
-                    if ($targetDurasiStr) {
-                        $html .= '<div class="mt-1 ps-1"><span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.75rem;"><i class="bi bi-hourglass-top me-1"></i>Target Durasi: ' . e($targetDurasiStr) . '</span></div>';
-                    }
-                    $html .= '</div>';
-
-                    $html .= '<div>';
-                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-play-circle-fill text-primary me-1"></i>Waktu Mulai:</label>';
-                    $html .= '<div class="fw-semibold text-primary ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($mulaiFormatted) . '</div>';
-                    $html .= '</div>';
-
-                    $html .= '</div>'; // end col left
-
-                    // Right Column: Selesai & Durasi
-                    $html .= '<div class="col-12 col-md-6">';
-
-                    $html .= '<div class="mb-2">';
-                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-check-circle-fill text-success me-1"></i>Waktu Selesai:</label>';
-                    $html .= '<div class="fw-semibold text-success ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($selesaiFormatted) . '</div>';
-                    $html .= '</div>';
-
-                    $html .= '<div>';
-                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold text-nowrap d-block" style="font-size: 0.78rem;"><i class="bi bi-hourglass-split me-1"></i>Total Durasi:</label>';
-                    $html .= '<div class="fw-semibold text-dark ps-1" style="font-size: 0.85rem; word-break: break-word;">' . e($durasiStr) . '</div>';
-                    $html .= '</div>';
-
-                    $html .= '</div>'; // end col right
-
-                    if ($row->status === 'Di-pause') {
-                        $html .= '<div class="col-12 mt-2 pt-2 border-top">';
-                        $html .= '<div class="p-2 px-3 rounded-2 border" style="background-color: #fffbeb; border-color: #fde68a !important;">';
-                        $html .= '<div class="d-flex align-items-center justify-content-between mb-1">';
-                        $html .= '<label class="form-label mb-0 text-warning-emphasis fw-bold small d-flex align-items-center gap-1">';
-                        $html .= '<i class="bi bi-pause-circle-fill text-warning"></i> Penyebab Di-pause:';
-                        $html .= '</label>';
-                        $html .= '<span class="badge bg-warning text-dark fw-semibold" style="font-size: 0.7rem;">Status: Di-pause</span>';
-                        $html .= '</div>';
-                        $html .= '<div class="mt-1">';
-                        $html .= '<textarea name="alasan_pause" class="form-control form-control-sm border-warning-subtle shadow-2xs field-alasan-pause" data-id="' . $row->id . '" data-type="rencana-kerja" rows="2" placeholder="Tuliskan penyebab atau kendala pekerjaan di-pause...">' . e($row->alasan_pause ?? '') . '</textarea>';
-                        $html .= '</div>';
-                        $html .= '<div class="d-flex justify-content-end mt-2">';
-                        $html .= '<button type="button" class="btn btn-sm btn-warning text-dark fw-bold px-3 btn-simpan-alasan-pause" data-id="' . $row->id . '" data-type="rencana-kerja" style="font-size: 0.78rem;">';
-                        $html .= '<i class="bi bi-check2-circle me-1"></i> Simpan Penyebab Pause';
-                        $html .= '</button>';
-                        $html .= '</div>';
-                        $html .= '</div>';
-                        $html .= '</div>';
-                    }
-
-                    $html .= '</div>'; // end row
-                    $html .= '</div>'; // end card
-
-                    // Milestone Points Widget Section
-                    $html .= \App\Helpers\MilestoneHelper::renderWidget($row->milestones, $row->id, \App\Models\RencanaKerja::class);
-
-                    // Form Inline Upload Berkas, Link, Hasil Kerja, & Rencana Tindak Lanjut di bawah Milestone
-                    $html .= '<form class="form-inline-upload mt-2 p-3 bg-light rounded border shadow-sm" data-id="' . $row->id . '" enctype="multipart/form-data">';
-                    $html .= '<div class="row g-2">';
-                    
-                    if ($row->status === 'Di-pause') {
-                        $html .= '<div class="col-12 mb-2">';
-                        $html .= '<label class="form-label mb-1 text-warning-emphasis small fw-bold"><i class="bi bi-pause-circle-fill text-warning me-1"></i>Penyebab Di-pause:</label>';
-                        $html .= '<textarea name="alasan_pause" class="form-control form-control-sm" rows="2" placeholder="Isikan penyebab atau kendala pekerjaan di-pause...">' . e($row->alasan_pause ?? '') . '</textarea>';
-                        $html .= '</div>';
-                    }
-
-                    // Field TinyMCE Hasil Kerja
-                    $html .= '<div class="col-12 col-md-6 mb-2">';
-                    $html .= '<label class="form-label mb-1 text-dark small fw-bold"><i class="bi bi-file-earmark-text-fill text-success me-1"></i>Hasil Kerja:</label>';
-                    $html .= '<textarea name="hasil_kerja" class="form-control form-control-sm tinymce-editor" id="hasil_kerja_' . $row->id . '" rows="3" placeholder="Isikan rincian hasil kerja...">' . e($row->hasil_kerja ?? '') . '</textarea>';
-                    $html .= '</div>';
-
-                    // Field TinyMCE Rencana Tindak Lanjut
-                    $html .= '<div class="col-12 col-md-6 mb-2">';
-                    $html .= '<label class="form-label mb-1 text-dark small fw-bold"><i class="bi bi-arrow-right-circle-fill text-primary me-1"></i>Rencana Tindak Lanjut:</label>';
-                    $html .= '<textarea name="rencana_tindak_lanjut" class="form-control form-control-sm tinymce-editor" id="tindak_lanjut_' . $row->id . '" rows="3" placeholder="Isikan rencana tindak lanjut...">' . e($row->rencana_tindak_lanjut ?? '') . '</textarea>';
-                    $html .= '</div>';
-
-                    // Upload Berkas & External Link
-                    $html .= '<div class="col-12 col-md-6 inline-upload-left">';
-                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold d-block"><i class="bi bi-paperclip me-1"></i>Unggah Berkas Kinerja:</label>';
-                    $html .= '<input type="file" name="file" class="form-control form-control-sm bg-white input-file-inline">';
-                    $html .= '</div>';
-
-                    $html .= '<div class="col-12 col-md-6 inline-upload-right">';
-                    $html .= '<label class="form-label mb-1 text-secondary small fw-semibold d-block"><i class="bi bi-link-45deg me-1"></i>Tautan Google Drive / External:</label>';
-                    $html .= '<input type="url" name="url_external" class="form-control form-control-sm bg-white input-url-inline" placeholder="https://drive.google.com/..." value="' . e($row->url_external ?? '') . '">';
-                    $html .= '</div>';
-
-                    $html .= '<div class="col-12 mt-3 text-start">';
-                    $html .= '<button type="submit" class="btn btn-sm text-white px-4 fw-bold btn-simpan-inline" style="background-color: #15432d; border-color: #15432d; height: 34px;"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Hasil & Tindak Lanjut</button>';
-                    $html .= '</div>';
-
-                    // Hasil Tersimpan (Di bawah Tombol Simpan)
-                    $html .= '<div class="col-12 mt-3 pt-2 border-top">';
-                    $html .= '<div class="d-flex align-items-center flex-wrap gap-2 mb-1">';
-                    $html .= '<span class="text-dark small fw-bold me-2"><i class="bi bi-folder-check me-1"></i>Hasil Tersimpan:</span>';
-                    
-                    $hasResult = false;
                     if ($row->file) {
-                        $hasResult = true;
-                        $fileUrl = asset('storage/' . $row->file);
-                        $html .= '<a href="' . $fileUrl . '" target="_blank" class="btn btn-sm btn-outline-success text-nowrap fw-semibold px-3 d-inline-flex align-items-center" style="font-size: 0.8rem; height: 30px;"><i class="bi bi-file-earmark-check-fill me-1"></i> Unduh / Lihat Berkas</a>';
+                        $subItems[] = '<a href="' . asset('storage/' . $row->file) . '" target="_blank" class="text-success text-decoration-none small fw-semibold"><i class="bi bi-paperclip me-1"></i>Bukti Berkas</a>';
+                    } elseif ($row->url_external) {
+                        $subItems[] = '<a href="' . e($row->url_external) . '" target="_blank" class="text-primary text-decoration-none small fw-semibold"><i class="bi bi-link-45deg me-1"></i>Bukti Link</a>';
                     }
 
-                    if ($row->url_external) {
-                        $hasResult = true;
-                        $html .= '<a href="' . e($row->url_external) . '" target="_blank" class="btn btn-sm btn-outline-primary text-nowrap fw-semibold px-3 d-inline-flex align-items-center" style="font-size: 0.8rem; height: 30px;"><i class="bi bi-box-arrow-up-right me-1"></i> Buka Link Eksternal</a>';
+                    if (!empty($subItems)) {
+                        $html .= '<div class="d-flex flex-wrap align-items-center gap-2 mt-0.5">' . implode('<span class="text-muted small">•</span>', $subItems) . '</div>';
                     }
-                    $html .= '</div>'; // end flex header
+                    $html .= '</div>';
+                    return $html;
+                })
+                ->addColumn('jenis', function ($row) {
+                    $kat = strtolower($row->kategori ?? 'rutin');
+                    if (str_contains($kat, 'insidentil') || str_contains($kat, 'insidental')) {
+                        return '<span class="badge rounded-pill bg-light text-dark border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 500;"><span class="text-warning me-1" style="font-size: 8px;">●</span> Insidental</span>';
+                    } elseif (str_contains($kat, 'panitia') || str_contains($kat, 'kepanitiaan')) {
+                        return '<span class="badge rounded-pill bg-light text-dark border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 500;"><span class="text-info me-1" style="font-size: 8px;">●</span> Panitia</span>';
+                    }
+                    return '<span class="badge rounded-pill bg-light text-dark border px-2.5 py-1" style="font-size: 0.76rem; font-weight: 500;"><span class="text-success me-1" style="font-size: 8px;">●</span> Rutin</span>';
+                })
+                ->addColumn('status_badge', function ($row) {
+                    $st = $row->status ?? 'Belum Dimulai';
+                    if ($st === 'Selesai') {
+                        return '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>';
+                    } elseif (in_array($st, ['Proses', 'Berjalan'])) {
+                        return '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;"><i class="bi bi-play-circle-fill me-1"></i>Proses</span>';
+                    } elseif ($st === 'Di-pause') {
+                        return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;"><i class="bi bi-pause-circle-fill me-1"></i>Di-pause</span>';
+                    }
+                    return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.78rem;">Belum Dimulai</span>';
+                })
+                ->addColumn('action', function ($row) use ($authUser) {
+                    $html = '<div class="d-inline-flex align-items-center gap-1.5">';
+                    
+                    // Tombol Eye: Buka Modal Detail (pengganti dropdown)
+                    $html .= '<button type="button" class="btn btn-sm btn-outline-secondary p-1 px-2 btn-detail-task" data-id="' . $row->id . '" title="Tampilkan Rincian (Modal Pengganti Dropdown)"><i class="bi bi-eye fs-6"></i></button>';
 
-                    if (!empty($row->hasil_kerja)) {
-                        $hasResult = true;
-                        $html .= '<div class="w-100 p-2 mt-2 rounded bg-white border small text-dark"><strong class="text-success d-block mb-1"><i class="bi bi-file-earmark-text-fill me-1"></i>Hasil Kerja:</strong><div>' . $row->hasil_kerja . '</div></div>';
+                    // Action button (Start/Pause/Stop/Reopen)
+                    $st = $row->status ?? 'Belum Dimulai';
+                    $wMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
+                    $wSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
+                    
+                    if (!$wMulai && $st !== 'Selesai') {
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-primary p-1 px-2" onclick="window.startTaskQuick(' . $row->id . ')" title="Mulai Kerjakan"><i class="bi bi-play-fill fs-6"></i></button>';
+                    } elseif ($st === 'Proses' || ($wMulai && !$wSelesai)) {
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-success p-1 px-2" onclick="window.stopTaskQuick(' . $row->id . ')" title="Selesaikan Tugas"><i class="bi bi-check-lg fs-6"></i></button>';
+                    } elseif ($st === 'Selesai') {
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-warning p-1 px-2" onclick="window.reopenTaskQuick(' . $row->id . ')" title="Buka Kunci / Kerjakan Lagi"><i class="bi bi-unlock-fill fs-6"></i></button>';
                     }
 
-                    if (!empty($row->rencana_tindak_lanjut)) {
-                        $hasResult = true;
-                        $html .= '<div class="w-100 p-2 mt-2 rounded bg-white border small text-dark"><strong class="text-primary d-block mb-1"><i class="bi bi-arrow-right-circle-fill me-1"></i>Rencana Tindak Lanjut:</strong><div>' . $row->rencana_tindak_lanjut . '</div></div>';
+                    // Edit & Delete
+                    $canEdit = $authUser && ($authUser->isAdmin() || $authUser->isPimpinanUnit() || $row->user_id === $authUser->id);
+                    if ($canEdit) {
+                        $html .= '<a href="' . route('rencana-kerja.edit', $row->id) . '" class="btn btn-sm btn-outline-secondary p-1 px-2" title="Edit Tugas"><i class="bi bi-pencil-square fs-6"></i></a>';
+                        $html .= '<button type="button" class="btn btn-sm btn-outline-danger p-1 px-2" onclick="window.deleteRencanaKerja(' . $row->id . ')" title="Hapus"><i class="bi bi-trash fs-6"></i></button>';
                     }
-
-                    if (!$hasResult) {
-                        $html .= '<span class="text-muted small fst-italic">Belum ada berkas, link, atau hasil tersimpan</span>';
-                    }
-
-                    $html .= '</div>'; // end col-12
-                    $html .= '</div>'; // end row
-                    $html .= '</form>';
-
-                    $html .= '  </div>'; // end collapse inner d-flex
-                    $html .= '</div>'; // end collapse
 
                     $html .= '</div>';
                     return $html;
                 })
-                ->addColumn('action', function ($row) use ($authUser) {
-                    return '';
+                ->addColumn('date_group', function ($row) {
+                    $dt = $row->tanggal_mulai ?: ($row->estimasi_tanggal_mulai ?: ($row->created_at ? $row->created_at->format('Y-m-d') : null));
+                    if ($dt) {
+                        \Carbon\Carbon::setLocale('id');
+                        return \Carbon\Carbon::parse($dt)->translatedFormat('l, d F Y');
+                    }
+                    return 'Kegiatan Terdaftar';
                 })
                 ->addColumn('voice_narration', function ($row) {
-                    $uraian = e($row->uraian_tugas);
-
-                    // Estimasi
-                    $estMulai = !empty($row->estimasi_tanggal_mulai) ? date('d/m/Y', strtotime($row->estimasi_tanggal_mulai)) : '';
-                    $estJamMulai = !empty($row->estimasi_jam_mulai) ? substr($row->estimasi_jam_mulai, 0, 5) : '';
-                    $estSelesai = !empty($row->estimasi_tanggal_selesai) ? date('d/m/Y', strtotime($row->estimasi_tanggal_selesai)) : '';
-                    $estJamSelesai = !empty($row->estimasi_jam_selesai) ? substr($row->estimasi_jam_selesai, 0, 5) : '';
-
-                    $estStr = 'Estimasi: ';
-                    if ($estMulai && $estSelesai && $estMulai === $estSelesai) {
-                        $estStr .= $estMulai . ($estJamMulai || $estJamSelesai ? ' jam ' . $estJamMulai . ' sampai ' . $estJamSelesai . ' WIB' : '');
-                    } elseif ($estMulai || $estSelesai) {
-                        $estStr .= trim($estMulai . ' ' . $estJamMulai . ' WIB sampai ' . $estSelesai . ' ' . $estJamSelesai . ' WIB');
-                    } else {
-                        $estStr .= 'Belum ada';
-                    }
-                    $estStr .= '. ';
-
-                    // Waktu Mulai
-                    $tglM = !empty($row->tanggal_mulai) ? date('d/m/Y', strtotime($row->tanggal_mulai)) . ' ' : '';
-                    $mulaiStr = 'Waktu mulai: ' . (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00' ? $tglM . 'jam ' . substr($row->waktu_mulai, 0, 5) . ' WIB' : 'Belum dimulai') . '. ';
-
-                    // Waktu Selesai
-                    $tglS = !empty($row->tanggal_selesai) ? date('d/m/Y', strtotime($row->tanggal_selesai)) . ' ' : '';
-                    $selesaiStr = 'Waktu selesai: ' . (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00' ? $tglS . 'jam ' . substr($row->waktu_selesai, 0, 5) . ' WIB' : 'Belum selesai') . '. ';
-
-                    // Durasi
-                    $durasiStr = 'Durasi: ';
-                    if (!empty($row->waktu_mulai) && !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') {
-                        try {
-                            $tglMulaiStr = !empty($row->tanggal_mulai) ? $row->tanggal_mulai : now()->format('Y-m-d');
-                            $tglSelesaiStr = !empty($row->tanggal_selesai) ? $row->tanggal_selesai : $tglMulaiStr;
-                            $startTs = strtotime($tglMulaiStr . ' ' . $row->waktu_mulai);
-                            $endTs = strtotime($tglSelesaiStr . ' ' . $row->waktu_selesai);
-                            $diffInSeconds = max(0, $endTs - $startTs);
-                            $hours = floor($diffInSeconds / 3600);
-                            $minutes = floor(($diffInSeconds % 3600) / 60);
-                            $seconds = $diffInSeconds % 60;
-                            $dParts = [];
-                            if ($hours > 0) $dParts[] = $hours . ' jam';
-                            if ($minutes > 0) $dParts[] = $minutes . ' menit';
-                            if ($seconds > 0 || empty($dParts)) $dParts[] = $seconds . ' detik';
-                            $durasiStr .= implode(' ', $dParts);
-                        } catch (\Exception $e) {
-                            $durasiStr .= 'Belum ada';
-                        }
-                    } else {
-                        $durasiStr .= 'Belum ada';
-                    }
-                    $durasiStr .= '. ';
-
-                    // Analisis Ketepatan Waktu
-                    $analisisStr = 'Analisis: ';
-                    if ($row->status === 'Selesai') {
-                        if (!empty($row->estimasi_tanggal_selesai) && !empty($row->tanggal_selesai)) {
-                            $estEnd = strtotime($row->estimasi_tanggal_selesai . ' ' . ($row->estimasi_jam_selesai ?? '23:59:59'));
-                            $actEnd = strtotime($row->tanggal_selesai . ' ' . ($row->waktu_selesai ?? '00:00:00'));
-                            $analisisStr .= ($actEnd <= $estEnd) ? 'Selesai tepat waktu.' : 'Selesai terlambat.';
-                        } else {
-                            $analisisStr .= 'Selesai tepat waktu.';
-                        }
-                    } elseif ($row->status === 'Proses') {
-                        $analisisStr .= 'Masih berproses.';
-                    } else {
-                        $analisisStr .= 'Belum dikerjakan.';
-                    }
-                    $analisisStr .= ' ';
-
-                    // Link Eksternal Only
-                    $linkStr = 'Link eksternal: ' . (!empty($row->url_external) ? 'Ada link eksternal.' : 'Tidak ada link eksternal.') . ' ';
-
-                    return $uraian . '|||' . $estStr . $mulaiStr . $selesaiStr . $durasiStr . $analisisStr . $linkStr;
+                    return e($row->uraian_tugas);
                 })
                 ->with('overall_rekap', [
                     'total' => $totalCount,
@@ -490,7 +237,7 @@ class RencanaKerjaController extends Controller
                     'belum' => $belumCount,
                     'percent' => $percent,
                 ])
-                ->rawColumns(['checkbox', 'task_details', 'action'])
+                ->rawColumns(['checkbox', 'jam', 'total_jam', 'kegiatan', 'jenis', 'status_badge', 'action'])
                 ->make(true);
         }
 
@@ -570,6 +317,20 @@ class RencanaKerjaController extends Controller
         }
 
         return view('pages.rencanakerja.index', compact('usersWithJabatan', 'periodeAkademiks', 'defaultPeriodeId', 'pendingRequests', 'judulJabatan'));
+    }
+
+    /**
+     * Tampilkan modal detail rincian tugas (pengganti dropdown accordion).
+     */
+    public function modalDetail(RencanaKerja $rencanaKerja)
+    {
+        $authUser = Auth::user();
+        $rencanaKerja->load(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
+
+        return view('pages.rencanakerja.modal_detail', [
+            'row' => $rencanaKerja,
+            'authUser' => $authUser
+        ]);
     }
 
     /**
