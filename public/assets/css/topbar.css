@@ -133,7 +133,7 @@ a:hover {
   list-style: none;
   margin: 0;
   padding: 0;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: nowrap;
   overflow: visible !important;
 }
@@ -147,17 +147,17 @@ a:hover {
   display: flex;
   align-items: center;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 450;
+  font-size: 11px !important;
+  font-weight: 500;
   color: #334155;
-  padding: 6px 12px;
+  padding: 5px 8px !important;
   border-radius: 4px;
   transition: all 0.2s ease;
   text-decoration: none;
   cursor: pointer;
   background: transparent;
   border: none;
-  letter-spacing: 0.1px;
+  letter-spacing: 0.05px;
 }
 
 .topbar-menu .nav-link i:not(.dropdown-chevron) {
@@ -165,15 +165,15 @@ a:hover {
 }
 
 .topbar-menu .nav-link i {
-  font-size: 16px;
-  margin-right: 7px;
+  font-size: 14px;
+  margin-right: 5px;
   color: #798eb3;
   transition: color 0.25s ease;
 }
 
 .topbar-menu .nav-link .dropdown-chevron {
-  font-size: 9px;
-  margin-left: 4px;
+  font-size: 8px !important;
+  margin-left: 3px !important;
   margin-right: 0;
   color: #64748b;
   transition: transform 0.2s ease;
@@ -208,14 +208,14 @@ a:hover {
   top: 100% !important;
   left: 0 !important;
   margin: 0 !important;
-  padding: 8px 0;
+  padding: 5px 0 !important;
   background-color: #ffffff !important;
   border: 1px solid #ebeef4 !important;
   border-top: 3px solid #046B26 !important;
   border-radius: 0 0 8px 8px !important;
   box-shadow: 0px 10px 30px rgba(1, 41, 112, 0.15) !important;
   z-index: 1050 !important;
-  min-width: 200px;
+  min-width: 175px !important;
   display: none;
 }
 
@@ -239,18 +239,18 @@ a:hover {
 .topbar-nav .dropdown-item {
   display: flex;
   align-items: center;
-  font-size: 13.5px;
+  font-size: 11px !important;
   font-weight: 500;
   color: #012970 !important;
-  padding: 8px 18px;
+  padding: 6px 14px !important;
   transition: all 0.2s ease;
   background: transparent;
   text-decoration: none;
 }
 
 .topbar-nav .dropdown-item i {
-  font-size: 7px;
-  margin-right: 10px;
+  font-size: 6px !important;
+  margin-right: 7px !important;
   color: #899bbd;
   transition: all 0.2s ease;
 }
@@ -259,7 +259,7 @@ a:hover {
 .topbar-nav .dropdown-item:focus {
   background-color: #e8f5ec !important;
   color: #046B26 !important;
-  padding-left: 22px;
+  padding-left: 17px !important;
 }
 
 .topbar-nav .dropdown-item:hover i,
@@ -332,11 +332,15 @@ a:hover {
 --------------------------------------------------------------*/
 @media (min-width: 992px) {
   .header,
-  .topbar-nav .topbar-container,
   #main,
   #footer {
     padding-left: 103px !important;
     padding-right: 103px !important;
+  }
+
+  .topbar-nav .topbar-container {
+    padding-left: 30px !important;
+    padding-right: 30px !important;
   }
 }
 
@@ -462,4 +466,27 @@ a:hover {
 .topbar-menu .nav-link .dropdown-chevron {
   margin-left: 0.35rem !important;
   margin-right: 0 !important;
+}
+
+/*--------------------------------------------------------------
+# Ukuran Font Menu (11px) untuk Seluruh Menu Navigasi (Top-level & Dropdowns)
+--------------------------------------------------------------*/
+.topbar-menu .nav-link,
+.topbar-menu .nav-link span,
+.topbar-nav .dropdown-item,
+.topbar-nav .dropdown-item span,
+.sidebar-nav .nav-link,
+.sidebar-nav .nav-link span,
+.sidebar-nav .nav-content a,
+.sidebar-nav .nav-content a span {
+  font-size: 11px !important;
+}
+
+.topbar-menu .nav-link {
+  padding: 5px 7px !important;
+  white-space: nowrap !important;
+}
+
+.topbar-menu {
+  gap: 2px !important;
 }
