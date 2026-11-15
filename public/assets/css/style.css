@@ -1343,9 +1343,9 @@ h6 {
             transform: rotate(180deg);
         }
         .btn-task-toggle[aria-expanded="true"] {
-            background-color: #046B26 !important;
+            background-color: #15432d !important;
             color: #ffffff !important;
-            border-color: #046B26 !important;
+            border-color: #15432d !important;
         }
         .btn-task-toggle[aria-expanded="true"]:hover {
             background-color: #0f3121 !important;
@@ -1475,7 +1475,7 @@ h6 {
 
 /* resources/views/pages/hirarki/index.blade.php */
 body.menu-page-hierarchy-legacy .page-header-banner {
-    background: linear-gradient(135deg, #046B26 0%, #1a6b42 60%, #27ae60 100%);
+    background: linear-gradient(135deg, #15432D 0%, #1a6b42 60%, #27ae60 100%);
     border-radius: 16px;
     padding: 26px 30px;
     margin-bottom: 22px;
@@ -1529,10 +1529,10 @@ body.menu-page-hierarchy-legacy .nav-tabs-custom .nav-link {
 }
 body.menu-page-hierarchy-legacy .nav-tabs-custom .nav-link:hover {
     background: #f0fdf4;
-    color: #046B26;
+    color: #15432D;
 }
 body.menu-page-hierarchy-legacy .nav-tabs-custom .nav-link.active {
-    background: #046B26;
+    background: #15432D;
     color: white;
     box-shadow: 0 4px 12px rgba(21, 67, 45, 0.25);
 }
@@ -1562,7 +1562,7 @@ body.menu-page-hierarchy-legacy .leader-card:hover {
     border-color:#a7f3d0;
 }
 body.menu-page-hierarchy-legacy .leader-header {
-    background:linear-gradient(135deg,#046B26,#1e5e3b);
+    background:linear-gradient(135deg,#15432D,#1e5e3b);
     padding:13px 18px;
     display:flex;
     align-items:center;
@@ -1758,7 +1758,7 @@ body.menu-page-hierarchy-legacy .unassigned-avatar {
     flex-shrink:0;
 }
 body.menu-page-hierarchy-legacy .modal-assign .modal-header {
-    background:linear-gradient(135deg,#046B26,#1a6b42);
+    background:linear-gradient(135deg,#15432D,#1a6b42);
 }
 body.menu-page-hierarchy-legacy .modal-assign .modal-title {
     color:white;
@@ -1785,7 +1785,7 @@ body.menu-page-hierarchy-legacy .summary-stat {
 body.menu-page-hierarchy-legacy .summary-stat .num {
     font-size:1.5rem;
     font-weight:800;
-    color:#046B26;
+    color:#15432D;
     line-height:1;
 }
 body.menu-page-hierarchy-legacy .summary-stat .lbl {
@@ -2015,7 +2015,7 @@ body.menu-page-otk .otk-signatures {
     display: none;
 }
 body.menu-page-otk #supervisorModal .modal-header {
-    background: #046B26;
+    background: #15432d;
 }
 body.menu-page-otk .otk-search input {
     width: 100%;
@@ -2137,7 +2137,7 @@ body.menu-page-otk .otk-search input {
 }
 /* resources/views/pages/insidentil/index.blade.php */
 body.menu-page-insidentil .card-header-green {
-    background: linear-gradient(135deg, #046B26 0%, #1e5a3c 100%);
+    background: linear-gradient(135deg, #15432d 0%, #1e5a3c 100%);
     color: #ffffff;
     padding: 12px 20px;
     border-top-left-radius: 8px;
@@ -2298,9 +2298,9 @@ body.menu-page-insidentil .btn-filter-pill {
     transition: all 0.2s ease-in-out;
 }
 body.menu-page-insidentil .btn-filter-pill.active {
-    background: #046B26 !important;
+    background: #15432d !important;
     color: #ffffff !important;
-    border-color: #046B26 !important;
+    border-color: #15432d !important;
     box-shadow: 0 2px 4px rgba(21, 67, 45, 0.3) !important;
 }
 body.menu-page-insidentil .toggle-icon {
@@ -2352,7 +2352,7 @@ body.menu-page-insidentil #insidentil-table > tbody > tr > td:nth-child(3) {
 }
 /* resources/views/pages/kegiatan/index.blade.php */
 body.menu-page-kegiatan .card-header-green {
-    background-color: #046B26;
+    background-color: #15432d;
     color: #ffffff;
     padding: 10px 16px;
     border-top-left-radius: 6px;
@@ -2444,7 +2444,7 @@ body.menu-page-kegiatan #kegiatan-table > tbody > tr > td:nth-child(3),body.menu
 }
 /* resources/views/pages/kepanitiaan/index.blade.php */
 body.menu-page-kepanitiaan .card-header-green {
-    background: linear-gradient(135deg, #046B26 0%, #1e5a3c 100%);
+    background: linear-gradient(135deg, #15432d 0%, #1e5a3c 100%);
     color: #ffffff;
     padding: 12px 20px;
     border-top-left-radius: 8px;
@@ -2539,7 +2539,7 @@ body.menu-page-kepanitiaan .btn-green-add:hover {
     background-color: #1b4332;
 }
 body.menu-page-kepanitiaan .btn-mulai-green {
-    background-color: #046B26;
+    background-color: #15432d;
     color: #ffffff !important;
     border: none;
     padding: 4px 14px;
@@ -2619,9 +2619,9 @@ body.menu-page-kepanitiaan .btn-task-toggle[aria-expanded="true"] .toggle-icon {
     transform: rotate(180deg);
 }
 body.menu-page-kepanitiaan .btn-task-toggle[aria-expanded="true"] {
-    background-color: #046B26 !important;
+    background-color: #15432d !important;
     color: #ffffff !important;
-    border-color: #046B26 !important;
+    border-color: #15432d !important;
 }
 body.menu-page-kepanitiaan .btn-task-toggle[aria-expanded="true"]:hover {
     background-color: #0f3121 !important;
@@ -2680,9 +2680,9 @@ body.menu-page-kepanitiaan .btn-filter-pill {
     border-radius: 20px !important;
 }
 body.menu-page-kepanitiaan .btn-filter-pill.active {
-    background-color: #046B26 !important;
+    background-color: #15432d !important;
     color: #ffffff !important;
-    border-color: #046B26 !important;
+    border-color: #15432d !important;
 }
 body.menu-page-kepanitiaan .btn-filter-pill:hover:not(.active) {
     background-color: #f1f5f9;
@@ -2936,10 +2936,10 @@ body.menu-page-laporan-kinerja .nav-pills-uis .nav-link {
 }
 body.menu-page-laporan-kinerja .nav-pills-uis .nav-link:hover {
     background-color: #f1f5f9;
-    color: #046B26;
+    color: #15432D;
 }
 body.menu-page-laporan-kinerja .nav-pills-uis .nav-link.active {
-    background-color: #046B26 !important;
+    background-color: #15432D !important;
     color: #ffffff !important;
     box-shadow: 0 2px 5px rgba(21, 67, 45, 0.25);
 }
@@ -2962,16 +2962,16 @@ body.menu-page-laporan-pengembangan-form .nav-pills-uis .nav-link {
 }
 body.menu-page-laporan-pengembangan-form .nav-pills-uis .nav-link:hover {
     background-color: #f1f5f9;
-    color: #046B26;
+    color: #15432D;
 }
 body.menu-page-laporan-pengembangan-form .nav-pills-uis .nav-link.active {
-    background-color: #046B26 !important;
+    background-color: #15432D !important;
     color: #ffffff !important;
     box-shadow: 0 2px 5px rgba(21, 67, 45, 0.25);
 }
 /* resources/views/pages/laporan-pengembangan/index.blade.php */
 body.menu-page-laporan-pengembangan-index .banner-hero-uis {
-    background: linear-gradient(135deg, #046B26 0%, #1c583b 50%, #046B26 100%);
+    background: linear-gradient(135deg, #15432D 0%, #1c583b 50%, #15432D 100%);
     color: #ffffff;
     border: none;
     position: relative;
@@ -3098,7 +3098,7 @@ body.menu-page-pengaturan-absensi .status-dot-closed {
 }
 /* resources/views/pages/rekapitulasi/index.blade.php */
 body.menu-page-rekapitulasi .card-header-green {
-    background-color: #046B26;
+    background-color: #15432d;
     color: #ffffff;
     padding: 10px 16px;
     border-top-left-radius: 6px;
@@ -3122,12 +3122,12 @@ body.menu-page-rekapitulasi .rekap-tab-nav .nav-link {
     transition: all 0.2s;
 }
 body.menu-page-rekapitulasi .rekap-tab-nav .nav-link.active {
-    color: #046B26;
-    border-color: #046B26 #046B26 #fff;
+    color: #15432d;
+    border-color: #15432d #15432d #fff;
     background: #fff;
 }
 body.menu-page-rekapitulasi .rekap-tab-nav .nav-link:not(.active):hover {
-    color: #046B26;
+    color: #15432d;
     background: #f0f8f4;
 }
 body.menu-page-rekapitulasi .tab-icon {
@@ -3153,7 +3153,7 @@ body.menu-page-rekapitulasi .top-scrollbar-wrapper::-webkit-scrollbar-thumb {
     border-radius: 5px;
 }
 body.menu-page-rekapitulasi .top-scrollbar-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #046B26;
+    background: #15432d;
 }
 body.menu-page-rekapitulasi .top-scrollbar-content {
     height: 1px;
@@ -3270,7 +3270,7 @@ body.menu-page-rekapitulasi-absensi .table-rekap tbody td {
 }
 /* resources/views/pages/rekapitulasi-insidentil/index.blade.php */
 body.menu-page-rekapitulasi-insidentil .card-header-green {
-    background-color: #046B26;
+    background-color: #15432d;
     color: #ffffff;
     padding: 10px 16px;
     border-top-left-radius: 6px;
@@ -3286,7 +3286,7 @@ body.menu-page-rekapitulasi-insidentil .rekap-card:hover {
 }
 /* resources/views/pages/rekapitulasi-kepanitiaan/index.blade.php */
 body.menu-page-rekapitulasi-kepanitiaan .card-header-green {
-    background-color: #046B26;
+    background-color: #15432d;
     color: #ffffff;
     padding: 10px 16px;
     border-top-left-radius: 6px;
