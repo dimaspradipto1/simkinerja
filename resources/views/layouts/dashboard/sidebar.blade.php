@@ -95,7 +95,46 @@
                 @endif
 
                 <!-- MODUL LAYANAN -->
-                @if ($u && !$isOnlyPanitia)
+                @php
+                    $uJabatan = strtoupper($u->jabatan ?? '');
+                    $uUnit = strtoupper($u->unit ?? '');
+
+                    // Kriteria User LPTI
+                    $isRealKepalaLpti = str_contains($uJabatan, 'KEPALA LPTI') || 
+                                        str_contains($uJabatan, 'KA. LPTI') || 
+                                        str_contains($uJabatan, 'KA. UPT LPTI') ||
+                                        (str_contains($uUnit, 'TEKNIK INFORMASI') && (str_contains($uJabatan, 'KEPALA') || str_contains($uJabatan, 'KA.'))) ||
+                                        (str_contains($uUnit, 'LPTI') && (str_contains($uJabatan, 'KEPALA') || str_contains($uJabatan, 'KA.')));
+
+                    $isUserSi = (str_contains($uJabatan, 'SISTEM INFORMASI') || str_contains($uJabatan, 'PENGEMBANGAN SISTEM')) 
+                                && !str_contains($uJabatan, 'PROGRAM STUDI') && !str_contains($uJabatan, 'PRODI');
+                    $isUserJaringan = str_contains($uJabatan, 'INFRASTRUKTUR') || str_contains($uJabatan, 'JARINGAN');
+                    $isUserProgrammer = str_contains($uJabatan, 'PROGRAMMER') || str_contains($uJabatan, 'PEMELIHARAAN');
+                    $isUserTroubleshooting = str_contains($uJabatan, 'TROUBLESHOOTING') || str_contains($uJabatan, 'HELPDESK') || str_contains($uJabatan, 'DUKUNGAN TEKNIS');
+
+                    $isMemberLpti = $isRealKepalaLpti || $isUserSi || $isUserJaringan || $isUserProgrammer || $isUserTroubleshooting || 
+                                    (str_contains($uUnit, 'LPTI') && !str_contains($uUnit, 'PRODI')) || 
+                                    str_contains($uUnit, 'TEKNIK INFORMASI');
+
+                    $isSuperAdmin = $u && ($u->isSuperAdmin() || $u->hasRole('Super Admin') || ($u->role ?? '') === 'Super Admin');
+
+                    // Layanan LPTI hanya muncul untuk Super Admin atau anggota/staf unit LPTI
+                    $showLayananLpti = ($isSuperAdmin || $isMemberLpti) && !$isOnlyPanitia;
+
+                    // Hak Akses Submenu LPTI Sesuai Bidangnya Masing-Masing:
+                    // 1. Super Admin & Kepala LPTI: berhak melihat manajemen & seluruh divisi LPTI
+                    // 2. Staff LPTI: HANYA melihat divisi/bidangnya masing-masing!
+                    $showManajemen = $isSuperAdmin || $isRealKepalaLpti;
+                    $showSi = $isSuperAdmin || $isRealKepalaLpti || $isUserSi;
+                    $showJaringan = $isSuperAdmin || $isRealKepalaLpti || $isUserJaringan;
+                    $showProgrammer = $isSuperAdmin || $isRealKepalaLpti || $isUserProgrammer;
+                    $showTroubleshooting = $isSuperAdmin || $isRealKepalaLpti || $isUserTroubleshooting;
+
+                    // Modul Layanan hanya tampil jika user memiliki akses ke minimal 1 layanan unitnya
+                    $hasAnyModulLayanan = $showLayananLpti;
+                @endphp
+
+                @if ($u && $hasAnyModulLayanan)
                     @php
                         $isLayananActive = $isFromLayanan;
                     @endphp
@@ -105,129 +144,115 @@
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="modulLayananDropdown">
-                            <!-- Submenu Layanan LPTI -->
-                            <li class="dropdown-submenu">
-                                <a class="dropdown-item dropdown-toggle d-flex align-items-center justify-content-between {{ (request()->is('layanan/lpti*') || $isFromLayanan) ? 'active' : '' }}" href="#" id="layananLptiSubmenu" role="button">
-                                    <span class="d-flex align-items-center">
-                                        <i class="bi bi-hdd-network me-2 text-dark"></i>
-                                        <span>Layanan LPTI</span>
-                                    </span>
-                                    <i class="bi bi-chevron-right ms-2 dropdown-chevron-sub"></i>
-                                </a>
-                                @php
-                                    $uJabatan = strtoupper($u->jabatan ?? '');
-                                    $isAdminOrKepala = $isAdmin || $isRektorat || $isPimpinanUnit || str_contains($uJabatan, 'KEPALA') || str_contains($uJabatan, 'KA.');
-                                    $isUserTroubleshooting = str_contains($uJabatan, 'TROUBLESHOOTING') || str_contains($uJabatan, 'HELPDESK') || str_contains($uJabatan, 'DUKUNGAN TEKNIS');
-                                    $isUserSi = str_contains($uJabatan, 'SISTEM INFORMASI') || str_contains($uJabatan, 'PENGEMBANGAN SISTEM');
-                                    $isUserJaringan = str_contains($uJabatan, 'INFRASTRUKTUR') || str_contains($uJabatan, 'JARINGAN');
-                                    $isUserProgrammer = str_contains($uJabatan, 'PROGRAMMER') || str_contains($uJabatan, 'PEMELIHARAAN');
-                                    $isUserKepalaLpti = $isAdmin || $isRektorat || str_contains($uJabatan, 'KEPALA LPTI') || str_contains($uJabatan, 'KA. LPTI') || str_contains($uJabatan, 'KA. UPT LPTI');
-
-                                    // Hak Akses: Admin & Kepala melihat semua menu. Staff hanya melihat menu divisinya sendiri.
-                                    $showManajemen = $isAdminOrKepala;
-                                    $showSi = $isAdminOrKepala || $isUserSi;
-                                    $showJaringan = $isAdminOrKepala || $isUserJaringan;
-                                    $showProgrammer = $isAdminOrKepala || $isUserProgrammer;
-                                    $showTroubleshooting = $isAdminOrKepala || $isUserTroubleshooting || (!$isUserSi && !$isUserJaringan && !$isUserProgrammer);
-                                @endphp
-                                <ul class="dropdown-menu dropdown-submenu-menu" aria-labelledby="layananLptiSubmenu">
-                                    @if($showManajemen)
-                                        <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && (str_contains(strtoupper(request('jabatan', '')), 'KEPALA LPTI') || request('jabatan') == 'KEPALA LPTI')) || request()->routeIs('layanan.lpti.manajemen') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'KEPALA LPTI', 'from' => 'layanan']) }}">
-                                                <span class="d-flex align-items-center">
-                                                    <i class="bi bi-briefcase me-2 text-dark"></i>
-                                                    <span>Manajemen LPTI</span>
-                                                </span>
-                                                @if($isUserKepalaLpti && !$isAdmin)
-                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #0d6efd !important; color: #ffffff !important; border: 1px solid #0d6efd !important; font-size: 10px; font-weight: 600;">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Kepala LPTI)
+                            @if($showLayananLpti)
+                                <!-- Submenu Layanan LPTI -->
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle d-flex align-items-center justify-content-between {{ (request()->is('layanan/lpti*') || $isFromLayanan) ? 'active' : '' }}" href="#" id="layananLptiSubmenu" role="button">
+                                        <span class="d-flex align-items-center">
+                                            <i class="bi bi-hdd-network me-2 text-dark"></i>
+                                            <span>Layanan LPTI</span>
+                                        </span>
+                                        <i class="bi bi-chevron-right ms-2 dropdown-chevron-sub"></i>
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-submenu-menu" aria-labelledby="layananLptiSubmenu">
+                                        @if($showManajemen)
+                                            <li>
+                                                <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && (str_contains(strtoupper(request('jabatan', '')), 'KEPALA LPTI') || request('jabatan') == 'KEPALA LPTI')) || request()->routeIs('layanan.lpti.manajemen') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'KEPALA LPTI', 'from' => 'layanan']) }}">
+                                                    <span class="d-flex align-items-center">
+                                                        <i class="bi bi-briefcase me-2 text-dark"></i>
+                                                        <span>Manajemen LPTI</span>
                                                     </span>
-                                                @else
-                                                    <span class="badge badge-role-kepala ms-3 px-2 py-0.5 rounded-pill" style="background-color: #e0edff !important; color: #0d6efd !important; border: 1px solid #b6d4fe !important; font-size: 10px; font-weight: 600;">
-                                                        Kepala LPTI
+                                                    @if($isRealKepalaLpti)
+                                                        <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #0d6efd !important; color: #ffffff !important; border: 1px solid #0d6efd !important; font-size: 10px; font-weight: 600;">
+                                                            <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Kepala LPTI)
+                                                        </span>
+                                                    @else
+                                                        <span class="badge badge-role-kepala ms-3 px-2 py-0.5 rounded-pill" style="background-color: #e0edff !important; color: #0d6efd !important; border: 1px solid #b6d4fe !important; font-size: 10px; font-weight: 600;">
+                                                            Kepala LPTI
+                                                        </span>
+                                                    @endif
+                                                </a>
+                                            </li>
+                                        @endif
+                                        @if($showSi)
+                                            <li>
+                                                <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(strtoupper(request('jabatan', '')), 'SISTEM INFORMASI')) || request()->routeIs('layanan.lpti.pengembangan-si') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK', 'from' => 'layanan']) }}">
+                                                    <span class="d-flex align-items-center">
+                                                        <i class="bi bi-window me-2 text-dark"></i>
+                                                        <span>Pengembangan Sistem Informasi dan Aplikasi</span>
                                                     </span>
-                                                @endif
-                                            </a>
-                                        </li>
-                                    @endif
-                                    @if($showSi)
-                                        <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(strtoupper(request('jabatan', '')), 'SISTEM INFORMASI')) || request()->routeIs('layanan.lpti.pengembangan-si') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'DIVISI PENGEMBANGAN SISTEM INFORMASI DAN APLIKASI - LPTI BAUK', 'from' => 'layanan']) }}">
-                                                <span class="d-flex align-items-center">
-                                                    <i class="bi bi-window me-2 text-dark"></i>
-                                                    <span>Pengembangan Sistem Informasi dan Aplikasi</span>
-                                                </span>
-                                                @if($isUserSi)
-                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #087990 !important; color: #ffffff !important; border: 1px solid #087990 !important; font-size: 10px; font-weight: 600;">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Divisi SI)
+                                                    @if($isUserSi)
+                                                        <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #087990 !important; color: #ffffff !important; border: 1px solid #087990 !important; font-size: 10px; font-weight: 600;">
+                                                            <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Divisi SI)
+                                                        </span>
+                                                    @else
+                                                        <span class="badge badge-role-si ms-3 px-2 py-0.5 rounded-pill" style="background-color: #cff4fc !important; color: #055160 !important; border: 1px solid #9eeaf9 !important; font-size: 10px; font-weight: 600;">
+                                                            Divisi SI
+                                                        </span>
+                                                    @endif
+                                                </a>
+                                            </li>
+                                        @endif
+                                        @if($showJaringan)
+                                            <li>
+                                                <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && (str_contains(strtoupper(request('jabatan', '')), 'INFRASTRUKTUR') || str_contains(strtoupper(request('jabatan', '')), 'JARINGAN'))) || request()->routeIs('layanan.lpti.infrastruktur') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'DIVISI INFRASTRUKTUR DAN JARINGAN', 'from' => 'layanan']) }}">
+                                                    <span class="d-flex align-items-center">
+                                                        <i class="bi bi-diagram-3 me-2 text-dark"></i>
+                                                        <span>Pengelolaan Infrastruktur dan Jaringan</span>
                                                     </span>
-                                                @else
-                                                    <span class="badge badge-role-si ms-3 px-2 py-0.5 rounded-pill" style="background-color: #cff4fc !important; color: #055160 !important; border: 1px solid #9eeaf9 !important; font-size: 10px; font-weight: 600;">
-                                                        Divisi SI
+                                                    @if($isUserJaringan)
+                                                        <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #b78103 !important; color: #ffffff !important; border: 1px solid #b78103 !important; font-size: 10px; font-weight: 600;">
+                                                            <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Divisi Jaringan)
+                                                        </span>
+                                                    @else
+                                                        <span class="badge badge-role-jaringan ms-3 px-2 py-0.5 rounded-pill" style="background-color: #fff3cd !important; color: #7a4f01 !important; border: 1px solid #ffc107 !important; font-size: 10px; font-weight: 600;">
+                                                            Divisi Jaringan
+                                                        </span>
+                                                    @endif
+                                                </a>
+                                            </li>
+                                        @endif
+                                        @if($showProgrammer)
+                                            <li>
+                                                <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(strtoupper(request('jabatan', '')), 'PROGRAMMER')) || request()->routeIs('layanan.lpti.pemeliharaan') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'PROGRAMMER', 'from' => 'layanan']) }}">
+                                                    <span class="d-flex align-items-center">
+                                                        <i class="bi bi-code-slash me-2 text-dark"></i>
+                                                        <span>Pengembangan dan Pemeliharaan Aplikasi</span>
                                                     </span>
-                                                @endif
-                                            </a>
-                                        </li>
-                                    @endif
-                                    @if($showJaringan)
-                                        <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && (str_contains(strtoupper(request('jabatan', '')), 'INFRASTRUKTUR') || str_contains(strtoupper(request('jabatan', '')), 'JARINGAN'))) || request()->routeIs('layanan.lpti.infrastruktur') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'DIVISI INFRASTRUKTUR DAN JARINGAN', 'from' => 'layanan']) }}">
-                                                <span class="d-flex align-items-center">
-                                                    <i class="bi bi-diagram-3 me-2 text-dark"></i>
-                                                    <span>Pengelolaan Infrastruktur dan Jaringan</span>
-                                                </span>
-                                                @if($isUserJaringan)
-                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #b78103 !important; color: #ffffff !important; border: 1px solid #b78103 !important; font-size: 10px; font-weight: 600;">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Divisi Jaringan)
+                                                    @if($isUserProgrammer)
+                                                        <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #dc3545 !important; color: #ffffff !important; border: 1px solid #dc3545 !important; font-size: 10px; font-weight: 600;">
+                                                            <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Programmer)
+                                                        </span>
+                                                    @else
+                                                        <span class="badge badge-role-programmer ms-3 px-2 py-0.5 rounded-pill" style="background-color: #f8d7da !important; color: #842029 !important; border: 1px solid #f5c2c7 !important; font-size: 10px; font-weight: 600;">
+                                                            Programmer
+                                                        </span>
+                                                    @endif
+                                                </a>
+                                            </li>
+                                        @endif
+                                        @if($showTroubleshooting)
+                                            <li>
+                                                <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(strtoupper(request('jabatan', '')), 'TROUBLESHOOTING')) || request()->routeIs('layanan.lpti.dukungan-teknis') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING', 'from' => 'layanan']) }}">
+                                                    <span class="d-flex align-items-center">
+                                                        <i class="bi bi-headset me-2 text-dark"></i>
+                                                        <span>Layanan Dukungan Teknis</span>
                                                     </span>
-                                                @else
-                                                    <span class="badge badge-role-jaringan ms-3 px-2 py-0.5 rounded-pill" style="background-color: #fff3cd !important; color: #7a4f01 !important; border: 1px solid #ffc107 !important; font-size: 10px; font-weight: 600;">
-                                                        Divisi Jaringan
-                                                    </span>
-                                                @endif
-                                            </a>
-                                        </li>
-                                    @endif
-                                    @if($showProgrammer)
-                                        <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(strtoupper(request('jabatan', '')), 'PROGRAMMER')) || request()->routeIs('layanan.lpti.pemeliharaan') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'PROGRAMMER', 'from' => 'layanan']) }}">
-                                                <span class="d-flex align-items-center">
-                                                    <i class="bi bi-code-slash me-2 text-dark"></i>
-                                                    <span>Pengembangan dan Pemeliharaan Aplikasi</span>
-                                                </span>
-                                                @if($isUserProgrammer)
-                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #dc3545 !important; color: #ffffff !important; border: 1px solid #dc3545 !important; font-size: 10px; font-weight: 600;">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Programmer)
-                                                    </span>
-                                                @else
-                                                    <span class="badge badge-role-programmer ms-3 px-2 py-0.5 rounded-pill" style="background-color: #f8d7da !important; color: #842029 !important; border: 1px solid #f5c2c7 !important; font-size: 10px; font-weight: 600;">
-                                                        Programmer
-                                                    </span>
-                                                @endif
-                                            </a>
-                                        </li>
-                                    @endif
-                                    @if($showTroubleshooting)
-                                        <li>
-                                            <a class="dropdown-item {{ (request()->routeIs('rencana-kerja.*') && str_contains(strtoupper(request('jabatan', '')), 'TROUBLESHOOTING')) || request()->routeIs('layanan.lpti.dukungan-teknis') ? 'active' : '' }}" href="{{ route('rencana-kerja.index', ['jabatan' => 'STAFF LAYANAN TROUBLESHOOTING', 'from' => 'layanan']) }}">
-                                                <span class="d-flex align-items-center">
-                                                    <i class="bi bi-headset me-2 text-dark"></i>
-                                                    <span>Layanan Dukungan Teknis</span>
-                                                </span>
-                                                @if($isUserTroubleshooting)
-                                                    <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #198754 !important; color: #ffffff !important; border: 1px solid #198754 !important; font-size: 10px; font-weight: 600;">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Troubleshooting)
-                                                    </span>
-                                                @else
-                                                    <span class="badge badge-role-troubleshooting ms-3 px-2 py-0.5 rounded-pill" style="background-color: #d1e7dd !important; color: #0f5132 !important; border: 1px solid #badbcc !important; font-size: 10px; font-weight: 600;">
-                                                        Troubleshooting
-                                                    </span>
-                                                @endif
-                                            </a>
-                                        </li>
-                                    @endif
-                                </ul>
-                            </li>
+                                                    @if($isUserTroubleshooting)
+                                                        <span class="badge badge-role-active ms-3 px-2 py-0.5 rounded-pill" style="background-color: #198754 !important; color: #ffffff !important; border: 1px solid #198754 !important; font-size: 10px; font-weight: 600;">
+                                                            <i class="bi bi-check-circle-fill me-1"></i>Akses Anda (Troubleshooting)
+                                                        </span>
+                                                    @else
+                                                        <span class="badge badge-role-troubleshooting ms-3 px-2 py-0.5 rounded-pill" style="background-color: #d1e7dd !important; color: #0f5132 !important; border: 1px solid #badbcc !important; font-size: 10px; font-weight: 600;">
+                                                            Troubleshooting
+                                                        </span>
+                                                    @endif
+                                                </a>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </li>
+                            @endif
                         </ul>
                     </li>
                 @endif
