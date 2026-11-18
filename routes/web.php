@@ -124,6 +124,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('rencana-kerja/{rencana_kerja}/update-tags', [RencanaKerjaController::class, 'updateTags'])->name('rencana-kerja.update-tags');
     Route::post('rencana-kerja/{rencana_kerja}/request-unlock-estimasi', [RencanaKerjaController::class, 'requestUnlockEstimasi'])->name('rencana-kerja.request-unlock-estimasi');
     Route::post('rencana-kerja/{rencana_kerja}/approve-extension', [RencanaKerjaController::class, 'approveExtension'])->name('rencana-kerja.approve-extension');
+    Route::post('rencana-kerja/batch-validate', [RencanaKerjaController::class, 'batchValidate'])->name('rencana-kerja.batch-validate');
+    Route::post('rencana-kerja/{rencana_kerja}/validate-task', [RencanaKerjaController::class, 'validateTask'])->name('rencana-kerja.validate-task');
+    Route::post('rencana-kerja/{rencana_kerja}/resubmit-validation', [RencanaKerjaController::class, 'resubmitValidation'])->name('rencana-kerja.resubmit-validation');
     Route::post('rencana-kerja/{rencana_kerja}/reopen', [RencanaKerjaController::class, 'reopen'])->name('rencana-kerja.reopen');
     Route::post('rencana-kerja/{rencana_kerja}/request-reopen', [RencanaKerjaController::class, 'requestReopen'])->name('rencana-kerja.request-reopen');
     Route::get('rencana-kerja/{rencana_kerja}/modal-detail', [RencanaKerjaController::class, 'modalDetail'])->name('rencana-kerja.modal-detail');
@@ -164,6 +167,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('kegiatan/{kegiatan}/update-tags', [KegiatanController::class, 'updateTags'])->name('kegiatan.update-tags');
     Route::post('kegiatan/{kegiatan}/request-unlock-estimasi', [KegiatanController::class, 'requestUnlockEstimasi'])->name('kegiatan.request-unlock-estimasi');
     Route::post('kegiatan/{kegiatan}/approve-extension', [KegiatanController::class, 'approveExtension'])->name('kegiatan.approve-extension');
+    Route::post('kegiatan/batch-validate', [KegiatanController::class, 'batchValidate'])->name('kegiatan.batch-validate');
+    Route::post('kegiatan/{kegiatan}/validate-task', [KegiatanController::class, 'validateTask'])->name('kegiatan.validate-task');
+    Route::post('kegiatan/{kegiatan}/resubmit-validation', [KegiatanController::class, 'resubmitValidation'])->name('kegiatan.resubmit-validation');
     Route::post('kegiatan/{kegiatan}/reopen', [KegiatanController::class, 'reopen'])->name('kegiatan.reopen');
     Route::post('kegiatan/{kegiatan}/request-reopen', [KegiatanController::class, 'requestReopen'])->name('kegiatan.request-reopen');
     Route::get('rekapitulasi-kegiatan/data', [KegiatanController::class, 'getRekapData'])->name('rekapitulasi-kegiatan.data');

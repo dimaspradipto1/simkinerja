@@ -99,27 +99,33 @@ class RekapitulasiController extends Controller
         if ($request->filled('status_filter')) {
             $st = $request->status_filter;
             if ($st === 'belum_selesai') {
-                $query->where('status', '!=', 'Selesai');
+                $query->whereNotIn('status', ['Disetujui', 'Selesai']);
             } elseif ($st === 'terlambat') {
                 $nowStr = now()->format('Y-m-d');
                 $query->where(function ($q) use ($nowStr) {
                     $q->where(function ($sub) use ($nowStr) {
-                        $sub->where('status', '!=', 'Selesai')
+                        $sub->whereNotIn('status', ['Disetujui', 'Selesai'])
                             ->whereNotNull('estimasi_tanggal_selesai')
                             ->where('estimasi_tanggal_selesai', '<', $nowStr);
                     })->orWhere(function ($sub) {
-                        $sub->where('status', 'Selesai')
+                        $sub->whereIn('status', ['Disetujui', 'Selesai'])
                             ->whereNotNull('estimasi_tanggal_selesai')
                             ->whereNotNull('tanggal_selesai')
                             ->whereColumn('tanggal_selesai', '>', 'estimasi_tanggal_selesai');
                     });
                 });
             } elseif ($st === 'proses') {
-                $query->whereIn('status', ['Proses', 'Berjalan']);
+                $query->whereIn('status', ['Proses', 'Berjalan', 'Di-pause']);
+            } elseif ($st === 'menunggu_validasi') {
+                $query->where('status', 'Menunggu Validasi');
+            } elseif ($st === 'perlu_revisi') {
+                $query->where('status', 'Perlu Revisi');
             } elseif ($st === 'belum_dimulai') {
-                $query->where('status', 'Belum Dimulai');
-            } elseif ($st === 'selesai') {
-                $query->where('status', 'Selesai');
+                $query->where(function($q) {
+                    $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+                });
+            } elseif ($st === 'selesai' || $st === 'disetujui') {
+                $query->whereIn('status', ['Disetujui', 'Selesai']);
             }
         }
 
@@ -158,16 +164,18 @@ class RekapitulasiController extends Controller
     {
         $nowStr = now()->format('Y-m-d');
         $total = (clone $query)->count();
-        $belum = (clone $query)->where('status', 'Belum Dimulai')->count();
-        $proses = (clone $query)->whereIn('status', ['Proses', 'Berjalan'])->count();
-        $selesai = (clone $query)->where('status', 'Selesai')->count();
+        $belum = (clone $query)->where(function($q) {
+            $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+        })->count();
+        $proses = (clone $query)->whereIn('status', ['Proses', 'Berjalan', 'Di-pause'])->count();
+        $selesai = (clone $query)->whereIn('status', ['Disetujui', 'Selesai'])->count();
         $terlambat = (clone $query)->where(function ($q) use ($nowStr) {
             $q->where(function ($sub) use ($nowStr) {
-                $sub->where('status', '!=', 'Selesai')
+                $sub->whereNotIn('status', ['Disetujui', 'Selesai'])
                     ->whereNotNull('estimasi_tanggal_selesai')
                     ->where('estimasi_tanggal_selesai', '<', $nowStr);
             })->orWhere(function ($sub) {
-                $sub->where('status', 'Selesai')
+                $sub->whereIn('status', ['Disetujui', 'Selesai'])
                     ->whereNotNull('estimasi_tanggal_selesai')
                     ->whereNotNull('tanggal_selesai')
                     ->whereColumn('tanggal_selesai', '>', 'estimasi_tanggal_selesai');
@@ -249,16 +257,18 @@ class RekapitulasiController extends Controller
 
         $nowStr = now()->format('Y-m-d');
         $total = (clone $query)->count();
-        $belum = (clone $query)->where('status', 'Belum Dimulai')->count();
-        $proses = (clone $query)->whereIn('status', ['Proses', 'Berjalan'])->count();
-        $selesai = (clone $query)->where('status', 'Selesai')->count();
+        $belum = (clone $query)->where(function($q) {
+            $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+        })->count();
+        $proses = (clone $query)->whereIn('status', ['Proses', 'Berjalan', 'Di-pause'])->count();
+        $selesai = (clone $query)->whereIn('status', ['Disetujui', 'Selesai'])->count();
         $terlambat = (clone $query)->where(function ($q) use ($nowStr) {
             $q->where(function ($sub) use ($nowStr) {
-                $sub->where('status', '!=', 'Selesai')
+                $sub->whereNotIn('status', ['Disetujui', 'Selesai'])
                     ->whereNotNull('estimasi_tanggal_selesai')
                     ->where('estimasi_tanggal_selesai', '<', $nowStr);
             })->orWhere(function ($sub) {
-                $sub->where('status', 'Selesai')
+                $sub->whereIn('status', ['Disetujui', 'Selesai'])
                     ->whereNotNull('estimasi_tanggal_selesai')
                     ->whereNotNull('tanggal_selesai')
                     ->whereColumn('tanggal_selesai', '>', 'estimasi_tanggal_selesai');

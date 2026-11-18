@@ -242,7 +242,9 @@
                             <span class="small fw-semibold text-secondary text-nowrap d-none d-xxl-inline" style="font-size: 0.78rem;">Status:</span>
                             <select id="filter-status" class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark p-0 pe-3 shadow-none">
                                 <option value="">Semua Status</option>
-                                <option value="Selesai">Selesai</option>
+                                <option value="Disetujui">Disetujui / Selesai</option>
+                                <option value="Menunggu Validasi">Menunggu Validasi</option>
+                                <option value="Perlu Revisi">Perlu Revisi</option>
                                 <option value="Proses">Proses / Berjalan</option>
                                 <option value="Belum Dimulai">Belum Dimulai</option>
                             </select>
@@ -258,20 +260,39 @@
                     </div>
                 </div>
                 <div class="card-body p-3">
-                    <!-- Quick Status Filter Pills -->
+                    <!-- Quick Status Filter Pills & Batch Action Toolbar -->
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
                         <div class="d-flex flex-wrap align-items-center gap-2" id="filter-status-pills">
                             <button type="button" class="btn btn-sm btn-filter-pill active fw-semibold shadow-2xs" data-status="">
                                 <i class="bi bi-grid-fill me-1"></i> Semua (<span id="count-status-all">0</span>)
                             </button>
-                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-success" data-status="Selesai">
-                                <i class="bi bi-check-circle-fill me-1 text-success"></i> Selesai (<span id="count-status-selesai">0</span>)
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-success" data-status="Disetujui">
+                                <i class="bi bi-patch-check-fill me-1 text-success"></i> Disetujui (<span id="count-status-selesai">0</span>)
                             </button>
-                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-warning" data-status="Proses">
-                                <i class="bi bi-hourglass-split me-1 text-warning"></i> Proses / Berjalan (<span id="count-status-proses">0</span>)
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border" data-status="Menunggu Validasi" style="color: #b45309 !important;">
+                                <i class="bi bi-clock-history me-1" style="color: #d97706 !important;"></i> Menunggu Validasi (<span id="count-status-menunggu">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border" data-status="Perlu Revisi" style="color: #c2410c !important;">
+                                <i class="bi bi-exclamation-circle-fill me-1" style="color: #ea580c !important;"></i> Perlu Revisi (<span id="count-status-revisi">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-primary" data-status="Proses">
+                                <i class="bi bi-hourglass-split me-1 text-primary"></i> Berjalan / Jeda (<span id="count-status-proses">0</span>)
                             </button>
                             <button type="button" class="btn btn-sm btn-filter-pill fw-semibold shadow-2xs bg-white border text-secondary" data-status="Belum Dimulai">
                                 <i class="bi bi-dash-circle me-1 text-secondary"></i> Belum Dimulai (<span id="count-status-belum">0</span>)
+                            </button>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <div id="selected-badge" class="badge bg-secondary-subtle text-secondary border px-2.5 py-1.5 d-none align-items-center gap-1.5" style="font-size: 0.8rem;">
+                                <i class="bi bi-check2-square text-primary"></i> <span id="selected-count">0</span> terpilih
+                            </div>
+                            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit() || auth()->user()->subordinates()->exists()))
+                            <button type="button" id="btn-batch-approve" class="btn btn-sm btn-success d-none fw-semibold shadow-2xs d-inline-flex align-items-center" style="background-color: #046B26; border-color: #046B26;">
+                                <i class="bi bi-check-all me-1 fs-6"></i> Setujui Terpilih
+                            </button>
+                            @endif
+                            <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-outline-danger d-none fw-semibold shadow-2xs d-inline-flex align-items-center">
+                                <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih
                             </button>
                         </div>
                     </div>
@@ -280,11 +301,14 @@
                         <table class="table table-bordered table-hover align-middle mb-0 w-100" id="rencanakerja-table" style="border: 1px solid #cbd5e1; border-collapse: collapse;">
                             <thead style="background-color: #046B26 !important; color: #ffffff !important;">
                                 <tr>
+                                    <th width="35px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; border: 1px solid #03541e; padding: 12px 6px;">
+                                        <input type="checkbox" id="th-check-all" class="form-check-input" style="cursor: pointer; width: 16px; height: 16px;">
+                                    </th>
                                     <th width="115px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Jam</th>
                                     <th width="125px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Total jam kerja</th>
                                     <th class="align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 14px;">Kegiatan</th>
                                     <th width="110px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Jenis</th>
-                                    <th width="125px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Status</th>
+                                    <th width="135px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Status</th>
                                     <th width="145px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Aksi</th>
                                 </tr>
                             </thead>
@@ -649,11 +673,12 @@
                 }
             },
             columns: [
+                { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-middle px-1', width: '35px' },
                 { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'text-center align-middle small text-secondary text-nowrap px-2', width: '115px' },
                 { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'text-center align-middle small text-dark fw-medium text-nowrap px-2', width: '125px' },
                 { data: 'kegiatan', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle px-3 py-2 text-start' },
                 { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'text-center align-middle px-2', width: '110px' },
-                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'text-center align-middle px-2', width: '125px' },
+                { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'text-center align-middle px-2', width: '135px' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center align-middle text-nowrap px-2', width: '145px' },
                 { data: 'date_group', name: 'date_group', visible: false, searchable: false },
                 { data: 'durasi_detik_raw', name: 'durasi_detik_raw', visible: false, searchable: false }
@@ -675,7 +700,7 @@
                     dateStats[grp].seconds += (parseInt(data.durasi_detik_raw) || 0);
                 });
 
-                api.column(6, { page: 'current' }).data().each(function(group, i) {
+                api.column(7, { page: 'current' }).data().each(function(group, i) {
                     if (last !== group) {
                         var stats = dateStats[group] || { count: 0, seconds: 0 };
                         var hoursVal = Math.round((stats.seconds / 3600) * 10) / 10;
@@ -684,7 +709,7 @@
 
                         $(rows).eq(i).before(
                             '<tr class="group-header-row">' +
-                                '<td colspan="6" class="py-2.5 px-3 align-middle" style="background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important;">' +
+                                '<td colspan="7" class="py-2.5 px-3 align-middle" style="background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important;">' +
                                     '<div class="d-flex align-items-center text-dark" style="font-size: 0.85rem;">' +
                                         '<i class="bi bi-calendar-event text-secondary me-2"></i>' +
                                         '<span class="fw-bold text-dark">' + (group || 'Kegiatan') + '</span>' +
@@ -711,6 +736,8 @@
                 window.latestOverallRekap = json.overall_rekap;
                 $('#count-status-all').text(json.overall_rekap.total || 0);
                 $('#count-status-selesai').text(json.overall_rekap.selesai || 0);
+                $('#count-status-menunggu').text(json.overall_rekap.menunggu_validasi || 0);
+                $('#count-status-revisi').text(json.overall_rekap.perlu_revisi || 0);
                 $('#count-status-proses').text(json.overall_rekap.proses || 0);
                 $('#count-status-belum').text(json.overall_rekap.belum || 0);
             }
@@ -769,10 +796,12 @@
             $('.selected-count-num').text(count);
             if (count > 0) {
                 $('#btn-bulk-delete').removeClass('d-none');
-                $('#selected-badge').removeClass('d-none');
+                $('#btn-batch-approve').removeClass('d-none');
+                $('#selected-badge').removeClass('d-none').addClass('d-inline-flex');
             } else {
                 $('#btn-bulk-delete').addClass('d-none');
-                $('#selected-badge').addClass('d-none');
+                $('#btn-batch-approve').addClass('d-none');
+                $('#selected-badge').addClass('d-none').removeClass('d-inline-flex');
             }
         }
 
@@ -1004,6 +1033,67 @@
                 }
             });
         });
+
+        // Handle Batch Approve Click
+        $(document).on('click', '#btn-batch-approve', function() {
+            let ids = Array.from(selectedIds);
+            if (ids.length === 0) {
+                Swal.fire('Perhatian', 'Pilih minimal satu tugas yang ingin disetujui.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Setujui ' + ids.length + ' Tugas Terpilih?',
+                text: 'Semua tugas terpilih yang berada di bawah wewenang validasi Anda akan disetujui sekaligus.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmColor: '#046B26',
+                cancelColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-check-all me-1"></i> Ya, Setujui Semua',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses Validasi...',
+                        text: 'Mohon tunggu sebentar',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    $.ajax({
+                        url: "{{ route('rencana-kerja.batch-validate') }}",
+                        type: 'POST',
+                        data: {
+                            "_token": "{{ csrf_token() }}",
+                            "ids": ids,
+                            "action": "approve"
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: response.message,
+                                    timer: 2500,
+                                    showConfirmButton: false
+                                });
+                                selectedIds.clear();
+                                updateBulkDeleteButton();
+                                $('#check-all, #th-check-all').prop('checked', false).prop('indeterminate', false);
+                                $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                            }
+                        },
+                        error: function(xhr) {
+                            let msg = 'Gagal memproses validasi tugas.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+                            Swal.fire('Gagal', msg, 'error');
+                        }
+                    });
+                }
+            });
+        });
     });
 
     // Open Detail Modal (pengganti dropdown)
@@ -1146,6 +1236,191 @@
                             icon: 'error',
                             title: 'Gagal',
                             text: xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan saat membuka kunci tugas.'
+                        });
+                    }
+                });
+            }
+        });
+    };
+
+    window.validateTaskQuick = function(id, action, catatan = '') {
+        function performValidation(taskId, act, note) {
+            Swal.fire({
+                title: 'Memproses Validasi...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            $.ajax({
+                url: "{{ url('rencana-kerja') }}/" + taskId + "/validate-task",
+                type: 'POST',
+                data: {
+                    "_token": "{{ csrf_token() }}",
+                    "action": act,
+                    "catatan": note
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: response.message || 'Validasi tugas berhasil diproses.',
+                            showConfirmButton: false,
+                            timer: 3500,
+                            timerProgressBar: true
+                        });
+                        $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                        if ($('#modalDetailRencanaKerja').is(':visible')) {
+                            $('#modalDetailRencanaKerja').modal('hide');
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    let msg = 'Terjadi kesalahan saat memvalidasi tugas.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Memproses Validasi',
+                        text: msg
+                    });
+                }
+            });
+        }
+
+        if (action === 'approve') {
+            Swal.fire({
+                title: 'Setujui Tugas Ini?',
+                text: 'Tugas yang disetujui akan dihitung 100% tuntas dalam capaian kinerja.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmColor: '#046B26',
+                cancelColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-check-lg me-1"></i> Ya, Setujui',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performValidation(id, action, catatan);
+                }
+            });
+        } else {
+            performValidation(id, action, catatan);
+        }
+    };
+
+    window.openReviseModal = function(id) {
+        Swal.fire({
+            title: 'Minta Revisi Tugas',
+            text: 'Tuliskan catatan atau instruksi bagian mana yang harus diperbaiki oleh pegawai:',
+            input: 'textarea',
+            inputPlaceholder: 'Contoh: Lampirkan bukti foto dan perbaiki rincian hasil kerja...',
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-arrow-repeat me-1"></i> Kirim Permintaan Revisi',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#6c757d',
+            inputValidator: (value) => {
+                if (!value || !value.trim()) {
+                    return 'Catatan revisi wajib diisi agar staf mengetahui bagian mana yang perlu diperbaiki!';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.validateTaskQuick(id, 'revise', result.value);
+            }
+        });
+    };
+
+    window.openRejectModal = function(id) {
+        Swal.fire({
+            title: 'Tolak Tugas',
+            text: 'Tuliskan alasan evaluasi atau penolakan tugas ini:',
+            input: 'textarea',
+            inputPlaceholder: 'Contoh: Kegiatan tidak sesuai dengan rencana kerja periode ini...',
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-x-circle me-1"></i> Tolak Tugas',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6c757d',
+            inputValidator: (value) => {
+                if (!value || !value.trim()) {
+                    return 'Alasan penolakan wajib diisi!';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.validateTaskQuick(id, 'reject', result.value);
+            }
+        });
+    };
+
+    window.submitModalValidation = function(id, action) {
+        let catatan = $('#modal-validation-catatan').val() || '';
+        if ((action === 'revise' || action === 'reject') && !catatan.trim()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Catatan Wajib Diisi',
+                text: 'Mohon isi catatan arahan atau alasan pada kotak teks sebelum meminta revisi atau menolak tugas.'
+            });
+            $('#modal-validation-catatan').focus();
+            return;
+        }
+
+        window.validateTaskQuick(id, action, catatan);
+    };
+
+    window.resubmitValidationQuick = function(id) {
+        Swal.fire({
+            title: 'Ajukan Ulang Validasi?',
+            text: 'Pastikan Anda telah memperbarui rincian atau berkas hasil perbaikan sesuai arahan atasan.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmColor: '#046B26',
+            cancelColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-send-check-fill me-1"></i> Ya, Ajukan Ulang',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Mengirim Pengajuan...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: "{{ url('rencana-kerja') }}/" + id + "/resubmit-validation",
+                    type: 'POST',
+                    data: {
+                        "_token": "{{ csrf_token() }}"
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: response.message || 'Tugas berhasil diajukan ulang.',
+                                showConfirmButton: false,
+                                timer: 3500,
+                                timerProgressBar: true
+                            });
+                            $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                            if ($('#modalDetailRencanaKerja').is(':visible')) {
+                                $('#modalDetailRencanaKerja').modal('hide');
+                            }
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal mengajukan ulang validasi.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: msg
                         });
                     }
                 });

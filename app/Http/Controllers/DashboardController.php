@@ -183,16 +183,18 @@ class DashboardController extends Controller
 
         // Stats counts (berdasarkan data pengguna / personal scope)
         $totalTugas = (clone $tasksQuery)->count();
-        $tugasBelumMulai = (clone $tasksQuery)->where('status', 'Belum Dimulai')->count();
-        $tugasProses = (clone $tasksQuery)->whereIn('status', ['Proses', 'Berjalan'])->count();
-        $tugasSelesai = (clone $tasksQuery)->where('status', 'Selesai')->count();
+        $tugasBelumMulai = (clone $tasksQuery)->where(function($q) {
+            $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+        })->count();
+        $tugasProses = (clone $tasksQuery)->whereIn('status', ['Proses', 'Berjalan', 'Di-pause'])->count();
+        $tugasSelesai = (clone $tasksQuery)->whereIn('status', ['Disetujui', 'Selesai'])->count();
         $persentaseSelesai = $totalTugas > 0 ? round(($tugasSelesai / $totalTugas) * 100) : 0;
 
         $totalKepanitiaan = (clone $kepanitiaanQuery)->count();
-        $kepanitiaanSelesai = (clone $kepanitiaanQuery)->where('status', 'Selesai')->count();
+        $kepanitiaanSelesai = (clone $kepanitiaanQuery)->whereIn('status', ['Disetujui', 'Selesai'])->count();
 
         $totalInsidentil = (clone $insidentilQuery)->count();
-        $insidentilSelesai = (clone $insidentilQuery)->where('status', 'Selesai')->count();
+        $insidentilSelesai = (clone $insidentilQuery)->whereIn('status', ['Disetujui', 'Selesai'])->count();
 
         $totalPegawai = $usersQuery->count();
 
@@ -218,7 +220,13 @@ class DashboardController extends Controller
         $applyStatusFilter = function ($query) use ($filterStatus) {
             if (!empty($filterStatus) && $filterStatus !== 'all') {
                 if ($filterStatus === 'Proses') {
-                    $query->whereIn('status', ['Proses', 'Berjalan']);
+                    $query->whereIn('status', ['Proses', 'Berjalan', 'Di-pause']);
+                } elseif ($filterStatus === 'Selesai' || $filterStatus === 'Disetujui') {
+                    $query->whereIn('status', ['Disetujui', 'Selesai']);
+                } elseif ($filterStatus === 'Belum Dimulai') {
+                    $query->where(function($q) {
+                        $q->whereNull('status')->orWhere('status', 'Belum Dimulai');
+                    });
                 } else {
                     $query->where('status', $filterStatus);
                 }

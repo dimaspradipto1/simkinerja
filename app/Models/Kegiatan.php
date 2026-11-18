@@ -51,6 +51,9 @@ class Kegiatan extends Model
         'reopen_requested_at',
         'reopened_at',
         'reopened_by',
+        'validated_at',
+        'validated_by',
+        'catatan_validasi',
     ];
 
     protected $casts = [
@@ -61,6 +64,7 @@ class Kegiatan extends Model
         'reopen_requested_at' => 'datetime',
         'estimasi_unlock_requested_at' => 'datetime',
         'estimasi_unlock_approved_at' => 'datetime',
+        'validated_at' => 'datetime',
         'is_paused' => 'boolean',
     ];
 
@@ -219,5 +223,25 @@ class Kegiatan extends Model
     public function sesiAbsensis()
     {
         return $this->hasMany(KepanitiaanSesiAbsensi::class, 'kepanitiaan_id');
+    }
+
+    public function validator()
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    public function isPendingValidation(): bool
+    {
+        return $this->status === 'Menunggu Validasi';
+    }
+
+    public function isApproved(): bool
+    {
+        return in_array($this->status, ['Disetujui', 'Selesai']);
+    }
+
+    public function isNeedRevision(): bool
+    {
+        return $this->status === 'Perlu Revisi';
     }
 }

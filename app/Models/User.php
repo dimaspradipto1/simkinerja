@@ -117,4 +117,33 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Insidentil::class, 'kegiatan_user', 'user_id', 'kegiatan_id')->withTimestamps();
     }
+
+    /**
+     * Cek apakah user (atasan) memiliki wewenang memvalidasi kegiatan tertentu.
+     */
+    public function canValidateTask(\App\Models\Kegiatan $kegiatan): bool
+    {
+        // Superadmin, Admin, Pimpinan Rektorat dapat memvalidasi semua tugas
+        if ($this->isSuperAdmin() || $this->isAdmin() || $this->isPimpinanRektorat()) {
+            return true;
+        }
+
+        // Pegawai tidak bisa memvalidasi tugasnya sendiri
+        if ((int)$kegiatan->user_id === (int)$this->id) {
+            return false;
+        }
+
+        // Pimpinan Unit berwenang memvalidasi tugas pegawai di unit yang sama
+        if ($this->isPimpinanUnit() && !empty($this->unit) && $kegiatan->user && $kegiatan->user->unit === $this->unit) {
+            return true;
+        }
+
+        // Atasan langsung / berjenjang dalam hierarki OTK
+        $subordinateIds = $this->getAllSubordinateIds();
+        if (in_array((int)$kegiatan->user_id, array_map('intval', $subordinateIds), true)) {
+            return true;
+        }
+
+        return false;
+    }
 }

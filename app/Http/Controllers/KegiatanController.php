@@ -801,6 +801,30 @@ class KegiatanController extends Controller
         return $this->executeUploadAttachment($request, $kegiatan);
     }
 
+    /**
+     * Validate task by superior (Approve, Revise, Reject).
+     */
+    public function validateTask(Request $request, $kegiatan)
+    {
+        return $this->executeValidateTask($request, $kegiatan);
+    }
+
+    /**
+     * Batch validate tasks.
+     */
+    public function batchValidate(Request $request)
+    {
+        return $this->executeBatchValidate($request);
+    }
+
+    /**
+     * Resubmit task for superior validation after revision.
+     */
+    public function resubmitValidation(Request $request, $kegiatan)
+    {
+        return $this->executeResubmitValidation($request, $kegiatan);
+    }
+
 
     /**
      * Bulk delete items.

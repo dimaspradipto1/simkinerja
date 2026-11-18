@@ -259,11 +259,23 @@ trait ManagesKegiatanLifecycle
             $kegiatan->durasi_detik = (int) ($kegiatan->durasi_detik ?? 0) + $elapsedSeconds;
         }
 
+        $targetStatus = 'Menunggu Validasi';
+        $validatedAt = null;
+        $validatedBy = null;
+
+        if ($authUser->isSuperAdmin() || ($authUser->isPimpinanRektorat() && !$authUser->supervisor_id)) {
+            $targetStatus = 'Disetujui';
+            $validatedAt = $now;
+            $validatedBy = $authUser->id;
+        }
+
         $updateData = [
             'waktu_selesai' => $clientTime,
             'tanggal_selesai' => $clientDate,
-            'status' => 'Selesai',
+            'status' => $targetStatus,
             'last_started_at' => null,
+            'validated_at' => $validatedAt,
+            'validated_by' => $validatedBy,
         ];
 
         if ($request->hasFile('file')) {
@@ -284,9 +296,14 @@ trait ManagesKegiatanLifecycle
 
         $this->autoLogMilestone($kegiatan, 'stop', $now);
 
+        $msg = ($targetStatus === 'Disetujui')
+            ? 'Waktu penyelesaian tugas (' . substr($clientTime, 0, 5) . ') berhasil dicatat.'
+            : 'Tugas selesai dikerjakan (' . substr($clientTime, 0, 5) . ') dan diajukan untuk validasi atasan.';
+
         return response()->json([
             'success' => true,
-            'message' => 'Waktu penyelesaian tugas (' . substr($clientTime, 0, 5) . ') berhasil dicatat.',
+            'new_status' => $targetStatus,
+            'message' => $msg,
         ]);
     }
 
@@ -548,6 +565,181 @@ trait ManagesKegiatanLifecycle
         return response()->json([
             'success' => true,
             'message' => 'Rekan kerja berhasil diperbarui.',
+        ]);
+    }
+
+    /**
+     * Validate task by superior (Approve, Revise, Reject).
+     */
+    public function executeValidateTask(Request $request, $item)
+    {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $kegiatan = $this->resolveKegiatan($item);
+
+        if (!$authUser->canValidateTask($kegiatan)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Anda tidak memiliki wewenang untuk memvalidasi tugas ini.',
+            ], 403);
+        }
+
+        $request->validate([
+            'action' => 'required|in:approve,revise,reject',
+            'catatan' => 'nullable|string|max:1000',
+        ]);
+
+        $action = $request->input('action');
+        $catatan = trim($request->input('catatan') ?? '');
+
+        if (($action === 'revise' || $action === 'reject') && empty($catatan)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Catatan/alasan wajib diisi jika meminta revisi atau menolak tugas.',
+            ], 422);
+        }
+
+        $now = Carbon::now();
+
+        if ($action === 'approve') {
+            $newStatus = 'Disetujui';
+            $message = 'Tugas berhasil divalidasi & disetujui.';
+            $milestoneTitle = 'Divalidasi & Disetujui oleh ' . $authUser->name;
+        } elseif ($action === 'revise') {
+            $newStatus = 'Perlu Revisi';
+            $message = 'Permintaan revisi berhasil dikirim ke pegawai terkait.';
+            $milestoneTitle = 'Diminta Revisi oleh ' . $authUser->name . ($catatan ? ': ' . $catatan : '');
+        } else {
+            $newStatus = 'Ditolak';
+            $message = 'Tugas telah ditolak dengan catatan evaluasi.';
+            $milestoneTitle = 'Ditolak oleh ' . $authUser->name . ($catatan ? ': ' . $catatan : '');
+        }
+
+        $kegiatan->update([
+            'status' => $newStatus,
+            'validated_at' => $now,
+            'validated_by' => $authUser->id,
+            'catatan_validasi' => $catatan ?: null,
+        ]);
+
+        $kegiatan->milestones()->create([
+            'nama_milestone' => $milestoneTitle,
+            'status' => 'Selesai',
+            'waktu_mulai' => $now,
+            'waktu_selesai' => $now,
+            'durasi_detik' => 0,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'new_status' => $newStatus,
+            'message' => $message,
+        ]);
+    }
+
+    /**
+     * Batch validate tasks (approve multiple selected tasks).
+     */
+    public function executeBatchValidate(Request $request)
+    {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:kegiatans,id',
+            'action' => 'required|in:approve',
+            'catatan' => 'nullable|string|max:1000',
+        ]);
+
+        $ids = $request->input('ids', []);
+        $catatan = $request->input('catatan');
+        $now = Carbon::now();
+
+        $kegiatans = Kegiatan::whereIn('id', $ids)->get();
+        $approvedCount = 0;
+        $unauthorizedCount = 0;
+
+        foreach ($kegiatans as $kegiatan) {
+            if ($authUser->canValidateTask($kegiatan)) {
+                $kegiatan->update([
+                    'status' => 'Disetujui',
+                    'validated_at' => $now,
+                    'validated_by' => $authUser->id,
+                    'catatan_validasi' => $catatan ?: null,
+                ]);
+
+                $kegiatan->milestones()->create([
+                    'nama_milestone' => 'Divalidasi (Batch) oleh ' . $authUser->name,
+                    'status' => 'Selesai',
+                    'waktu_mulai' => $now,
+                    'waktu_selesai' => $now,
+                    'durasi_detik' => 0,
+                ]);
+
+                $approvedCount++;
+            } else {
+                $unauthorizedCount++;
+            }
+        }
+
+        if ($approvedCount === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada tugas yang berhasil disetujui (Anda bukan atasan penanggung jawab).',
+            ], 403);
+        }
+
+        $msg = "Berhasil menyetujui {$approvedCount} tugas.";
+        if ($unauthorizedCount > 0) {
+            $msg .= " ({$unauthorizedCount} tugas dilewati karena di luar wewenang).";
+        }
+
+        return response()->json([
+            'success' => true,
+            'approved_count' => $approvedCount,
+            'message' => $msg,
+        ]);
+    }
+
+    /**
+     * Resubmit task for superior validation after revision.
+     */
+    public function executeResubmitValidation(Request $request, $item)
+    {
+        $authUser = Auth::user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'Anda belum login.'], 401);
+        }
+
+        $kegiatan = $this->resolveKegiatan($item);
+
+        if (!$this->canOperateKegiatan($kegiatan, $authUser)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $now = Carbon::now();
+
+        $kegiatan->update([
+            'status' => 'Menunggu Validasi',
+        ]);
+
+        $kegiatan->milestones()->create([
+            'nama_milestone' => 'Diajukan Ulang Validasi oleh ' . $authUser->name,
+            'status' => 'Selesai',
+            'waktu_mulai' => $now,
+            'waktu_selesai' => $now,
+            'durasi_detik' => 0,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil diajukan ulang untuk validasi atasan.',
         ]);
     }
 }

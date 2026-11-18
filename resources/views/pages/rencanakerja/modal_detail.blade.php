@@ -57,6 +57,8 @@
     $status = $row->status ?? 'Belum Dimulai';
     $waktuMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
     $waktuSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
+    $authUser = $authUser ?? auth()->user();
+    $canValidate = $authUser && $authUser->canValidateTask($row);
 @endphp
 
 <div class="d-flex flex-column gap-3">
@@ -84,13 +86,25 @@
                             <i class="bi bi-calendar-day me-1"></i>{{ $row->hari }}
                         </span>
                     @endif
-                    @if($status === 'Selesai')
+                    @if($status === 'Disetujui' || $status === 'Selesai')
                         <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #ecfdf5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important;">
-                            <i class="bi bi-check-circle-fill me-1" style="color: #059669 !important;"></i>Selesai
+                            <i class="bi bi-patch-check-fill me-1" style="color: #059669 !important;"></i>Disetujui
                         </span>
-                    @elseif($status === 'Proses' || ($waktuMulai && !$waktuSelesai))
-                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #fff8e6 !important; color: #9a6700 !important; border: 1px solid #fcd34d !important;">
-                            <i class="bi bi-play-circle-fill me-1" style="color: #d97706 !important;"></i>Proses
+                    @elseif($status === 'Menunggu Validasi')
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #fffbeb !important; color: #b45309 !important; border: 1px solid #fde68a !important;">
+                            <i class="bi bi-clock-history me-1" style="color: #d97706 !important;"></i>Menunggu Validasi
+                        </span>
+                    @elseif($status === 'Perlu Revisi')
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #fff7ed !important; color: #c2410c !important; border: 1px solid #fed7aa !important;">
+                            <i class="bi bi-exclamation-circle-fill me-1" style="color: #ea580c !important;"></i>Perlu Revisi
+                        </span>
+                    @elseif($status === 'Ditolak')
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #fef2f2 !important; color: #991b1b !important; border: 1px solid #fecaca !important;">
+                            <i class="bi bi-x-circle-fill me-1" style="color: #dc2626 !important;"></i>Ditolak
+                        </span>
+                    @elseif($status === 'Proses' || $status === 'Berjalan' || ($waktuMulai && !$waktuSelesai))
+                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #eff6ff !important; color: #1d4ed8 !important; border: 1px solid #bfdbfe !important;">
+                            <i class="bi bi-play-circle-fill me-1" style="color: #2563eb !important;"></i>Berjalan
                         </span>
                     @elseif($status === 'Di-pause')
                         <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.76rem; background-color: #fef2f2 !important; color: #991b1b !important; border: 1px solid #fecaca !important;">
@@ -105,6 +119,107 @@
             </div>
         </div>
     </div>
+
+    <!-- Status Validation Feedback Banner -->
+    @if($status === 'Perlu Revisi')
+        <div class="p-3 rounded-3 border" style="background-color: #fff7ed; border-color: #fed7aa !important;">
+            <div class="d-flex align-items-start gap-2.5">
+                <span class="p-2 rounded-circle bg-warning-subtle text-warning flex-shrink-0 d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                </span>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                        <span class="fw-bold text-dark" style="font-size: 0.92rem;">Perlu Revisi dari Atasan</span>
+                        @if($row->validator)
+                            <span class="text-muted small">Oleh: <strong>{{ $row->validator->name }}</strong> ({{ $row->validated_at ? date('d/m/Y H:i', strtotime($row->validated_at)) : '-' }} WIB)</span>
+                        @endif
+                    </div>
+                    <div class="p-2.5 rounded bg-white border border-warning-subtle small text-dark mb-2">
+                        <strong class="text-warning-emphasis d-block mb-1"><i class="bi bi-chat-left-dots-fill me-1"></i>Catatan Revisi Atasan:</strong>
+                        {{ $row->catatan_validasi ?: 'Mohon periksa kembali kelengkapan hasil kerja dan berkas pendukung.' }}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-success fw-bold text-white d-inline-flex align-items-center" onclick="window.resubmitValidationQuick({{ $row->id }})" style="background-color: #046B26; border-color: #046B26;">
+                            <i class="bi bi-send-check-fill me-1.5"></i> Ajukan Ulang Validasi
+                        </button>
+                        <span class="text-muted small fst-italic">Perbarui hasil kerja atau berkas di bawah sebelum mengajukan ulang.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @elseif($status === 'Disetujui' || $status === 'Selesai')
+        <div class="p-3 rounded-3 border" style="background-color: #f0fdf4; border-color: #bbf7d0 !important;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-patch-check-fill text-success fs-5"></i>
+                    <div>
+                        <span class="fw-bold text-success" style="font-size: 0.9rem;">Tugas Telah Divalidasi & Disetujui</span>
+                        <div class="text-muted small">
+                            Divalidasi oleh: <strong>{{ $row->validator->name ?? 'Atasan / Pimpinan' }}</strong>
+                            @if($row->validated_at)
+                                pada {{ date('d/m/Y H:i', strtotime($row->validated_at)) }} WIB
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if(!empty($row->catatan_validasi))
+                <div class="w-100 mt-2 p-2 rounded bg-white border border-success-subtle small text-dark">
+                    <strong class="text-success d-block mb-0.5"><i class="bi bi-chat-quote-fill me-1"></i>Catatan Atasan:</strong>
+                    {{ $row->catatan_validasi }}
+                </div>
+            @endif
+        </div>
+    @elseif($status === 'Ditolak')
+        <div class="p-3 rounded-3 border" style="background-color: #fef2f2; border-color: #fecaca !important;">
+            <div class="d-flex align-items-start gap-2.5">
+                <i class="bi bi-x-circle-fill text-danger fs-5 mt-0.5"></i>
+                <div class="flex-grow-1">
+                    <span class="fw-bold text-danger" style="font-size: 0.9rem;">Tugas Ditolak oleh Atasan</span>
+                    <div class="text-muted small">
+                        Oleh: <strong>{{ $row->validator->name ?? 'Atasan / Pimpinan' }}</strong>
+                        @if($row->validated_at)
+                            pada {{ date('d/m/Y H:i', strtotime($row->validated_at)) }} WIB
+                        @endif
+                    </div>
+                    @if(!empty($row->catatan_validasi))
+                        <div class="p-2 mt-2 rounded bg-white border border-danger-subtle small text-dark">
+                            <strong class="text-danger d-block mb-0.5"><i class="bi bi-chat-square-text-fill me-1"></i>Alasan Penolakan:</strong>
+                            {{ $row->catatan_validasi }}
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($canValidate)
+        <!-- Box Validasi Pekerjaan (Khusus Atasan / Pimpinan) -->
+        <div class="p-3 rounded-3 border shadow-2xs" style="background-color: #f8fafc; border-color: #cbd5e1 !important; border-left: 4px solid #046B26 !important;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check text-success fs-5"></i>
+                    <span class="fw-bold text-dark" style="font-size: 0.92rem;">Panel Validasi Atasan</span>
+                </div>
+                <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.72rem;">Wewenang: {{ $authUser->jabatan ?? ($authUser->roles ?? 'Atasan') }}</span>
+            </div>
+            <div class="mb-2.5">
+                <label class="form-label text-secondary small fw-semibold mb-1">Catatan / Arahan Atasan (Wajib jika meminta revisi atau menolak):</label>
+                <textarea id="modal-validation-catatan" class="form-control form-control-sm bg-white" rows="2" placeholder="Tuliskan catatan apresiasi, arahan perbaikan, atau rincian poin revisi...">{{ $row->catatan_validasi }}</textarea>
+            </div>
+            <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center px-3" onclick="window.submitModalValidation({{ $row->id }}, 'reject')" style="height: 34px;">
+                    <i class="bi bi-x-circle me-1.5"></i> Tolak
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis fw-semibold d-inline-flex align-items-center px-3" onclick="window.submitModalValidation({{ $row->id }}, 'revise')" style="height: 34px;">
+                    <i class="bi bi-arrow-repeat me-1.5"></i> Minta Revisi
+                </button>
+                <button type="button" class="btn btn-sm btn-success fw-bold text-white d-inline-flex align-items-center px-4 shadow-2xs" onclick="window.submitModalValidation({{ $row->id }}, 'approve')" style="background-color: #046B26; border-color: #046B26; height: 34px;">
+                    <i class="bi bi-check-circle-fill me-1.5"></i> Setujui Pekerjaan
+                </button>
+            </div>
+        </div>
+    @endif
 
     <!-- 2. Informasi Pegawai & Rekan Kerja -->
     <div class="row g-2">
