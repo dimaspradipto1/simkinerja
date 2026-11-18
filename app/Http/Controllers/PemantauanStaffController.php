@@ -28,8 +28,10 @@ class PemantauanStaffController extends Controller
             return redirect()->route('login');
         }
 
-        // Redirect query string biasa (?bulan=X&tahun=Y) ke clean slug URL tanpa DB
-        if (empty($slug) && ($request->has('bulan') || $request->has('tahun'))) {
+        $isAjax = $request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
+
+        // Redirect query string biasa (?bulan=X&tahun=Y) ke clean slug URL tanpa DB (hanya jika non-AJAX)
+        if (!$isAjax && empty($slug) && ($request->has('bulan') || $request->has('tahun'))) {
             $b = (int) $request->input('bulan', now()->month);
             $y = (int) $request->input('tahun', now()->year);
             if ($b < 1 || $b > 12) $b = now()->month;
@@ -296,6 +298,29 @@ class PemantauanStaffController extends Controller
         // Navigasi Prev & Next Month
         $prevDate = $dateCarbon->copy()->subMonth();
         $nextDate = $dateCarbon->copy()->addMonth();
+
+        // Jika request via AJAX (saat user ganti bulan/tahun/filter tanpa refresh)
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            $cleanParams = $request->except(['bulan', 'tahun']);
+            $cleanUrl = url('pemantauan-staff/' . $this->getSlugPeriode($bulan, $tahun)) . (!empty($cleanParams) ? '?' . http_build_query($cleanParams) : '');
+
+            return response()->json([
+                'success' => true,
+                'bulan' => $bulan,
+                'tahun' => $tahun,
+                'namaBulanIndonesia' => $namaBulanIndonesia,
+                'kpi' => $kpi,
+                'clean_url' => $cleanUrl,
+                'prev_month' => $prevDate->month,
+                'prev_year' => $prevDate->year,
+                'next_month' => $nextDate->month,
+                'next_year' => $nextDate->year,
+                'export_excel_url' => route('pemantauan-staff.export-excel', array_merge($request->all(), ['bulan' => $bulan, 'tahun' => $tahun])),
+                'export_pdf_url' => route('pemantauan-staff.export-pdf', array_merge($request->all(), ['bulan' => $bulan, 'tahun' => $tahun])),
+                'html_kpi' => view('pages.pemantauan-staff.partials.kpi_cards', compact('kpi', 'namaBulanIndonesia', 'isLeader'))->render(),
+                'html_table' => view('pages.pemantauan-staff.partials.table', compact('pegawaiData', 'bulan', 'tahun', 'namaBulanIndonesia', 'isLeader'))->render(),
+            ]);
+        }
 
         return view('pages.pemantauan-staff.index', compact(
             'pegawaiData',

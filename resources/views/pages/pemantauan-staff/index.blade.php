@@ -17,11 +17,11 @@
 
     <!-- Export Actions -->
     <div class="d-flex align-items-center gap-2">
-        <a href="{{ route('pemantauan-staff.export-excel', request()->all()) }}" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2" style="background-color: #15432D; border-color: #15432D; border-radius: 8px;">
+        <a id="btnExportExcel" href="{{ route('pemantauan-staff.export-excel', request()->all()) }}" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2" style="background-color: #15432D; border-color: #15432D; border-radius: 8px;">
             <i class="bi bi-file-earmark-excel"></i>
             <span>Export Excel</span>
         </a>
-        <a href="{{ route('pemantauan-staff.export-pdf', request()->all()) }}" class="btn btn-sm btn-outline-danger fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2 bg-white" style="border-radius: 8px;">
+        <a id="btnExportPdf" href="{{ route('pemantauan-staff.export-pdf', request()->all()) }}" class="btn btn-sm btn-outline-danger fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2 bg-white" style="border-radius: 8px;">
             <i class="bi bi-file-earmark-pdf"></i>
             <span>Export PDF</span>
         </a>
@@ -81,66 +81,8 @@
     @endif
 
     <!-- KPI Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 card-kpi" style="border-left: 4px solid #15432D !important;">
-                <div class="card-body p-3.5 d-flex align-items-center gap-3">
-                    <div class="icon-circle bg-success-subtle text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; min-width: 48px;">
-                        <i class="bi bi-diagram-3-fill fs-4" style="color: #15432D !important;"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">{{ ($isLeader ?? false) ? 'Anggota Tim (Sesuai OTK)' : 'Total Pegawai' }}</div>
-                        <div class="fs-4 fw-bold text-dark mb-0">{{ number_format($kpi['total_staff']) }} <span class="fs-6 fw-normal text-muted">{{ ($isLeader ?? false) ? 'Orang' : 'Pegawai' }}</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 card-kpi" style="border-left: 4px solid #0d6efd !important;">
-                <div class="card-body p-3.5 d-flex align-items-center gap-3">
-                    <div class="icon-circle bg-primary-subtle text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; min-width: 48px;">
-                        <i class="bi bi-person-check fs-4"></i>
-                    </div>
-                    <div class="w-100">
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Aktif Mencatat ({{ $namaBulanIndonesia }})</div>
-                        <div class="d-flex align-items-baseline gap-2">
-                            <span class="fs-4 fw-bold text-dark">{{ $kpi['total_aktif'] }}</span>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.75rem;">{{ $kpi['aktif_percentage'] }}% keaktifan</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 card-kpi" style="border-left: 4px solid #f59e0b !important;">
-                <div class="card-body p-3.5 d-flex align-items-center gap-3">
-                    <div class="icon-circle bg-warning-subtle text-warning rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; min-width: 48px;">
-                        <i class="bi bi-journal-bookmark-fill fs-4" style="color: #b45309 !important;"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Kegiatan Bulan Ini</div>
-                        <div class="fs-4 fw-bold text-dark mb-0">{{ number_format($kpi['total_kegiatan_bulan']) }} <span class="fs-6 fw-normal text-muted">Kegiatan</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 card-kpi" style="border-left: 4px solid #10b981 !important;">
-                <div class="card-body p-3.5 d-flex align-items-center gap-3">
-                    <div class="icon-circle bg-emerald-subtle rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; min-width: 48px; background: #e6f9f0; color: #047857;">
-                        <i class="bi bi-clock-history fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.72rem;">Akumulasi Jam Kerja</div>
-                        <div class="fs-4 fw-bold text-dark mb-0">{{ number_format($kpi['total_jam_kerja_bulan'], 1, ',', '.') }} <span class="fs-6 fw-normal text-muted">Jam</span></div>
-                        <small class="text-muted" style="font-size: 0.72rem;">Rata-rata: {{ number_format($kpi['avg_jam_kerja'], 1, ',', '.') }} jam/staf</small>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div id="kpiContainerWrapper" class="position-relative">
+        @include('pages.pemantauan-staff.partials.kpi_cards')
     </div>
 
     <!-- Filter Toolbar -->
@@ -156,7 +98,7 @@
                         </label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama, jabatan, NUPTK/NUP..." value="{{ request('search') }}">
+                            <input type="text" name="search" id="inputSearchPemantauan" class="form-control border-start-0" placeholder="Ketik nama, jabatan, NUPTK/NUP..." value="{{ request('search') }}">
                         </div>
                     </div>
 
@@ -166,11 +108,11 @@
                             <i class="bi bi-calendar-event me-1"></i>Periode Bulan
                         </label>
                         <div class="d-flex align-items-center gap-2">
-                            <a href="{{ route('pemantauan-staff.index', array_merge(request()->except(['bulan', 'tahun']), ['bulan' => $prevDate->month, 'tahun' => $prevDate->year])) }}" class="btn btn-sm btn-outline-secondary px-2" title="Bulan Sebelumnya">
+                            <button type="button" id="btnPrevMonth" class="btn btn-sm btn-outline-secondary px-2" title="Bulan Sebelumnya" data-month="{{ $prevDate->month }}" data-year="{{ $prevDate->year }}">
                                 <i class="bi bi-chevron-left"></i>
-                            </a>
+                            </button>
 
-                            <select name="bulan" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <select name="bulan" id="selectBulan" class="form-select form-select-sm">
                                 @for($m = 1; $m <= 12; $m++)
                                     <option value="{{ $m }}" {{ $bulan == $m ? 'selected' : '' }}>
                                         {{ \Carbon\Carbon::createFromDate(2026, $m, 1)->translatedFormat('F') }}
@@ -178,15 +120,15 @@
                                 @endfor
                             </select>
 
-                            <select name="tahun" class="form-select form-select-sm" style="max-width: 90px;" onchange="this.form.submit()">
+                            <select name="tahun" id="selectTahun" class="form-select form-select-sm" style="max-width: 90px;">
                                 @for($y = now()->year - 2; $y <= now()->year + 2; $y++)
                                     <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
                                 @endfor
                             </select>
 
-                            <a href="{{ route('pemantauan-staff.index', array_merge(request()->except(['bulan', 'tahun']), ['bulan' => $nextDate->month, 'tahun' => $nextDate->year])) }}" class="btn btn-sm btn-outline-secondary px-2" title="Bulan Berikutnya">
+                            <button type="button" id="btnNextMonth" class="btn btn-sm btn-outline-secondary px-2" title="Bulan Berikutnya" data-month="{{ $nextDate->month }}" data-year="{{ $nextDate->year }}">
                                 <i class="bi bi-chevron-right"></i>
-                            </a>
+                            </button>
                         </div>
                     </div>
 
@@ -207,152 +149,16 @@
     </div>
 
     <!-- Main Table Card -->
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
-        <div class="card-header bg-white py-3 px-4 border-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div>
-                <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.05rem;">
-                    {{ ($isLeader ?? false) ? 'Daftar Kinerja Anggota Tim Penempatan OTK (2024 - 2029)' : 'Kinerja Individu Penempatan OTK (2024 - 2029)' }}
-                </h5>
-                <small class="text-muted">Periode Pemantauan: <strong class="text-dark">{{ $namaBulanIndonesia }} {{ $tahun }}</strong> &bull; Diurutkan Berdasarkan Penempatan Resmi OTK</small>
+    <div id="tableContainerWrapper" class="position-relative">
+        <div id="tableLoadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-none bg-white bg-opacity-75 d-flex align-items-center justify-content-center rounded-4" style="z-index: 10; backdrop-filter: blur(2px);">
+            <div class="text-center py-4">
+                <div class="spinner-border text-success" role="status" style="width: 2rem; height: 2rem;">
+                    <span class="visually-hidden">Memuat data...</span>
+                </div>
+                <div class="small fw-semibold text-secondary mt-2">Memuat data kinerja...</div>
             </div>
-            <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold" style="font-size: 0.8rem;">
-                {{ count($pegawaiData) }} {{ ($isLeader ?? false) ? 'Anggota Terdaftar' : 'Pegawai' }}
-            </span>
         </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 pemantauan-table" style="font-size: 0.84rem;">
-                <thead>
-                    <!-- Row 1: Header Grup Sesuai Standar OTK -->
-                    <tr class="text-white text-center align-middle" style="background: linear-gradient(135deg, #15432D 0%, #1e5c3e 100%);">
-                        <th rowspan="2" class="text-center py-3" style="width: 55px; border-bottom: none;">No</th>
-                        <th rowspan="2" class="text-start py-3" style="min-width: 250px; border-bottom: none;">Pegawai</th>
-                        <th colspan="2" class="text-center py-2" style="border-left: 1px solid rgba(255,255,255,0.15); border-right: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.1);">
-                            Bulan {{ $namaBulanIndonesia }} {{ $tahun }}
-                        </th>
-                        <th colspan="4" class="text-center py-2" style="border-right: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.05);">
-                            Tahun Kinerja Berjalan ({{ $tahun }})
-                        </th>
-                        <th rowspan="2" class="text-center py-3" style="width: 140px; border-bottom: none;">Aksi</th>
-                    </tr>
-                    <!-- Row 2: Sub-Header Kolom -->
-                    <tr class="text-white text-center align-middle" style="background: #15432D; font-size: 0.77rem;">
-                        <th class="py-2" style="border-left: 1px solid rgba(255,255,255,0.15); min-width: 105px;">Jum. Kegiatan</th>
-                        <th class="py-2" style="border-right: 1px solid rgba(255,255,255,0.15); min-width: 110px;">Jum. Jam Kerja</th>
-                        <th class="py-2" style="min-width: 75px;">Total</th>
-                        <th class="py-2" style="min-width: 85px;">Rutin</th>
-                        <th class="py-2" style="min-width: 95px;">Kepanitiaan</th>
-                        <th class="py-2" style="border-right: 1px solid rgba(255,255,255,0.15); min-width: 85px;">Insidental</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($pegawaiData as $index => $row)
-                        @php
-                            $pegawai = $row['pegawai'];
-                            $hasActivities = $row['jum_kegiatan_bulan'] > 0;
-                        @endphp
-                        <tr>
-                            <!-- No Urut OTK -->
-                            <td class="text-center text-muted fw-bold">
-                                {{ $loop->iteration }}
-                            </td>
-
-                            <!-- Profil Pegawai & Jabatan OTK -->
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <!-- Avatar Circle -->
-                                    <div class="avatar-circle rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-xs flex-shrink-0 me-3" 
-                                         style="width: 38px; height: 38px; min-width: 38px; font-size: 12.5px; background-color: {{ $row['avatar_color'] }}; margin-right: 14px !important;">
-                                        {{ $row['avatar_initial'] }}
-                                    </div>
-                                    <div class="lh-sm">
-                                        <div class="fw-bold text-dark text-truncate" style="max-width: 250px;">
-                                            {{ $pegawai->name }}
-                                        </div>
-                                        <div class="text-dark small fw-semibold text-truncate" style="max-width: 250px; font-size: 0.77rem; color: #15432D !important;">
-                                            {{ $pegawai->jabatan ?: 'Staf' }}
-                                        </div>
-                                        <div class="text-muted text-truncate" style="font-size: 0.70rem;">
-                                            {{ $pegawai->unit ?: 'Universitas Ibnu Sina' }} &bull; NUPTK/NUP: {{ $pegawai->nidn ?: '-' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-
-
-
-                            <!-- Bulan Ini: Jum Kegiatan -->
-                            <td class="text-center">
-                                @if($hasActivities)
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fw-bold" style="font-size: 0.82rem;">
-                                        {{ $row['jum_kegiatan_bulan'] }}
-                                    </span>
-                                @else
-                                    <span class="text-muted fw-medium small">0</span>
-                                @endif
-                            </td>
-
-                            <!-- Bulan Ini: Jum Jam Kerja -->
-                            <td class="text-center">
-                                @if($row['jam_kerja_bulan'] > 0)
-                                    <span class="badge bg-light text-dark border px-2.5 py-1.5 fw-bold" style="font-size: 0.82rem;">
-                                        <i class="bi bi-clock me-1 text-primary"></i>{{ number_format($row['jam_kerja_bulan'], 1, ',', '.') }}
-                                    </span>
-                                @else
-                                    <span class="text-muted small">0</span>
-                                @endif
-                            </td>
-
-                            <!-- Tahun Berjalan: Total -->
-                            <td class="text-center fw-bold text-dark">
-                                {{ $row['total_tahunan'] }}
-                            </td>
-
-                            <!-- Tahun Berjalan: Rutin / Utama -->
-                            <td class="text-center text-secondary fw-semibold">
-                                {{ $row['rutin_tahunan'] }}
-                            </td>
-
-                            <!-- Tahun Berjalan: Kepanitiaan -->
-                            <td class="text-center text-secondary fw-semibold">
-                                {{ $row['kepanitiaan_tahunan'] }}
-                            </td>
-
-                            <!-- Tahun Berjalan: Insidental -->
-                            <td class="text-center text-secondary fw-semibold">
-                                {{ $row['insidentil_tahunan'] }}
-                            </td>
-
-                            <!-- Aksi -->
-                            <td class="text-center">
-                                <!-- Tombol Pantau -->
-                                <button type="button" 
-                                        class="btn btn-sm btn-dark d-inline-flex align-items-center gap-1 btn-pantau px-3 py-1.5 rounded-2 shadow-xs" 
-                                        style="font-size: 0.78rem; background-color: #15432D; border-color: #15432D;"
-                                        data-id="{{ $pegawai->id }}"
-                                        data-name="{{ $pegawai->name }}"
-                                        data-bulan="{{ $bulan }}"
-                                        data-tahun="{{ $tahun }}"
-                                        title="Pantau rincian kegiatan kinerja pegawai ini">
-                                    <i class="bi bi-eye"></i>
-                                    <span>Pantau</span>
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" class="text-center py-5">
-                                <div class="text-muted">
-                                    <i class="bi bi-diagram-3 display-4 d-block mb-3 text-secondary"></i>
-                                    <h6 class="fw-bold">Tidak ada staf dalam penempatan OTK ini</h6>
-                                    <p class="small mb-0">Coba ubah filter atasan, bidang koordinasi, atau kata kunci pencarian.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        @include('pages.pemantauan-staff.partials.table')
     </div>
 
 </section>
@@ -459,6 +265,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    let currentBulan = {{ $bulan }};
+    let currentTahun = {{ $tahun }};
+    let currentNamaBulan = "{{ $namaBulanIndonesia }}";
+
     const modalEl = document.getElementById('modalPantauStaff');
     const modal = new bootstrap.Modal(modalEl);
 
@@ -467,126 +277,336 @@ document.addEventListener('DOMContentLoaded', function () {
     const listBody = document.getElementById('modalTaskListBody');
     const emptyNotice = document.getElementById('modalEmptyNotice');
 
-    document.querySelectorAll('.btn-pantau').forEach(button => {
-        button.addEventListener('click', function () {
-            const userId = this.getAttribute('data-id');
-            const userName = this.getAttribute('data-name');
-            const bulan = this.getAttribute('data-bulan');
-            const tahun = this.getAttribute('data-tahun');
+    const selectBulan = document.getElementById('selectBulan');
+    const selectTahun = document.getElementById('selectTahun');
+    const btnPrevMonth = document.getElementById('btnPrevMonth');
+    const btnNextMonth = document.getElementById('btnNextMonth');
+    const formFilter = document.getElementById('formFilterPemantauan');
+    const inputSearch = document.getElementById('inputSearchPemantauan');
+    const kpiWrapper = document.getElementById('kpiContainerWrapper');
+    const tableWrapper = document.getElementById('tableContainerWrapper');
+    const btnExportExcel = document.getElementById('btnExportExcel');
+    const btnExportPdf = document.getElementById('btnExportPdf');
 
-            // Reset modal state
-            document.getElementById('modalStaffName').textContent = userName;
-            document.getElementById('modalStaffSub').textContent = 'Memuat informasi...';
-            document.getElementById('modalStaffAtasan').textContent = '';
-            spinner.style.display = 'block';
-            container.style.display = 'none';
-            listBody.innerHTML = '';
-            emptyNotice.classList.add('d-none');
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fungsi Bind Tombol Pantau (Detail Modal)
+    // ─────────────────────────────────────────────────────────────────────────
+    function bindPantauButtons() {
+        document.querySelectorAll('.btn-pantau').forEach(button => {
+            // Hindari duplikasi listener
+            button.replaceWith(button.cloneNode(true));
+        });
 
-            modal.show();
+        document.querySelectorAll('.btn-pantau').forEach(button => {
+            button.addEventListener('click', function () {
+                const userId = this.getAttribute('data-id');
+                const userName = this.getAttribute('data-name');
+                const bulan = this.getAttribute('data-bulan') || currentBulan;
+                const tahun = this.getAttribute('data-tahun') || currentTahun;
 
-            // Fetch detail via AJAX
-            fetch(`{{ url('pemantauan-staff/detail') }}/${userId}?bulan=${bulan}&tahun=${tahun}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                spinner.style.display = 'none';
-                container.style.display = 'block';
+                // Reset modal state
+                document.getElementById('modalStaffName').textContent = userName;
+                document.getElementById('modalStaffSub').textContent = 'Memuat informasi...';
+                document.getElementById('modalStaffAtasan').textContent = '';
+                document.getElementById('modalPeriodeText').textContent = `${currentNamaBulan} ${tahun}`;
+                spinner.style.display = 'block';
+                container.style.display = 'none';
+                listBody.innerHTML = '';
+                emptyNotice.classList.add('d-none');
 
-                if (data.success) {
-                    const p = data.pegawai;
-                    document.getElementById('modalStaffName').textContent = p.name;
-                    document.getElementById('modalStaffSub').textContent = `${p.jabatan} • ${p.unit}`;
-                    document.getElementById('modalStaffAtasan').textContent = `Atasan: ${p.atasan}`;
-                    
-                    const avatar = document.getElementById('modalStaffAvatar');
-                    avatar.textContent = p.avatar_initial;
-                    avatar.style.backgroundColor = p.avatar_color;
+                modal.show();
 
-                    document.getElementById('modalTotalTugas').textContent = data.total_tasks;
-                    document.getElementById('modalTotalJam').textContent = `${data.total_jam} Jam`;
-                    document.getElementById('modalSelesai').textContent = data.selesai_count;
+                // Fetch detail via AJAX
+                fetch(`{{ url('pemantauan-staff/detail') }}/${userId}?bulan=${bulan}&tahun=${tahun}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    spinner.style.display = 'none';
+                    container.style.display = 'block';
 
-                    const taggedContainer = document.getElementById('modalTaggedContainer');
-                    const taggedCount = document.getElementById('modalTaggedCount');
-                    if (taggedContainer && taggedCount) {
-                        if (data.tagged_count > 0) {
-                            taggedCount.textContent = data.tagged_count;
-                            taggedContainer.classList.remove('d-none');
+                    if (data.success) {
+                        const p = data.pegawai;
+                        document.getElementById('modalStaffName').textContent = p.name;
+                        document.getElementById('modalStaffSub').textContent = `${p.jabatan} • ${p.unit}`;
+                        document.getElementById('modalStaffAtasan').textContent = `Atasan: ${p.atasan}`;
+                        
+                        const avatar = document.getElementById('modalStaffAvatar');
+                        avatar.textContent = p.avatar_initial;
+                        avatar.style.backgroundColor = p.avatar_color;
+
+                        document.getElementById('modalTotalTugas').textContent = data.total_tasks;
+                        document.getElementById('modalTotalJam').textContent = `${data.total_jam} Jam`;
+                        document.getElementById('modalSelesai').textContent = data.selesai_count;
+
+                        const taggedContainer = document.getElementById('modalTaggedContainer');
+                        const taggedCount = document.getElementById('modalTaggedCount');
+                        if (taggedContainer && taggedCount) {
+                            if (data.tagged_count > 0) {
+                                taggedCount.textContent = data.tagged_count;
+                                taggedContainer.classList.remove('d-none');
+                            } else {
+                                taggedContainer.classList.add('d-none');
+                            }
+                        }
+
+                        // WhatsApp button in modal footer
+                        const waContainer = document.getElementById('modalWaContainer');
+                        if (p.nomor_wa) {
+                            let cleanWa = p.nomor_wa.replace(/\D/g, '');
+                            if (cleanWa.startsWith('0')) cleanWa = '62' + cleanWa.substring(1);
+                            const msg = encodeURIComponent(`Halo ${p.name}, saya melihat catatan kegiatan Anda untuk periode ${currentNamaBulan} ${tahun}.`);
+                            waContainer.innerHTML = `
+                                <a href="https://wa.me/${cleanWa}?text=${msg}" target="_blank" class="btn btn-sm btn-success d-inline-flex align-items-center gap-2 px-3">
+                                    <i class="bi bi-whatsapp"></i> Hubungi via WhatsApp
+                                </a>
+                            `;
                         } else {
-                            taggedContainer.classList.add('d-none');
+                            waContainer.innerHTML = '';
+                        }
+
+                        // Render task rows
+                        if (data.tasks.length === 0) {
+                            emptyNotice.classList.remove('d-none');
+                        } else {
+                            emptyNotice.classList.add('d-none');
+                            data.tasks.forEach((t, idx) => {
+                                let badgeClass = 'bg-secondary';
+                                if (t.status === 'Selesai') badgeClass = 'bg-success';
+                                else if (t.status === 'Proses' || t.status === 'Berjalan') badgeClass = 'bg-primary';
+                                else if (t.status === 'Tertunda') badgeClass = 'bg-warning text-dark';
+
+                                let tagBadge = '';
+                                let durasiHtml = `<span class="fw-bold text-dark">${t.durasi_jam} Jam</span>`;
+
+                                if (!t.is_owner) {
+                                    tagBadge = `<span class="badge bg-info-subtle text-info border ms-2" style="font-size:0.72rem;" title="Hanya sekadar mengetahui, bukan penanggung jawab utama"><i class="bi bi-info-circle me-1"></i>Ditandai (Sekadar Mengetahui)</span>`;
+                                    durasiHtml = `<span class="text-muted">0 Jam</span><br><small class="text-secondary" style="font-size:0.7rem;">(Info Rekan)</small>`;
+                                }
+
+                                let ownerInfo = !t.is_owner ? `<small class="text-muted d-block mt-1"><i class="bi bi-person me-1"></i>Penanggung Jawab: <span class="fw-medium text-dark">${t.pemilik_nama}</span></small>` : '';
+
+                                let row = `
+                                    <tr class="${!t.is_owner ? 'bg-light bg-opacity-75' : ''}">
+                                        <td class="text-muted">${idx + 1}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center flex-wrap gap-1">
+                                                <span class="fw-semibold text-dark">${t.uraian_tugas}</span>
+                                                ${tagBadge}
+                                            </div>
+                                            <small class="text-muted">${t.tanggal_mulai}</small>
+                                            ${ownerInfo}
+                                        </td>
+                                        <td><span class="badge bg-light text-dark border">${t.kategori}</span></td>
+                                        <td class="text-center">${durasiHtml}</td>
+                                        <td class="text-center">
+                                            <span class="badge ${badgeClass} px-2 py-1">${t.status}</span>
+                                        </td>
+                                    </tr>
+                                `;
+                                listBody.innerHTML += row;
+                            });
                         }
                     }
-
-                    // WhatsApp button in modal footer
-                    const waContainer = document.getElementById('modalWaContainer');
-                    if (p.nomor_wa) {
-                        let cleanWa = p.nomor_wa.replace(/\D/g, '');
-                        if (cleanWa.startsWith('0')) cleanWa = '62' + cleanWa.substring(1);
-                        const msg = encodeURIComponent(`Halo ${p.name}, saya melihat catatan kegiatan Anda untuk periode {{ $namaBulanIndonesia }} {{ $tahun }}.`);
-                        waContainer.innerHTML = `
-                            <a href="https://wa.me/${cleanWa}?text=${msg}" target="_blank" class="btn btn-sm btn-success d-inline-flex align-items-center gap-2 px-3">
-                                <i class="bi bi-whatsapp"></i> Hubungi via WhatsApp
-                            </a>
-                        `;
-                    } else {
-                        waContainer.innerHTML = '';
-                    }
-
-                    // Render task rows
-                    if (data.tasks.length === 0) {
-                        emptyNotice.classList.remove('d-none');
-                    } else {
-                        emptyNotice.classList.add('d-none');
-                        data.tasks.forEach((t, idx) => {
-                            let badgeClass = 'bg-secondary';
-                            if (t.status === 'Selesai') badgeClass = 'bg-success';
-                            else if (t.status === 'Proses' || t.status === 'Berjalan') badgeClass = 'bg-primary';
-                            else if (t.status === 'Tertunda') badgeClass = 'bg-warning text-dark';
-
-                            let tagBadge = '';
-                            let durasiHtml = `<span class="fw-bold text-dark">${t.durasi_jam} Jam</span>`;
-
-                            if (!t.is_owner) {
-                                tagBadge = `<span class="badge bg-info-subtle text-info border ms-2" style="font-size:0.72rem;" title="Hanya sekadar mengetahui, bukan penanggung jawab utama"><i class="bi bi-info-circle me-1"></i>Ditandai (Sekadar Mengetahui)</span>`;
-                                durasiHtml = `<span class="text-muted">0 Jam</span><br><small class="text-secondary" style="font-size:0.7rem;">(Info Rekan)</small>`;
-                            }
-
-                            let ownerInfo = !t.is_owner ? `<small class="text-muted d-block mt-1"><i class="bi bi-person me-1"></i>Penanggung Jawab: <span class="fw-medium text-dark">${t.pemilik_nama}</span></small>` : '';
-
-                            let row = `
-                                <tr class="${!t.is_owner ? 'bg-light bg-opacity-75' : ''}">
-                                    <td class="text-muted">${idx + 1}</td>
-                                    <td>
-                                        <div class="d-flex align-items-center flex-wrap gap-1">
-                                            <span class="fw-semibold text-dark">${t.uraian_tugas}</span>
-                                            ${tagBadge}
-                                        </div>
-                                        <small class="text-muted">${t.tanggal_mulai}</small>
-                                        ${ownerInfo}
-                                    </td>
-                                    <td><span class="badge bg-light text-dark border">${t.kategori}</span></td>
-                                    <td class="text-center">${durasiHtml}</td>
-                                    <td class="text-center">
-                                        <span class="badge ${badgeClass} px-2 py-1">${t.status}</span>
-                                    </td>
-                                </tr>
-                            `;
-                            listBody.innerHTML += row;
-                        });
-                    }
-                }
-            })
-            .catch(err => {
-                spinner.style.display = 'none';
-                container.style.display = 'block';
-                listBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Gagal memuat rincian data kegiatan.</td></tr>`;
+                })
+                .catch(err => {
+                    spinner.style.display = 'none';
+                    container.style.display = 'block';
+                    listBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Gagal memuat rincian data kegiatan.</td></tr>`;
+                });
             });
         });
+    }
+
+    // Inisialisasi awal tombol modal
+    bindPantauButtons();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Live AJAX Navigator & Filter (Tanpa Refresh Halaman)
+    // ─────────────────────────────────────────────────────────────────────────
+    let abortController = null;
+
+    function loadPemantauanData(newBulan, newTahun, searchVal) {
+        if (newBulan !== undefined) currentBulan = parseInt(newBulan);
+        if (newTahun !== undefined) currentTahun = parseInt(newTahun);
+
+        const params = new URLSearchParams();
+        params.set('bulan', currentBulan);
+        params.set('tahun', currentTahun);
+
+        const search = (searchVal !== undefined) ? searchVal : (inputSearch ? inputSearch.value.trim() : '');
+        if (search) {
+            params.set('search', search);
+        }
+
+        // Pertahankan query params filter lainnya jika ada di URL saat ini
+        const currentUrlParams = new URLSearchParams(window.location.search);
+        ['unit', 'supervisor_id', 'status_mencatat', 'bidang_otk'].forEach(key => {
+            if (currentUrlParams.has(key)) {
+                params.set(key, currentUrlParams.get(key));
+            }
+        });
+
+        const targetUrl = `{{ route('pemantauan-staff.index') }}?${params.toString()}`;
+
+        // Loading state
+        const tableOverlay = document.getElementById('tableLoadingOverlay');
+        if (tableOverlay) {
+            tableOverlay.classList.remove('d-none');
+            tableOverlay.classList.add('d-flex');
+        }
+        if (kpiWrapper) {
+            kpiWrapper.style.opacity = '0.5';
+            kpiWrapper.style.transition = 'opacity 0.2s ease';
+        }
+
+        if (abortController) {
+            abortController.abort();
+        }
+        abortController = new AbortController();
+
+        fetch(targetUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            signal: abortController.signal
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Update KPI Cards HTML
+                if (kpiWrapper && data.html_kpi) {
+                    kpiWrapper.innerHTML = data.html_kpi;
+                }
+
+                // Update Table HTML
+                if (tableWrapper && data.html_table) {
+                    const overlayHtml = `
+                        <div id="tableLoadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-none bg-white bg-opacity-75 d-flex align-items-center justify-content-center rounded-4" style="z-index: 10; backdrop-filter: blur(2px);">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-success" role="status" style="width: 2rem; height: 2rem;">
+                                    <span class="visually-hidden">Memuat data...</span>
+                                </div>
+                                <div class="small fw-semibold text-secondary mt-2">Memuat data kinerja...</div>
+                            </div>
+                        </div>
+                    `;
+                    tableWrapper.innerHTML = overlayHtml + data.html_table;
+                }
+
+                // Update Select Values
+                if (selectBulan) selectBulan.value = data.bulan;
+                if (selectTahun) selectTahun.value = data.tahun;
+
+                // Update Prev / Next Buttons
+                if (btnPrevMonth) {
+                    btnPrevMonth.setAttribute('data-month', data.prev_month);
+                    btnPrevMonth.setAttribute('data-year', data.prev_year);
+                }
+                if (btnNextMonth) {
+                    btnNextMonth.setAttribute('data-month', data.next_month);
+                    btnNextMonth.setAttribute('data-year', data.next_year);
+                }
+
+                // Update Export URLs
+                if (btnExportExcel && data.export_excel_url) {
+                    btnExportExcel.href = data.export_excel_url;
+                }
+                if (btnExportPdf && data.export_pdf_url) {
+                    btnExportPdf.href = data.export_pdf_url;
+                }
+
+                currentNamaBulan = data.namaBulanIndonesia;
+                currentBulan = data.bulan;
+                currentTahun = data.tahun;
+
+                // Update browser URL tanpa refresh
+                window.history.pushState({ bulan: data.bulan, tahun: data.tahun }, '', data.clean_url || targetUrl);
+
+                // Hubungkan kembali event listener tombol Pantau
+                bindPantauButtons();
+            }
+        })
+        .catch(err => {
+            if (err.name !== 'AbortError') {
+                console.error('Gagal memperbarui data pemantauan:', err);
+            }
+        })
+        .finally(() => {
+            const tableOverlayNow = document.getElementById('tableLoadingOverlay');
+            if (tableOverlayNow) {
+                tableOverlayNow.classList.remove('d-flex');
+                tableOverlayNow.classList.add('d-none');
+            }
+            if (kpiWrapper) {
+                kpiWrapper.style.opacity = '1';
+            }
+        });
+    }
+
+    // Event listener: Ubah dropdown bulan
+    if (selectBulan) {
+        selectBulan.addEventListener('change', function () {
+            loadPemantauanData(this.value, selectTahun.value);
+        });
+    }
+
+    // Event listener: Ubah dropdown tahun
+    if (selectTahun) {
+        selectTahun.addEventListener('change', function () {
+            loadPemantauanData(selectBulan.value, this.value);
+        });
+    }
+
+    // Event listener: Tombol bulan sebelumnya (<)
+    if (btnPrevMonth) {
+        btnPrevMonth.addEventListener('click', function () {
+            const m = this.getAttribute('data-month');
+            const y = this.getAttribute('data-year');
+            loadPemantauanData(m, y);
+        });
+    }
+
+    // Event listener: Tombol bulan berikutnya (>)
+    if (btnNextMonth) {
+        btnNextMonth.addEventListener('click', function () {
+            const m = this.getAttribute('data-month');
+            const y = this.getAttribute('data-year');
+            loadPemantauanData(m, y);
+        });
+    }
+
+    // Event listener: Submit form filter pencarian
+    if (formFilter) {
+        formFilter.addEventListener('submit', function (e) {
+            e.preventDefault();
+            loadPemantauanData(selectBulan.value, selectTahun.value);
+        });
+    }
+
+    // Event listener: Live Search (debounce 350ms)
+    let searchTimeout = null;
+    if (inputSearch) {
+        inputSearch.addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadPemantauanData(selectBulan.value, selectTahun.value, this.value.trim());
+            }, 350);
+        });
+    }
+
+    // Event listener: Navigasi Back/Forward browser
+    window.addEventListener('popstate', function (e) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const b = urlParams.get('bulan') || currentBulan;
+        const y = urlParams.get('tahun') || currentTahun;
+        const s = urlParams.get('search') || '';
+        if (inputSearch) inputSearch.value = s;
+        loadPemantauanData(b, y, s);
     });
 });
 </script>
