@@ -599,12 +599,12 @@ class RencanaKerjaController extends Controller
             ]);
         }
 
-        Alert::success('Berhasil', 'Kegiatan berhasil ditambahkan')
+        Alert::success('Berhasil', 'Rutinitas berhasil ditambahkan')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('rencana-kerja.index');
+        return redirect()->route('rutinitas.index');
     }
 
     /**
@@ -679,12 +679,12 @@ class RencanaKerjaController extends Controller
         $rencanaKerja->syncToKegiatan();
         \App\Helpers\AbsensiKinerjaHelper::syncTaskKeterangan($rencanaKerja);
 
-        Alert::success('Berhasil', 'Rencana Kerja berhasil diperbarui')
+        Alert::success('Berhasil', 'Rutinitas berhasil diperbarui')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('rencana-kerja.index');
+        return redirect()->route('rutinitas.index');
     }
 
     /**
@@ -807,12 +807,12 @@ class RencanaKerjaController extends Controller
             ]);
         }
 
-        Alert::success('Berhasil', 'Rencana Kerja berhasil dihapus')
+        Alert::success('Berhasil', 'Rutinitas berhasil dihapus')
             ->toToast()
             ->autoClose(4000)
             ->timerProgressBar();
 
-        return redirect()->route('rencana-kerja.index');
+        return redirect()->route('rutinitas.index');
     }
 
     /**

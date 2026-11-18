@@ -623,12 +623,12 @@ class KegiatanController extends Controller
                 ]);
             }
 
-            Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Kegiatan Rutinitas.')
+            Alert::success('Berhasil', 'Kegiatan berhasil disimpan dan masuk ke Rutinitas.')
                 ->toToast()
                 ->autoClose(4000)
                 ->timerProgressBar();
 
-            return redirect()->route('rencana-kerja.index');
+            return redirect()->route('rutinitas.index');
         }
     }
 

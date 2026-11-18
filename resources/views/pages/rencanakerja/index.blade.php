@@ -96,11 +96,11 @@
             </ol>
         </nav>
     @else
-        <h1>Kegiatan</h1>
+        <h1>Rutinitas</h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-                <li class="breadcrumb-item active">Kegiatan</li>
+                <li class="breadcrumb-item active">Rutinitas</li>
             </ol>
         </nav>
     @endif
@@ -220,7 +220,7 @@
                 <div class="card-header-green d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
                     <div class="header-title-text d-flex align-items-center gap-2 flex-wrap text-white py-1">
                         <i class="bi bi-calendar-check-fill text-warning me-1" style="font-size: 1.15rem;"></i>
-                        <span class="fw-bold text-white fs-6 mb-0">Kegiatan</span>
+                        <span class="fw-bold text-white fs-6 mb-0">{{ (request('from') === 'layanan' || request()->filled('jabatan')) ? 'Layanan' : 'Rutinitas' }}</span>
                         <span class="text-white d-none d-sm-inline">:</span>
                         <span id="judul-jabatan" class="fw-semibold" style="color: #f1f5f9; font-size: 0.95rem;">
                             {{ $judulJabatan ?? (auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : auth()->user()->name) }}
@@ -253,7 +253,7 @@
                             <i class="bi bi-volume-up-fill me-1.5"></i>
                             <span>Suara</span>
                         </button>
-                        <button type="button" class="btn btn-header-action btn-light-modern" data-bs-toggle="modal" data-bs-target="#modalImportExcel" title="Import Kegiatan dari Excel">
+                        <button type="button" class="btn btn-header-action btn-light-modern" data-bs-toggle="modal" data-bs-target="#modalImportExcel" title="Import Rutinitas dari Excel">
                             <i class="bi bi-file-earmark-excel-fill text-success me-1.5"></i>
                             <span>Import Excel</span>
                         </button>
@@ -328,7 +328,7 @@
         <div class="modal-content border-0 shadow">
             <div class="modal-header text-white" style="background-color: #2d6a4f;">
                 <h5 class="modal-title fw-bold" id="modalImportExcelLabel">
-                    <i class="bi bi-file-earmark-excel me-2"></i> Import Kegiatan Excel
+                    <i class="bi bi-file-earmark-excel me-2"></i> Import Rutinitas Excel
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -662,7 +662,7 @@
             ordering: false,
             autoWidth: false,
             ajax: {
-                url: "{{ app()->environment('production') ? str_replace('http:', 'https:', route('rencana-kerja.index')) : route('rencana-kerja.index') }}",
+                url: "{{ app()->environment('production') ? str_replace('http:', 'https:', route('rutinitas.index')) : route('rutinitas.index') }}",
                 data: function(d) {
                     if ($('#filter-jabatan').length) {
                         d.jabatan = $('#filter-jabatan').val();

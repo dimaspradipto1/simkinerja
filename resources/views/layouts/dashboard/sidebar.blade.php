@@ -53,9 +53,12 @@
                         $isFromLayanan = request()->is('layanan*') || 
                                          request()->routeIs('layanan.*') || 
                                          request('from') === 'layanan' || 
-                                         (request()->routeIs('rencana-kerja.*') && request()->filled('jabatan'));
+                                         (request()->routeIs('rencana-kerja.*') && request()->filled('jabatan')) ||
+                                         (request()->routeIs('rutinitas.*') && request()->filled('jabatan'));
 
                         $isKinerjaActive = !$isFromLayanan && (
+                            request()->routeIs('rutinitas.*') ||
+                            request()->is('rutinitas*') ||
                             request()->routeIs('rencana-kerja.*') || 
                             request()->routeIs('kepanitiaan.*') || 
                             request()->routeIs('insidentil.*') || 
@@ -78,6 +81,11 @@
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('kegiatan.create') ? 'active' : '' }}" href="{{ route('kegiatan.create') }}">
                                     <span>Tambah Kegiatan</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ (request()->routeIs('rutinitas.*') || request()->is('rutinitas*') || (request()->routeIs('rencana-kerja.index') && !request()->filled('jabatan') && request('from') !== 'layanan')) ? 'active' : '' }}" href="{{ route('rutinitas.index') }}">
+                                    <span>Rutinitas</span>
                                 </a>
                             </li>
                             <li>

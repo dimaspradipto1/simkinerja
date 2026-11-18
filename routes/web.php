@@ -130,7 +130,14 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::post('rencana-kerja/{rencana_kerja}/reopen', [RencanaKerjaController::class, 'reopen'])->name('rencana-kerja.reopen');
     Route::post('rencana-kerja/{rencana_kerja}/request-reopen', [RencanaKerjaController::class, 'requestReopen'])->name('rencana-kerja.request-reopen');
     Route::get('rencana-kerja/{rencana_kerja}/modal-detail', [RencanaKerjaController::class, 'modalDetail'])->name('rencana-kerja.modal-detail');
-    Route::resource('rencana-kerja', RencanaKerjaController::class);
+    Route::get('rutinitas', [RencanaKerjaController::class, 'index'])->name('rutinitas.index');
+    Route::get('rencana-kerja', function (\Illuminate\Http\Request $request) {
+        if (!$request->ajax() && !$request->wantsJson()) {
+            return redirect()->route('rutinitas.index', $request->query());
+        }
+        return app(\App\Http\Controllers\RencanaKerjaController::class)->index($request);
+    })->name('rencana-kerja.index');
+    Route::resource('rencana-kerja', RencanaKerjaController::class)->except(['index']);
 
     Route::get('rekapitulasi/data', [RekapitulasiController::class, 'getData'])->name('rekapitulasi.data');
     Route::get('rekapitulasi/export-excel', [RekapitulasiController::class, 'exportExcel'])->name('rekapitulasi.export-excel');
