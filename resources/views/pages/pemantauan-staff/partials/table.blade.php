@@ -17,7 +17,7 @@
                 <!-- Row 1: Header Grup Sesuai Standar OTK -->
                 <tr class="text-white text-center align-middle" style="background: linear-gradient(135deg, #15432D 0%, #1e5c3e 100%);">
                     <th rowspan="2" class="text-center py-3" style="width: 55px; border-bottom: none;">No</th>
-                    <th rowspan="2" class="text-start py-3" style="min-width: 250px; border-bottom: none;">Pegawai</th>
+                    <th rowspan="2" class="text-start py-3" style="min-width: 280px; border-bottom: none;">Pegawai</th>
                     <th colspan="2" class="text-center py-2" style="border-left: 1px solid rgba(255,255,255,0.15); border-right: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.1);">
                         Bulan {{ $namaBulanIndonesia }} {{ $tahun }}
                     </th>
@@ -57,13 +57,13 @@
                                     {{ $row['avatar_initial'] }}
                                 </div>
                                 <div class="lh-sm">
-                                    <div class="fw-bold text-dark text-truncate" style="max-width: 250px;">
+                                    <div class="fw-bold text-dark">
                                         {{ $pegawai->name }}
                                     </div>
-                                    <div class="text-dark small fw-semibold text-truncate" style="max-width: 250px; font-size: 0.77rem; color: #15432D !important;">
+                                    <div class="text-dark small fw-semibold" style="font-size: 0.77rem; color: #15432D !important;">
                                         {{ $pegawai->jabatan ?: 'Staf' }}
                                     </div>
-                                    <div class="text-muted text-truncate" style="font-size: 0.70rem;">
+                                    <div class="text-muted" style="font-size: 0.70rem;">
                                         {{ $pegawai->unit ?: 'Universitas Ibnu Sina' }} &bull; NUPTK/NUP: {{ $pegawai->nidn ?: '-' }}
                                     </div>
                                 </div>
