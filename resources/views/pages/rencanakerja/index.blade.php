@@ -283,15 +283,15 @@
                             </button>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <div id="selected-badge" class="badge bg-secondary-subtle text-secondary border px-2.5 py-1.5 d-none align-items-center gap-1.5" style="font-size: 0.8rem;">
-                                <i class="bi bi-check2-square text-primary"></i> <span id="selected-count">0</span> terpilih
+                            <div id="selected-badge" class="badge border px-2.5 py-1.5 d-none align-items-center gap-1.5 fw-semibold" style="font-size: 0.8rem; background-color: #f1f5f9; color: #334155 !important; border-color: #cbd5e1 !important;">
+                                <i class="bi bi-check2-square text-primary"></i> <span id="selected-count" class="text-dark fw-bold">0</span> <span style="color: #334155;">terpilih</span>
                             </div>
                             @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isPimpinanRektorat() || auth()->user()->isPimpinanUnit() || auth()->user()->subordinates()->exists()))
-                            <button type="button" id="btn-batch-approve" class="btn btn-sm btn-success d-none fw-semibold shadow-2xs d-inline-flex align-items-center" style="background-color: #046B26; border-color: #046B26;">
-                                <i class="bi bi-check-all me-1 fs-6"></i> Setujui Terpilih
+                            <button type="button" id="btn-batch-approve" class="btn btn-sm btn-success d-none fw-semibold shadow-2xs d-inline-flex align-items-center text-white" style="background-color: #046B26; border-color: #046B26; height: 34px;">
+                                <i class="bi bi-check-all me-1 fs-6 text-white"></i> Setujui Terpilih
                             </button>
                             @endif
-                            <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-outline-danger d-none fw-semibold shadow-2xs d-inline-flex align-items-center">
+                            <button type="button" id="btn-bulk-delete" class="btn btn-sm btn-outline-danger d-none fw-semibold shadow-2xs d-inline-flex align-items-center" style="height: 34px;">
                                 <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih
                             </button>
                         </div>

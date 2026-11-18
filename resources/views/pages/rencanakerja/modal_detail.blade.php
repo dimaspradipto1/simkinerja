@@ -208,14 +208,14 @@
                 <textarea id="modal-validation-catatan" class="form-control form-control-sm bg-white" rows="2" placeholder="Tuliskan catatan apresiasi, arahan perbaikan, atau rincian poin revisi...">{{ $row->catatan_validasi }}</textarea>
             </div>
             <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
-                <button type="button" class="btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center px-3" onclick="window.submitModalValidation({{ $row->id }}, 'reject')" style="height: 34px;">
-                    <i class="bi bi-x-circle me-1.5"></i> Tolak
+                <button type="button" class="btn btn-sm fw-semibold d-inline-flex align-items-center px-3 btn-validation-reject" onclick="window.submitModalValidation({{ $row->id }}, 'reject')" style="height: 34px; background-color: #fef2f2; border: 1.5px solid #dc3545; color: #dc3545;">
+                    <i class="bi bi-x-circle me-1.5" style="color: #dc3545;"></i> Tolak
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis fw-semibold d-inline-flex align-items-center px-3" onclick="window.submitModalValidation({{ $row->id }}, 'revise')" style="height: 34px;">
-                    <i class="bi bi-arrow-repeat me-1.5"></i> Minta Revisi
+                <button type="button" class="btn btn-sm fw-semibold d-inline-flex align-items-center px-3 btn-validation-revise" onclick="window.submitModalValidation({{ $row->id }}, 'revise')" style="height: 34px; background-color: #fffbeb; border: 1.5px solid #d97706; color: #b45309;">
+                    <i class="bi bi-arrow-repeat me-1.5" style="color: #d97706;"></i> Minta Revisi
                 </button>
                 <button type="button" class="btn btn-sm btn-success fw-bold text-white d-inline-flex align-items-center px-4 shadow-2xs" onclick="window.submitModalValidation({{ $row->id }}, 'approve')" style="background-color: #046B26; border-color: #046B26; height: 34px;">
-                    <i class="bi bi-check-circle-fill me-1.5"></i> Setujui Pekerjaan
+                    <i class="bi bi-check-circle-fill me-1.5 text-white"></i> Setujui Pekerjaan
                 </button>
             </div>
         </div>

@@ -232,10 +232,10 @@ class RencanaKerjaController extends Controller
                         if ($canValidate) {
                             // Atasan: Quick Approve, Quick Revise, Quick Reject
                             $html .= '<button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center" onclick="window.validateTaskQuick(' . $row->id . ', \'approve\')" title="Setujui Tugas (Validasi)" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-check-lg fs-5"></i></button>';
-                            $html .= '<button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis d-inline-flex align-items-center justify-content-center" onclick="window.openReviseModal(' . $row->id . ')" title="Minta Revisi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-arrow-repeat fs-6"></i></button>';
+                            $html .= '<button type="button" class="btn btn-sm d-inline-flex align-items-center justify-content-center btn-validation-revise" onclick="window.openReviseModal(' . $row->id . ')" title="Minta Revisi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0; background-color: #fffbeb; border: 1.5px solid #d97706; color: #b45309;"><i class="bi bi-arrow-repeat fs-6" style="color: #d97706;"></i></button>';
                             $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.openRejectModal(' . $row->id . ')" title="Tolak Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-x-lg fs-6"></i></button>';
                         } else {
-                            $html .= '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center px-2 py-1" style="font-size: 0.72rem; height: 30px;" title="Menunggu validasi atasan"><i class="bi bi-hourglass-split me-1"></i>Menunggu</span>';
+                            $html .= '<span class="badge border d-inline-flex align-items-center px-2 py-1" style="font-size: 0.72rem; height: 30px; background-color: #fffbeb; color: #b45309; border-color: #fde68a !important;" title="Menunggu validasi atasan"><i class="bi bi-hourglass-split me-1" style="color: #d97706;"></i>Menunggu</span>';
                         }
                     } elseif ($st === 'Perlu Revisi') {
                         // Staf: tombol kerjakan revisi & ajukan ulang
@@ -244,7 +244,7 @@ class RencanaKerjaController extends Controller
                     } elseif ($st === 'Disetujui' || $st === 'Selesai' || $wSelesai) {
                         // Selesai / Disetujui -> Tombol Buka Kunci jika atasan/admin
                         if ($authUser && $authUser->canUnlockTasks()) {
-                            $html .= '<button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis d-inline-flex align-items-center justify-content-center" onclick="window.reopenTaskQuick(' . $row->id . ')" title="Buka Kunci / Kerjakan Lagi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-unlock-fill fs-6"></i></button>';
+                            $html .= '<button type="button" class="btn btn-sm d-inline-flex align-items-center justify-content-center btn-validation-revise" onclick="window.reopenTaskQuick(' . $row->id . ')" title="Buka Kunci / Kerjakan Lagi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0; background-color: #fffbeb; border: 1.5px solid #d97706; color: #b45309;"><i class="bi bi-unlock-fill fs-6" style="color: #d97706;"></i></button>';
                         }
                     } elseif ($st === 'Di-pause') {
                         // Di-pause -> Tombol Lanjut (Play hijau) dan Stop (Stop merah)
@@ -252,7 +252,7 @@ class RencanaKerjaController extends Controller
                         $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.stopTaskQuick(' . $row->id . ')" title="Selesaikan Tugas & Ajukan Validasi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-stop-fill fs-5"></i></button>';
                     } elseif (in_array($st, ['Proses', 'Berjalan']) || ($wMulai && !$wSelesai)) {
                         // Sedang Berjalan -> Tombol Pause (Kuning) dan Tombol Stop (Merah)
-                        $html .= '<button type="button" class="btn btn-sm btn-outline-warning text-warning-emphasis d-inline-flex align-items-center justify-content-center" onclick="window.pauseTaskQuick(' . $row->id . ')" title="Jeda / Pause Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-pause-fill fs-5"></i></button>';
+                        $html .= '<button type="button" class="btn btn-sm d-inline-flex align-items-center justify-content-center btn-validation-revise" onclick="window.pauseTaskQuick(' . $row->id . ')" title="Jeda / Pause Tugas" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0; background-color: #fffbeb; border: 1.5px solid #d97706; color: #b45309;"><i class="bi bi-pause-fill fs-5" style="color: #d97706;"></i></button>';
                         $html .= '<button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" onclick="window.stopTaskQuick(' . $row->id . ')" title="Selesaikan Tugas & Ajukan Validasi" style="width: 32px; height: 32px; padding: 0; border-radius: 6px; flex-shrink: 0;"><i class="bi bi-stop-fill fs-5"></i></button>';
                     } else {
                         // Belum Dimulai -> Tombol Mulai (Play biru)

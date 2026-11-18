@@ -112,15 +112,18 @@
                                 <i class="bi bi-chevron-left"></i>
                             </button>
 
-                            <select name="bulan" id="selectBulan" class="form-select form-select-sm">
+                            @php
+                                $daftarBulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+                            @endphp
+                            <select name="bulan" id="selectBulan" class="form-select form-select-sm fw-semibold" style="color: #1e293b !important; font-weight: 600;">
                                 @for($m = 1; $m <= 12; $m++)
                                     <option value="{{ $m }}" {{ $bulan == $m ? 'selected' : '' }}>
-                                        {{ \Carbon\Carbon::createFromDate(2026, $m, 1)->translatedFormat('F') }}
+                                        {{ $daftarBulanNama[$m] }}
                                     </option>
                                 @endfor
                             </select>
 
-                            <select name="tahun" id="selectTahun" class="form-select form-select-sm" style="max-width: 90px;">
+                            <select name="tahun" id="selectTahun" class="form-select form-select-sm fw-semibold" style="max-width: 90px; color: #1e293b !important; font-weight: 600;">
                                 @for($y = now()->year - 2; $y <= now()->year + 2; $y++)
                                     <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
                                 @endfor
