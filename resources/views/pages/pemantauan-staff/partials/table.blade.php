@@ -42,7 +42,7 @@
                         $pegawai = $row['pegawai'];
                         $hasActivities = $row['jum_kegiatan_bulan'] > 0;
                     @endphp
-                    <tr>
+                    <tr class="pegawai-main-row" id="row-pegawai-{{ $pegawai->id }}">
                         <!-- No Urut OTK -->
                         <td class="text-center text-muted fw-bold">
                             {{ $loop->iteration }}
@@ -112,20 +112,34 @@
                             {{ $row['insidentil_tahunan'] }}
                         </td>
 
-                        <!-- Aksi -->
+                        <!-- Aksi: Tombol Expand Rincian Pekerjaan & Validasi -->
                         <td class="text-center">
-                            <!-- Tombol Pantau -->
                             <button type="button" 
-                                    class="btn btn-sm btn-dark d-inline-flex align-items-center gap-1 btn-pantau px-3 py-1.5 rounded-2 shadow-xs" 
-                                    style="font-size: 0.78rem; background-color: #15432D; border-color: #15432D;"
+                                    class="btn btn-sm btn-dark d-inline-flex align-items-center gap-1.5 btn-toggle-tasks px-2.5 py-1.5 rounded-2 shadow-xs" 
+                                    style="font-size: 0.78rem; background-color: #15432D; border-color: #15432D; white-space: nowrap;"
                                     data-id="{{ $pegawai->id }}"
                                     data-name="{{ $pegawai->name }}"
                                     data-bulan="{{ $bulan }}"
                                     data-tahun="{{ $tahun }}"
-                                    title="Pantau rincian kegiatan kinerja pegawai ini">
-                                <i class="bi bi-eye"></i>
-                                <span>Pantau</span>
+                                    aria-expanded="false"
+                                    title="Buka rincian pekerjaan di dalam tabel untuk dasar validasi">
+                                <i class="bi bi-chevron-down toggle-icon transition-transform"></i>
+                                <span class="btn-text">Rincian &amp; Validasi</span>
                             </button>
+                        </td>
+                    </tr>
+
+                    <!-- Child Row: Panel Rincian Pekerjaan & Validasi Langsung di Dalam Tabel -->
+                    <tr class="task-detail-row d-none" id="detail-row-{{ $pegawai->id }}">
+                        <td colspan="9" class="p-0 border-0">
+                            <div class="task-detail-container p-3 p-md-4" style="background-color: #f7faf8; border-top: 1px dashed #b7dfc4; border-bottom: 2px solid #15432D; box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);">
+                                <div id="detail-content-{{ $pegawai->id }}" class="detail-content-wrapper">
+                                    <div class="text-center py-4 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                                        <span class="small fw-semibold">Memuat rincian pekerjaan {{ $pegawai->name }}...</span>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 @empty

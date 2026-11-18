@@ -209,6 +209,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     // Pemantauan Staff Routes
     Route::get('pemantauan-staff/detail/{id}', [PemantauanStaffController::class, 'detail'])->name('pemantauan-staff.detail');
+    Route::post('pemantauan-staff/validate-task/{kegiatan}', [PemantauanStaffController::class, 'validateTask'])->name('pemantauan-staff.validate-task');
+    Route::post('pemantauan-staff/batch-validate', [PemantauanStaffController::class, 'batchValidate'])->name('pemantauan-staff.batch-validate');
     Route::get('pemantauan-staff/export-excel', [PemantauanStaffController::class, 'exportExcel'])->name('pemantauan-staff.export-excel');
     Route::get('pemantauan-staff/export-pdf', [PemantauanStaffController::class, 'exportPdf'])->name('pemantauan-staff.export-pdf');
     Route::get('pemantauan-staff/{slug?}', [PemantauanStaffController::class, 'index'])->name('pemantauan-staff.index');

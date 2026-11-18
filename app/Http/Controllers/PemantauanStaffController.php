@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\KinerjaWaktuHelper;
 use App\Models\Kegiatan;
 use App\Models\User;
+use App\Traits\ManagesKegiatanLifecycle;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PemantauanStaffController extends Controller
 {
+    use ManagesKegiatanLifecycle;
     /**
      * Tampilan utama Pemantauan Staff sesuai struktur OTK.
      */
@@ -460,10 +462,11 @@ class PemantauanStaffController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        $tasks = $kegiatanList->map(function ($t) use ($id) {
+        $tasks = $kegiatanList->map(function ($t) use ($id, $authUser) {
             $isOwner = ((int)$t->user_id === (int)$id);
             // Tagged users tidak dihitung jam kerjanya (hanya sekadar mengetahui)
             $durasiJam = $isOwner ? round(KinerjaWaktuHelper::hitungDetikRealisasi($t) / 3600, 1) : 0;
+            $canValidate = $isOwner && $authUser->canValidateTask($t);
 
             return [
                 'id' => $t->id,
@@ -476,6 +479,12 @@ class PemantauanStaffController extends Controller
                 'pemilik_nama' => $t->user?->name ?? 'Pegawai',
                 'hasil_kerja' => $t->hasil_kerja ?: '-',
                 'rencana_tindak_lanjut' => $t->rencana_tindak_lanjut ?: '-',
+                'file_url' => $t->file ? asset('storage/' . $t->file) : null,
+                'file_name' => $t->file ? basename($t->file) : null,
+                'url_external' => $t->url_external,
+                'can_validate' => $canValidate,
+                'validated_at' => $t->validated_at ? Carbon::parse($t->validated_at)->translatedFormat('d M Y H:i') : null,
+                'catatan_validasi' => $t->catatan_validasi,
             ];
         });
 
@@ -498,9 +507,27 @@ class PemantauanStaffController extends Controller
             'total_tasks' => $ownedTasks->count(),
             'total_jam' => round($ownedTasks->sum('durasi_jam'), 1),
             'selesai_count' => $ownedTasks->where('status', 'Selesai')->count(),
+            'disetujui_count' => $ownedTasks->where('status', 'Disetujui')->count(),
+            'revisi_count' => $ownedTasks->where('status', 'Perlu Revisi')->count(),
             'proses_count' => $ownedTasks->whereIn('status', ['Proses', 'Berjalan'])->count(),
             'tagged_count' => $tasks->where('is_owner', false)->count(),
         ]);
+    }
+
+    /**
+     * Endpoint untuk validasi satu tugas dari pemantauan staf.
+     */
+    public function validateTask(Request $request, $kegiatan)
+    {
+        return $this->executeValidateTask($request, $kegiatan);
+    }
+
+    /**
+     * Endpoint untuk batch validasi tugas dari pemantauan staf.
+     */
+    public function batchValidate(Request $request)
+    {
+        return $this->executeBatchValidate($request);
     }
 
     /**

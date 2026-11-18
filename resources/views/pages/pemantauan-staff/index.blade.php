@@ -251,7 +251,7 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(0,0,0,0.06) !important;
     }
-    .pemantauan-table tbody tr:hover {
+    .pemantauan-table tbody tr.pegawai-main-row:hover {
         background-color: #f1f8f4 !important;
     }
     .pemantauan-table th {
@@ -261,6 +261,24 @@
     .shadow-xs {
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
+    .shadow-2xs {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .toggle-icon {
+        transition: transform 0.25s ease-in-out;
+        display: inline-block;
+    }
+    .btn-toggle-tasks[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+    .btn-toggle-tasks[aria-expanded="true"] {
+        background-color: #046B26 !important;
+        border-color: #046B26 !important;
+        color: #FED802 !important;
+    }
+    .task-detail-row td {
+        background-color: transparent !important;
+    }
 </style>
 
 <script>
@@ -268,14 +286,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentBulan = {{ $bulan }};
     let currentTahun = {{ $tahun }};
     let currentNamaBulan = "{{ $namaBulanIndonesia }}";
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const modalEl = document.getElementById('modalPantauStaff');
-    const modal = new bootstrap.Modal(modalEl);
-
-    const spinner = document.getElementById('modalLoadingSpinner');
-    const container = document.getElementById('modalContentContainer');
-    const listBody = document.getElementById('modalTaskListBody');
-    const emptyNotice = document.getElementById('modalEmptyNotice');
+    const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
 
     const selectBulan = document.getElementById('selectBulan');
     const selectTahun = document.getElementById('selectTahun');
@@ -289,140 +303,532 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnExportPdf = document.getElementById('btnExportPdf');
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Fungsi Bind Tombol Pantau (Detail Modal)
+    // Load & Render Sub-Tabel Rincian Pekerjaan di Dalam Baris Tabel
     // ─────────────────────────────────────────────────────────────────────────
-    function bindPantauButtons() {
-        document.querySelectorAll('.btn-pantau').forEach(button => {
-            // Hindari duplikasi listener
+    function loadStaffDetailRow(userId, forceReload = false) {
+        const detailRow = document.getElementById(`detail-row-${userId}`);
+        const contentWrapper = document.getElementById(`detail-content-${userId}`);
+        if (!detailRow || !contentWrapper) return;
+
+        if (!forceReload && contentWrapper.getAttribute('data-loaded') === 'true') {
+            return;
+        }
+
+        contentWrapper.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                <span class="small fw-semibold">Memuat rincian pekerjaan dan berkas pendukung...</span>
+            </div>
+        `;
+
+        const targetUrl = `{{ url('pemantauan-staff/detail') }}/${userId}?bulan=${currentBulan}&tahun=${currentTahun}`;
+
+        fetch(targetUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                contentWrapper.innerHTML = `<div class="alert alert-danger py-2 small mb-0"><i class="bi bi-exclamation-circle me-1"></i>Gagal memuat rincian data staf.</div>`;
+                return;
+            }
+
+            const p = data.pegawai;
+            let waHtml = '';
+            if (p.nomor_wa) {
+                let cleanWa = p.nomor_wa.replace(/\D/g, '');
+                if (cleanWa.startsWith('0')) cleanWa = '62' + cleanWa.substring(1);
+                const msg = encodeURIComponent(`Halo ${p.name}, saya sedang meninjau rincian kinerja Anda untuk periode ${currentNamaBulan} ${currentTahun}.`);
+                waHtml = `
+                    <a href="https://wa.me/${cleanWa}?text=${msg}" target="_blank" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 px-2.5 py-1" style="font-size: 0.76rem;" title="Hubungi Pegawai via WhatsApp">
+                        <i class="bi bi-whatsapp text-success"></i> WhatsApp
+                    </a>
+                `;
+            }
+
+            let taskRowsHtml = '';
+            if (!data.tasks || data.tasks.length === 0) {
+                taskRowsHtml = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-6 d-block mb-2 text-secondary opacity-50"></i>
+                            <span class="small fw-semibold">Belum ada catatan pekerjaan/tugas di periode ${currentNamaBulan} ${currentTahun}.</span>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                data.tasks.forEach((t, idx) => {
+                    // Status Badge Styling
+                    let statusBadge = '';
+                    if (t.status === 'Disetujui') {
+                        statusBadge = `<span class="badge bg-success text-white px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Disetujui</span>`;
+                    } else if (t.status === 'Perlu Revisi') {
+                        statusBadge = `<span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Perlu Revisi</span>`;
+                    } else if (t.status === 'Menunggu Validasi') {
+                        statusBadge = `<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Menunggu</span>`;
+                    } else if (t.status === 'Selesai') {
+                        statusBadge = `<span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="bi bi-check2 me-1"></i>Selesai</span>`;
+                    } else {
+                        statusBadge = `<span class="badge bg-primary-subtle text-primary border px-2 py-1">${t.status}</span>`;
+                    }
+
+                    // Bukti Dukung pills
+                    let buktiHtml = '';
+                    if (t.file_url) {
+                        buktiHtml += `
+                            <a href="${t.file_url}" target="_blank" class="badge bg-light text-primary border text-decoration-none d-inline-flex align-items-center gap-1 me-1 py-1 px-1.5" title="Unduh Bukti Lampiran">
+                                <i class="bi bi-paperclip"></i> Dokumen
+                            </a>
+                        `;
+                    }
+                    if (t.url_external) {
+                        buktiHtml += `
+                            <a href="${t.url_external}" target="_blank" class="badge bg-light text-info border text-decoration-none d-inline-flex align-items-center gap-1 me-1 py-1 px-1.5" title="Buka Tautan Output">
+                                <i class="bi bi-box-arrow-up-right"></i> Link
+                            </a>
+                        `;
+                    }
+
+                    // Hasil kerja note
+                    let hasilKerjaHtml = '';
+                    if (t.hasil_kerja && t.hasil_kerja !== '-') {
+                        hasilKerjaHtml = `
+                            <div class="small text-muted mt-1 fst-italic" style="font-size: 0.74rem;">
+                                <i class="bi bi-arrow-return-right text-success me-1"></i>Output: ${t.hasil_kerja}
+                            </div>
+                        `;
+                    }
+
+                    // Tagged / CC badge
+                    let tagBadge = '';
+                    let durasiHtml = `<span class="badge bg-light text-dark border fw-bold"><i class="bi bi-clock me-1 text-primary"></i>${t.durasi_jam} Jam</span>`;
+                    if (!t.is_owner) {
+                        tagBadge = `<span class="badge bg-info-subtle text-info border ms-1" style="font-size: 0.70rem;"><i class="bi bi-info-circle me-1"></i>Ditandai (CC)</span>`;
+                        durasiHtml = `<span class="text-muted small">0 Jam</span><br><small class="text-secondary" style="font-size: 0.68rem;">(Info Rekan)</small>`;
+                    }
+
+                    // Catatan validasi sebelumnya
+                    let catatanHtml = '';
+                    if (t.catatan_validasi) {
+                        catatanHtml = `
+                            <div class="small mt-1 text-danger bg-danger-subtle border border-danger-subtle p-1 px-2 rounded" style="font-size: 0.72rem;">
+                                <i class="bi bi-chat-left-dots-fill me-1"></i><strong>Catatan Atasan:</strong> ${t.catatan_validasi}
+                            </div>
+                        `;
+                    }
+
+                    // Kolom Aksi Validasi Atasan
+                    let actionHtml = '';
+                    if (!t.is_owner) {
+                        actionHtml = `<span class="text-muted small fst-italic" style="font-size: 0.72rem;">Info Rekan</span>`;
+                    } else if (t.can_validate) {
+                        if (t.status === 'Disetujui') {
+                            actionHtml = `
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <span class="text-success small fw-semibold" style="font-size: 0.74rem;" title="${t.validated_at ? 'Divalidasi pada ' + t.validated_at : 'Telah Divalidasi'}">
+                                        <i class="bi bi-patch-check-fill me-1"></i>Valid
+                                    </span>
+                                    <button type="button" class="btn btn-xs btn-outline-danger py-0.5 px-1.5 rounded btn-task-revise" data-task-id="${t.id}" data-task-name="${encodeURIComponent(t.uraian_tugas)}" data-user-id="${p.id}" title="Minta Revisi Tugas Ini">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </div>
+                            `;
+                        } else {
+                            actionHtml = `
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <button type="button" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 py-1 px-2 rounded btn-task-approve shadow-2xs" data-task-id="${t.id}" data-user-id="${p.id}" style="background-color: #046B26; border-color: #046B26; font-size: 0.72rem;">
+                                        <i class="bi bi-check-lg"></i> Setujui
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center gap-1 py-1 px-1.5 rounded btn-task-revise shadow-2xs" data-task-id="${t.id}" data-task-name="${encodeURIComponent(t.uraian_tugas)}" data-user-id="${p.id}" style="font-size: 0.72rem;">
+                                        <i class="bi bi-pencil-square"></i> Revisi
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        actionHtml = `<span class="text-muted small">-</span>`;
+                    }
+
+                    // Checkbox enable/disable
+                    const canCheck = t.is_owner && t.can_validate && t.status !== 'Disetujui';
+                    const checkHtml = canCheck 
+                        ? `<input type="checkbox" class="form-check-input task-check-item" data-user-id="${p.id}" value="${t.id}">`
+                        : `<input type="checkbox" class="form-check-input" disabled>`;
+
+                    taskRowsHtml += `
+                        <tr id="task-row-${t.id}" class="${!t.is_owner ? 'bg-light bg-opacity-75' : ''}">
+                            <td class="text-center">${checkHtml}</td>
+                            <td class="text-center text-muted">${idx + 1}</td>
+                            <td>
+                                <div class="fw-semibold text-dark mb-0.5">${t.uraian_tugas} ${tagBadge}</div>
+                                <div class="d-flex flex-wrap align-items-center gap-1 mt-0.5">
+                                    ${buktiHtml}
+                                </div>
+                                ${hasilKerjaHtml}
+                                ${catatanHtml}
+                            </td>
+                            <td><span class="badge bg-light text-dark border">${t.kategori}</span></td>
+                            <td class="text-center">${durasiHtml}</td>
+                            <td class="text-center small text-secondary">${t.tanggal_mulai}</td>
+                            <td class="text-center" id="task-status-cell-${t.id}">${statusBadge}</td>
+                            <td class="text-center" id="task-action-cell-${t.id}">${actionHtml}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            contentWrapper.setAttribute('data-loaded', 'true');
+            contentWrapper.innerHTML = `
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 p-3 bg-white rounded-3 border shadow-2xs">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-circle rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-xs flex-shrink-0" style="width: 38px; height: 38px; background-color: ${p.avatar_color};">
+                            ${p.avatar_initial}
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-2" style="font-size: 0.95rem;">
+                                <span>Rincian Pekerjaan: ${p.name}</span>
+                                <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">Periode: ${currentNamaBulan} ${currentTahun}</span>
+                            </div>
+                            <div class="small text-muted mt-0.5">
+                                <span class="me-2">Tugas Mandiri: <strong class="text-dark">${data.total_tasks}</strong></span>
+                                <span class="me-2">Total Jam: <strong class="text-success">${data.total_jam} Jam</strong></span>
+                                <span class="me-2">Disetujui: <strong class="text-primary">${data.disetujui_count || 0}</strong></span>
+                                ${data.revisi_count > 0 ? `<span class="me-2 text-danger">Revisi: <strong>${data.revisi_count}</strong></span>` : ''}
+                                ${data.tagged_count > 0 ? `<span class="text-info"><i class="bi bi-info-circle me-1"></i>Ditandai (CC): <strong>${data.tagged_count}</strong></span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-success fw-semibold d-inline-flex align-items-center gap-1.5 shadow-2xs btn-batch-approve" data-user-id="${p.id}" style="background-color: #046B26; border-color: #046B26; font-size: 0.76rem;">
+                            <i class="bi bi-check2-all"></i> Setujui Tugas Terpilih
+                        </button>
+                        ${waHtml}
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 btn-refresh-detail" data-user-id="${p.id}" title="Muat Ulang Rincian Pekerjaan">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive bg-white rounded-3 border shadow-2xs">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                        <thead class="table-light text-secondary" style="font-size: 0.78rem;">
+                            <tr>
+                                <th class="text-center" style="width: 38px;">
+                                    <input type="checkbox" class="form-check-input check-all-tasks" data-user-id="${p.id}" title="Pilih Semua yang Belum Divalidasi">
+                                </th>
+                                <th class="text-center" style="width: 38px;">#</th>
+                                <th style="min-width: 280px;">Uraian Tugas &amp; Bukti Pengerjaan</th>
+                                <th style="width: 135px;">Kategori</th>
+                                <th class="text-center" style="width: 105px;">Durasi Jam</th>
+                                <th class="text-center" style="width: 105px;">Tanggal</th>
+                                <th class="text-center" style="width: 125px;">Status</th>
+                                <th class="text-center" style="width: 155px;">Aksi Validasi Atasan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${taskRowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Bind Event Checkbox Select All
+            const checkAll = contentWrapper.querySelector('.check-all-tasks');
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    const checkboxes = contentWrapper.querySelectorAll('.task-check-item:not(:disabled)');
+                    checkboxes.forEach(cb => { cb.checked = this.checked; });
+                });
+            }
+
+            // Bind Tombol Batch Approve
+            const btnBatch = contentWrapper.querySelector('.btn-batch-approve');
+            if (btnBatch) {
+                btnBatch.addEventListener('click', function () {
+                    const checkedItems = contentWrapper.querySelectorAll('.task-check-item:checked');
+                    let taskIds = Array.from(checkedItems).map(cb => parseInt(cb.value));
+
+                    if (taskIds.length === 0) {
+                        const allUnapproved = contentWrapper.querySelectorAll('.task-check-item:not(:disabled)');
+                        if (allUnapproved.length === 0) {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Info', 'Semua tugas staf ini telah disetujui atau tidak ada tugas yang dapat divalidasi.', 'info');
+                            } else {
+                                alert('Semua tugas staf ini telah disetujui.');
+                            }
+                            return;
+                        }
+                        taskIds = Array.from(allUnapproved).map(cb => parseInt(cb.value));
+                    }
+
+                    const confirmFn = () => {
+                        btnBatch.disabled = true;
+                        btnBatch.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memproses...';
+
+                        fetch("{{ route('pemantauan-staff.batch-validate') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                ids: taskIds,
+                                action: 'approve'
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(resData => {
+                            if (resData.success) {
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Berhasil Divalidasi!',
+                                        text: resData.message || `${taskIds.length} tugas berhasil disetujui.`,
+                                        confirmButtonColor: '#046B26'
+                                    });
+                                }
+                                loadStaffDetailRow(userId, true);
+                            } else {
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire('Gagal', resData.message || 'Gagal memvalidasi tugas.', 'error');
+                                } else {
+                                    alert(resData.message || 'Gagal.');
+                                }
+                                btnBatch.disabled = false;
+                                btnBatch.innerHTML = '<i class="bi bi-check2-all"></i> Setujui Tugas Terpilih';
+                            }
+                        })
+                        .catch(err => {
+                            btnBatch.disabled = false;
+                            btnBatch.innerHTML = '<i class="bi bi-check2-all"></i> Setujui Tugas Terpilih';
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Error', 'Terjadi kesalahan sistem saat memproses validasi.', 'error');
+                            }
+                        });
+                    };
+
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: `Setujui ${taskIds.length} Tugas?`,
+                            text: `Tugas terpilih dari ${p.name} akan divalidasi dan disetujui sekaligus.`,
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#046B26',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Ya, Setujui',
+                            cancelButtonText: 'Batal'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                confirmFn();
+                            }
+                        });
+                    } else if (confirm(`Setujui ${taskIds.length} tugas terpilih?`)) {
+                        confirmFn();
+                    }
+                });
+            }
+
+            // Bind Tombol Single Approve
+            contentWrapper.querySelectorAll('.btn-task-approve').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const taskId = this.getAttribute('data-task-id');
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                    fetch(`{{ url('pemantauan-staff/validate-task') }}/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ action: 'approve' })
+                    })
+                    .then(res => res.json())
+                    .then(resData => {
+                        if (resData.success) {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: 'Tugas berhasil disetujui!',
+                                    showConfirmButton: false,
+                                    timer: 2000
+                                });
+                            }
+                            loadStaffDetailRow(userId, true);
+                        } else {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Gagal', resData.message || 'Gagal menyetujui tugas.', 'error');
+                            }
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="bi bi-check-lg"></i> Setujui';
+                        }
+                    })
+                    .catch(err => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-check-lg"></i> Setujui';
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire('Error', 'Gagal memproses validasi tugas.', 'error');
+                        }
+                    });
+                });
+            });
+
+            // Bind Tombol Single Revise (Minta Revisi)
+            contentWrapper.querySelectorAll('.btn-task-revise').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const taskId = this.getAttribute('data-task-id');
+                    const taskName = decodeURIComponent(this.getAttribute('data-task-name') || 'Tugas');
+
+                    if (typeof Swal === 'undefined') {
+                        const note = prompt(`Tuliskan alasan/catatan perbaikan untuk tugas:\n"${taskName}"`);
+                        if (!note) return;
+                        submitRevision(taskId, note, btn);
+                    } else {
+                        Swal.fire({
+                            title: 'Minta Revisi Tugas',
+                            html: `
+                                <div class="text-start mb-2 small text-muted">
+                                    Tugas: <strong class="text-dark">${taskName}</strong>
+                                </div>
+                                <div class="text-start mb-1 small fw-semibold text-secondary">Catatan Perbaikan untuk Pegawai:</div>
+                                <textarea id="swal-revise-note" class="form-control form-control-sm" rows="3" placeholder="Contoh: Lampirkan file laporan pengujian atau revisi bagian flowchart..."></textarea>
+                            `,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#dc3545',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Kirim Revisi',
+                            cancelButtonText: 'Batal',
+                            preConfirm: () => {
+                                const note = document.getElementById('swal-revise-note').value.trim();
+                                if (!note) {
+                                    Swal.showValidationMessage('Catatan perbaikan wajib diisi!');
+                                    return false;
+                                }
+                                return note;
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed && result.value) {
+                                submitRevision(taskId, result.value, btn);
+                            }
+                        });
+                    }
+
+                    function submitRevision(tId, noteVal, btnEl) {
+                        btnEl.disabled = true;
+                        fetch(`{{ url('pemantauan-staff/validate-task') }}/${tId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                action: 'revise',
+                                catatan: noteVal
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(resData => {
+                            if (resData.success) {
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Permintaan Revisi Terkirim',
+                                        text: resData.message || 'Status tugas diubah menjadi Perlu Revisi.',
+                                        confirmButtonColor: '#046B26'
+                                    });
+                                }
+                                loadStaffDetailRow(userId, true);
+                            } else {
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire('Gagal', resData.message || 'Gagal mengirim revisi.', 'error');
+                                }
+                                btnEl.disabled = false;
+                            }
+                        })
+                        .catch(err => {
+                            btnEl.disabled = false;
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Bind Tombol Refresh Detail
+            const btnRefresh = contentWrapper.querySelector('.btn-refresh-detail');
+            if (btnRefresh) {
+                btnRefresh.addEventListener('click', function () {
+                    loadStaffDetailRow(userId, true);
+                });
+            }
+        })
+        .catch(err => {
+            contentWrapper.innerHTML = `
+                <div class="alert alert-danger py-2 small mb-0 d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-exclamation-triangle-fill me-1"></i>Terjadi kesalahan saat memuat rincian pekerjaan.</span>
+                    <button type="button" class="btn btn-xs btn-outline-danger btn-refresh-detail" data-user-id="${userId}">Coba Lagi</button>
+                </div>
+            `;
+            const retryBtn = contentWrapper.querySelector('.btn-refresh-detail');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', function () { loadStaffDetailRow(userId, true); });
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fungsi Bind Tombol Expand Tabel & Modal Fallback
+    // ─────────────────────────────────────────────────────────────────────────
+    function bindTaskDetailEvents() {
+        document.querySelectorAll('.btn-toggle-tasks').forEach(button => {
             button.replaceWith(button.cloneNode(true));
         });
 
-        document.querySelectorAll('.btn-pantau').forEach(button => {
+        document.querySelectorAll('.btn-toggle-tasks').forEach(button => {
             button.addEventListener('click', function () {
                 const userId = this.getAttribute('data-id');
-                const userName = this.getAttribute('data-name');
-                const bulan = this.getAttribute('data-bulan') || currentBulan;
-                const tahun = this.getAttribute('data-tahun') || currentTahun;
+                const detailRow = document.getElementById(`detail-row-${userId}`);
+                if (!detailRow) return;
 
-                // Reset modal state
-                document.getElementById('modalStaffName').textContent = userName;
-                document.getElementById('modalStaffSub').textContent = 'Memuat informasi...';
-                document.getElementById('modalStaffAtasan').textContent = '';
-                document.getElementById('modalPeriodeText').textContent = `${currentNamaBulan} ${tahun}`;
-                spinner.style.display = 'block';
-                container.style.display = 'none';
-                listBody.innerHTML = '';
-                emptyNotice.classList.add('d-none');
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
 
-                modal.show();
-
-                // Fetch detail via AJAX
-                fetch(`{{ url('pemantauan-staff/detail') }}/${userId}?bulan=${bulan}&tahun=${tahun}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    spinner.style.display = 'none';
-                    container.style.display = 'block';
-
-                    if (data.success) {
-                        const p = data.pegawai;
-                        document.getElementById('modalStaffName').textContent = p.name;
-                        document.getElementById('modalStaffSub').textContent = `${p.jabatan} • ${p.unit}`;
-                        document.getElementById('modalStaffAtasan').textContent = `Atasan: ${p.atasan}`;
-                        
-                        const avatar = document.getElementById('modalStaffAvatar');
-                        avatar.textContent = p.avatar_initial;
-                        avatar.style.backgroundColor = p.avatar_color;
-
-                        document.getElementById('modalTotalTugas').textContent = data.total_tasks;
-                        document.getElementById('modalTotalJam').textContent = `${data.total_jam} Jam`;
-                        document.getElementById('modalSelesai').textContent = data.selesai_count;
-
-                        const taggedContainer = document.getElementById('modalTaggedContainer');
-                        const taggedCount = document.getElementById('modalTaggedCount');
-                        if (taggedContainer && taggedCount) {
-                            if (data.tagged_count > 0) {
-                                taggedCount.textContent = data.tagged_count;
-                                taggedContainer.classList.remove('d-none');
-                            } else {
-                                taggedContainer.classList.add('d-none');
-                            }
-                        }
-
-                        // WhatsApp button in modal footer
-                        const waContainer = document.getElementById('modalWaContainer');
-                        if (p.nomor_wa) {
-                            let cleanWa = p.nomor_wa.replace(/\D/g, '');
-                            if (cleanWa.startsWith('0')) cleanWa = '62' + cleanWa.substring(1);
-                            const msg = encodeURIComponent(`Halo ${p.name}, saya melihat catatan kegiatan Anda untuk periode ${currentNamaBulan} ${tahun}.`);
-                            waContainer.innerHTML = `
-                                <a href="https://wa.me/${cleanWa}?text=${msg}" target="_blank" class="btn btn-sm btn-success d-inline-flex align-items-center gap-2 px-3">
-                                    <i class="bi bi-whatsapp"></i> Hubungi via WhatsApp
-                                </a>
-                            `;
-                        } else {
-                            waContainer.innerHTML = '';
-                        }
-
-                        // Render task rows
-                        if (data.tasks.length === 0) {
-                            emptyNotice.classList.remove('d-none');
-                        } else {
-                            emptyNotice.classList.add('d-none');
-                            data.tasks.forEach((t, idx) => {
-                                let badgeClass = 'bg-secondary';
-                                if (t.status === 'Selesai') badgeClass = 'bg-success';
-                                else if (t.status === 'Proses' || t.status === 'Berjalan') badgeClass = 'bg-primary';
-                                else if (t.status === 'Tertunda') badgeClass = 'bg-warning text-dark';
-
-                                let tagBadge = '';
-                                let durasiHtml = `<span class="fw-bold text-dark">${t.durasi_jam} Jam</span>`;
-
-                                if (!t.is_owner) {
-                                    tagBadge = `<span class="badge bg-info-subtle text-info border ms-2" style="font-size:0.72rem;" title="Hanya sekadar mengetahui, bukan penanggung jawab utama"><i class="bi bi-info-circle me-1"></i>Ditandai (Sekadar Mengetahui)</span>`;
-                                    durasiHtml = `<span class="text-muted">0 Jam</span><br><small class="text-secondary" style="font-size:0.7rem;">(Info Rekan)</small>`;
-                                }
-
-                                let ownerInfo = !t.is_owner ? `<small class="text-muted d-block mt-1"><i class="bi bi-person me-1"></i>Penanggung Jawab: <span class="fw-medium text-dark">${t.pemilik_nama}</span></small>` : '';
-
-                                let row = `
-                                    <tr class="${!t.is_owner ? 'bg-light bg-opacity-75' : ''}">
-                                        <td class="text-muted">${idx + 1}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center flex-wrap gap-1">
-                                                <span class="fw-semibold text-dark">${t.uraian_tugas}</span>
-                                                ${tagBadge}
-                                            </div>
-                                            <small class="text-muted">${t.tanggal_mulai}</small>
-                                            ${ownerInfo}
-                                        </td>
-                                        <td><span class="badge bg-light text-dark border">${t.kategori}</span></td>
-                                        <td class="text-center">${durasiHtml}</td>
-                                        <td class="text-center">
-                                            <span class="badge ${badgeClass} px-2 py-1">${t.status}</span>
-                                        </td>
-                                    </tr>
-                                `;
-                                listBody.innerHTML += row;
-                            });
-                        }
-                    }
-                })
-                .catch(err => {
-                    spinner.style.display = 'none';
-                    container.style.display = 'block';
-                    listBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Gagal memuat rincian data kegiatan.</td></tr>`;
-                });
+                if (isExpanded) {
+                    // Tutup baris
+                    detailRow.classList.add('d-none');
+                    this.setAttribute('aria-expanded', 'false');
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-dark');
+                    const textSpan = this.querySelector('.btn-text');
+                    if (textSpan) textSpan.innerHTML = 'Rincian &amp; Validasi';
+                } else {
+                    // Buka baris
+                    detailRow.classList.remove('d-none');
+                    this.setAttribute('aria-expanded', 'true');
+                    this.classList.remove('btn-dark');
+                    this.classList.add('btn-success');
+                    const textSpan = this.querySelector('.btn-text');
+                    if (textSpan) textSpan.innerHTML = 'Tutup Rincian';
+                    loadStaffDetailRow(userId);
+                }
             });
         });
     }
 
-    // Inisialisasi awal tombol modal
-    bindPantauButtons();
+    // Inisialisasi awal tombol toggle
+    bindTaskDetailEvents();
 
     // ─────────────────────────────────────────────────────────────────────────
     // Live AJAX Navigator & Filter (Tanpa Refresh Halaman)
@@ -527,8 +933,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Update browser URL tanpa refresh
                 window.history.pushState({ bulan: data.bulan, tahun: data.tahun }, '', data.clean_url || targetUrl);
 
-                // Hubungkan kembali event listener tombol Pantau
-                bindPantauButtons();
+                // Hubungkan kembali event listener tombol Rincian & Validasi
+                bindTaskDetailEvents();
             }
         })
         .catch(err => {
