@@ -17,11 +17,11 @@
 
     <!-- Export Actions -->
     <div class="d-flex align-items-center gap-2">
-        <a id="btnExportExcel" href="{{ route('pemantauan-staff.export-excel', request()->all()) }}" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2" style="background-color: #15432D; border-color: #15432D; border-radius: 8px;">
+        <a id="btnExportExcel" href="{{ route('pemantauan-staff.export-excel', request()->all()) }}" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2 text-white" style="background-color: #15432D; border-color: #15432D; border-radius: 8px;">
             <i class="bi bi-file-earmark-excel"></i>
             <span>Export Excel</span>
         </a>
-        <a id="btnExportPdf" href="{{ route('pemantauan-staff.export-pdf', request()->all()) }}" class="btn btn-sm btn-outline-danger fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2 bg-white" style="border-radius: 8px;">
+        <a id="btnExportPdf" href="{{ route('pemantauan-staff.export-pdf', request()->all()) }}" class="btn btn-sm btn-outline-danger fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2" style="border-radius: 8px; border-color: #dc3545;">
             <i class="bi bi-file-earmark-pdf"></i>
             <span>Export PDF</span>
         </a>
@@ -49,11 +49,11 @@
                     <i class="bi bi-people me-1"></i>{{ count($pegawaiData) }} Anggota Tim Terhubung
                 </span>
                 @if(request()->has('supervisor_id') && Auth::user()->subordinates()->exists())
-                    <a href="{{ route('pemantauan-staff.index') }}" class="btn btn-sm btn-outline-secondary bg-white py-1 px-2.5" style="font-size: 0.75rem;">
+                    <a href="{{ route('pemantauan-staff.index') }}" class="btn btn-sm btn-outline-secondary py-1 px-2.5" style="font-size: 0.75rem;">
                         <i class="bi bi-arrow-left me-1"></i>Kembali ke Tim Saya
                     </a>
                 @elseif(request()->has('supervisor_id'))
-                    <a href="{{ route('pemantauan-staff.index', ['supervisor_id' => 'all']) }}" class="btn btn-sm btn-outline-secondary bg-white py-1 px-2.5" style="font-size: 0.75rem;">
+                    <a href="{{ route('pemantauan-staff.index', ['supervisor_id' => 'all']) }}" class="btn btn-sm btn-outline-secondary py-1 px-2.5" style="font-size: 0.75rem;">
                         Lihat Seluruh Personel OTK
                     </a>
                 @endif
