@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('periode_akademiks', function (Blueprint $table) {
-            $table->boolean('is_active')->default(false)->after('nama_periode');
-        });
+        if (Schema::hasTable('periode_akademiks') && !Schema::hasColumn('periode_akademiks', 'is_active')) {
+            Schema::table('periode_akademiks', function (Blueprint $table) {
+                $table->boolean('is_active')->default(false)->after('nama_periode');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('periode_akademiks', function (Blueprint $table) {
-            $table->dropColumn('is_active');
-        });
+        if (Schema::hasTable('periode_akademiks') && Schema::hasColumn('periode_akademiks', 'is_active')) {
+            Schema::table('periode_akademiks', function (Blueprint $table) {
+                $table->dropColumn('is_active');
+            });
+        }
     }
 };
