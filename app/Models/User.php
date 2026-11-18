@@ -123,22 +123,42 @@ class User extends Authenticatable
      */
     public function canValidateTask(\App\Models\Kegiatan $kegiatan): bool
     {
-        // Superadmin, Admin, Pimpinan Rektorat dapat memvalidasi semua tugas
-        if ($this->isSuperAdmin() || $this->isAdmin() || $this->isPimpinanRektorat()) {
-            return true;
-        }
-
-        // Pegawai tidak bisa memvalidasi tugasnya sendiri
+        // 1. Pegawai TIDAK PERNAH bisa memvalidasi tugasnya sendiri (harus divalidasi oleh atasan)
         if ((int)$kegiatan->user_id === (int)$this->id) {
             return false;
         }
 
-        // Pimpinan Unit berwenang memvalidasi tugas pegawai di unit yang sama
-        if ($this->isPimpinanUnit() && !empty($this->unit) && $kegiatan->user && $kegiatan->user->unit === $this->unit) {
+        // 2. Superadmin sejati dapat memvalidasi semua tugas
+        if ($this->isSuperAdmin()) {
             return true;
         }
 
-        // Atasan langsung / berjenjang dalam hierarki OTK
+        // 3. Pimpinan Rektorat sah (Rektor & Wakil Rektor I, II, III)
+        $isRealPimpinanRektorat = $this->hasAnyRole(['pimpinan rektorat', 'rektor', 'wakil rektor i', 'wakil rektor ii', 'wakil rektor iii'])
+            || str_contains(strtoupper($this->jabatan ?? ''), 'REKTOR');
+        if ($isRealPimpinanRektorat) {
+            return true;
+        }
+
+        // 4. Pimpinan Unit sah (Kepala Biro, Kepala UPT/LPTI, Dekan, dll) untuk pegawai di unit yang sama
+        $jabatanUpper = strtoupper($this->jabatan ?? '');
+        $isPimpinanOfUnit = str_contains($jabatanUpper, 'KEPALA') 
+            || str_contains($jabatanUpper, 'KA.') 
+            || str_contains($jabatanUpper, 'DEKAN')
+            || str_contains($jabatanUpper, 'DIREKTUR');
+
+        $kegiatanOwner = $kegiatan->user;
+        if ($isPimpinanOfUnit && !empty($this->unit) && $kegiatanOwner) {
+            $uUnit = strtoupper($this->unit);
+            $oUnit = strtoupper($kegiatanOwner->unit ?? '');
+            if ($uUnit === $oUnit 
+                || (str_contains($uUnit, 'LPTI') && str_contains($oUnit, 'LPTI')) 
+                || (str_contains($uUnit, 'TEKNIK INFORMASI') && str_contains($oUnit, 'TEKNIK INFORMASI'))) {
+                return true;
+            }
+        }
+
+        // 5. Atasan langsung atau atasan berjenjang dalam hierarki OTK
         $subordinateIds = $this->getAllSubordinateIds();
         if (in_array((int)$kegiatan->user_id, array_map('intval', $subordinateIds), true)) {
             return true;
