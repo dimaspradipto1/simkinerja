@@ -53,13 +53,13 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header-green d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                     <div class="header-title-text fw-semibold text-break">
-                        Daftar Kegiatan &mdash; <span id="judul-jabatan">{{ auth()->user()->jabatan ? auth()->user()->jabatan . ' - ' . auth()->user()->name : 'Semua Pegawai' }}</span>
+                        Daftar Kegiatan &mdash; <span id="judul-jabatan">{{ (auth()->check() && auth()->user()->jabatan) ? auth()->user()->jabatan . ' - ' . auth()->user()->name : (auth()->user()->name ?? 'Semua Pegawai') }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap me-auto me-md-0">
                         <button type="button" id="btn-bulk-delete" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap d-none">
                             <i class="bi bi-trash-fill"></i> Hapus Terpilih (<span id="selected-count">0</span>)
                         </button>
-                        <button type="button" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalExportKegiatan" style="background-color: #15432d; border-color: #15432d;">
+                        <button type="button" class="btn btn-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalExportKegiatan" style="background-color: #046B26; border-color: #046B26;">
                             <i class="bi bi-file-earmark-arrow-down-fill"></i> Export Laporan
                         </button>
                         <button type="button" class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-1.5 shadow-sm fw-semibold rounded-2 px-3 py-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalImportKegiatan">

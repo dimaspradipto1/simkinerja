@@ -796,7 +796,7 @@ class KepanitiaanController extends Controller
     public function create()
     {
         $users = User::orderBy('name')->get();
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
+        $periodeAkademiks = PeriodeAkademik::getAllOrdered();
         $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
         $absensiSessions = \App\Models\AbsensiSetting::getAllGrouped();

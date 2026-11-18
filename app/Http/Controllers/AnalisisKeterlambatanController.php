@@ -20,7 +20,7 @@ class AnalisisKeterlambatanController extends Controller
     public function index(Request $request)
     {
         $authUser = Auth::user();
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
+        $periodeAkademiks = PeriodeAkademik::getAllOrdered();
         $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 

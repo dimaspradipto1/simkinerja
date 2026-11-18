@@ -50,7 +50,11 @@ class PeriodeAkademikDataTable extends DataTable
      */
     public function query(PeriodeAkademik $model): QueryBuilder
     {
-        return $model->newQuery()->orderByDesc('is_active')->orderBy('id', 'asc');
+        $q = $model->newQuery();
+        if (PeriodeAkademik::hasIsActiveColumn()) {
+            $q->orderByDesc('is_active');
+        }
+        return $q->orderBy('id', 'asc');
     }
 
     /**

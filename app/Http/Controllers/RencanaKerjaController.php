@@ -276,7 +276,7 @@ class RencanaKerjaController extends Controller
         }
 
         $usersWithJabatan = $usersQuery->orderBy('jabatan')->get(['id', 'name', 'jabatan']);
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
+        $periodeAkademiks = PeriodeAkademik::getAllOrdered();
         $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 
@@ -507,7 +507,7 @@ class RencanaKerjaController extends Controller
     public function create()
     {
         $users = User::orderBy('name')->get();
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('id', 'asc')->get();
+        $periodeAkademiks = PeriodeAkademik::getAllOrdered();
         $kategoris = Kategori::orderBy('id', 'asc')->get();
         $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;

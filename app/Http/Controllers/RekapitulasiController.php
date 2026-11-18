@@ -28,7 +28,7 @@ class RekapitulasiController extends Controller
             return redirect()->route('login');
         }
 
-        $periodeAkademiks = PeriodeAkademik::orderByDesc('is_active')->orderBy('nama_periode', 'desc')->get();
+        $periodeAkademiks = PeriodeAkademik::getAllOrdered();
         $defaultPeriode = PeriodeAkademik::getActive();
         $defaultPeriodeId = $defaultPeriode ? $defaultPeriode->id : null;
 

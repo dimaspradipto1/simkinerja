@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PeriodeAkademik extends Model
 {
@@ -16,11 +19,61 @@ class PeriodeAkademik extends Model
     ];
 
     /**
+     * Cek apakah kolom 'is_active' ada di tabel periode_akademiks.
+     * Jika belum ada di database (misal belum migrate di server production),
+     * fungsi ini otomatis menambahkan kolom tersebut on-the-fly agar query tidak error 500.
+     */
+    public static function hasIsActiveColumn(): bool
+    {
+        static $hasColumn = null;
+        if ($hasColumn !== null) {
+            return $hasColumn;
+        }
+
+        try {
+            if (Schema::hasTable('periode_akademiks')) {
+                if (!Schema::hasColumn('periode_akademiks', 'is_active')) {
+                    Schema::table('periode_akademiks', function (Blueprint $table) {
+                        $table->boolean('is_active')->default(false)->after('nama_periode');
+                    });
+
+                    // Set satu periode terbaru sebagai default aktif jika ada record
+                    $latest = DB::table('periode_akademiks')->orderByDesc('id')->first();
+                    if ($latest) {
+                        DB::table('periode_akademiks')->where('id', $latest->id)->update(['is_active' => true]);
+                    }
+                }
+                $hasColumn = Schema::hasColumn('periode_akademiks', 'is_active');
+                return $hasColumn;
+            }
+        } catch (\Throwable $e) {
+            // Jika alter table gagal (misal hak akses user db terbatas), fallback gracefully
+        }
+
+        $hasColumn = false;
+        return $hasColumn;
+    }
+
+    /**
      * Dapatkan periode akademik yang sedang aktif
      */
     public static function getActive()
     {
-        return static::where('is_active', true)->first() ?? static::first();
+        if (static::hasIsActiveColumn()) {
+            return static::where('is_active', true)->first() ?? static::first();
+        }
+        return static::first();
+    }
+
+    /**
+     * Dapatkan semua periode akademik terurut (aktif di paling atas)
+     */
+    public static function getAllOrdered()
+    {
+        if (static::hasIsActiveColumn()) {
+            return static::orderByDesc('is_active')->orderBy('id', 'asc')->get();
+        }
+        return static::orderBy('id', 'asc')->get();
     }
 
     /**
