@@ -174,18 +174,14 @@ class PemantauanStaffController extends Controller
 
         $pegawaiIds = $pegawaiList->pluck('id')->toArray();
 
-        // Ambil seluruh kegiatan dalam tahun berjalan untuk pegawai terpilih
+        // Ambil seluruh kegiatan dalam tahun berjalan untuk pegawai terpilih (berdasarkan penanggung jawab tugas)
         $kegiatanTahun = Kegiatan::query()
-            ->where(function ($q) use ($pegawaiIds) {
-                $q->whereIn('user_id', $pegawaiIds)
-                  ->orWhereHas('taggedUsers', fn($qu) => $qu->whereIn('users.id', $pegawaiIds));
-            })
+            ->whereIn('user_id', $pegawaiIds)
             ->where(function ($q) use ($startOfYear, $endOfYear) {
                 $q->whereBetween('tanggal_mulai', [$startOfYear, $endOfYear])
                   ->orWhereBetween('created_at', [$startOfYear . ' 00:00:00', $endOfYear . ' 23:59:59'])
                   ->orWhereBetween('estimasi_tanggal_mulai', [$startOfYear, $endOfYear]);
             })
-            ->with(['taggedUsers:id,name'])
             ->get();
 
         // Rekap kinerja per pegawai
@@ -197,11 +193,10 @@ class PemantauanStaffController extends Controller
         foreach ($pegawaiList as $pegawai) {
             $pid = $pegawai->id;
 
-            // Filter kegiatan pegawai ini pada tahun berjalan
-            $userTasksAnnual = $kegiatanTahun->filter(function ($item) use ($pid) {
-                if ($item->user_id == $pid) return true;
-                return $item->taggedUsers && $item->taggedUsers->contains('id', $pid);
-            });
+            // Filter kegiatan pegawai ini pada tahun berjalan (hanya tugas milik sendiri / penanggung jawab)
+            // Catatan: Tag rekan kerja hanya bersifat sekadar mengetahui (CC), jam kerja & capaian kinerja
+            // secara mutlak hanya dihitung untuk penanggung jawab/pembuat tugas.
+            $userTasksAnnual = $kegiatanTahun->where('user_id', $pid);
 
             // Filter kegiatan pada bulan terpilih
             $userTasksMonth = $userTasksAnnual->filter(function ($item) use ($bulan, $tahun) {
@@ -435,13 +430,15 @@ class PemantauanStaffController extends Controller
                         ->whereYear('estimasi_tanggal_mulai', $tahun);
                 });
             })
+            ->with(['user:id,name'])
             ->orderBy('tanggal_mulai', 'desc')
             ->orderBy('id', 'desc')
             ->get();
 
-        $tasks = $kegiatanList->map(function ($t) {
-            $detik = KinerjaWaktuHelper::hitungDetikRealisasi($t);
-            $durasiJam = round($detik / 3600, 1);
+        $tasks = $kegiatanList->map(function ($t) use ($id) {
+            $isOwner = ((int)$t->user_id === (int)$id);
+            // Tagged users tidak dihitung jam kerjanya (hanya sekadar mengetahui)
+            $durasiJam = $isOwner ? round(KinerjaWaktuHelper::hitungDetikRealisasi($t) / 3600, 1) : 0;
 
             return [
                 'id' => $t->id,
@@ -450,10 +447,14 @@ class PemantauanStaffController extends Controller
                 'status' => $t->status,
                 'tanggal_mulai' => $t->tanggal_mulai ? Carbon::parse($t->tanggal_mulai)->translatedFormat('d M Y') : ($t->estimasi_tanggal_mulai ? Carbon::parse($t->estimasi_tanggal_mulai)->translatedFormat('d M Y') : '-'),
                 'durasi_jam' => $durasiJam,
+                'is_owner' => $isOwner,
+                'pemilik_nama' => $t->user?->name ?? 'Pegawai',
                 'hasil_kerja' => $t->hasil_kerja ?: '-',
                 'rencana_tindak_lanjut' => $t->rencana_tindak_lanjut ?: '-',
             ];
         });
+
+        $ownedTasks = $tasks->where('is_owner', true);
 
         return response()->json([
             'success' => true,
@@ -468,11 +469,12 @@ class PemantauanStaffController extends Controller
                 'avatar_initial' => $this->getInitials($pegawai->name),
                 'avatar_color' => $this->getAvatarColor($pegawai->id),
             ],
-            'tasks' => $tasks,
-            'total_tasks' => $tasks->count(),
-            'total_jam' => round($tasks->sum('durasi_jam'), 1),
-            'selesai_count' => $tasks->where('status', 'Selesai')->count(),
-            'proses_count' => $tasks->whereIn('status', ['Proses', 'Berjalan'])->count(),
+            'tasks' => $tasks->values(),
+            'total_tasks' => $ownedTasks->count(),
+            'total_jam' => round($ownedTasks->sum('durasi_jam'), 1),
+            'selesai_count' => $ownedTasks->where('status', 'Selesai')->count(),
+            'proses_count' => $ownedTasks->whereIn('status', ['Proses', 'Berjalan'])->count(),
+            'tagged_count' => $tasks->where('is_owner', false)->count(),
         ]);
     }
 
@@ -551,15 +553,12 @@ class PemantauanStaffController extends Controller
         $endOfYear = Carbon::createFromDate($tahun, 12, 31)->endOfYear()->toDateString();
 
         $kegiatanTahun = Kegiatan::query()
-            ->where(function ($q) use ($pegawaiIds) {
-                $q->whereIn('user_id', $pegawaiIds)
-                  ->orWhereHas('taggedUsers', fn($qu) => $qu->whereIn('users.id', $pegawaiIds));
-            })
+            ->whereIn('user_id', $pegawaiIds)
             ->where(function ($q) use ($startOfYear, $endOfYear) {
                 $q->whereBetween('tanggal_mulai', [$startOfYear, $endOfYear])
-                  ->orWhereBetween('created_at', [$startOfYear . ' 00:00:00', $endOfYear . ' 23:59:59']);
+                  ->orWhereBetween('created_at', [$startOfYear . ' 00:00:00', $endOfYear . ' 23:59:59'])
+                  ->orWhereBetween('estimasi_tanggal_mulai', [$startOfYear, $endOfYear]);
             })
-            ->with(['taggedUsers:id,name'])
             ->get();
 
         $spreadsheet = new Spreadsheet();
@@ -620,10 +619,8 @@ class PemantauanStaffController extends Controller
         foreach ($pegawaiList as $pegawai) {
             $pid = $pegawai->id;
 
-            $userTasksAnnual = $kegiatanTahun->filter(function ($item) use ($pid) {
-                if ($item->user_id == $pid) return true;
-                return $item->taggedUsers && $item->taggedUsers->contains('id', $pid);
-            });
+            // Filter kegiatan pegawai ini pada tahun berjalan (hanya tugas milik sendiri / penanggung jawab)
+            $userTasksAnnual = $kegiatanTahun->where('user_id', $pid);
 
             $userTasksMonth = $userTasksAnnual->filter(function ($item) use ($bulan, $tahun) {
                 $tgl = $item->tanggal_mulai ?: ($item->estimasi_tanggal_mulai ?: ($item->created_at ? $item->created_at->format('Y-m-d') : null));
@@ -763,25 +760,20 @@ class PemantauanStaffController extends Controller
         $endOfYear = Carbon::createFromDate($tahun, 12, 31)->endOfYear()->toDateString();
 
         $kegiatanTahun = Kegiatan::query()
-            ->where(function ($q) use ($pegawaiIds) {
-                $q->whereIn('user_id', $pegawaiIds)
-                  ->orWhereHas('taggedUsers', fn($qu) => $qu->whereIn('users.id', $pegawaiIds));
-            })
+            ->whereIn('user_id', $pegawaiIds)
             ->where(function ($q) use ($startOfYear, $endOfYear) {
                 $q->whereBetween('tanggal_mulai', [$startOfYear, $endOfYear])
-                  ->orWhereBetween('created_at', [$startOfYear . ' 00:00:00', $endOfYear . ' 23:59:59']);
+                  ->orWhereBetween('created_at', [$startOfYear . ' 00:00:00', $endOfYear . ' 23:59:59'])
+                  ->orWhereBetween('estimasi_tanggal_mulai', [$startOfYear, $endOfYear]);
             })
-            ->with(['taggedUsers:id,name'])
             ->get();
 
         $pegawaiData = [];
         foreach ($pegawaiList as $pegawai) {
             $pid = $pegawai->id;
 
-            $userTasksAnnual = $kegiatanTahun->filter(function ($item) use ($pid) {
-                if ($item->user_id == $pid) return true;
-                return $item->taggedUsers && $item->taggedUsers->contains('id', $pid);
-            });
+            // Filter kegiatan pegawai ini pada tahun berjalan (hanya tugas milik sendiri / penanggung jawab)
+            $userTasksAnnual = $kegiatanTahun->where('user_id', $pid);
 
             $userTasksMonth = $userTasksAnnual->filter(function ($item) use ($bulan, $tahun) {
                 $tgl = $item->tanggal_mulai ?: ($item->estimasi_tanggal_mulai ?: ($item->created_at ? $item->created_at->format('Y-m-d') : null));

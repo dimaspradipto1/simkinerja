@@ -718,11 +718,8 @@ class AbsensiKinerjaController extends Controller
             });
 
         // 2. Ambil data Kegiatan yang dimulai pada bulan ini (Rutinitas, Kepanitiaan, Insidentil)
-        // Acuan hadir: jika 1 kegiatan dimulai maka otomatis hadir
-        $kegiatanRecords = Kegiatan::where(function ($q) use ($matrixUserIds) {
-                $q->whereIn('user_id', $matrixUserIds)
-                  ->orWhereHas('taggedUsers', fn($qu) => $qu->whereIn('users.id', $matrixUserIds));
-            })
+        // Acuan hadir: jika 1 kegiatan dimulai maka otomatis hadir bagi pemilik/penanggung jawab kegiatan
+        $kegiatanRecords = Kegiatan::whereIn('user_id', $matrixUserIds)
             ->whereIn('kategori', ['Rencana Kerja', 'Kepanitiaan', 'Insidentil'])
             ->whereIn('status', ['Berjalan', 'Proses', 'Di-pause', 'Selesai'])
             ->where(function ($q) use ($startOfMonth, $endOfMonth) {
@@ -733,7 +730,6 @@ class AbsensiKinerjaController extends Controller
                           ->whereBetween('created_at', [$startOfMonth . ' 00:00:00', $endOfMonth . ' 23:59:59']);
                   });
             })
-            ->with(['taggedUsers:id,name'])
             ->get();
 
         $startedActivitiesMap = [];
@@ -743,9 +739,6 @@ class AbsensiKinerjaController extends Controller
             if (!$tgl) continue;
 
             $startedActivitiesMap[$task->user_id . '_' . $tgl][] = $task->uraian_tugas;
-            foreach ($task->taggedUsers as $tu) {
-                $startedActivitiesMap[$tu->id . '_' . $tgl][] = $task->uraian_tugas;
-            }
         }
 
         // 3. Susun data matrix per user

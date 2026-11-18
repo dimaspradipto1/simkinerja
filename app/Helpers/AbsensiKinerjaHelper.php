@@ -208,7 +208,9 @@ class AbsensiKinerjaHelper
     }
 
     /**
-     * Kumpulkan semua user_id yang terkait dengan tugas (owner + tagged users).
+     * Kumpulkan user_id penanggung jawab tugas.
+     * Catatan: Tagged users (rekan kerja) hanya bersifat sekadar mengetahui (notifikasi/CC),
+     * bukan penanggung jawab kerja, sehingga TIDAK dimasukkan ke absensi harian mereka.
      */
     protected static function resolveUserIds($task): array
     {
@@ -216,12 +218,6 @@ class AbsensiKinerjaHelper
 
         if (!empty($task->user_id)) {
             $userIds[] = (int) $task->user_id;
-        }
-
-        if (method_exists($task, 'taggedUsers')) {
-            foreach ($task->taggedUsers()->pluck('users.id') as $id) {
-                $userIds[] = (int) $id;
-            }
         }
 
         return array_values(array_unique(array_filter($userIds)));

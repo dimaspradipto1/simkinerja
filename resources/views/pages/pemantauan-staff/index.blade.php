@@ -383,9 +383,10 @@
                     <strong class="text-dark" id="modalPeriodeText">{{ $namaBulanIndonesia }} {{ $tahun }}</strong>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                    <div>Total Tugas: <strong class="text-dark" id="modalTotalTugas">0</strong></div>
-                    <div>Total Jam: <strong class="text-success" id="modalTotalJam">0 Jam</strong></div>
+                    <div>Tugas Mandiri: <strong class="text-dark" id="modalTotalTugas">0</strong></div>
+                    <div>Total Jam Kerja: <strong class="text-success" id="modalTotalJam">0 Jam</strong></div>
                     <div>Selesai: <strong class="text-primary" id="modalSelesai">0</strong></div>
+                    <div id="modalTaggedContainer" class="d-none">Ditandai (CC): <strong class="text-info" id="modalTaggedCount">0</strong></div>
                 </div>
             </div>
 
@@ -510,6 +511,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('modalTotalJam').textContent = `${data.total_jam} Jam`;
                     document.getElementById('modalSelesai').textContent = data.selesai_count;
 
+                    const taggedContainer = document.getElementById('modalTaggedContainer');
+                    const taggedCount = document.getElementById('modalTaggedCount');
+                    if (taggedContainer && taggedCount) {
+                        if (data.tagged_count > 0) {
+                            taggedCount.textContent = data.tagged_count;
+                            taggedContainer.classList.remove('d-none');
+                        } else {
+                            taggedContainer.classList.add('d-none');
+                        }
+                    }
+
                     // WhatsApp button in modal footer
                     const waContainer = document.getElementById('modalWaContainer');
                     if (p.nomor_wa) {
@@ -536,15 +548,29 @@ document.addEventListener('DOMContentLoaded', function () {
                             else if (t.status === 'Proses' || t.status === 'Berjalan') badgeClass = 'bg-primary';
                             else if (t.status === 'Tertunda') badgeClass = 'bg-warning text-dark';
 
+                            let tagBadge = '';
+                            let durasiHtml = `<span class="fw-bold text-dark">${t.durasi_jam} Jam</span>`;
+
+                            if (!t.is_owner) {
+                                tagBadge = `<span class="badge bg-info-subtle text-info border ms-2" style="font-size:0.72rem;" title="Hanya sekadar mengetahui, bukan penanggung jawab utama"><i class="bi bi-info-circle me-1"></i>Ditandai (Sekadar Mengetahui)</span>`;
+                                durasiHtml = `<span class="text-muted">0 Jam</span><br><small class="text-secondary" style="font-size:0.7rem;">(Info Rekan)</small>`;
+                            }
+
+                            let ownerInfo = !t.is_owner ? `<small class="text-muted d-block mt-1"><i class="bi bi-person me-1"></i>Penanggung Jawab: <span class="fw-medium text-dark">${t.pemilik_nama}</span></small>` : '';
+
                             let row = `
-                                <tr>
+                                <tr class="${!t.is_owner ? 'bg-light bg-opacity-75' : ''}">
                                     <td class="text-muted">${idx + 1}</td>
                                     <td>
-                                        <div class="fw-semibold text-dark">${t.uraian_tugas}</div>
+                                        <div class="d-flex align-items-center flex-wrap gap-1">
+                                            <span class="fw-semibold text-dark">${t.uraian_tugas}</span>
+                                            ${tagBadge}
+                                        </div>
                                         <small class="text-muted">${t.tanggal_mulai}</small>
+                                        ${ownerInfo}
                                     </td>
                                     <td><span class="badge bg-light text-dark border">${t.kategori}</span></td>
-                                    <td class="text-center fw-bold text-dark">${t.durasi_jam} Jam</td>
+                                    <td class="text-center">${durasiHtml}</td>
                                     <td class="text-center">
                                         <span class="badge ${badgeClass} px-2 py-1">${t.status}</span>
                                     </td>
