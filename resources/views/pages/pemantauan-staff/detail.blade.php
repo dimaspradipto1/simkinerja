@@ -50,7 +50,7 @@
 @endphp
 
 <!-- Main Container Card -->
-<div class="card border-0 shadow-sm rounded-3 mb-4">
+<div class="card card-table mb-4">
     <!-- Card Header Info Pegawai & Filter Periode -->
     <div class="card-header bg-white p-3 p-md-4 border-bottom">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
@@ -722,4 +722,28 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<style>
+    /* Styling Pemantauan Staff: Border & Shadow Tegas & Jelas */
+    .card-table {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+        background-color: #ffffff !important;
+        overflow: hidden !important;
+    }
+    .shadow-xs {
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+    }
+    .shadow-2xs {
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+    }
+    .date-group-header-row td {
+        background-color: #f8fafc !important;
+        border-top: 2px solid #cbd5e1 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+    }
+    .task-row:hover td {
+        background-color: #f1f8f4 !important;
+    }
+</style>
 @endsection

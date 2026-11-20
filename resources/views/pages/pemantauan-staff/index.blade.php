@@ -36,7 +36,7 @@
 
     <!-- Banner Info Scope OTK -->
     @if($pimpinanTerpilih)
-        <div class="card border border-1 shadow-xs rounded-3 mb-4 p-3 bg-white" style="border-color: #e2e8f0 !important; background: #f8fbf9;">
+        <div class="card card-scope mb-4 p-3.5">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center text-white shadow-2xs flex-shrink-0" 
@@ -53,7 +53,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-white text-dark border border-success-subtle px-3 py-2 rounded-pill fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" 
+                    <span class="badge bg-light text-dark border border-success-subtle px-3 py-2 rounded-pill fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" 
                           style="font-size: 0.80rem; color: #046B26 !important;">
                         <i class="bi bi-people-fill text-success"></i>
                         <span>{{ count($pegawaiData) }} Anggota Tim Terhubung</span>
@@ -71,7 +71,7 @@
             </div>
         </div>
     @elseif(!($isLeader ?? false))
-        <div class="card border border-1 shadow-xs rounded-3 mb-4 p-3 bg-white" style="border-color: #e2e8f0 !important; background: #f8fbf9;">
+        <div class="card card-scope mb-4 p-3.5">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 d-flex align-items-center justify-content-center text-white shadow-2xs flex-shrink-0" 
@@ -88,7 +88,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-white text-dark border border-success-subtle px-3 py-2 rounded-pill fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" 
+                    <span class="badge bg-light text-dark border border-success-subtle px-3 py-2 rounded-pill fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" 
                           style="font-size: 0.80rem; color: #046B26 !important;">
                         <i class="bi bi-person-check text-success"></i>
                         <span>Kinerja Pribadi</span>
@@ -99,7 +99,7 @@
     @endif
 
     <!-- Filter Toolbar -->
-    <div class="card border border-1 shadow-xs rounded-3 mb-4 bg-white" style="border-color: #e2e8f0 !important;">
+    <div class="card card-filter mb-4">
         <div class="card-body p-3 p-md-3.5">
             <form action="{{ route('pemantauan-staff.index') }}" method="GET" id="formFilterPemantauan">
                 <div class="row g-3 align-items-end">
@@ -273,14 +273,29 @@
 </div>
 
 <style>
-    /* Styling Pemantauan Staff */
-    .card-kpi {
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    /* Styling Pemantauan Staff: Border & Shadow Tegas & Jelas */
+    .card-scope {
+        border: 1px solid #c2e2cc !important;
+        border-left: 5px solid #046B26 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 14px rgba(4, 107, 38, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+        background-color: #ffffff !important;
     }
-    .card-kpi:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(4, 107, 38, 0.08) !important;
-        border-color: #bbf7d0 !important;
+    .card-filter {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+        background-color: #ffffff !important;
+    }
+    .card-table {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+        background-color: #ffffff !important;
+        overflow: hidden !important;
+    }
+    .card-filter:hover, .card-table:hover {
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.05) !important;
     }
     .pemantauan-table tbody tr.pegawai-main-row:hover {
         background-color: #f1f8f4 !important;
@@ -290,10 +305,14 @@
         letter-spacing: 0.3px;
     }
     .shadow-xs {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
     }
     .shadow-2xs {
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #046B26 !important;
+        box-shadow: 0 0 0 0.2rem rgba(4, 107, 38, 0.15) !important;
     }
 </style>
 

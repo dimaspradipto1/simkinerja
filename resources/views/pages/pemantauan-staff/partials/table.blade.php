@@ -1,4 +1,4 @@
-<div class="card border border-1 shadow-xs rounded-3 overflow-hidden mb-5 bg-white" id="tableCardContainer" style="border-color: #e2e8f0 !important;">
+<div class="card card-table mb-5" id="tableCardContainer">
     <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
             <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.05rem;">
