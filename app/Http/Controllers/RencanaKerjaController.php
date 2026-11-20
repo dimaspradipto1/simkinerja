@@ -215,9 +215,24 @@ class RencanaKerjaController extends Controller
                 ->addColumn('total_jam', function ($row) {
                     $seconds = \App\Helpers\KinerjaWaktuHelper::hitungDetikRealisasi($row);
                     if ($seconds > 0) {
+                        $h = floor($seconds / 3600);
+                        $m = floor(($seconds % 3600) / 60);
+
+                        if ($h > 0 && $m > 0) {
+                            $formatted = $h . ' jam ' . $m . ' menit';
+                        } elseif ($h > 0) {
+                            $formatted = $h . ' jam';
+                        } elseif ($m > 0) {
+                            $formatted = $m . ' menit';
+                        } else {
+                            $formatted = '< 1 menit';
+                        }
+
                         $jamNum = round($seconds / 3600, 1);
-                        $formatted = str_replace('.', ',', (string)$jamNum) . ' jam';
-                        return '<span class="fw-medium text-dark small text-nowrap">' . e($formatted) . '</span>';
+                        $jamDecimal = str_replace('.', ',', (string)$jamNum) . ' jam';
+                        $tooltip = $formatted . ' (setara ' . $jamDecimal . ')';
+
+                        return '<span class="fw-medium text-dark small text-nowrap" title="' . e($tooltip) . '">' . e($formatted) . '</span>';
                     }
                     return '<span class="text-muted small">-</span>';
                 })

@@ -305,7 +305,7 @@
                                         <input type="checkbox" id="th-check-all" class="form-check-input" style="cursor: pointer; width: 16px; height: 16px;">
                                     </th>
                                     <th width="115px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Jam</th>
-                                    <th width="125px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Total jam kerja</th>
+                                    <th width="135px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 8px;">Total jam kerja</th>
                                     <th class="align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 14px;">Kegiatan</th>
                                     <th width="110px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Jenis</th>
                                     <th width="135px" class="text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important; font-weight: 600; font-size: 0.85rem; border: 1px solid #03541e; padding: 12px 10px;">Status</th>
@@ -675,7 +675,7 @@
             columns: [
                 { data: 'checkbox', name: 'checkbox', orderable: false, searchable: false, className: 'text-center align-middle px-1', width: '35px' },
                 { data: 'jam', name: 'jam', orderable: false, searchable: false, className: 'text-center align-middle small text-secondary text-nowrap px-2', width: '115px' },
-                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'text-center align-middle small text-dark fw-medium text-nowrap px-2', width: '125px' },
+                { data: 'total_jam', name: 'total_jam', orderable: false, searchable: false, className: 'text-center align-middle small text-dark fw-medium text-nowrap px-2', width: '135px' },
                 { data: 'kegiatan', name: 'uraian_tugas', orderable: false, searchable: true, className: 'align-middle px-3 py-2 text-start' },
                 { data: 'jenis', name: 'kategori', orderable: false, searchable: false, className: 'text-center align-middle px-2', width: '110px' },
                 { data: 'status_badge', name: 'status', orderable: false, searchable: false, className: 'text-center align-middle px-2', width: '135px' },
@@ -703,8 +703,20 @@
                 api.column(7, { page: 'current' }).data().each(function(group, i) {
                     if (last !== group) {
                         var stats = dateStats[group] || { count: 0, seconds: 0 };
-                        var hoursVal = Math.round((stats.seconds / 3600) * 10) / 10;
-                        var hoursText = hoursVal.toString().replace('.', ',') + ' jam';
+                        var hoursText = '0 jam';
+                        if (stats.seconds > 0) {
+                            var gh = Math.floor(stats.seconds / 3600);
+                            var gm = Math.floor((stats.seconds % 3600) / 60);
+                            if (gh > 0 && gm > 0) {
+                                hoursText = gh + ' jam ' + gm + ' menit';
+                            } else if (gh > 0) {
+                                hoursText = gh + ' jam';
+                            } else if (gm > 0) {
+                                hoursText = gm + ' menit';
+                            } else {
+                                hoursText = '< 1 menit';
+                            }
+                        }
                         var summaryText = stats.count + ' kegiatan • ' + hoursText;
 
                         $(rows).eq(i).before(
