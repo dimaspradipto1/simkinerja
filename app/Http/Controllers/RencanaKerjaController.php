@@ -155,16 +155,40 @@ class RencanaKerjaController extends Controller
                     });
                 })
                 ->addColumn('jam', function ($row) {
+                    // 1. Prioritaskan waktu estimasi pelaksanaan
+                    $hasEstMulai = !empty($row->estimasi_jam_mulai) && $row->estimasi_jam_mulai !== '00:00:00';
+                    $hasEstSelesai = !empty($row->estimasi_jam_selesai) && $row->estimasi_jam_selesai !== '00:00:00';
+
+                    if ($hasEstMulai || $hasEstSelesai) {
+                        $start = $hasEstMulai ? substr($row->estimasi_jam_mulai, 0, 5) : '';
+                        $end = $hasEstSelesai ? substr($row->estimasi_jam_selesai, 0, 5) : '';
+
+                        if ($start && $end) {
+                            $jamText = $start . ' - ' . $end;
+                        } elseif ($start) {
+                            $jamText = $start;
+                        } else {
+                            $jamText = 's.d ' . $end;
+                        }
+
+                        $tooltip = 'Estimasi: ' . $jamText . ' WIB';
+                        if (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00') {
+                            $realMulai = substr($row->waktu_mulai, 0, 5);
+                            $realSelesai = (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') ? substr($row->waktu_selesai, 0, 5) : '-';
+                            $tooltip .= ' | Realisasi: ' . $realMulai . ' - ' . $realSelesai . ' WIB';
+                        }
+
+                        return '<span class="text-secondary small font-monospace fw-medium text-nowrap" title="' . e($tooltip) . '">' . e($jamText) . '</span>';
+                    }
+
+                    // 2. Fallback: jika tidak ada estimasi jam, tampilkan waktu realisasi
                     if (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00') {
                         $start = substr($row->waktu_mulai, 0, 5);
                         $end = (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') ? substr($row->waktu_selesai, 0, 5) : '';
-                        return '<span class="text-secondary small font-monospace">' . e($start . ($end ? '-' . $end : '-')) . '</span>';
+                        $jamText = $start . ($end ? ' - ' . $end : '');
+                        return '<span class="text-secondary small font-monospace fw-medium text-nowrap" title="Realisasi: ' . e($jamText) . ' WIB">' . e($jamText) . '</span>';
                     }
-                    if (!empty($row->estimasi_jam_mulai)) {
-                        $start = substr($row->estimasi_jam_mulai, 0, 5);
-                        $end = !empty($row->estimasi_jam_selesai) ? substr($row->estimasi_jam_selesai, 0, 5) : '';
-                        return '<span class="text-secondary small font-monospace">' . e($start . ($end ? '-' . $end : '')) . '</span>';
-                    }
+
                     return '<span class="text-muted small">-</span>';
                 })
                 ->addColumn('total_jam', function ($row) {
