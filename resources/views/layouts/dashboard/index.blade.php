@@ -392,21 +392,34 @@
         border-color: #cbd5e1;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-    .edlink-btn-subtle {
-        background: #ffffff;
-        border: 1px solid #dee2e6;
-        color: #495057;
+    .edlink-btn-subtle,
+    .edlink-btn-start,
+    .edlink-btn-stop,
+    .edlink-btn-done {
         border-radius: 8px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        padding: 6px 8px;
+        font-size: 0.78rem;
+        padding: 6px 4px;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
-        flex: 1;
+        gap: 4px;
+        flex: 1 1 0 !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: 34px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
         transition: all 0.2s;
+        box-sizing: border-box;
+    }
+    .edlink-btn-subtle {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        font-weight: 600;
     }
     button.edlink-btn-subtle {
         cursor: pointer;
@@ -415,7 +428,7 @@
     button.edlink-btn-subtle:disabled {
         cursor: not-allowed;
     }
-    .edlink-btn-subtle:hover {
+    .edlink-btn-subtle:hover:not(:disabled) {
         background: #f8f9fa;
         color: #212529;
         border-color: #ced4da;
@@ -424,17 +437,7 @@
         background-color: #198754;
         border: 1px solid #198754;
         color: #ffffff;
-        border-radius: 8px;
-        font-size: 0.8rem;
         font-weight: 700;
-        padding: 6px 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        text-decoration: none;
-        flex: 1;
-        transition: all 0.2s;
         box-shadow: 0 2px 6px rgba(25, 135, 84, 0.25);
     }
     .edlink-btn-start:hover {
@@ -446,23 +449,28 @@
         background-color: #dc3545;
         border: 1px solid #dc3545;
         color: #ffffff;
-        border-radius: 8px;
-        font-size: 0.8rem;
         font-weight: 700;
-        padding: 6px 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        text-decoration: none;
-        flex: 1;
-        transition: all 0.2s;
         box-shadow: 0 2px 6px rgba(220, 53, 69, 0.25);
     }
     .edlink-btn-stop:hover {
         background-color: #bb2d3b;
         border-color: #b02a37;
         color: #ffffff;
+    }
+    .edlink-btn-done {
+        background-color: #046B26 !important;
+        border: 1px solid #046B26 !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        box-shadow: 0 2px 6px rgba(4, 107, 38, 0.25);
+        cursor: default;
+        opacity: 0.95;
+    }
+    .edlink-btn-done:hover, .edlink-btn-done:disabled {
+        background-color: #046B26 !important;
+        border-color: #046B26 !important;
+        color: #ffffff !important;
+        opacity: 0.95;
     }
     .edlink-empty-state {
         padding: 2.5rem 1rem;
@@ -686,7 +694,7 @@
 
                                     {{-- Button 3: Mulai Kegiatan / Lanjut / Selesaikan / Selesai --}}
                                     @if($task->status == 'Selesai' || $task->status == 'Disetujui' || $task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
-                                        <button type="button" class="btn btn-success btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap text-white" disabled style="font-size: 0.8rem; border-radius: 8px; background-color: #046B26 !important; border-color: #046B26 !important; opacity: 0.9; cursor: default;">
+                                        <button type="button" class="edlink-btn-done text-nowrap text-white" disabled title="Kegiatan telah selesai">
                                             <i class="bi bi-check2-circle"></i> Selesai
                                         </button>
                                     @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
