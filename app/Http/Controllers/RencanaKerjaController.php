@@ -219,10 +219,6 @@ class RencanaKerjaController extends Controller
                         $formatted = str_replace('.', ',', (string)$jamNum) . ' jam';
                         return '<span class="fw-medium text-dark small text-nowrap">' . e($formatted) . '</span>';
                     }
-                    if (!empty($row->estimasi_durasi_jam) || !empty($row->estimasi_durasi_hari)) {
-                        $estStr = \App\Helpers\KinerjaWaktuHelper::formatDurasiTarget($row->estimasi_durasi_hari, $row->estimasi_durasi_jam);
-                        return '<span class="text-muted small text-nowrap">' . e($estStr) . '</span>';
-                    }
                     return '<span class="text-muted small">-</span>';
                 })
                 ->addColumn('durasi_detik_raw', function ($row) {
