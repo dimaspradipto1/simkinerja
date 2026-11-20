@@ -19,7 +19,7 @@
     <div>
         <a href="{{ route('pemantauan-staff.index', ['bulan' => $bulan === 'all' ? now()->month : $bulan, 'tahun' => $tahun]) }}" 
            class="btn btn-sm btn-outline-secondary fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-2 rounded-2 shadow-xs bg-white">
-            <i class="bi bi-arrow-left"></i>
+            <i class="bi bi-arrow-left me-1"></i>
             <span>Kembali ke Pemantauan Staf</span>
         </a>
     </div>
@@ -120,7 +120,7 @@
                     <a href="https://wa.me/{{ $cleanWa }}?text={{ $waMsg }}" target="_blank" 
                        class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-2 rounded-2 shadow-xs bg-white" 
                        style="font-size: 0.84rem;" title="Kirim Pesan WhatsApp ke {{ $pegawai->name }}">
-                        <i class="bi bi-whatsapp"></i>
+                        <i class="bi bi-whatsapp me-1"></i>
                         <span>Beri umpan balik</span>
                     </a>
                 @endif
@@ -128,7 +128,7 @@
                 <!-- Tombol Batch Approve -->
                 <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-2 rounded-2 shadow-xs" 
                         id="btnBatchApprove" style="background-color: #046B26; border-color: #046B26; font-size: 0.84rem;" disabled>
-                    <i class="bi bi-check2-all"></i>
+                    <i class="bi bi-check2-all me-1"></i>
                     <span>Setujui Terpilih (<span id="selectedCountBadge">0</span>)</span>
                 </button>
             </div>

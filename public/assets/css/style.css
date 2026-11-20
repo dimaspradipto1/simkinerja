@@ -4055,3 +4055,62 @@ body.menu-page-backup .backup-icon {
 .btn-filter-pill:hover:not(.active) {
     background-color: #f1f5f9 !important;
 }
+
+/* ==========================================================================
+   Global Icon Spacing & Margin with Content (Semua Menu)
+   ========================================================================== */
+/* Gap Utilities: kompatibilitas Bootstrap 5 dengan kelas pecahan .5 */
+.gap-0\.5 { gap: 0.125rem !important; }
+.gap-1\.5 { gap: 0.375rem !important; }
+.gap-2\.5 { gap: 0.625rem !important; }
+.column-gap-1\.5 { column-gap: 0.375rem !important; }
+.row-gap-1\.5 { row-gap: 0.375rem !important; }
+
+/* Half-step spacing helpers */
+.me-1\.5 { margin-right: 0.375rem !important; }
+.ms-1\.5 { margin-left: 0.375rem !important; }
+.mb-2\.5 { margin-bottom: 0.625rem !important; }
+.px-2\.5 { padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
+.py-1\.5 { padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; }
+
+/* 1. Global Flex Buttons & Links Gap */
+.btn.d-inline-flex,
+.btn.d-flex,
+a.btn.d-inline-flex,
+a.btn.d-flex,
+button.d-inline-flex,
+button.d-flex {
+    gap: 0.4rem;
+}
+
+/* 2. Global Icon Margin inside Buttons, Dropdown items, and Badges */
+.btn > i:first-child:not(:only-child),
+.btn > svg:first-child:not(:only-child),
+a.btn > i:first-child:not(:only-child),
+a.btn > svg:first-child:not(:only-child),
+button > i:first-child:not(:only-child),
+button > svg:first-child:not(:only-child),
+.dropdown-item > i:first-child:not(:only-child),
+.badge > i:first-child:not(:only-child),
+.card-title > i:first-child:not(:only-child),
+.modal-title > i:first-child:not(:only-child) {
+    margin-right: 0.45rem !important;
+}
+
+.btn > i:last-child:not(:only-child),
+.btn > svg:last-child:not(:only-child),
+a.btn > i:last-child:not(:only-child),
+button > i:last-child:not(:only-child),
+.dropdown-item > i:last-child:not(:only-child) {
+    margin-left: 0.45rem !important;
+}
+
+/* 3. Ketika icon diikuti langsung oleh span / tag teks */
+.btn > i + span,
+a.btn > i + span,
+button > i + span,
+.dropdown-item > i + span,
+.badge > i + span {
+    margin-left: 0.15rem;
+}
+

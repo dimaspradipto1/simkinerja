@@ -118,7 +118,7 @@
                                class="btn btn-sm text-white d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 rounded-2 shadow-xs text-decoration-none" 
                                style="font-size: 0.78rem; background-color: #046B26; border-color: #046B26; white-space: nowrap;"
                                title="Buka halaman rincian pekerjaan & validasi {{ $pegawai->name }}">
-                                <i class="bi bi-journal-text"></i>
+                                <i class="bi bi-journal-text me-1.5"></i>
                                 <span class="btn-text">Rincian &amp; Validasi</span>
                             </a>
                         </td>
