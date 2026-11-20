@@ -98,11 +98,6 @@
         </div>
     @endif
 
-    <!-- KPI Summary Cards -->
-    <div id="kpiContainerWrapper" class="position-relative">
-        @include('pages.pemantauan-staff.partials.kpi_cards')
-    </div>
-
     <!-- Filter Toolbar -->
     <div class="card border border-1 shadow-xs rounded-3 mb-4 bg-white" style="border-color: #e2e8f0 !important;">
         <div class="card-body p-3 p-md-3.5">
