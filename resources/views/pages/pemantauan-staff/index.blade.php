@@ -430,11 +430,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Hasil kerja note
                     let hasilKerjaHtml = '';
                     if (t.hasil_kerja && t.hasil_kerja !== '-') {
-                        hasilKerjaHtml = `
-                            <div class="small text-muted mt-1 fst-italic" style="font-size: 0.74rem;">
-                                <i class="bi bi-arrow-return-right text-success me-1"></i>Output: ${t.hasil_kerja}
-                            </div>
-                        `;
+                        let cleanHk = (t.hasil_kerja || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&ndash;/g, '–').replace(/\s+/g, ' ').trim();
+                        if (cleanHk && cleanHk !== '-') {
+                            hasilKerjaHtml = `
+                                <div class="small text-muted mt-1 fst-italic" style="font-size: 0.74rem;">
+                                    <i class="bi bi-arrow-return-right text-success me-1"></i>Output: ${cleanHk}
+                                </div>
+                            `;
+                        }
                     }
 
                     // Tagged / CC badge

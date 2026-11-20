@@ -545,8 +545,8 @@ class PemantauanStaffController extends Controller
                 'durasi_jam_dec' => round($durasiDetik / 3600, 1),
                 'is_owner' => $isOwner,
                 'pemilik_nama' => $t->user?->name ?? 'Pegawai',
-                'hasil_kerja' => $t->hasil_kerja ?: null,
-                'rencana_tindak_lanjut' => $t->rencana_tindak_lanjut ?: null,
+                'hasil_kerja' => $this->cleanHtml($t->hasil_kerja) ?: null,
+                'rencana_tindak_lanjut' => $this->cleanHtml($t->rencana_tindak_lanjut) ?: null,
                 'file_url' => $t->file ? asset('storage/' . $t->file) : null,
                 'file_name' => $t->file ? basename($t->file) : null,
                 'url_external' => $t->url_external,
@@ -1123,5 +1123,34 @@ class PemantauanStaffController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Bersihkan teks dari tag HTML dan entitas HTML
+     */
+    protected function cleanHtml(?string $html): string
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        // Decode entitas HTML awal
+        $decoded = html_entity_decode((string)$html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Ganti penutup tag blok dan <br> menjadi spasi agar kata antar paragraf tidak menyatu
+        $withSpaces = preg_replace('/<\/(p|div|li|h[1-6])>/i', ' ', $decoded);
+        $withSpaces = preg_replace('/<(br|hr)\s*\/?>/i', ' ', $withSpaces);
+
+        // Hapus semua tag HTML
+        $clean = strip_tags($withSpaces);
+
+        // Bersihkan non-breaking space dan entitas sisa
+        $clean = str_replace(["\xc2\xa0", '&nbsp;', '&ndash;', '&mdash;', '&hellip;'], [' ', ' ', '–', '—', '...'], $clean);
+        $clean = html_entity_decode($clean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Rapikan spasi berlebih
+        $clean = preg_replace('/\s+/', ' ', $clean);
+
+        return trim($clean);
     }
 }

@@ -271,9 +271,13 @@
                                         {{ $t['uraian_tugas'] }}
                                     </div>
 
-                                    @if(!empty($t['hasil_kerja']) && $t['hasil_kerja'] !== '-')
+                                    @php
+                                        $cleanHasil = is_string($t['hasil_kerja']) ? trim(preg_replace('/\s+/', ' ', strip_tags(str_replace(['</p>', '</div>', '<br>', '<br/>', '<br />'], ' ', html_entity_decode((string)$t['hasil_kerja'], ENT_QUOTES | ENT_HTML5, 'UTF-8'))))) : '';
+                                        $cleanHasil = str_replace(["\xc2\xa0", '&nbsp;', '&ndash;', '&mdash;'], [' ', ' ', '–', '—'], $cleanHasil);
+                                    @endphp
+                                    @if(!empty($cleanHasil) && $cleanHasil !== '-')
                                         <div class="text-muted small mt-1" style="font-size: 0.80rem;">
-                                            <span class="fw-semibold text-secondary">Hasil:</span> {{ $t['hasil_kerja'] }}
+                                            <span class="fw-semibold text-secondary">Hasil:</span> {{ $cleanHasil }}
                                         </div>
                                     @endif
 
@@ -305,9 +309,13 @@
                                     </div>
 
                                     @if(!empty($t['catatan_validasi']))
+                                        @php
+                                            $cleanCatatan = is_string($t['catatan_validasi']) ? trim(preg_replace('/\s+/', ' ', strip_tags(str_replace(['</p>', '</div>', '<br>', '<br/>', '<br />'], ' ', html_entity_decode((string)$t['catatan_validasi'], ENT_QUOTES | ENT_HTML5, 'UTF-8'))))) : '';
+                                            $cleanCatatan = str_replace(["\xc2\xa0", '&nbsp;', '&ndash;', '&mdash;'], [' ', ' ', '–', '—'], $cleanCatatan);
+                                        @endphp
                                         <div class="alert alert-warning py-1 px-2.5 mt-1.5 mb-0 small d-inline-block rounded-2" style="font-size: 0.78rem;">
                                             <i class="bi bi-chat-left-dots-fill me-1"></i>
-                                            <strong>Catatan Atasan:</strong> {{ $t['catatan_validasi'] }}
+                                            <strong>Catatan Atasan:</strong> {{ $cleanCatatan }}
                                         </div>
                                     @endif
                                 </td>

@@ -334,17 +334,29 @@
                 </div>
 
                 @if(!empty($row->hasil_kerja))
-                    <div class="w-100 p-2.5 mt-2 rounded bg-white border small text-dark">
-                        <strong class="text-success d-block mb-1"><i class="bi bi-file-earmark-text-fill me-1"></i>Hasil Kerja:</strong>
-                        <div>{!! nl2br(e($row->hasil_kerja)) !!}</div>
-                    </div>
+                    @php
+                        $cleanModalHk = is_string($row->hasil_kerja) ? trim(preg_replace('/\s+/', ' ', strip_tags(str_replace(['</p>', '</div>', '<br>', '<br/>', '<br />'], ' ', html_entity_decode((string)$row->hasil_kerja, ENT_QUOTES | ENT_HTML5, 'UTF-8'))))) : '';
+                        $cleanModalHk = str_replace(["\xc2\xa0", '&nbsp;', '&ndash;', '&mdash;'], [' ', ' ', '–', '—'], $cleanModalHk);
+                    @endphp
+                    @if(!empty($cleanModalHk))
+                        <div class="w-100 p-2.5 mt-2 rounded bg-white border small text-dark">
+                            <strong class="text-success d-block mb-1"><i class="bi bi-file-earmark-text-fill me-1"></i>Hasil Kerja:</strong>
+                            <div>{!! nl2br(e($cleanModalHk)) !!}</div>
+                        </div>
+                    @endif
                 @endif
 
                 @if(!empty($row->rencana_tindak_lanjut))
-                    <div class="w-100 p-2.5 mt-2 rounded bg-white border small text-dark">
-                        <strong class="text-primary d-block mb-1"><i class="bi bi-arrow-right-circle-fill me-1"></i>Rencana Tindak Lanjut:</strong>
-                        <div>{!! nl2br(e($row->rencana_tindak_lanjut)) !!}</div>
-                    </div>
+                    @php
+                        $cleanModalRtl = is_string($row->rencana_tindak_lanjut) ? trim(preg_replace('/\s+/', ' ', strip_tags(str_replace(['</p>', '</div>', '<br>', '<br/>', '<br />'], ' ', html_entity_decode((string)$row->rencana_tindak_lanjut, ENT_QUOTES | ENT_HTML5, 'UTF-8'))))) : '';
+                        $cleanModalRtl = str_replace(["\xc2\xa0", '&nbsp;', '&ndash;', '&mdash;'], [' ', ' ', '–', '—'], $cleanModalRtl);
+                    @endphp
+                    @if(!empty($cleanModalRtl))
+                        <div class="w-100 p-2.5 mt-2 rounded bg-white border small text-dark">
+                            <strong class="text-primary d-block mb-1"><i class="bi bi-arrow-right-circle-fill me-1"></i>Rencana Tindak Lanjut:</strong>
+                            <div>{!! nl2br(e($cleanModalRtl)) !!}</div>
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>
