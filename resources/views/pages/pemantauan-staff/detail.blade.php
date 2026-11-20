@@ -196,7 +196,11 @@
                                         <i class="bi bi-calendar-event text-secondary" style="font-size: 0.95rem;"></i>
                                         <span class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $firstItem['date_group_label'] }}</span>
                                     </div>
-                                    <div class="text-muted small" style="font-size: 0.82rem;">
+                                    <div class="text-muted small group-summary-badge" style="font-size: 0.82rem;" 
+                                         data-group-date="{{ $firstItem['date_group_label'] }}" 
+                                         data-count="{{ count($groupItems) }}" 
+                                         data-base-seconds="{{ $groupTotalSec }}" 
+                                         data-timestamp="{{ time() }}">
                                         {{ $groupSummaryText }}
                                     </div>
                                 </div>
@@ -256,10 +260,23 @@
 
                                 <!-- Total Jam Kerja -->
                                 <td class="text-center align-middle px-2">
-                                    @if($t['durasi_detik'] > 0)
-                                        <span class="fw-medium text-dark small text-nowrap" title="Setara {{ $t['durasi_jam_dec'] }} jam">
-                                            {{ $t['durasi_jam_menit'] }}
-                                        </span>
+                                    @php
+                                        $isTaskRunning = in_array($t['status'] ?? '', ['Proses', 'Berjalan']);
+                                    @endphp
+                                    @if($t['durasi_detik'] > 0 || $isTaskRunning)
+                                        @if($isTaskRunning)
+                                            <span class="live-running-timer fw-medium text-dark small text-nowrap" 
+                                                  data-base-seconds="{{ $t['durasi_detik'] }}" 
+                                                  data-timestamp="{{ time() }}" 
+                                                  data-group-date="{{ $firstItem['date_group_label'] }}" 
+                                                  title="Setara {{ $t['durasi_jam_dec'] }} jam (Sedang Berjalan)">
+                                                {{ $t['durasi_jam_menit'] ?: '< 1 menit' }}
+                                            </span>
+                                        @else
+                                            <span class="fw-medium text-dark small text-nowrap" title="Setara {{ $t['durasi_jam_dec'] }} jam">
+                                                {{ $t['durasi_jam_menit'] }}
+                                            </span>
+                                        @endif
                                     @else
                                         <span class="text-muted small">-</span>
                                     @endif
@@ -728,6 +745,56 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Live Ticker Durasi Dinamis Tanpa Refresh Halaman
+    // ─────────────────────────────────────────────────────────────────────────
+    function formatLiveDuration(totalSeconds) {
+        if (totalSeconds <= 0) return '< 1 menit';
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        if (h > 0 && m > 0) {
+            return h + ' jam ' + m + ' menit';
+        } else if (h > 0) {
+            return h + ' jam';
+        } else if (m > 0) {
+            return m + ' menit';
+        } else {
+            return '< 1 menit';
+        }
+    }
+
+    const runningTimerEls = document.querySelectorAll('.live-running-timer');
+    if (runningTimerEls.length > 0) {
+        setInterval(function() {
+            const nowTs = Math.floor(Date.now() / 1000);
+            const addedSecPerGroup = {};
+
+            runningTimerEls.forEach(function(el) {
+                const baseSec = parseInt(el.getAttribute('data-base-seconds')) || 0;
+                const startTs = parseInt(el.getAttribute('data-timestamp')) || nowTs;
+                const elapsed = Math.max(0, nowTs - startTs);
+                const currentTotal = baseSec + elapsed;
+
+                el.textContent = formatLiveDuration(currentTotal);
+
+                const grp = el.getAttribute('data-group-date');
+                if (grp) {
+                    addedSecPerGroup[grp] = (addedSecPerGroup[grp] || 0) + elapsed;
+                }
+            });
+
+            document.querySelectorAll('.group-summary-badge').forEach(function(badge) {
+                const grp = badge.getAttribute('data-group-date');
+                if (addedSecPerGroup[grp] !== undefined) {
+                    const count = badge.getAttribute('data-count') || '0';
+                    const baseGroupSec = parseInt(badge.getAttribute('data-base-seconds')) || 0;
+                    const totalGroupSec = baseGroupSec + addedSecPerGroup[grp];
+                    badge.textContent = count + ' tugas · Total: ' + formatLiveDuration(totalGroupSec);
+                }
+            });
+        }, 1000);
+    }
 });
 </script>
 <style>

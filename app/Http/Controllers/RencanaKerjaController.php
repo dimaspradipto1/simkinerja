@@ -214,7 +214,8 @@ class RencanaKerjaController extends Controller
                 })
                 ->addColumn('total_jam', function ($row) {
                     $seconds = \App\Helpers\KinerjaWaktuHelper::hitungDetikRealisasi($row);
-                    if ($seconds > 0) {
+                    $isRunning = in_array($row->status ?? '', ['Proses', 'Berjalan']);
+                    if ($seconds > 0 || $isRunning) {
                         $h = floor($seconds / 3600);
                         $m = floor(($seconds % 3600) / 60);
 
@@ -231,6 +232,16 @@ class RencanaKerjaController extends Controller
                         $jamNum = round($seconds / 3600, 1);
                         $jamDecimal = str_replace('.', ',', (string)$jamNum) . ' jam';
                         $tooltip = $formatted . ' (setara ' . $jamDecimal . ')';
+
+                        if ($isRunning) {
+                            $grp = !empty($row->tanggal_mulai)
+                                ? \Carbon\Carbon::parse($row->tanggal_mulai)->locale('id')->translatedFormat('l, d F Y')
+                                : (!empty($row->estimasi_tanggal_mulai)
+                                    ? \Carbon\Carbon::parse($row->estimasi_tanggal_mulai)->locale('id')->translatedFormat('l, d F Y')
+                                    : 'Kegiatan');
+
+                            return '<span class="live-running-timer fw-medium text-dark small text-nowrap" data-base-seconds="' . $seconds . '" data-timestamp="' . time() . '" data-group-date="' . e($grp) . '" title="' . e($tooltip) . '">' . e($formatted) . '</span>';
+                        }
 
                         return '<span class="fw-medium text-dark small text-nowrap" title="' . e($tooltip) . '">' . e($formatted) . '</span>';
                     }

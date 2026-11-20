@@ -670,8 +670,8 @@
                                         <button type="button" class="edlink-btn-subtle text-warning fw-semibold" disabled style="opacity: 0.85; cursor: default;" title="Kegiatan sedang di-jeda (Di-pause)">
                                             <i class="bi bi-pause-circle-fill text-warning"></i> Di-pause
                                         </button>
-                                    @elseif($task->status === 'Selesai')
-                                        <button type="button" class="edlink-btn-subtle text-muted" disabled style="opacity: 0.45; cursor: not-allowed;" title="Kegiatan telah selesai">
+                                    @elseif($task->status === 'Selesai' || $task->status === 'Disetujui' || $task->status === 'Menunggu Validasi' || $task->status === 'Menunggu')
+                                        <button type="button" class="edlink-btn-subtle text-muted" disabled style="opacity: 0.45; cursor: not-allowed;" title="Kegiatan telah selesai / menunggu validasi">
                                             <i class="bi bi-pause-fill"></i> Pause
                                         </button>
                                     @elseif($task->status === 'Proses' || $task->status === 'Berjalan')
@@ -685,9 +685,13 @@
                                     @endif
 
                                     {{-- Button 3: Mulai Kegiatan / Lanjut / Selesaikan / Selesai --}}
-                                    @if($task->status == 'Selesai')
+                                    @if($task->status == 'Selesai' || $task->status == 'Disetujui')
                                         <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
                                             <i class="bi bi-check2-circle"></i> Selesai
+                                        </button>
+                                    @elseif($task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
+                                        <button type="button" class="btn btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px; background-color: #fffbeb; border: 1px solid #fde68a; color: #b45309 !important;">
+                                            <i class="bi bi-clock-history"></i> Menunggu Validasi
                                         </button>
                                     @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
                                         <button type="button" class="edlink-btn-stop btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
@@ -834,6 +838,7 @@
                                 <option value="all" {{ request('filter_status') == 'all' || !request('filter_status') ? 'selected' : '' }}>Semua Status</option>
                                 <option value="Belum Dimulai" {{ request('filter_status') == 'Belum Dimulai' ? 'selected' : '' }}>Belum Dimulai</option>
                                 <option value="Proses" {{ request('filter_status') == 'Proses' ? 'selected' : '' }}>Sedang Berjalan</option>
+                                <option value="Menunggu Validasi" {{ request('filter_status') == 'Menunggu Validasi' ? 'selected' : '' }}>Menunggu Validasi</option>
                                 <option value="Selesai" {{ request('filter_status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
                             </select>
 
@@ -929,11 +934,19 @@
                                         </div>
                                     </td>
                                     <td class="pe-3 text-center">
-                                        @if($task->status == 'Selesai')
+                                        @if($task->status == 'Selesai' || $task->status == 'Disetujui')
                                             <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
+                                        @elseif($task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
+                                            <span class="badge rounded-pill border px-2.5 py-1.5 text-nowrap" style="font-size: 0.76rem; font-weight: 600; background-color: #fffbeb; color: #b45309; border-color: #fde68a;">
+                                                <i class="bi bi-clock-history me-1" style="color: #d97706;"></i>Menunggu Validasi
+                                            </span>
                                         @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
                                             <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="{{ $task->module_type }}" data-action="stop" data-id="{{ $task->id }}">
                                                 <i class="bi bi-stop-fill me-1"></i>Selesaikan
+                                            </button>
+                                        @elseif($task->status == 'Di-pause')
+                                            <button type="button" class="btn btn-sm btn-warning text-dark px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="{{ $task->module_type }}" data-action="start" data-id="{{ $task->id }}">
+                                                <i class="bi bi-play-fill me-1"></i>Lanjut
                                             </button>
                                         @else
                                             @php
@@ -1013,10 +1026,25 @@
 
             btn.prop('disabled', true);
 
+            var now = new Date();
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            var seconds = String(now.getSeconds()).padStart(2, '0');
+            var clientTime = hours + ':' + minutes + ':' + seconds;
+
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            var clientDate = year + '-' + month + '-' + day;
+
             $.ajax({
                 url: "/" + type + "/" + id + "/" + action,
                 type: "POST",
-                data: { _token: "{{ csrf_token() }}" },
+                data: { 
+                    _token: "{{ csrf_token() }}",
+                    client_time: clientTime,
+                    client_date: clientDate
+                },
                 success: function(res) {
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({

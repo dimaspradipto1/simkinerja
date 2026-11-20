@@ -223,6 +223,8 @@ class DashboardController extends Controller
                     $query->whereIn('status', ['Proses', 'Berjalan', 'Di-pause']);
                 } elseif ($filterStatus === 'Selesai' || $filterStatus === 'Disetujui') {
                     $query->whereIn('status', ['Disetujui', 'Selesai']);
+                } elseif ($filterStatus === 'Menunggu Validasi' || $filterStatus === 'Menunggu') {
+                    $query->whereIn('status', ['Menunggu Validasi', 'Menunggu']);
                 } elseif ($filterStatus === 'Belum Dimulai') {
                     $query->where(function($q) {
                         $q->whereNull('status')->orWhere('status', 'Belum Dimulai');

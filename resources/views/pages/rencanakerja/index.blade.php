@@ -725,7 +725,7 @@
                                     '<div class="d-flex align-items-center text-dark" style="font-size: 0.85rem;">' +
                                         '<i class="bi bi-calendar-event text-secondary me-2"></i>' +
                                         '<span class="fw-bold text-dark">' + (group || 'Kegiatan') + '</span>' +
-                                        '<span class="text-muted small ms-3 fw-normal">' + summaryText + '</span>' +
+                                        '<span class="group-summary-badge text-muted small ms-3 fw-normal" data-group-date="' + group + '" data-count="' + stats.count + '" data-base-seconds="' + stats.seconds + '" data-timestamp="' + Math.floor(Date.now() / 1000) + '">' + summaryText + '</span>' +
                                     '</div>' +
                                 '</td>' +
                             '</tr>'
@@ -733,6 +733,9 @@
                         last = group;
                     }
                 });
+
+                // Inisialisasi Live Ticker Durasi Dinamis tanpa refresh
+                initLiveRunningTimers();
             },
             language: {
                 search: "Cari Tugas:",
@@ -1663,6 +1666,72 @@
             }
         });
     };
+
+    /**
+     * Live Ticker Durasi Dinamis Tanpa Refresh Halaman
+     */
+    function initLiveRunningTimers() {
+        if (window._liveTimerInterval) {
+            clearInterval(window._liveTimerInterval);
+        }
+
+        function formatDuration(totalSeconds) {
+            if (totalSeconds <= 0) return '< 1 menit';
+            var h = Math.floor(totalSeconds / 3600);
+            var m = Math.floor((totalSeconds % 3600) / 60);
+            if (h > 0 && m > 0) {
+                return h + ' jam ' + m + ' menit';
+            } else if (h > 0) {
+                return h + ' jam';
+            } else if (m > 0) {
+                return m + ' menit';
+            } else {
+                return '< 1 menit';
+            }
+        }
+
+        if ($('.live-running-timer').length === 0) {
+            return;
+        }
+
+        window._liveTimerInterval = setInterval(function() {
+            var nowTs = Math.floor(Date.now() / 1000);
+            var runningTimers = $('.live-running-timer');
+            if (runningTimers.length === 0) {
+                clearInterval(window._liveTimerInterval);
+                return;
+            }
+
+            var addedSecondsPerGroup = {};
+
+            runningTimers.each(function() {
+                var el = $(this);
+                var baseSec = parseInt(el.attr('data-base-seconds')) || 0;
+                var startTs = parseInt(el.attr('data-timestamp')) || nowTs;
+                var elapsed = Math.max(0, nowTs - startTs);
+                var currentTotal = baseSec + elapsed;
+
+                el.text(formatDuration(currentTotal));
+
+                var grp = el.attr('data-group-date');
+                if (grp) {
+                    addedSecondsPerGroup[grp] = (addedSecondsPerGroup[grp] || 0) + elapsed;
+                }
+            });
+
+            // Update teks rekap pada header grup tanggal
+            $('.group-summary-badge').each(function() {
+                var badge = $(this);
+                var grp = badge.attr('data-group-date');
+                if (addedSecondsPerGroup[grp] !== undefined) {
+                    var count = badge.attr('data-count') || '0';
+                    var baseGroupSec = parseInt(badge.attr('data-base-seconds')) || 0;
+                    var totalGroupSec = baseGroupSec + addedSecondsPerGroup[grp];
+                    badge.text(count + ' kegiatan • ' + formatDuration(totalGroupSec));
+                }
+            });
+        }, 1000);
+    }
 </script>
 @if(isset($dataTable))
     @if(app()->environment('production'))
