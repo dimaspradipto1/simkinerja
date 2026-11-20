@@ -686,7 +686,7 @@
 
                                     {{-- Button 3: Mulai Kegiatan / Lanjut / Selesaikan / Selesai --}}
                                     @if($task->status == 'Selesai' || $task->status == 'Disetujui' || $task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
-                                        <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
+                                        <button type="button" class="btn btn-success btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap text-white" disabled style="font-size: 0.8rem; border-radius: 8px; background-color: #046B26 !important; border-color: #046B26 !important; opacity: 0.9; cursor: default;">
                                             <i class="bi bi-check2-circle"></i> Selesai
                                         </button>
                                     @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
