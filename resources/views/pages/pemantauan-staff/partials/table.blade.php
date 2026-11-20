@@ -1,5 +1,5 @@
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5" id="tableCardContainer">
-    <div class="card-header bg-white py-3 px-4 border-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
+<div class="card border border-1 shadow-xs rounded-3 overflow-hidden mb-5 bg-white" id="tableCardContainer" style="border-color: #e2e8f0 !important;">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
             <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.05rem;">
                 {{ ($isLeader ?? false) ? 'Daftar Kinerja Anggota Tim Penempatan OTK (2024 - 2029)' : 'Kinerja Individu Penempatan OTK (2024 - 2029)' }}
@@ -15,25 +15,25 @@
         <table class="table table-hover align-middle mb-0 pemantauan-table" style="font-size: 0.84rem;">
             <thead>
                 <!-- Row 1: Header Grup Sesuai Standar OTK -->
-                <tr class="text-white text-center align-middle" style="background: linear-gradient(135deg, #15432D 0%, #1e5c3e 100%);">
-                    <th rowspan="2" class="text-center py-3" style="width: 55px; border-bottom: none;">No</th>
-                    <th rowspan="2" class="text-start py-3" style="min-width: 280px; border-bottom: none;">Pegawai</th>
-                    <th colspan="2" class="text-center py-2" style="border-left: 1px solid rgba(255,255,255,0.15); border-right: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.1);">
+                <tr class="text-white text-center align-middle" style="background-color: #046B26 !important; color: #ffffff !important;">
+                    <th rowspan="2" class="text-center py-3" style="width: 55px; border-bottom: none; border-color: #03541e;">No</th>
+                    <th rowspan="2" class="text-start py-3" style="min-width: 280px; border-bottom: none; border-color: #03541e;">Pegawai</th>
+                    <th colspan="2" class="text-center py-2" style="border-left: 1px solid rgba(255,255,255,0.18); border-right: 1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.08); border-color: #03541e;">
                         Bulan {{ $namaBulanIndonesia }} {{ $tahun }}
                     </th>
-                    <th colspan="4" class="text-center py-2" style="border-right: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.05);">
+                    <th colspan="4" class="text-center py-2" style="border-right: 1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.04); border-color: #03541e;">
                         Tahun Kinerja Berjalan ({{ $tahun }})
                     </th>
-                    <th rowspan="2" class="text-center py-3" style="width: 140px; border-bottom: none;">Aksi</th>
+                    <th rowspan="2" class="text-center py-3" style="width: 140px; border-bottom: none; border-color: #03541e;">Aksi</th>
                 </tr>
                 <!-- Row 2: Sub-Header Kolom -->
-                <tr class="text-white text-center align-middle" style="background: #15432D; font-size: 0.77rem;">
-                    <th class="py-2" style="border-left: 1px solid rgba(255,255,255,0.15); min-width: 105px;">Jum. Kegiatan</th>
-                    <th class="py-2" style="border-right: 1px solid rgba(255,255,255,0.15); min-width: 110px;">Jum. Jam Kerja</th>
-                    <th class="py-2" style="min-width: 75px;">Total</th>
-                    <th class="py-2" style="min-width: 85px;">Rutin</th>
-                    <th class="py-2" style="min-width: 95px;">Kepanitiaan</th>
-                    <th class="py-2" style="border-right: 1px solid rgba(255,255,255,0.15); min-width: 85px;">Insidental</th>
+                <tr class="text-white text-center align-middle" style="background-color: #03541e !important; color: #ffffff !important; font-size: 0.77rem;">
+                    <th class="py-2" style="border-left: 1px solid rgba(255,255,255,0.18); min-width: 105px; border-color: #023814;">Jum. Kegiatan</th>
+                    <th class="py-2" style="border-right: 1px solid rgba(255,255,255,0.18); min-width: 110px; border-color: #023814;">Jum. Jam Kerja</th>
+                    <th class="py-2" style="min-width: 75px; border-color: #023814;">Total</th>
+                    <th class="py-2" style="min-width: 85px; border-color: #023814;">Rutin</th>
+                    <th class="py-2" style="min-width: 95px; border-color: #023814;">Kepanitiaan</th>
+                    <th class="py-2" style="border-right: 1px solid rgba(255,255,255,0.18); min-width: 85px; border-color: #023814;">Insidental</th>
                 </tr>
             </thead>
             <tbody>

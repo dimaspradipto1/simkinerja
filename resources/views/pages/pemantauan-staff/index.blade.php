@@ -3,8 +3,8 @@
 @section('content')
 <div class="pagetitle d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-        <h1 class="fw-bold mb-1" style="color: #15432D; font-size: 1.65rem;">
-            <i class="bi bi-diagram-3-fill me-2"></i>Pemantauan Staff &amp; Tim
+        <h1 class="fw-bold mb-1" style="color: #046B26; font-size: 1.6rem; letter-spacing: -0.3px;">
+            <i class="bi bi-people-fill me-2" style="color: #046B26;"></i>Pemantauan Staff &amp; Tim
         </h1>
         <nav>
             <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
@@ -17,12 +17,16 @@
 
     <!-- Export Actions -->
     <div class="d-flex align-items-center gap-2">
-        <a id="btnExportExcel" href="{{ route('pemantauan-staff.export-excel', request()->all()) }}" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2 text-white" style="background-color: #15432D; border-color: #15432D; border-radius: 8px;">
-            <i class="bi bi-file-earmark-excel"></i>
+        <a id="btnExportExcel" href="{{ route('pemantauan-staff.export-excel', request()->all()) }}" 
+           class="btn btn-sm btn-success fw-semibold d-inline-flex align-items-center gap-2 shadow-xs px-3 py-2 text-white rounded-2" 
+           style="background-color: #046B26; border-color: #046B26; font-size: 0.84rem;">
+            <i class="bi bi-file-earmark-excel-fill"></i>
             <span>Export Excel</span>
         </a>
-        <a id="btnExportPdf" href="{{ route('pemantauan-staff.export-pdf', request()->all()) }}" class="btn btn-sm btn-outline-danger fw-bold d-inline-flex align-items-center gap-2 shadow-sm px-3 py-2" style="border-radius: 8px; border-color: #dc3545;">
-            <i class="bi bi-file-earmark-pdf"></i>
+        <a id="btnExportPdf" href="{{ route('pemantauan-staff.export-pdf', request()->all()) }}" 
+           class="btn btn-sm btn-outline-secondary bg-white text-dark fw-semibold d-inline-flex align-items-center gap-2 shadow-xs px-3 py-2 rounded-2 border" 
+           style="border-color: #cbd5e1; font-size: 0.84rem;">
+            <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
             <span>Export PDF</span>
         </a>
     </div>
@@ -32,50 +36,64 @@
 
     <!-- Banner Info Scope OTK -->
     @if($pimpinanTerpilih)
-        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #e8f5ec 0%, #d1f0dd 100%); border-left: 5px solid #15432D !important;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center shadow-xs" style="width: 38px; height: 38px;">
-                    <i class="bi bi-person-lines-fill fs-5" style="color: #15432D !important;"></i>
-                </div>
-                <div>
-                    <div class="small text-uppercase fw-bold text-muted" style="letter-spacing: 0.5px; font-size: 0.72rem;">Lingkup Pemantauan Tim Sesuai Hierarki OTK</div>
-                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">
-                        {{ $pimpinanTerpilih->name }} <span class="text-secondary fw-normal">({{ $pimpinanTerpilih->jabatan ?: 'Pimpinan' }})</span>
+        <div class="card border border-1 shadow-xs rounded-3 mb-4 p-3 bg-white" style="border-color: #e2e8f0 !important; background: #f8fbf9;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center text-white shadow-2xs flex-shrink-0" 
+                         style="width: 44px; height: 44px; background: linear-gradient(135deg, #046B26, #15432D); font-size: 1.2rem;">
+                        <i class="bi bi-diagram-3-fill"></i>
+                    </div>
+                    <div>
+                        <div class="text-uppercase fw-bold text-muted" style="letter-spacing: 0.6px; font-size: 0.70rem; color: #64748b !important;">
+                            Lingkup Pemantauan Tim Sesuai Hierarki OTK
+                        </div>
+                        <div class="fw-bold text-dark mt-0.5" style="font-size: 0.98rem;">
+                            {{ $pimpinanTerpilih->name }} <span class="text-secondary fw-normal">({{ $pimpinanTerpilih->jabatan ?: 'Pimpinan' }})</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-success px-3 py-1.5 rounded-pill fw-semibold" style="font-size: 0.8rem; background-color: #15432D !important;">
-                    <i class="bi bi-people me-1"></i>{{ count($pegawaiData) }} Anggota Tim Terhubung
-                </span>
-                @if(request()->has('supervisor_id') && Auth::user()->subordinates()->exists())
-                    <a href="{{ route('pemantauan-staff.index') }}" class="btn btn-sm btn-outline-secondary py-1 px-2.5" style="font-size: 0.75rem;">
-                        <i class="bi bi-arrow-left me-1"></i>Kembali ke Tim Saya
-                    </a>
-                @elseif(request()->has('supervisor_id'))
-                    <a href="{{ route('pemantauan-staff.index', ['supervisor_id' => 'all']) }}" class="btn btn-sm btn-outline-secondary py-1 px-2.5" style="font-size: 0.75rem;">
-                        Lihat Seluruh Personel OTK
-                    </a>
-                @endif
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-white text-dark border border-success-subtle px-3 py-2 rounded-pill fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" 
+                          style="font-size: 0.80rem; color: #046B26 !important;">
+                        <i class="bi bi-people-fill text-success"></i>
+                        <span>{{ count($pegawaiData) }} Anggota Tim Terhubung</span>
+                    </span>
+                    @if(request()->has('supervisor_id') && Auth::user()->subordinates()->exists())
+                        <a href="{{ route('pemantauan-staff.index') }}" class="btn btn-sm btn-outline-secondary py-1.5 px-3 rounded-2 fw-semibold bg-white shadow-2xs" style="font-size: 0.78rem;">
+                            <i class="bi bi-arrow-left me-1"></i>Kembali ke Tim Saya
+                        </a>
+                    @elseif(request()->has('supervisor_id'))
+                        <a href="{{ route('pemantauan-staff.index', ['supervisor_id' => 'all']) }}" class="btn btn-sm btn-outline-secondary py-1.5 px-3 rounded-2 fw-semibold bg-white shadow-2xs" style="font-size: 0.78rem;">
+                            Lihat Seluruh Personel OTK
+                        </a>
+                    @endif
+                </div>
             </div>
         </div>
     @elseif(!($isLeader ?? false))
-        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #e8f5ec 0%, #d1f0dd 100%); border-left: 5px solid #15432D !important;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center shadow-xs" style="width: 38px; height: 38px;">
-                    <i class="bi bi-person-badge fs-5" style="color: #15432D !important;"></i>
-                </div>
-                <div>
-                    <div class="small text-uppercase fw-bold text-muted" style="letter-spacing: 0.5px; font-size: 0.72rem;">Pemantauan Kinerja Individu Sesuai Penempatan OTK</div>
-                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">
-                        {{ Auth::user()->name }} <span class="text-secondary fw-normal">({{ Auth::user()->jabatan ?: 'Pegawai' }} - {{ Auth::user()->unit ?: 'Universitas Ibnu Sina' }})</span>
+        <div class="card border border-1 shadow-xs rounded-3 mb-4 p-3 bg-white" style="border-color: #e2e8f0 !important; background: #f8fbf9;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center text-white shadow-2xs flex-shrink-0" 
+                         style="width: 44px; height: 44px; background: linear-gradient(135deg, #046B26, #15432D); font-size: 1.2rem;">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <div>
+                        <div class="text-uppercase fw-bold text-muted" style="letter-spacing: 0.6px; font-size: 0.70rem; color: #64748b !important;">
+                            Pemantauan Kinerja Individu Sesuai Penempatan OTK
+                        </div>
+                        <div class="fw-bold text-dark mt-0.5" style="font-size: 0.98rem;">
+                            {{ Auth::user()->name }} <span class="text-secondary fw-normal">({{ Auth::user()->jabatan ?: 'Pegawai' }} - {{ Auth::user()->unit ?: 'Universitas Ibnu Sina' }})</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-success px-3 py-1.5 rounded-pill fw-semibold" style="font-size: 0.8rem; background-color: #15432D !important;">
-                    <i class="bi bi-person-check me-1"></i>Kinerja Pribadi
-                </span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-white text-dark border border-success-subtle px-3 py-2 rounded-pill fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" 
+                          style="font-size: 0.80rem; color: #046B26 !important;">
+                        <i class="bi bi-person-check text-success"></i>
+                        <span>Kinerja Pribadi</span>
+                    </span>
+                </div>
             </div>
         </div>
     @endif
@@ -86,36 +104,47 @@
     </div>
 
     <!-- Filter Toolbar -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-3 p-md-4">
+    <div class="card border border-1 shadow-xs rounded-3 mb-4 bg-white" style="border-color: #e2e8f0 !important;">
+        <div class="card-body p-3 p-md-3.5">
             <form action="{{ route('pemantauan-staff.index') }}" method="GET" id="formFilterPemantauan">
-                <div class="row g-2.5 align-items-end">
+                <div class="row g-3 align-items-end">
 
                     <!-- Search Box -->
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-secondary mb-1">
-                            <i class="bi bi-search me-1"></i>Cari Anggota Tim / Staf
+                    <div class="col-md-7">
+                        <label class="form-label small fw-bold text-dark mb-1.5 d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                            <i class="bi bi-search text-secondary"></i>
+                            <span>Cari Anggota Tim / Staf</span>
                         </label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" name="search" id="inputSearchPemantauan" class="form-control border-start-0" placeholder="Ketik nama, jabatan, NUPTK/NUP..." value="{{ request('search') }}">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted ps-3" style="border-color: #cbd5e1;">
+                                <i class="bi bi-search text-secondary"></i>
+                            </span>
+                            <input type="text" name="search" id="inputSearchPemantauan" 
+                                   class="form-control border-start-0 ps-1" 
+                                   placeholder="Ketik nama pegawai, jabatan, NUPTK/NUP..." 
+                                   value="{{ request('search') }}"
+                                   style="font-size: 0.86rem; border-color: #cbd5e1;">
                         </div>
                     </div>
 
                     <!-- Periode Bulan & Tahun Navigator -->
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-secondary mb-1">
-                            <i class="bi bi-calendar-event me-1"></i>Periode Bulan
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold text-dark mb-1.5 d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                            <i class="bi bi-calendar3 text-secondary"></i>
+                            <span>Periode Pemantauan</span>
                         </label>
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" id="btnPrevMonth" class="btn btn-sm btn-outline-secondary px-2" title="Bulan Sebelumnya" data-month="{{ $prevDate->month }}" data-year="{{ $prevDate->year }}">
+                        @php
+                            $daftarBulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+                        @endphp
+                        <div class="input-group">
+                            <button type="button" id="btnPrevMonth" class="btn btn-outline-secondary bg-white px-2.5 border" 
+                                    style="border-color: #cbd5e1;" title="Bulan Sebelumnya" 
+                                    data-month="{{ $prevDate->month }}" data-year="{{ $prevDate->year }}">
                                 <i class="bi bi-chevron-left"></i>
                             </button>
 
-                            @php
-                                $daftarBulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
-                            @endphp
-                            <select name="bulan" id="selectBulan" class="form-select form-select-sm fw-semibold" style="color: #1e293b !important; font-weight: 600;">
+                            <select name="bulan" id="selectBulan" class="form-select fw-semibold border-start-0 border-end-0 text-center" 
+                                    style="font-size: 0.86rem; border-color: #cbd5e1; color: #0f172a;">
                                 @for($m = 1; $m <= 12; $m++)
                                     <option value="{{ $m }}" {{ $bulan == $m ? 'selected' : '' }}>
                                         {{ $daftarBulanNama[$m] }}
@@ -123,13 +152,16 @@
                                 @endfor
                             </select>
 
-                            <select name="tahun" id="selectTahun" class="form-select form-select-sm fw-semibold" style="max-width: 90px; color: #1e293b !important; font-weight: 600;">
+                            <select name="tahun" id="selectTahun" class="form-select fw-semibold border-end-0 text-center" 
+                                    style="max-width: 95px; font-size: 0.86rem; border-color: #cbd5e1; color: #0f172a;">
                                 @for($y = now()->year - 2; $y <= now()->year + 2; $y++)
                                     <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
                                 @endfor
                             </select>
 
-                            <button type="button" id="btnNextMonth" class="btn btn-sm btn-outline-secondary px-2" title="Bulan Berikutnya" data-month="{{ $nextDate->month }}" data-year="{{ $nextDate->year }}">
+                            <button type="button" id="btnNextMonth" class="btn btn-outline-secondary bg-white px-2.5 border" 
+                                    style="border-color: #cbd5e1;" title="Bulan Berikutnya" 
+                                    data-month="{{ $nextDate->month }}" data-year="{{ $nextDate->year }}">
                                 <i class="bi bi-chevron-right"></i>
                             </button>
                         </div>
@@ -248,11 +280,12 @@
 <style>
     /* Styling Pemantauan Staff */
     .card-kpi {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
     .card-kpi:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.06) !important;
+        box-shadow: 0 4px 12px rgba(4, 107, 38, 0.08) !important;
+        border-color: #bbf7d0 !important;
     }
     .pemantauan-table tbody tr.pegawai-main-row:hover {
         background-color: #f1f8f4 !important;
@@ -262,25 +295,10 @@
         letter-spacing: 0.3px;
     }
     .shadow-xs {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .shadow-2xs {
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-    }
-    .toggle-icon {
-        transition: transform 0.25s ease-in-out;
-        display: inline-block;
-    }
-    .btn-toggle-tasks[aria-expanded="true"] .toggle-icon {
-        transform: rotate(180deg);
-    }
-    .btn-toggle-tasks[aria-expanded="true"] {
-        background-color: #046B26 !important;
-        border-color: #046B26 !important;
-        color: #FED802 !important;
-    }
-    .task-detail-row td {
-        background-color: transparent !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
 </style>
 
