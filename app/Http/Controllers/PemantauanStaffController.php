@@ -412,7 +412,10 @@ class PemantauanStaffController extends Controller
     {
         $authUser = Auth::user();
         if (!$authUser) {
-            abort(401);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+            }
+            return redirect()->route('login');
         }
 
         // Resolve user jika $id adalah slug nama
@@ -436,82 +439,204 @@ class PemantauanStaffController extends Controller
             ->select('users.*', 'sup.name as sup_name', 'sup.jabatan as sup_jabatan', 'otk_members.sort_order')
             ->firstOrFail();
 
-        $bulan = (int) $request->input('bulan', now()->month);
+        $periode = $request->input('periode'); // 'all' atau null
+        $bulanParam = $request->input('bulan');
         $tahun = (int) $request->input('tahun', now()->year);
 
-        $kegiatanList = Kegiatan::query()
+        $isAllPeriod = ($periode === 'all' || $bulanParam === 'all');
+        $bulan = $isAllPeriod ? 'all' : (int) ($bulanParam ?: now()->month);
+
+        $kegiatanQuery = Kegiatan::query()
             ->where(function ($q) use ($id) {
                 $q->where('user_id', $id)
                   ->orWhereHas('taggedUsers', fn($qu) => $qu->where('users.id', $id));
-            })
-            ->where(function ($q) use ($bulan, $tahun) {
-                $q->where(function ($sub) use ($bulan, $tahun) {
-                    $sub->whereMonth('tanggal_mulai', $bulan)->whereYear('tanggal_mulai', $tahun);
-                })->orWhere(function ($sub) use ($bulan, $tahun) {
+            });
+
+        if (!$isAllPeriod && is_numeric($bulan)) {
+            $bulanInt = (int) $bulan;
+            $kegiatanQuery->where(function ($q) use ($bulanInt, $tahun) {
+                $q->where(function ($sub) use ($bulanInt, $tahun) {
+                    $sub->whereMonth('tanggal_mulai', $bulanInt)->whereYear('tanggal_mulai', $tahun);
+                })->orWhere(function ($sub) use ($bulanInt, $tahun) {
                     $sub->whereNull('tanggal_mulai')
-                        ->whereMonth('created_at', $bulan)
+                        ->whereMonth('created_at', $bulanInt)
                         ->whereYear('created_at', $tahun);
-                })->orWhere(function ($sub) use ($bulan, $tahun) {
+                })->orWhere(function ($sub) use ($bulanInt, $tahun) {
                     $sub->whereNull('tanggal_mulai')
-                        ->whereMonth('estimasi_tanggal_mulai', $bulan)
+                        ->whereMonth('estimasi_tanggal_mulai', $bulanInt)
                         ->whereYear('estimasi_tanggal_mulai', $tahun);
                 });
-            })
-            ->with(['user:id,name'])
-            ->orderBy('tanggal_mulai', 'desc')
+            });
+        }
+
+        $kegiatanList = $kegiatanQuery
+            ->with(['user:id,name', 'milestones', 'taggedUsers:id,name'])
+            ->orderByRaw('COALESCE(tanggal_mulai, estimasi_tanggal_mulai, DATE(created_at)) DESC')
             ->orderBy('id', 'desc')
             ->get();
 
-        $tasks = $kegiatanList->map(function ($t) use ($id, $authUser) {
+        $tasksData = $kegiatanList->map(function ($t) use ($id, $authUser) {
             $isOwner = ((int)$t->user_id === (int)$id);
-            // Tagged users tidak dihitung jam kerjanya (hanya sekadar mengetahui)
-            $durasiJam = $isOwner ? round(KinerjaWaktuHelper::hitungDetikRealisasi($t) / 3600, 1) : 0;
+            $durasiDetik = $isOwner ? KinerjaWaktuHelper::hitungDetikRealisasi($t) : 0;
             $canValidate = $isOwner && $authUser->canValidateTask($t);
 
+            // Grouping date key (Y-m-d)
+            $dateRaw = $t->tanggal_mulai ?: ($t->estimasi_tanggal_mulai ?: $t->created_at->format('Y-m-d'));
+            $dateCarbon = Carbon::parse($dateRaw);
+            $dateGroupKey = $dateCarbon->format('Y-m-d');
+            $dateGroupLabel = $dateCarbon->translatedFormat('l, d F Y');
+
+            // Format Jam & Menit Realisasi
+            $durasiJamMenit = '-';
+            if ($durasiDetik > 0) {
+                $h = floor($durasiDetik / 3600);
+                $m = floor(($durasiDetik % 3600) / 60);
+                if ($h > 0 && $m > 0) {
+                    $durasiJamMenit = "{$h} jam {$m} menit";
+                } elseif ($h > 0) {
+                    $durasiJamMenit = "{$h} jam";
+                } elseif ($m > 0) {
+                    $durasiJamMenit = "{$m} menit";
+                } else {
+                    $durasiJamMenit = "< 1 menit";
+                }
+            }
+
+            // Jam Realisasi & Estimasi Text
+            $hasRealMulai = !empty($t->waktu_mulai) && $t->waktu_mulai !== '00:00:00';
+            $hasRealSelesai = !empty($t->waktu_selesai) && $t->waktu_selesai !== '00:00:00';
+            $hasEstMulai = !empty($t->estimasi_jam_mulai) && $t->estimasi_jam_mulai !== '00:00:00';
+            $hasEstSelesai = !empty($t->estimasi_jam_selesai) && $t->estimasi_jam_selesai !== '00:00:00';
+
+            $estText = '';
+            if ($hasEstMulai || $hasEstSelesai) {
+                $estStart = $hasEstMulai ? substr($t->estimasi_jam_mulai, 0, 5) : '';
+                $estEnd = $hasEstSelesai ? substr($t->estimasi_jam_selesai, 0, 5) : '';
+                $estText = ($estStart && $estEnd) ? ($estStart . ' - ' . $estEnd) : ($estStart ?: 's.d ' . $estEnd);
+            }
+
+            $realText = '';
+            if ($hasRealMulai && $hasRealSelesai) {
+                $realText = substr($t->waktu_mulai, 0, 5) . ' - ' . substr($t->waktu_selesai, 0, 5);
+            } elseif ($hasRealMulai) {
+                $realText = substr($t->waktu_mulai, 0, 5);
+            }
+
             return [
+                'model' => $t,
                 'id' => $t->id,
                 'uraian_tugas' => $t->uraian_tugas,
                 'kategori' => $t->kategori ?: 'Kegiatan Utama',
-                'status' => $t->status,
-                'tanggal_mulai' => $t->tanggal_mulai ? Carbon::parse($t->tanggal_mulai)->translatedFormat('d M Y') : ($t->estimasi_tanggal_mulai ? Carbon::parse($t->estimasi_tanggal_mulai)->translatedFormat('d M Y') : '-'),
-                'durasi_jam' => $durasiJam,
+                'status' => $t->status ?: 'Belum Mulai',
+                'tanggal_mulai' => $t->tanggal_mulai,
+                'waktu_mulai' => $t->waktu_mulai,
+                'tanggal_selesai' => $t->tanggal_selesai,
+                'waktu_selesai' => $t->waktu_selesai,
+                'estimasi_tanggal_mulai' => $t->estimasi_tanggal_mulai,
+                'estimasi_jam_mulai' => $t->estimasi_jam_mulai,
+                'estimasi_tanggal_selesai' => $t->estimasi_tanggal_selesai,
+                'estimasi_jam_selesai' => $t->estimasi_jam_selesai,
+                'has_real_mulai' => $hasRealMulai,
+                'has_real_selesai' => $hasRealSelesai,
+                'real_text' => $realText,
+                'est_text' => $estText,
+                'durasi_detik' => $durasiDetik,
+                'durasi_jam_menit' => $durasiJamMenit,
+                'durasi_jam_dec' => round($durasiDetik / 3600, 1),
                 'is_owner' => $isOwner,
                 'pemilik_nama' => $t->user?->name ?? 'Pegawai',
-                'hasil_kerja' => $t->hasil_kerja ?: '-',
-                'rencana_tindak_lanjut' => $t->rencana_tindak_lanjut ?: '-',
+                'hasil_kerja' => $t->hasil_kerja ?: null,
+                'rencana_tindak_lanjut' => $t->rencana_tindak_lanjut ?: null,
                 'file_url' => $t->file ? asset('storage/' . $t->file) : null,
                 'file_name' => $t->file ? basename($t->file) : null,
                 'url_external' => $t->url_external,
                 'can_validate' => $canValidate,
                 'validated_at' => $t->validated_at ? Carbon::parse($t->validated_at)->translatedFormat('d M Y H:i') : null,
                 'catatan_validasi' => $t->catatan_validasi,
+                'date_group_key' => $dateGroupKey,
+                'date_group_label' => $dateGroupLabel,
             ];
         });
 
-        $ownedTasks = $tasks->where('is_owner', true);
+        $ownedTasks = $tasksData->where('is_owner', true);
+        $totalDetik = $ownedTasks->sum('durasi_detik');
+        $totH = floor($totalDetik / 3600);
+        $totM = floor(($totalDetik % 3600) / 60);
+        $totalJamFormatted = $totH > 0 
+            ? ($totM > 0 ? "{$totH} jam {$totM} menit" : "{$totH} jam") 
+            : ($totM > 0 ? "{$totM} menit" : "0 jam");
 
-        return response()->json([
-            'success' => true,
-            'pegawai' => [
-                'id' => $pegawai->id,
-                'name' => $pegawai->name,
-                'jabatan' => $pegawai->jabatan ?: 'Staf',
-                'unit' => $pegawai->unit ?: 'Universitas Ibnu Sina',
-                'atasan' => $pegawai->sup_name ? ($pegawai->sup_name . ' (' . ($pegawai->sup_jabatan ?: 'Atasan') . ')') : 'Pimpinan Utama',
-                'nomor_wa' => $pegawai->nomor_wa,
-                'otk_no' => $pegawai->sort_order !== null ? ($pegawai->sort_order + 1) : '-',
-                'avatar_initial' => $this->getInitials($pegawai->name),
-                'avatar_color' => $this->getAvatarColor($pegawai->id),
-            ],
-            'tasks' => $tasks->values(),
-            'total_tasks' => $ownedTasks->count(),
-            'total_jam' => round($ownedTasks->sum('durasi_jam'), 1),
-            'selesai_count' => $ownedTasks->where('status', 'Selesai')->count(),
-            'disetujui_count' => $ownedTasks->where('status', 'Disetujui')->count(),
-            'revisi_count' => $ownedTasks->where('status', 'Perlu Revisi')->count(),
-            'proses_count' => $ownedTasks->whereIn('status', ['Proses', 'Berjalan'])->count(),
-            'tagged_count' => $tasks->where('is_owner', false)->count(),
-        ]);
+        $totalTasks = $ownedTasks->count();
+        $disetujuiCount = $ownedTasks->whereIn('status', ['Disetujui', 'Selesai'])->count();
+        $menungguCount = $ownedTasks->where('status', 'Menunggu Validasi')->count();
+        $revisiCount = $ownedTasks->where('status', 'Perlu Revisi')->count();
+        $prosesCount = $ownedTasks->whereIn('status', ['Proses', 'Berjalan'])->count();
+        $taggedCount = $tasksData->where('is_owner', false)->count();
+
+        // Team info for top indicator
+        $subordinateIds = method_exists($authUser, 'getAllSubordinateIds') ? $authUser->getAllSubordinateIds() : [];
+        $totalTeam = count($subordinateIds);
+        if ($totalTeam === 0 && $this->isPimpinanAtauKepala($authUser)) {
+            $totalTeam = User::where('is_active', true)->whereNotNull('supervisor_id')->count();
+            $totalPendingTeam = Kegiatan::where('status', 'Menunggu Validasi')->count();
+        } else {
+            $totalPendingTeam = Kegiatan::whereIn('user_id', $subordinateIds)->where('status', 'Menunggu Validasi')->count();
+        }
+
+        // Group tasks by date
+        $groupedTasks = $tasksData->groupBy('date_group_key')->sortKeysDesc();
+
+        if ($request->ajax() && $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'pegawai' => [
+                    'id' => $pegawai->id,
+                    'name' => $pegawai->name,
+                    'jabatan' => $pegawai->jabatan ?: 'Staf',
+                    'unit' => $pegawai->unit ?: 'Universitas Ibnu Sina',
+                    'atasan' => $pegawai->sup_name ? ($pegawai->sup_name . ' (' . ($pegawai->sup_jabatan ?: 'Atasan') . ')') : 'Pimpinan Utama',
+                    'nomor_wa' => $pegawai->nomor_wa,
+                    'otk_no' => $pegawai->sort_order !== null ? ($pegawai->sort_order + 1) : '-',
+                    'avatar_initial' => $this->getInitials($pegawai->name),
+                    'avatar_color' => $this->getAvatarColor($pegawai->id),
+                ],
+                'tasks' => $tasksData->values(),
+                'total_tasks' => $totalTasks,
+                'total_jam' => round($totalDetik / 3600, 1),
+                'total_jam_formatted' => $totalJamFormatted,
+                'selesai_count' => $disetujuiCount,
+                'disetujui_count' => $disetujuiCount,
+                'revisi_count' => $revisiCount,
+                'proses_count' => $prosesCount,
+                'tagged_count' => $taggedCount,
+            ]);
+        }
+
+        $daftarBulan = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        return view('pages.pemantauan-staff.detail', compact(
+            'pegawai',
+            'tasksData',
+            'groupedTasks',
+            'bulan',
+            'tahun',
+            'isAllPeriod',
+            'daftarBulan',
+            'totalTasks',
+            'totalJamFormatted',
+            'disetujuiCount',
+            'menungguCount',
+            'revisiCount',
+            'prosesCount',
+            'taggedCount',
+            'totalTeam',
+            'totalPendingTeam',
+            'authUser'
+        ));
     }
 
     /**
