@@ -155,38 +155,59 @@ class RencanaKerjaController extends Controller
                     });
                 })
                 ->addColumn('jam', function ($row) {
-                    // 1. Prioritaskan waktu estimasi pelaksanaan
+                    $hasRealMulai = !empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00';
+                    $hasRealSelesai = !empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00';
                     $hasEstMulai = !empty($row->estimasi_jam_mulai) && $row->estimasi_jam_mulai !== '00:00:00';
                     $hasEstSelesai = !empty($row->estimasi_jam_selesai) && $row->estimasi_jam_selesai !== '00:00:00';
 
+                    $estText = '';
                     if ($hasEstMulai || $hasEstSelesai) {
-                        $start = $hasEstMulai ? substr($row->estimasi_jam_mulai, 0, 5) : '';
-                        $end = $hasEstSelesai ? substr($row->estimasi_jam_selesai, 0, 5) : '';
-
-                        if ($start && $end) {
-                            $jamText = $start . ' - ' . $end;
-                        } elseif ($start) {
-                            $jamText = $start;
-                        } else {
-                            $jamText = 's.d ' . $end;
-                        }
-
-                        $tooltip = 'Estimasi: ' . $jamText . ' WIB';
-                        if (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00') {
-                            $realMulai = substr($row->waktu_mulai, 0, 5);
-                            $realSelesai = (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') ? substr($row->waktu_selesai, 0, 5) : '-';
-                            $tooltip .= ' | Realisasi: ' . $realMulai . ' - ' . $realSelesai . ' WIB';
-                        }
-
-                        return '<span class="text-secondary small font-monospace fw-medium text-nowrap" title="' . e($tooltip) . '">' . e($jamText) . '</span>';
+                        $estStart = $hasEstMulai ? substr($row->estimasi_jam_mulai, 0, 5) : '';
+                        $estEnd = $hasEstSelesai ? substr($row->estimasi_jam_selesai, 0, 5) : '';
+                        $estText = ($estStart && $estEnd) ? ($estStart . ' - ' . $estEnd) : ($estStart ?: 's.d ' . $estEnd);
                     }
 
-                    // 2. Fallback: jika tidak ada estimasi jam, tampilkan waktu realisasi
-                    if (!empty($row->waktu_mulai) && $row->waktu_mulai !== '00:00:00') {
-                        $start = substr($row->waktu_mulai, 0, 5);
-                        $end = (!empty($row->waktu_selesai) && $row->waktu_selesai !== '00:00:00') ? substr($row->waktu_selesai, 0, 5) : '';
-                        $jamText = $start . ($end ? ' - ' . $end : '');
-                        return '<span class="text-secondary small font-monospace fw-medium text-nowrap" title="Realisasi: ' . e($jamText) . ' WIB">' . e($jamText) . '</span>';
+                    // A. Jika tugas sudah distop / selesai (ada jam mulai & jam distop)
+                    if ($hasRealMulai && $hasRealSelesai) {
+                        $realStart = substr($row->waktu_mulai, 0, 5);
+                        $realEnd = substr($row->waktu_selesai, 0, 5);
+                        $realText = $realStart . ' - ' . $realEnd;
+
+                        $tooltip = 'Realisasi: ' . $realText . ' WIB';
+                        if ($estText) {
+                            $tooltip .= ' | Estimasi: ' . $estText . ' WIB';
+                        }
+
+                        $html = '<div class="fw-semibold text-dark font-monospace text-nowrap" style="font-size: 0.84rem;" title="' . e($tooltip) . '">' . e($realText) . '</div>';
+                        if ($estText) {
+                            $html .= '<div class="text-muted font-monospace text-nowrap" style="font-size: 0.72rem;" title="' . e($tooltip) . '">Est: ' . e($estText) . '</div>';
+                        }
+                        return $html;
+                    }
+
+                    // B. Jika tugas sedang berjalan / pause (ada jam mulai, belum distop)
+                    if ($hasRealMulai && !$hasRealSelesai) {
+                        $realStart = substr($row->waktu_mulai, 0, 5);
+                        $isPause = ($row->status === 'Di-pause');
+                        $badgeStatus = $isPause
+                            ? '<span class="badge bg-warning-subtle text-warning border" style="font-size: 0.68rem; padding: 1px 4px;">Pause</span>'
+                            : '<span class="badge bg-primary-subtle text-primary border" style="font-size: 0.68rem; padding: 1px 4px;">Aktif</span>';
+
+                        $tooltip = 'Mulai: ' . $realStart . ' WIB (' . ($isPause ? 'Di-pause' : 'Sedang Berjalan') . ')';
+                        if ($estText) {
+                            $tooltip .= ' | Estimasi: ' . $estText . ' WIB';
+                        }
+
+                        $html = '<div class="fw-semibold text-primary font-monospace text-nowrap" style="font-size: 0.84rem;" title="' . e($tooltip) . '">' . e($realStart) . ' - ' . $badgeStatus . '</div>';
+                        if ($estText) {
+                            $html .= '<div class="text-muted font-monospace text-nowrap" style="font-size: 0.72rem;" title="' . e($tooltip) . '">Est: ' . e($estText) . '</div>';
+                        }
+                        return $html;
+                    }
+
+                    // C. Jika belum dimulai: tampilkan waktu estimasi
+                    if ($estText) {
+                        return '<div class="fw-semibold text-secondary font-monospace text-nowrap" style="font-size: 0.84rem;" title="Estimasi: ' . e($estText) . ' WIB">' . e($estText) . '</div><div class="text-muted" style="font-size: 0.70rem;">Estimasi</div>';
                     }
 
                     return '<span class="text-muted small">-</span>';

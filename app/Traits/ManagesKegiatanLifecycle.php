@@ -254,10 +254,28 @@ trait ManagesKegiatanLifecycle
         $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
         $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
 
-        if ($kegiatan->status === 'Berjalan' && $kegiatan->last_started_at) {
-            $elapsedSeconds = (int) abs($now->diffInSeconds($kegiatan->last_started_at));
-            $kegiatan->durasi_detik = (int) ($kegiatan->durasi_detik ?? 0) + $elapsedSeconds;
+        $newDurasiDetik = (int) ($kegiatan->durasi_detik ?? 0);
+        if ($kegiatan->status === 'Berjalan') {
+            if ($kegiatan->last_started_at) {
+                $elapsedSeconds = (int) abs($now->diffInSeconds($kegiatan->last_started_at));
+                $newDurasiDetik += $elapsedSeconds;
+            } elseif (!empty($kegiatan->waktu_mulai) && $kegiatan->waktu_mulai !== '00:00:00') {
+                $tglM = !empty($kegiatan->tanggal_mulai) ? $kegiatan->tanggal_mulai : $clientDate;
+                $startTs = strtotime($tglM . ' ' . $kegiatan->waktu_mulai);
+                $endTs = strtotime($clientDate . ' ' . $clientTime);
+                if ($startTs && $endTs && $endTs > $startTs) {
+                    $newDurasiDetik += ($endTs - $startTs);
+                }
+            }
+        } elseif ($newDurasiDetik <= 0 && !empty($kegiatan->waktu_mulai) && $kegiatan->waktu_mulai !== '00:00:00') {
+            $tglM = !empty($kegiatan->tanggal_mulai) ? $kegiatan->tanggal_mulai : $clientDate;
+            $startTs = strtotime($tglM . ' ' . $kegiatan->waktu_mulai);
+            $endTs = strtotime($clientDate . ' ' . $clientTime);
+            if ($startTs && $endTs && $endTs > $startTs) {
+                $newDurasiDetik = ($endTs - $startTs);
+            }
         }
+        $kegiatan->durasi_detik = $newDurasiDetik;
 
         $targetStatus = 'Menunggu Validasi';
         $validatedAt = null;
@@ -273,6 +291,7 @@ trait ManagesKegiatanLifecycle
             'waktu_selesai' => $clientTime,
             'tanggal_selesai' => $clientDate,
             'status' => $targetStatus,
+            'durasi_detik' => $newDurasiDetik,
             'last_started_at' => null,
             'validated_at' => $validatedAt,
             'validated_by' => $validatedBy,

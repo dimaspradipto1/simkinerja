@@ -64,20 +64,21 @@ class KinerjaWaktuHelper
         }
         // 2. Jika tugas selesai dan memiliki waktu mulai & selesai
         elseif (!empty($item->waktu_mulai) && !empty($item->waktu_selesai) && $item->waktu_selesai !== '00:00:00') {
-            $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
-            $tglS = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglM;
-            $startTs = strtotime($tglM . ' ' . $item->waktu_mulai);
-            $endTs = strtotime($tglS . ' ' . $item->waktu_selesai);
-            if ($endTs > $startTs) {
-                $durasiDetik = $endTs - $startTs;
-            } else {
-                $tDiff = strtotime($item->waktu_selesai) - strtotime($item->waktu_mulai);
-                if ($tDiff > 0) {
-                    $durasiDetik = $tDiff;
-                }
-            }
-            if ($durasiDetik <= 0 && !empty($item->durasi_detik)) {
+            if (!empty($item->durasi_detik) && $item->durasi_detik > 0) {
                 $durasiDetik = (int) $item->durasi_detik;
+            } else {
+                $tglM = !empty($item->tanggal_mulai) ? $item->tanggal_mulai : now()->format('Y-m-d');
+                $tglS = !empty($item->tanggal_selesai) ? $item->tanggal_selesai : $tglM;
+                $startTs = strtotime($tglM . ' ' . $item->waktu_mulai);
+                $endTs = strtotime($tglS . ' ' . $item->waktu_selesai);
+                if ($endTs > $startTs) {
+                    $durasiDetik = $endTs - $startTs;
+                } else {
+                    $tDiff = strtotime($item->waktu_selesai) - strtotime($item->waktu_mulai);
+                    if ($tDiff > 0) {
+                        $durasiDetik = $tDiff;
+                    }
+                }
             }
         }
         // 3. Jika status Di-pause atau ada durasi_detik tersimpan
