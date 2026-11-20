@@ -685,13 +685,9 @@
                                     @endif
 
                                     {{-- Button 3: Mulai Kegiatan / Lanjut / Selesaikan / Selesai --}}
-                                    @if($task->status == 'Selesai' || $task->status == 'Disetujui')
+                                    @if($task->status == 'Selesai' || $task->status == 'Disetujui' || $task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
                                         <button type="button" class="btn btn-secondary btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px;">
                                             <i class="bi bi-check2-circle"></i> Selesai
-                                        </button>
-                                    @elseif($task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
-                                        <button type="button" class="btn btn-sm rounded-3 px-2 py-1.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 text-nowrap" disabled style="font-size: 0.8rem; border-radius: 8px; background-color: #fffbeb; border: 1px solid #fde68a; color: #b45309 !important;">
-                                            <i class="bi bi-clock-history"></i> Menunggu Validasi
                                         </button>
                                     @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
                                         <button type="button" class="edlink-btn-stop btn-action-dash text-nowrap" data-type="{{ $task->kategori_code }}" data-action="stop" data-id="{{ $task->id }}">
@@ -934,12 +930,8 @@
                                         </div>
                                     </td>
                                     <td class="pe-3 text-center">
-                                        @if($task->status == 'Selesai' || $task->status == 'Disetujui')
+                                        @if($task->status == 'Selesai' || $task->status == 'Disetujui' || $task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
                                             <span class="badge bg-success px-3 py-2 fw-semibold text-nowrap"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
-                                        @elseif($task->status == 'Menunggu Validasi' || $task->status == 'Menunggu')
-                                            <span class="badge rounded-pill border px-2.5 py-1.5 text-nowrap" style="font-size: 0.76rem; font-weight: 600; background-color: #fffbeb; color: #b45309; border-color: #fde68a;">
-                                                <i class="bi bi-clock-history me-1" style="color: #d97706;"></i>Menunggu Validasi
-                                            </span>
                                         @elseif($task->status == 'Proses' || $task->status == 'Berjalan')
                                             <button type="button" class="btn btn-sm btn-danger px-3 py-1 fw-bold shadow-sm btn-action-dash text-nowrap" data-type="{{ $task->module_type }}" data-action="stop" data-id="{{ $task->id }}">
                                                 <i class="bi bi-stop-fill me-1"></i>Selesaikan
