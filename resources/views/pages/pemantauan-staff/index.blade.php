@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 ${hasilKerjaHtml}
                                 ${catatanHtml}
                             </td>
-                            <td><span class="badge bg-light text-dark border">${t.kategori}</span></td>
+                            <td><span class="badge bg-light text-dark border">${(t.kategori === 'Rencana Kerja' || t.kategori === 'Rutin') ? 'Rutinitas' : t.kategori}</span></td>
                             <td class="text-center">${durasiHtml}</td>
                             <td class="text-center small text-secondary">${t.tanggal_mulai}</td>
                             <td class="text-center" id="task-status-cell-${t.id}">${statusBadge}</td>

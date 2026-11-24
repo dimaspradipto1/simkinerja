@@ -552,8 +552,8 @@
             <button type="button" id="btn-voice-dashboard" class="btn btn-warning fw-bold text-dark px-3 py-2 shadow-sm btn-equal-width rounded-pill">
                 <i class="bi bi-volume-up-fill me-1 fs-6"></i> Ringkasan Suara
             </button>
-            <a href="{{ route('rencana-kerja.index') }}" class="btn btn-light fw-bold text-success px-3 py-2 shadow-sm btn-equal-width rounded-pill">
-                <i class="bi bi-list-check me-1"></i> Rencana Kerja
+            <a href="{{ route('rutinitas.index') }}" class="btn btn-light fw-bold text-success px-3 py-2 shadow-sm btn-equal-width rounded-pill">
+                <i class="bi bi-list-check me-1"></i> Rutinitas
             </a>
             @if(auth()->check() && (!auth()->user()->isPimpinanUnit() && !auth()->user()->isAdmin()))
                 <a href="{{ route('rencana-kerja.create') }}" class="btn btn-outline-light fw-bold px-3 py-2 btn-equal-width rounded-pill">
@@ -665,7 +665,7 @@
                                 <!-- Action Buttons Row -->
                                 <div class="d-flex align-items-center gap-2">
                                     {{-- Button 1: Detail mengarah ke Kegiatan Rutin --}}
-                                    <a href="{{ $task->kategori_code === 'rencana-kerja' ? route('rencana-kerja.index') : route($task->kategori_code . '.index') }}" class="edlink-btn-subtle" title="Lihat Kegiatan Rutin">
+                                    <a href="{{ $task->kategori_code === 'rencana-kerja' ? route('rutinitas.index') : route($task->kategori_code . '.index') }}" class="edlink-btn-subtle" title="Lihat Kegiatan Rutin">
                                         <i class="bi bi-eye"></i> Detail
                                     </a>
 
