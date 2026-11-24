@@ -1612,10 +1612,11 @@
                         }
                     },
                     error: function(xhr) {
+                        let errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Terjadi kesalahan saat mencatat waktu selesai.';
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal',
-                            text: 'Terjadi kesalahan saat mencatat waktu selesai.'
+                            text: errMsg
                         });
                     }
                 });
@@ -1712,6 +1713,39 @@
                 var currentTotal = baseSec + elapsed;
 
                 el.text(formatDuration(currentTotal));
+
+                // Auto-stop otomatis jika sudah mencapai batas target waktu estimasi
+                var targetTs = parseInt(el.attr('data-target-ts')) || 0;
+                var taskId = el.attr('data-id');
+                if (targetTs > 0 && nowTs >= targetTs && taskId && !el.data('auto-stopping')) {
+                    el.data('auto-stopping', true);
+                    var dt = (typeof window.getLaptopDateTime === 'function') ? window.getLaptopDateTime() : { time: '', date: '' };
+                    $.ajax({
+                        url: "{{ url('rencana-kerja') }}/" + taskId + "/stop",
+                        type: 'POST',
+                        data: {
+                            "_token": "{{ csrf_token() }}",
+                            "client_time": dt.time,
+                            "client_date": dt.date
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'info',
+                                    title: 'Target jam tercapai. Tugas otomatis diselesaikan.',
+                                    showConfirmButton: false,
+                                    timer: 4500,
+                                    timerProgressBar: true
+                                });
+                                if ($('#rencanakerja-table').length) {
+                                    $('#rencanakerja-table').DataTable().ajax.reload(null, false);
+                                }
+                            }
+                        }
+                    });
+                }
 
                 var grp = el.attr('data-group-date');
                 if (grp) {

@@ -57,15 +57,13 @@ class MilestoneController extends Controller
         $now = Carbon::now();
 
         $parent = $milestone->milestonable;
+        $isOverdue = false;
+        $estimasiEnd = null;
         if ($parent && $parent->status !== 'Selesai' && !empty($parent->estimasi_tanggal_selesai)) {
             $endTime = $parent->estimasi_jam_selesai ?: '23:59:59';
             $estimasiEnd = Carbon::parse($parent->estimasi_tanggal_selesai . ' ' . $endTime);
             if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'success' => false,
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
+                $isOverdue = true;
             }
         }
 
@@ -180,15 +178,13 @@ class MilestoneController extends Controller
         $now = Carbon::now();
 
         $parent = $milestone->milestonable;
+        $isOverdue = false;
+        $estimasiEnd = null;
         if ($parent && $parent->status !== 'Selesai' && !empty($parent->estimasi_tanggal_selesai)) {
             $endTime = $parent->estimasi_jam_selesai ?: '23:59:59';
             $estimasiEnd = Carbon::parse($parent->estimasi_tanggal_selesai . ' ' . $endTime);
             if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'success' => false,
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
+                $isOverdue = true;
             }
         }
 

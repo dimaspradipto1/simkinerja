@@ -244,4 +244,99 @@ class Kegiatan extends Model
     {
         return $this->status === 'Perlu Revisi';
     }
+
+    /**
+     * Otomatis menghentikan tugas (Rencana Kerja / Rutinitas, Kepanitiaan, Insidentil)
+     * yang sedang berjalan, proses, atau di-pause jika telah mencapai atau melewati batas target estimasi waktu selesai.
+     */
+    public static function autoStopExpiredTasks(): void
+    {
+        $now = \Carbon\Carbon::now();
+        $today = $now->toDateString();
+        $currentTime = $now->toTimeString();
+
+        // Cari tugas yang sedang berjalan/proses/pause yang telah melewati estimasi waktu selesai
+        $expiredTasks = self::withoutGlobalScopes()
+            ->whereIn('status', ['Berjalan', 'Proses', 'Di-pause'])
+            ->whereNotNull('estimasi_tanggal_selesai')
+            ->where(function ($q) use ($today, $currentTime) {
+                $q->where('estimasi_tanggal_selesai', '<', $today)
+                  ->orWhere(function ($sub) use ($today, $currentTime) {
+                      $sub->where('estimasi_tanggal_selesai', $today)
+                          ->whereNotNull('estimasi_jam_selesai')
+                          ->where('estimasi_jam_selesai', '<=', $currentTime);
+                  });
+            })
+            ->with(['user', 'milestones'])
+            ->get();
+
+        foreach ($expiredTasks as $task) {
+            $endTime = $task->estimasi_jam_selesai ?: '23:59:59';
+            $endDate = $task->estimasi_tanggal_selesai ?: $today;
+            $estimasiEnd = \Carbon\Carbon::parse($endDate . ' ' . $endTime);
+
+            // Tentukan status akhir
+            $targetStatus = 'Menunggu Validasi';
+            $validatedAt = null;
+            $validatedBy = null;
+
+            if ($task->kategori === 'Kepanitiaan') {
+                $targetStatus = 'Selesai';
+            } else {
+                $u = $task->user;
+                if ($u && ($u->isSuperAdmin() || ($u->isPimpinanRektorat() && !$u->supervisor_id))) {
+                    $targetStatus = 'Disetujui';
+                    $validatedAt = $estimasiEnd;
+                    $validatedBy = $u->id;
+                }
+            }
+
+            // Hitung durasi akumulasi hingga batas target estimasiEnd
+            $durasiDetik = (int) ($task->durasi_detik ?? 0);
+            if ($task->status === 'Berjalan' && $task->last_started_at) {
+                $startCarbon = \Carbon\Carbon::parse($task->last_started_at);
+                $endCarbon = $now->lt($estimasiEnd) ? $now : $estimasiEnd;
+                if ($endCarbon->gt($startCarbon)) {
+                    $durasiDetik += (int) abs($endCarbon->diffInSeconds($startCarbon));
+                }
+            } elseif ($durasiDetik <= 0 && !empty($task->waktu_mulai) && $task->waktu_mulai !== '00:00:00') {
+                $tglM = !empty($task->tanggal_mulai) ? $task->tanggal_mulai : $endDate;
+                $startTs = strtotime($tglM . ' ' . $task->waktu_mulai);
+                $endTs = $estimasiEnd->timestamp;
+                if ($startTs && $endTs > $startTs) {
+                    $durasiDetik = $endTs - $startTs;
+                }
+            }
+
+            $updateData = [
+                'status' => $targetStatus,
+                'waktu_selesai' => $task->waktu_selesai ?: substr($endTime, 0, 8),
+                'tanggal_selesai' => $task->tanggal_selesai ?: $endDate,
+                'durasi_detik' => max(0, $durasiDetik),
+                'last_started_at' => null,
+                'validated_at' => $validatedAt,
+                'validated_by' => $validatedBy,
+                'estimasi_unlock_reason' => null,
+                'estimasi_unlock_requested_at' => null,
+            ];
+
+            if (empty($task->waktu_mulai) || $task->waktu_mulai === '00:00:00') {
+                $updateData['waktu_mulai'] = $task->estimasi_jam_mulai ?: '08:00:00';
+                $updateData['tanggal_mulai'] = $task->estimasi_tanggal_mulai ?: $endDate;
+            }
+
+            $task->update($updateData);
+
+            // Selesaikan milestones aktif
+            if ($task->milestones && $task->milestones->isNotEmpty()) {
+                $task->milestones()->whereIn('status', ['Berjalan', 'Proses', 'Di-pause'])->update([
+                    'status' => 'Selesai',
+                    'waktu_selesai' => $estimasiEnd,
+                    'tanggal_selesai' => $endDate,
+                    'durasi_detik' => max(0, $durasiDetik),
+                    'last_started_at' => null,
+                ]);
+            }
+        }
+    }
 }

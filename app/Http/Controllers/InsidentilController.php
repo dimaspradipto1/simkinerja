@@ -33,6 +33,9 @@ class InsidentilController extends Controller
     {
         $authUser = Auth::user();
 
+        // Otomatis auto-stop tugas yang telah mencapai batas target jam estimasi selesai
+        Kegiatan::autoStopExpiredTasks();
+
         if ($request->ajax()) {
             $query = Insidentil::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
@@ -567,7 +570,8 @@ class InsidentilController extends Controller
         }
 
         $isExpired = false;
-        if ($status !== 'Selesai' && !empty($row->estimasi_tanggal_selesai)) {
+        // Hanya expired jika belum pernah dimulai sama sekali dan batas waktu telah terlewati
+        if (!in_array($status, ['Selesai', 'Disetujui', 'Menunggu Validasi']) && !$waktuMulai && !in_array($status, ['Berjalan', 'Proses', 'Di-pause']) && !empty($row->estimasi_tanggal_selesai)) {
             $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
             $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
             if (\Carbon\Carbon::now()->gt($estimasiEnd)) {

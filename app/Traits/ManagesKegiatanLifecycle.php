@@ -239,26 +239,33 @@ trait ManagesKegiatanLifecycle
 
         $now = Carbon::now();
 
+        $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
+        $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
+        $isOverdue = false;
+        $estimasiEnd = null;
+
+        // Jika tugas telah melewati batas estimasi selesai, jangan tolak/gagal,
+        // melainkan tetap izinkan diselesaikan dan sesuaikan waktu selesai ke batas target jamnya
         if ($kegiatan->status !== 'Selesai' && !empty($kegiatan->estimasi_tanggal_selesai)) {
             $endTime = $kegiatan->estimasi_jam_selesai ?: '23:59:59';
             $estimasiEnd = Carbon::parse($kegiatan->estimasi_tanggal_selesai . ' ' . $endTime);
             if ($now->gt($estimasiEnd)) {
-                return response()->json([
-                    'success' => false,
-                    'is_expired' => true,
-                    'message' => 'Tugas ini telah melewati batas waktu estimasi pelaksanaan (Tugas Gagal). Silakan ajukan permohonan perpanjangan waktu ke pimpinan Anda.',
-                ], 422);
+                $isOverdue = true;
+                if (!empty($kegiatan->estimasi_jam_selesai)) {
+                    $clientTime = substr($kegiatan->estimasi_jam_selesai, 0, 8);
+                    $clientDate = $kegiatan->estimasi_tanggal_selesai;
+                }
             }
         }
-
-        $clientTime = $request->input('client_time') ?? now()->format('H:i:s');
-        $clientDate = $request->input('client_date') ?? now()->format('Y-m-d');
 
         $newDurasiDetik = (int) ($kegiatan->durasi_detik ?? 0);
         if ($kegiatan->status === 'Berjalan') {
             if ($kegiatan->last_started_at) {
-                $elapsedSeconds = (int) abs($now->diffInSeconds($kegiatan->last_started_at));
-                $newDurasiDetik += $elapsedSeconds;
+                $endCarbon = ($isOverdue && $estimasiEnd) ? $estimasiEnd : $now;
+                $startCarbon = Carbon::parse($kegiatan->last_started_at);
+                if ($endCarbon->gt($startCarbon)) {
+                    $newDurasiDetik += (int) abs($endCarbon->diffInSeconds($startCarbon));
+                }
             } elseif (!empty($kegiatan->waktu_mulai) && $kegiatan->waktu_mulai !== '00:00:00') {
                 $tglM = !empty($kegiatan->tanggal_mulai) ? $kegiatan->tanggal_mulai : $clientDate;
                 $startTs = strtotime($tglM . ' ' . $kegiatan->waktu_mulai);
@@ -275,13 +282,15 @@ trait ManagesKegiatanLifecycle
                 $newDurasiDetik = ($endTs - $startTs);
             }
         }
-        $kegiatan->durasi_detik = $newDurasiDetik;
+        $kegiatan->durasi_detik = max(0, $newDurasiDetik);
 
         $targetStatus = 'Menunggu Validasi';
         $validatedAt = null;
         $validatedBy = null;
 
-        if ($authUser->isSuperAdmin() || ($authUser->isPimpinanRektorat() && !$authUser->supervisor_id)) {
+        if ($kegiatan->kategori === 'Kepanitiaan') {
+            $targetStatus = 'Selesai';
+        } elseif ($authUser->isSuperAdmin() || ($authUser->isPimpinanRektorat() && !$authUser->supervisor_id)) {
             $targetStatus = 'Disetujui';
             $validatedAt = $now;
             $validatedBy = $authUser->id;

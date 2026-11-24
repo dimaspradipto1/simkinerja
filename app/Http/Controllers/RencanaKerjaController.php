@@ -29,6 +29,9 @@ class RencanaKerjaController extends Controller
     {
         $authUser = Auth::user();
 
+        // Otomatis auto-stop tugas yang telah mencapai batas target jam estimasi selesai
+        Kegiatan::autoStopExpiredTasks();
+
         if ($request->ajax()) {
             $query = Kegiatan::with(['user', 'periodeAkademik', 'taggedUsers', 'milestones']);
 
@@ -240,7 +243,13 @@ class RencanaKerjaController extends Controller
                                     ? \Carbon\Carbon::parse($row->estimasi_tanggal_mulai)->locale('id')->translatedFormat('l, d F Y')
                                     : 'Kegiatan');
 
-                            return '<span class="live-running-timer fw-medium text-dark small text-nowrap" data-base-seconds="' . $seconds . '" data-timestamp="' . time() . '" data-group-date="' . e($grp) . '" title="' . e($tooltip) . '">' . e($formatted) . '</span>';
+                            $targetTs = 0;
+                            if (!empty($row->estimasi_tanggal_selesai)) {
+                                $endT = $row->estimasi_jam_selesai ?: '23:59:59';
+                                $targetTs = strtotime($row->estimasi_tanggal_selesai . ' ' . $endT);
+                            }
+
+                            return '<span class="live-running-timer fw-medium text-dark small text-nowrap" data-id="' . $row->id . '" data-type="rencana-kerja" data-target-ts="' . $targetTs . '" data-base-seconds="' . $seconds . '" data-timestamp="' . time() . '" data-group-date="' . e($grp) . '" title="' . e($tooltip) . '">' . e($formatted) . '</span>';
                         }
 
                         return '<span class="fw-medium text-dark small text-nowrap" title="' . e($tooltip) . '">' . e($formatted) . '</span>';
@@ -496,7 +505,8 @@ class RencanaKerjaController extends Controller
         }
 
         $isExpired = false;
-        if ($status !== 'Selesai' && !empty($row->estimasi_tanggal_selesai)) {
+        // Hanya expired jika belum pernah dimulai sama sekali dan batas waktu telah terlewati
+        if (!in_array($status, ['Selesai', 'Disetujui', 'Menunggu Validasi']) && !$waktuMulai && !in_array($status, ['Berjalan', 'Proses', 'Di-pause']) && !empty($row->estimasi_tanggal_selesai)) {
             $endTime = $row->estimasi_jam_selesai ?: '23:59:59';
             $estimasiEnd = \Carbon\Carbon::parse($row->estimasi_tanggal_selesai . ' ' . $endTime);
             if (\Carbon\Carbon::now()->gt($estimasiEnd)) {

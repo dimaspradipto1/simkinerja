@@ -18,8 +18,8 @@ class DashboardController extends Controller
         $request = $request ?? request();
         $user = auth()->user();
 
-        // Auto-stop tugas kepanitiaan yang telah melewati batas estimasi waktu
-        Kepanitiaan::autoStopExpiredTasks();
+        // Auto-stop seluruh tugas (Rutinitas, Kepanitiaan, Insidentil) yang telah mencapai/melewati batas estimasi waktu
+        \App\Models\Kegiatan::autoStopExpiredTasks();
 
         $tasksQuery = RencanaKerja::query();
         $kepanitiaanQuery = Kepanitiaan::query();
