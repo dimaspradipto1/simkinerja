@@ -332,7 +332,6 @@ class Kegiatan extends Model
                 $task->milestones()->whereIn('status', ['Berjalan', 'Proses', 'Di-pause'])->update([
                     'status' => 'Selesai',
                     'waktu_selesai' => $estimasiEnd,
-                    'tanggal_selesai' => $endDate,
                     'durasi_detik' => max(0, $durasiDetik),
                     'last_started_at' => null,
                 ]);

@@ -51,6 +51,7 @@
         align-items: center;
         justify-content: center;
         text-align: center;
+        font-size: 11px !important;
     }
     .scan-menu-card {
         background: linear-gradient(135deg, #f4f9f6 0%, #eaf7ef 100%);
@@ -397,7 +398,7 @@
     .edlink-btn-stop,
     .edlink-btn-done {
         border-radius: 8px;
-        font-size: 0.78rem;
+        font-size: 11px !important;
         padding: 6px 4px;
         text-decoration: none;
         display: inline-flex;
@@ -621,7 +622,7 @@
                                     <h6 class="fw-bold text-dark m-0 text-uppercase" style="font-size: 0.9rem; line-height: 1.35;">
                                         {{ $task->uraian_tugas }}
                                     </h6>
-                                    <span class="badge {{ $task->badge_class }} rounded-pill text-nowrap" style="font-size: 0.7rem; padding: 4px 8px;">
+                                    <span class="badge {{ $task->badge_class }} rounded-pill text-nowrap" style="font-size: 11px; padding: 4px 8px;">
                                         {{ $task->kategori_label }}
                                     </span>
                                 </div>

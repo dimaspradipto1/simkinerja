@@ -265,11 +265,11 @@ class RencanaKerjaController extends Controller
                 ->addColumn('jenis', function ($row) {
                     $kat = strtolower($row->kategori ?? 'rutin');
                     if (str_contains($kat, 'insidentil') || str_contains($kat, 'insidental')) {
-                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #334155; border-color: #cbd5e1;"><span class="me-1" style="color: #64748b; font-size: 8px;">●</span> Insidental</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 11px; font-weight: 500; background-color: #f8fafc; color: #334155; border-color: #cbd5e1;"><span class="me-1" style="color: #64748b; font-size: 8px;">●</span> Insidental</span>';
                     } elseif (str_contains($kat, 'panitia') || str_contains($kat, 'kepanitiaan')) {
-                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #1864ab; border-color: #cbd5e1;"><span class="me-1" style="color: #228be6; font-size: 8px;">●</span> Kepanitiaan</span>';
+                        return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 11px; font-weight: 500; background-color: #f8fafc; color: #1864ab; border-color: #cbd5e1;"><span class="me-1" style="color: #228be6; font-size: 8px;">●</span> Kepanitiaan</span>';
                     }
-                    return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 0.76rem; font-weight: 500; background-color: #f8fafc; color: #334155; border-color: #cbd5e1;"><span class="me-1" style="color: #64748b; font-size: 8px;">●</span> Rutin</span>';
+                    return '<span class="badge rounded-pill border px-2.5 py-1 text-nowrap" style="font-size: 11px; font-weight: 500; background-color: #f8fafc; color: #334155; border-color: #cbd5e1;"><span class="me-1" style="color: #64748b; font-size: 8px;">●</span> Rutin</span>';
                 })
                 ->addColumn('status_badge', function ($row) {
                     $st = $row->status ?? 'Belum Dimulai';
